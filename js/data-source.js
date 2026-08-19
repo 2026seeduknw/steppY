@@ -13,10 +13,12 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), climateType, reviews, creditRecommend,
- *     wishlistCount, climate 텍스트 — 원본에 대응 데이터 없음 → 빈 배열/기본값.
- *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐)
- *     이 때문에 검색 화면의 "전공/기후" 필터는 실제 학교에는 아직 걸리지 않습니다.
+ *   - majors(지원 가능 연세대 전공), reviews, creditRecommend, wishlistCount —
+ *     원본에 대응 데이터 없음 → 빈 배열/기본값(wishlistCount는 시드 기반 데모 숫자).
+ *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐.
+ *      climate/climateType는 climate_staging 테이블의 계절별 실측 평균기온으로 채워짐 —
+ *      climateType은 그 기온으로부터 파생 분류한 값이라 원본에 직접 있는 필드는 아님)
+ *     이 때문에 검색 화면의 "전공" 필터는 실제 학교에는 아직 걸리지 않습니다.
  *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
  *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
  */
@@ -55,11 +57,42 @@
     return { rank1, total: rank1 + extra };
   }
 
+  const SEASON_TEMP_COLS = [
+    ['봄학기', 'temp_spring_c'], ['여름학기', 'temp_summer_c'],
+    ['가을학기', 'temp_autumn_c'], ['겨울학기', 'temp_winter_c']
+  ];
+
+  /** 4계절 평균기온으로부터 대략적인 기후 유형을 분류(실측 기온 기반 파생값). */
+  function climateTypeFromTemps(c) {
+    const spring = coerce(c.temp_spring_c), summer = coerce(c.temp_summer_c);
+    const autumn = coerce(c.temp_autumn_c), winter = coerce(c.temp_winter_c);
+    if ([spring, summer, autumn, winter].some(v => typeof v !== 'number')) return undefined;
+    if (winter < 0) return 'cold';
+    if (Math.min(spring, summer, autumn, winter) >= 18) return 'hot';
+    if (winter < 5 && summer > 22) return 'four-season';
+    return 'mild-winter';
+  }
+
   async function loadSchools() {
-    const { data: schools, error } = await supabaseClient.from('schools').select('*');
+    const [{ data: schools, error }, { data: climateRows }] = await Promise.all([
+      supabaseClient.from('schools').select('*'),
+      supabaseClient.from('climate_staging').select('*')
+    ]);
     if (error || !schools) throw error || new Error('schools fetch failed');
+    const climateBySchool = {};
+    (climateRows || []).forEach(c => { if (c.school_id) climateBySchool[c.school_id] = c; });
 
     return schools.map(s => {
+      const c = climateBySchool[s.id];
+      const climate = {};
+      if (c) {
+        SEASON_TEMP_COLS.forEach(([season, col]) => {
+          const t = coerce(c[col]);
+          if (typeof t === 'number') {
+            climate[season] = `평균 ${t}°C` + (c.climate_notes ? `. ${c.climate_notes}` : '');
+          }
+        });
+      }
       const toeflScore = coerce(s.toefl_ibt);
       const isEnglish = s.track === 'english';
       return {
@@ -81,11 +114,11 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
-        climate: {},
+        climate,
         security: SECURITY_TEXT[s.security_level] || '치안 점수 데이터 준비 중', securityLevel: s.security_level || undefined,
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
-        climateType: undefined,
+        climateType: c ? climateTypeFromTemps(c) : undefined,
         creditRecommend: [], reviews: [],
         wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
