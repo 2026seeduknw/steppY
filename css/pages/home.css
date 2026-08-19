@@ -18,6 +18,10 @@ body[data-page="home"] .home-hero {
   flex-direction: column;
   justify-content: center;
 }
+body[data-page="home"] #greeting {
+  position: relative;
+  top: 5px;
+}
 
 .home-grid {
   display: grid;
