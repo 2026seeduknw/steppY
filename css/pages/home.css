@@ -24,28 +24,10 @@ body[data-page="home"] .home-hero {
 .home-main { display: flex; flex-direction: column; gap: var(--space-5); }
 .home-aside { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(var(--header-h) + var(--space-5)); }
 
-.card-pad { padding: var(--space-5); }
+/* .card-pad 기본 정의는 components.css로 이동(여러 페이지 공유) */
 .card-pad--sm { padding: var(--space-4); }
 
-/* ---- 할일 진행률 ---- */
-.todo-card__progress {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) 0;
-  margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--line-100);
-}
-.progress-ring-wrap { position: relative; flex: 0 0 auto; }
-.progress-ring-wrap .progress-ring circle:last-child { transition: stroke-dashoffset var(--dur-slow) var(--ease-out); }
-.progress-ring__label {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 700;
-  color: var(--ink-900);
-}
-.todo-card__progress-text { font-size: var(--fs-small); color: var(--ink-600); }
-.todo-card__progress-text strong { display: block; font-size: var(--fs-h2); color: var(--ink-900); font-family: var(--font-mono); }
+/* 할일 진행률 링 스타일은 components.css로 이동(홈+교환 준비하기 공유) */
 
 /* ---- 지망 학교 슬롯 ---- */
 .wishlist-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }

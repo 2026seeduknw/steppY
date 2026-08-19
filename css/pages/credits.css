@@ -4,6 +4,7 @@
 
 body[data-page="credits"] .home-hero {
   background: var(--teal);
+  padding-left: 20px;
 }
 body[data-page="credits"] .home-hero h1 { color: var(--onnavy-100); }
 body[data-page="credits"] .home-hero p { color: var(--onnavy-300); }
@@ -12,6 +13,10 @@ body[data-page="credits"] .home-hero .eyebrow { color: var(--onnavy-300); }
 .credits-grid {
   padding: var(--space-6) 0 var(--space-9);
 }
+
+.section-title__actions { display: flex; flex-wrap: nowrap; flex: 0 0 auto; align-items: center; gap: var(--space-3); align-self: center; }
+.major-filter-mount { flex: 0 0 auto; }
+.major-filter-mount .ss { width: 200px; }
 
 .match-card { padding: var(--space-5); margin-bottom: var(--space-4); }
 .match-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }

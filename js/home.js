@@ -1,6 +1,21 @@
 (function () {
   AppState.load();
 
+  // 학교를 확정한 뒤에는 홈 대시보드 대신 교환 준비하기 화면을 보여줌.
+  // Supabase 연동 시 MOCK.schools가 비동기로 실 데이터로 교체되는데, 이 IIFE는
+  // 그보다 먼저 동기적으로 실행돼 getConfirmedSchool()이 아직 null일 수 있음 —
+  // 그래서 최초 체크 + 'MOCK:updated' 이후 재체크 두 군데서 모두 확인함
+  // (consult.js의 tryPreselect()와 동일한 패턴).
+  function redirectIfConfirmed() {
+    if (AppState.getConfirmedSchool()) {
+      morphToPreparePage();
+      return true;
+    }
+    return false;
+  }
+
+  if (redirectIfConfirmed()) return;
+
   document.getElementById('greeting').textContent = `안녕하세요, ${AppState.profile.name}님`;
   document.getElementById('greetingSub').textContent =
     `${AppState.profile.exchangeTerm.year} ${AppState.profile.exchangeTerm.season} 파견을 준비하고 있어요`;
@@ -11,7 +26,11 @@
   renderJourney();
 
   document.addEventListener('profile:updated', renderWishlistRow);
-  document.addEventListener('MOCK:updated', () => { renderWishlistRow(); renderJourney(); });
+  document.addEventListener('MOCK:updated', () => {
+    if (redirectIfConfirmed()) return;
+    renderWishlistRow();
+    renderJourney();
+  });
 
   // 본문(위시리스트+여정+CTA배너)과 아사이드(프로필+할일)는 각자 콘텐츠양에 따라
   // 높이가 유동적임. 아사이드가 본문보다 길어지면 그 차이만큼 할일 목록에
@@ -82,7 +101,7 @@
       { label: '학교 탐색', sub: '조건에 맞는 학교 비교', done: hasWishlist || AppState.load().favorites.length > 0 },
       { label: '지망 선택', sub: '1~3지망 등록', done: hasWishlist },
       { label: '학교 확정', sub: "'학교 확정' 버튼 클릭", done: !!confirmed },
-      { label: '지원 준비', sub: '서류·비자·생활 준비', done: false }
+      { label: '교환 준비', sub: '서류·비자·생활 준비', done: false }
     ];
     const currentIdx = steps.findIndex(s => !s.done);
 

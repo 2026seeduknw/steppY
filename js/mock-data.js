@@ -36,6 +36,7 @@ MOCK.schools = [
   {
     id: 'uwash', lat: 39.2098, lng: -76.0658,
     scores: { security: 85, costOfLiving: 70, commerce: 35, transitMobility: 30, travelMobility: 25 },
+    logo: null,
     name: 'Washington College',
     nameKo: '워싱턴 칼리지',
     country: '미국', region: '북미', city: '체스터타운',
@@ -58,6 +59,7 @@ MOCK.schools = [
   {
     id: 'amherst', lat: 42.3732, lng: -72.5199,
     scores: { security: 88, costOfLiving: 55, commerce: 50, transitMobility: 35, travelMobility: 45 },
+    logo: null,
     name: 'Amherst College',
     nameKo: '애머스트 칼리지',
     country: '미국', region: '북미', city: '애머스트',
@@ -77,6 +79,7 @@ MOCK.schools = [
   {
     id: 'lse', lat: 51.5144, lng: -0.116,
     scores: { security: 60, costOfLiving: 25, commerce: 90, transitMobility: 92, travelMobility: 88 },
+    logo: null,
     name: 'London School of Economics and Political Science (LSE)',
     nameKo: '런던정경대학',
     country: '영국', region: '유럽', city: '런던',
@@ -99,6 +102,7 @@ MOCK.schools = [
   {
     id: 'keio', lat: 35.6484, lng: 139.7454,
     scores: { security: 90, costOfLiving: 45, commerce: 88, transitMobility: 95, travelMobility: 75 },
+    logo: null,
     name: 'Keio University',
     nameKo: '게이오기주쿠대학',
     country: '일본', region: '아시아', city: '도쿄',
@@ -121,6 +125,7 @@ MOCK.schools = [
   {
     id: 'nus', lat: 1.2966, lng: 103.7764,
     scores: { security: 93, costOfLiving: 35, commerce: 85, transitMobility: 90, travelMobility: 85 },
+    logo: null,
     name: 'National University of Singapore',
     nameKo: '싱가포르국립대학',
     country: '싱가포르', region: '아시아', city: '싱가포르',
@@ -143,6 +148,7 @@ MOCK.schools = [
   {
     id: 'fudan', lat: 31.2989, lng: 121.503,
     scores: { security: 72, costOfLiving: 65, commerce: 65, transitMobility: 80, travelMobility: 55 },
+    logo: null,
     name: 'Fudan University',
     nameKo: '푸단대학',
     country: '중국', region: '아시아', city: '상하이',
@@ -165,6 +171,7 @@ MOCK.schools = [
   {
     id: 'uva', lat: 52.3676, lng: 4.9041,
     scores: { security: 68, costOfLiving: 40, commerce: 82, transitMobility: 85, travelMobility: 92 },
+    logo: null,
     name: 'University of Amsterdam',
     nameKo: '암스테르담대학교',
     country: '네덜란드', region: '유럽', city: '암스테르담',
@@ -184,6 +191,7 @@ MOCK.schools = [
   {
     id: 'kth', lat: 59.3498, lng: 18.0687,
     scores: { security: 85, costOfLiving: 35, commerce: 55, transitMobility: 82, travelMobility: 70 },
+    logo: null,
     name: 'KTH Royal Institute of Technology',
     nameKo: 'KTH 왕립공과대학',
     country: '스웨덴', region: '유럽', city: '스톡홀름',
@@ -206,6 +214,7 @@ MOCK.schools = [
   {
     id: 'ubc', lat: 49.2606, lng: -123.246,
     scores: { security: 87, costOfLiving: 45, commerce: 58, transitMobility: 60, travelMobility: 50 },
+    logo: null,
     name: 'The University of British Columbia',
     nameKo: 'UBC',
     country: '캐나다', region: '북미', city: '밴쿠버',
@@ -228,6 +237,7 @@ MOCK.schools = [
   {
     id: 'unimelb', lat: -37.7963, lng: 144.9614,
     scores: { security: 85, costOfLiving: 50, commerce: 78, transitMobility: 85, travelMobility: 40 },
+    logo: null,
     name: 'University of Melbourne',
     nameKo: '멜버른대학교',
     country: '호주', region: '오세아니아', city: '멜버른',
@@ -250,6 +260,7 @@ MOCK.schools = [
   {
     id: 'ntu-tw', lat: 25.0174, lng: 121.5405,
     scores: { security: 92, costOfLiving: 78, commerce: 80, transitMobility: 88, travelMobility: 65 },
+    logo: null,
     name: 'National Taiwan University',
     nameKo: '국립대만대학',
     country: '대만', region: '아시아', city: '타이베이',
@@ -272,6 +283,7 @@ MOCK.schools = [
   {
     id: 'sciencespo', lat: 48.8534, lng: 2.3269,
     scores: { security: 65, costOfLiving: 30, commerce: 75, transitMobility: 88, travelMobility: 90 },
+    logo: null,
     name: "Institut d'études politiques de Paris",
     nameKo: '시앙스포',
     country: '프랑스', region: '유럽', city: '파리',
@@ -414,6 +426,7 @@ MOCK.schoolReviews = {
 MOCK.courseMatches = [
   {
     id: 'm1',
+    homeMajor: '경영학과',
     homeCourse: '국제경영론 (3학점)',
     targetCourse: 'International Business Strategy (4 ECTS)',
     school: 'uva',
@@ -423,6 +436,7 @@ MOCK.courseMatches = [
   },
   {
     id: 'm2',
+    homeMajor: '경영학과',
     homeCourse: '조직행동론 (3학점)',
     targetCourse: 'Organizational Behavior (3 credits)',
     school: 'amherst',
@@ -432,6 +446,7 @@ MOCK.courseMatches = [
   },
   {
     id: 'm3',
+    homeMajor: '컴퓨터과학과',
     homeCourse: '데이터베이스 (3학점)',
     targetCourse: 'Database Systems (4 credits)',
     school: 'nus',
@@ -441,12 +456,73 @@ MOCK.courseMatches = [
   },
   {
     id: 'm4',
+    homeMajor: '경제학과',
     homeCourse: '미시경제학 (3학점)',
     targetCourse: 'Microeconomic Theory (3 credits)',
     school: 'lse',
     similarity: 68,
     matchedTopics: ['소비자이론', '게임이론 기초'],
     note: '수리적 난이도가 원 강의보다 높은 편, 선수 지식 확인 권장'
+  },
+  {
+    id: 'm5',
+    homeMajor: '심리학과',
+    homeCourse: '소비자심리학 (3학점)',
+    targetCourse: 'Consumer Psychology (3 credits)',
+    school: 'amherst',
+    similarity: 82,
+    matchedTopics: ['소비자 행동', '인지 편향', '실험 설계'],
+    note: '실습 비중이 높아 조모임 발표가 추가로 있음'
+  },
+  {
+    id: 'm6',
+    homeMajor: '전기전자공학전공',
+    homeCourse: '회로이론 (3학점)',
+    targetCourse: 'Circuit Theory (5 ECTS)',
+    school: 'kth',
+    similarity: 79,
+    matchedTopics: ['전기회로', '아날로그 회로', '회로 해석'],
+    note: '실습(랩) 시수가 원 강의보다 많아 별도 신청 필요'
+  },
+  {
+    id: 'm7',
+    homeMajor: '국제학전공',
+    homeCourse: '국제기구론 (3학점)',
+    targetCourse: 'International Organizations (5 ECTS)',
+    school: 'sciencespo',
+    similarity: 88,
+    matchedTopics: ['UN 체제', '국제 레짐', '다자 외교'],
+    note: '토론·에세이 과제 비중이 커서 프랑스어보다 영어 트랙 권장'
+  },
+  {
+    id: 'm8',
+    homeMajor: '사회학과',
+    homeCourse: '사회조사방법론 (3학점)',
+    targetCourse: 'Social Research Methods (3 credits)',
+    school: 'unimelb',
+    similarity: 77,
+    matchedTopics: ['설문 설계', '통계 분석', '질적 연구'],
+    note: '통계 프로그램(R) 실습이 추가로 포함됨'
+  },
+  {
+    id: 'm9',
+    homeMajor: '화학과',
+    homeCourse: '유기화학 (3학점)',
+    targetCourse: 'Organic Chemistry (3 credits)',
+    school: 'ntu-tw',
+    similarity: 71,
+    matchedTopics: ['반응 메커니즘', '입체화학', '분광학'],
+    note: '실험 리포트는 영어로 작성해야 함, 안전교육 별도 이수 필요'
+  },
+  {
+    id: 'm10',
+    homeMajor: '인공지능학과',
+    homeCourse: '머신러닝개론 (3학점)',
+    targetCourse: 'Introduction to Machine Learning (4 credits)',
+    school: 'nus',
+    similarity: 85,
+    matchedTopics: ['지도학습', '신경망 기초', '모델 평가'],
+    note: '선수과목으로 선형대수·확률통계 요구, 사전 확인 필요'
   }
 ];
 
