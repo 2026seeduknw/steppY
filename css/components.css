@@ -3,16 +3,22 @@
    split-flap board
    ========================================================================== */
 
-/* ---- F2~F4 배경(픽셀 구름 하늘, 40% 불투명도) ----
+/* ---- 전 화면 공통 배경(픽셀 구름 하늘, 40% 불투명도) ----
    opacity를 body에 직접 걸면 콘텐츠까지 흐려지므로 ::before로 배경만 분리. */
 body[data-page="home"],
 body[data-page="search"],
-body[data-page="prepare"] {
+body[data-page="prepare"],
+body[data-page="credits"],
+body[data-page="calendar"],
+body[data-page="consult"] {
   position: relative;
 }
 body[data-page="home"]::before,
 body[data-page="search"]::before,
-body[data-page="prepare"]::before {
+body[data-page="prepare"]::before,
+body[data-page="credits"]::before,
+body[data-page="calendar"]::before,
+body[data-page="consult"]::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -97,6 +103,10 @@ body[data-page="prepare"]::before {
   height: 44px;
   padding: 0 var(--space-5);
   border-radius: var(--radius-md);
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: none;
   font-size: var(--fs-body);
   font-weight: 600;
   transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);

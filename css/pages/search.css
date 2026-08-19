@@ -91,7 +91,7 @@
   border: 1px solid var(--amber-200);
   margin-bottom: var(--space-5);
 }
-.sim-banner__form { display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+.sim-banner__form { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .sim-banner__field { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-micro); color: var(--ink-600); }
 .sim-banner__field input {
   width: 92px; height: 38px;
@@ -99,7 +99,8 @@
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-sm);
 }
-.sim-banner__result { flex: 1; min-width: 220px; }
+.sim-banner__field--result { flex: 1; min-width: 220px; }
+.sim-banner__result { font-size: var(--fs-body); color: var(--ink-900); }
 .sim-banner__result strong { font-family: var(--font-mono); color: var(--amber-700); font-size: var(--fs-h2); }
 
 /* ---- Result grid ---- */
