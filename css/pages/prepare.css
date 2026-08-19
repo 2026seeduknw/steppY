@@ -28,10 +28,11 @@ body[data-page="prepare"] .page-shell {
 .prepare-hero {
   padding: var(--space-6) 0 0;
 }
-/* 확정 카드(위)를 아래 학교 위치 카드(.prepare-main, 사이드바 336px 제외한 폭)와
-   같은 너비로 맞춤 */
+/* 확정 카드(위)의 좌측을 .prepare-main의 실제 좌측(페이지 패딩 48px + 그
+   자체 패딩 32px)에 맞추고, 우측은 사이드바 우측 끝까지(기본 page-shell
+   우측 패딩과 동일) 오도록 함 */
 body[data-page="prepare"] .page-shell.prepare-hero {
-  padding-right: calc(var(--space-7) + 336px + var(--space-6));
+  padding-left: calc(var(--space-7) + var(--space-6));
 }
 
 .confirmed-card {
