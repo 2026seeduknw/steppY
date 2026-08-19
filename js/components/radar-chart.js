@@ -4,11 +4,11 @@
  * (현재는 목업 점수. 실제 백엔드 연동 시 school.scores만 교체하면 됨)
  */
 const RADAR_AXES = [
-  { key: 'security', label: '치안', icon: '🛡️' },
-  { key: 'costOfLiving', label: '물가', icon: '💰' },
-  { key: 'commerce', label: '상권', icon: '🏙️' },
-  { key: 'transitMobility', label: '교통 이동성', icon: '🚌' },
-  { key: 'travelMobility', label: '여행 이동성', icon: '✈️' }
+  { key: 'security', label: '치안' },
+  { key: 'costOfLiving', label: '물가' },
+  { key: 'commerce', label: '상권' },
+  { key: 'transitMobility', label: '교통 이동성' },
+  { key: 'travelMobility', label: '여행 이동성' }
 ];
 
 function scoreBand(v) {
@@ -49,7 +49,7 @@ function radarChartSvg(scores) {
     const p = pentPoint(i, 1.34, cx, cy, R);
     const dx = p.x - cx;
     const anchor = Math.abs(dx) < 6 ? 'middle' : (dx > 0 ? 'start' : 'end');
-    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label">${ax.icon} ${ax.label}</text>`;
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label">${ax.label}</text>`;
   }).join('');
 
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
@@ -61,7 +61,7 @@ function scoreRowsHtml(scores) {
     const band = scoreBand(v);
     return `
       <div class="score-row">
-        <span class="score-row__label">${ax.icon} ${ax.label}</span>
+        <span class="score-row__label">${ax.label}</span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
         <span class="score-row__value tnum">${v}</span>
         <span class="score-row__band" style="color:${band.color};">${band.label}</span>
