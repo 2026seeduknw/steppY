@@ -13,7 +13,7 @@ body[data-page="home"] {
    카드 제목과 좌측 정렬을 맞춘다. */
 body[data-page="home"] .home-hero {
   padding-left: 57px;
-  background: var(--sky-100) url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
+  background: url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
 }
 
 .home-grid {
