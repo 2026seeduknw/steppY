@@ -138,6 +138,25 @@ function creditRecommendHtml(school, profile) {
   return `<div class="tag-row">${matches.map(m => `<span class="chip">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
+/** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
+ *  visa 서류(출입국)와 달리 여기는 지원/입학용 서류(성적증명서 등)를 다룬다. */
+function applicationDocsPanelHtml(school) {
+  const docs = MOCK.schoolDocuments[school.id] || [];
+  if (!docs.length) return '';
+  const baseline = docs.filter(d => d.type === 'baseline');
+  const hint = docs.filter(d => d.type !== 'baseline');
+  return `
+    <section class="info-panel info-panel--wide">
+      <h3>⑧ 지원 서류 안내</h3>
+      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
+      ${baseline.length ? `<div class="tag-row">${baseline.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>` : ''}
+      ${hint.length ? `
+        <p class="info-panel__text" style="margin-top:var(--space-3);">참고용 힌트 (미검증)</p>
+        <div class="tag-row">${hint.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>
+      ` : ''}
+    </section>`;
+}
+
 /** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
 function visaDocsPanelHtml(school) {
   const info = MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
@@ -232,6 +251,7 @@ function schoolModalTemplate(school) {
         </section>
 
         ${visaDocsPanelHtml(school)}
+        ${applicationDocsPanelHtml(school)}
       </div>
 
       <footer class="school-modal__footer" id="modalFooter">

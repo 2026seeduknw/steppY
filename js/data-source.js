@@ -263,6 +263,20 @@
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
   }
 
+  /** 학교별 지원 서류 목록 (exchange-doc-crawler가 채운 school_documents 테이블, 999행).
+   *  document_type: 'baseline'(공식 확인) | 'hint'(참고용, 미검증). */
+  async function loadSchoolDocuments() {
+    const { data } = await supabaseClient
+      .from('school_documents')
+      .select('school_id, document_name, document_type, sort_order, source_url')
+      .order('sort_order');
+    const out = {};
+    (data || []).forEach(d => {
+      (out[d.school_id] || (out[d.school_id] = [])).push({ name: d.document_name, type: d.document_type, sourceUrl: d.source_url });
+    });
+    return out;
+  }
+
   /** 국가별 비자 서류 정보 (exchange-doc-crawler가 채운 visa_requirements/visa_documents 테이블).
    *  status: 'available'(자동추출된 서류 있음) | 'preparing'(서비스 준비중) | 'excluded'(다국가 컨소시엄 프로그램) */
   async function loadVisaRequirements() {
@@ -290,8 +304,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadLivabilityDefs(), loadSchoolExchangeReports()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, livabilityDefs, schoolReviews]) => {
+    loadCountryPrep(), loadLivabilityDefs(), loadSchoolExchangeReports(), loadSchoolDocuments()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, livabilityDefs, schoolReviews, schoolDocuments]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -305,6 +319,7 @@
     if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
     if (countryPrep.length) MOCK.countryPrep = countryPrep;
     if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
+    if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);
