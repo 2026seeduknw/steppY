@@ -6,6 +6,12 @@ body[data-page="home"] {
   background: var(--cloud-50);
 }
 
+/* .home-hero는 consult/credits/calendar와 공유하는 컴포넌트라 전역 패딩은 그대로 두고,
+   홈 화면에서만 왼쪽 패딩을 카드 그리드와 같은 값으로 맞춤(components.css의 --space-9 오버라이드) */
+body[data-page="home"] .home-hero {
+  padding-left: var(--space-6);
+}
+
 .home-grid {
   display: grid;
   grid-template-columns: 1fr 336px;
@@ -18,7 +24,10 @@ body[data-page="home"] {
 .home-main { display: flex; flex-direction: column; gap: var(--space-5); }
 .home-aside { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(var(--header-h) + var(--space-5)); }
 
-.card-pad { padding: var(--space-5); }
+/* .card-pad 기본 정의는 components.css로 이동(여러 페이지 공유) */
+.card-pad--sm { padding: var(--space-4); }
+
+/* 할일 진행률 링 스타일은 components.css로 이동(홈+교환 준비하기 공유) */
 
 /* ---- 지망 학교 슬롯 ---- */
 .wishlist-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
@@ -74,32 +83,49 @@ body[data-page="home"] {
 .search-cta h2 { font-family: var(--font-display); font-size: var(--fs-h1); margin-bottom: 6px; }
 .search-cta p { color: var(--sky-100); font-size: var(--fs-small); }
 
-/* ---- 여정 단계 ---- */
-.journey-steps { display: flex; flex-direction: column; gap: 0; }
-.journey-step {
+/* ---- 여정 단계 (가로 카드 트랙) ---- */
+.journey-bar { padding-bottom: var(--space-4); }
+.journey-track {
   display: flex;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  position: relative;
+  align-items: stretch;
 }
-.journey-step:not(:last-child)::before {
-  content: '';
-  position: absolute; left: 11px; top: 32px; bottom: -4px;
-  width: 2px;
-  background: var(--line-200);
-}
-.journey-step__dot {
-  flex: 0 0 auto;
-  width: 24px; height: 24px;
-  border-radius: 50%;
+.journey-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
   background: var(--sky-50);
+  border: 1.5px solid transparent;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out);
+  cursor: default;
+}
+.journey-card__dot {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--cloud-0);
   border: 2px solid var(--line-200);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; font-weight: 700;
+  font-size: 0.75rem; font-weight: 700;
   color: var(--ink-400);
-  z-index: 1;
 }
-.journey-step.is-done .journey-step__dot { background: var(--mint-500); border-color: var(--mint-500); color: #fff; }
-.journey-step.is-current .journey-step__dot { background: var(--amber-500); border-color: var(--amber-500); color: var(--ink-900); }
-.journey-step__label { font-size: var(--fs-small); font-weight: 600; color: var(--ink-900); }
-.journey-step__sub { font-size: var(--fs-micro); color: var(--ink-400); }
+.journey-card__body { min-width: 0; }
+.journey-card__label { font-size: var(--fs-small); font-weight: 600; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.journey-card__sub {
+  font-size: var(--fs-micro); color: var(--ink-600);
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out);
+}
+.journey-card.is-done .journey-card__dot { background: var(--mint-500); border-color: var(--mint-500); color: #fff; }
+.journey-card.is-current .journey-card__dot { background: var(--amber-500); border-color: var(--amber-500); color: var(--ink-900); }
+.journey-card.is-current { background: var(--amber-100); }
+.journey-card.is-focused {
+  transform: scale(1.04);
+  box-shadow: var(--shadow-card-hover);
+  background: var(--cloud-0);
+  border-color: var(--sky-300);
+}
+.journey-card.is-focused .journey-card__sub { max-height: 40px; opacity: 1; margin-top: 2px; }

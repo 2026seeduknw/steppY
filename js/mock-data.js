@@ -36,6 +36,7 @@ MOCK.schools = [
   {
     id: 'uwash', lat: 39.2098, lng: -76.0658,
     scores: { security: 85, costOfLiving: 70, commerce: 35, transitMobility: 30, travelMobility: 25 },
+    logo: null,
     name: 'Washington College',
     nameKo: '워싱턴 칼리지',
     country: '미국', region: '북미', city: '체스터타운',
@@ -58,6 +59,7 @@ MOCK.schools = [
   {
     id: 'amherst', lat: 42.3732, lng: -72.5199,
     scores: { security: 88, costOfLiving: 55, commerce: 50, transitMobility: 35, travelMobility: 45 },
+    logo: null,
     name: 'Amherst College',
     nameKo: '애머스트 칼리지',
     country: '미국', region: '북미', city: '애머스트',
@@ -77,7 +79,8 @@ MOCK.schools = [
   {
     id: 'lse', lat: 51.5144, lng: -0.116,
     scores: { security: 60, costOfLiving: 25, commerce: 90, transitMobility: 92, travelMobility: 88 },
-    name: 'London School of Economics',
+    logo: null,
+    name: 'London School of Economics and Political Science (LSE)',
     nameKo: '런던정경대학',
     country: '영국', region: '유럽', city: '런던',
     qsRank: 45, slot: 2,
@@ -99,6 +102,7 @@ MOCK.schools = [
   {
     id: 'keio', lat: 35.6484, lng: 139.7454,
     scores: { security: 90, costOfLiving: 45, commerce: 88, transitMobility: 95, travelMobility: 75 },
+    logo: null,
     name: 'Keio University',
     nameKo: '게이오기주쿠대학',
     country: '일본', region: '아시아', city: '도쿄',
@@ -121,6 +125,7 @@ MOCK.schools = [
   {
     id: 'nus', lat: 1.2966, lng: 103.7764,
     scores: { security: 93, costOfLiving: 35, commerce: 85, transitMobility: 90, travelMobility: 85 },
+    logo: null,
     name: 'National University of Singapore',
     nameKo: '싱가포르국립대학',
     country: '싱가포르', region: '아시아', city: '싱가포르',
@@ -143,6 +148,7 @@ MOCK.schools = [
   {
     id: 'fudan', lat: 31.2989, lng: 121.503,
     scores: { security: 72, costOfLiving: 65, commerce: 65, transitMobility: 80, travelMobility: 55 },
+    logo: null,
     name: 'Fudan University',
     nameKo: '푸단대학',
     country: '중국', region: '아시아', city: '상하이',
@@ -165,6 +171,7 @@ MOCK.schools = [
   {
     id: 'uva', lat: 52.3676, lng: 4.9041,
     scores: { security: 68, costOfLiving: 40, commerce: 82, transitMobility: 85, travelMobility: 92 },
+    logo: null,
     name: 'University of Amsterdam',
     nameKo: '암스테르담대학교',
     country: '네덜란드', region: '유럽', city: '암스테르담',
@@ -184,6 +191,7 @@ MOCK.schools = [
   {
     id: 'kth', lat: 59.3498, lng: 18.0687,
     scores: { security: 85, costOfLiving: 35, commerce: 55, transitMobility: 82, travelMobility: 70 },
+    logo: null,
     name: 'KTH Royal Institute of Technology',
     nameKo: 'KTH 왕립공과대학',
     country: '스웨덴', region: '유럽', city: '스톡홀름',
@@ -206,7 +214,8 @@ MOCK.schools = [
   {
     id: 'ubc', lat: 49.2606, lng: -123.246,
     scores: { security: 87, costOfLiving: 45, commerce: 58, transitMobility: 60, travelMobility: 50 },
-    name: 'University of British Columbia',
+    logo: null,
+    name: 'The University of British Columbia',
     nameKo: 'UBC',
     country: '캐나다', region: '북미', city: '밴쿠버',
     qsRank: 41, slot: 5,
@@ -228,6 +237,7 @@ MOCK.schools = [
   {
     id: 'unimelb', lat: -37.7963, lng: 144.9614,
     scores: { security: 85, costOfLiving: 50, commerce: 78, transitMobility: 85, travelMobility: 40 },
+    logo: null,
     name: 'University of Melbourne',
     nameKo: '멜버른대학교',
     country: '호주', region: '오세아니아', city: '멜버른',
@@ -250,6 +260,7 @@ MOCK.schools = [
   {
     id: 'ntu-tw', lat: 25.0174, lng: 121.5405,
     scores: { security: 92, costOfLiving: 78, commerce: 80, transitMobility: 88, travelMobility: 65 },
+    logo: null,
     name: 'National Taiwan University',
     nameKo: '국립대만대학',
     country: '대만', region: '아시아', city: '타이베이',
@@ -272,7 +283,8 @@ MOCK.schools = [
   {
     id: 'sciencespo', lat: 48.8534, lng: 2.3269,
     scores: { security: 65, costOfLiving: 30, commerce: 75, transitMobility: 88, travelMobility: 90 },
-    name: 'Sciences Po',
+    logo: null,
+    name: "Institut d'études politiques de Paris",
     nameKo: '시앙스포',
     country: '프랑스', region: '유럽', city: '파리',
     qsRank: 78, slot: 3,
@@ -371,11 +383,50 @@ MOCK.nearbySpots = [
 ];
 
 /* ---------------------------------------------------------------------
+ * 멘토 없는 멘토 상담(F6) — 교환학생 경험보고서 기반 태그된 후기 목업.
+ * 위시리스트 기본 학교(keio/nus/ubc) 위주로 풍부하게 채움. 나머지 학교는
+ * school.reviews(일반 후기 2줄)로 챗봇이 폴백함.
+ * ------------------------------------------------------------------- */
+MOCK.schoolReviews = {
+  keio: [
+    { tag: '기숙사', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: '미타 캠퍼스 인근 대학 기숙사는 신청 경쟁이 치열해서 최대한 빨리 지원하는 걸 추천해요. 방음이 약한 편이라 이어플러그는 거의 필수였어요.' },
+    { tag: '기숙사', author: '상경계열 · 2024년 가을학기 파견', semester: '2024-2', text: '기숙사 대신 학교 근처 셰어하우스를 구하는 선배들도 많아요. 월세는 비싸지만 위치가 좋아서 통학이 훨씬 편했어요.' },
+    { tag: '교통', author: '국제학부 · 2024년 가을학기 파견', semester: '2024-2', text: '미타역에서 도보 1분이라 지하철 통학이 정말 편했어요. 야마노테선 환승도 쉬워서 도쿄 어디든 30분 내로 갈 수 있어요.' },
+    { tag: '상권', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: '학교 주변에 편의점·카페·서점이 밀집해 있어서 생활하기 편했어요. 시부야·롯폰기까지도 금방이에요.' },
+    { tag: '치안', author: '상경계열 · 2023년 가을학기 파견', semester: '2023-2', text: '밤 11시에도 혼자 다녀도 크게 위험하다고 느낀 적이 없어요. 다만 만원 지하철에서 소매치기는 주의하라는 얘기를 들었어요.' },
+    { tag: '학업', author: '국제학부 · 2024년 봄학기 파견', semester: '2024-1', text: '수업은 대부분 일본어라 초반엔 따라가기 벅찼는데, 동아리(서클) 활동을 하면서 언어가 빨리 늘었어요. 상경계열은 기말 리포트 비중이 큰 과목이 많아요.' },
+    { tag: '날씨', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: '봄학기엔 벚꽃 시즌과 겹쳐서 정말 예뻤어요. 가을엔 늦더위가 좀 남아있으니 얇은 옷을 챙기세요.' },
+    { tag: '생활비', author: '상경계열 · 2024년 가을학기 파견', semester: '2024-2', text: '도쿄 물가가 만만치 않아요, 특히 주거비가 부담됐어요. 학식은 저렴한 편이라 자주 이용했어요.' }
+  ],
+  nus: [
+    { tag: '기숙사', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: 'UTown 기숙사는 신청이 빠르면 배정 확률이 높아요. 에어컨이 기본이라 더위 걱정은 안 해도 돼요.' },
+    { tag: '기숙사', author: '컴퓨터공학과 · 2024년 가을학기 파견', semester: '2024-2', text: '룸메이트는 다양한 국적으로 랜덤 배정되는데, 덕분에 친구를 빨리 사귈 수 있었어요.' },
+    { tag: '교통', author: '경제학과 · 2024년 가을학기 파견', semester: '2024-2', text: 'MRT(지하철)가 캠퍼스 바로 앞까지 연결돼서 시내 이동이 정말 편했어요. 버스도 촘촘해서 차 없이도 생활 가능해요.' },
+    { tag: '상권', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: '켄트리지 인근에 대형 쇼핑몰이 많아서 생필품 사기 편했어요. 클락키까지 버스로 20분이면 야경 명소도 갈 수 있어요.' },
+    { tag: '치안', author: '컴퓨터공학과 · 2023년 가을학기 파견', semester: '2023-2', text: '아시아 최상위권 치안이라고 느꼈어요. 밤늦게 캠퍼스에서 기숙사까지 걸어가도 불안하지 않았어요.' },
+    { tag: '학업', author: '경제학과 · 2024년 봄학기 파견', semester: '2024-1', text: '영어 강의 100%라 언어 부담은 적은데, 조모임 과제가 많아서 스케줄 조율이 중요해요. Telegram으로 팀플하는 게 국룰이에요.' },
+    { tag: '날씨', author: '경영학과 · 2025년 봄학기 파견', semester: '2025-1', text: '일년 내내 고온다습해서 스콜성 소나기에 대비해 우산은 항상 챙겨야 해요.' },
+    { tag: '생활비', author: '컴퓨터공학과 · 2024년 가을학기 파견', semester: '2024-2', text: '외식 물가가 꽤 높은 편이라 학생식당을 자주 이용했어요. 그래도 교통비는 저렴한 편이었어요.' }
+  ],
+  ubc: [
+    { tag: '기숙사', author: '컴퓨터공학과 · 2025년 봄학기 파견', semester: '2025-1', text: 'Totem Park 기숙사는 신입 교환학생에게 인기가 많아서 신청 초반에 마감돼요. 방은 깨끗하고 관리가 잘 되는 편이에요.' },
+    { tag: '기숙사', author: '경영학과 · 2024년 가을학기 파견', semester: '2024-2', text: '기숙사 식단(밀플랜)이 다양해서 만족스러웠어요. 다만 비용이 꽤 나가는 편이에요.' },
+    { tag: '교통', author: '환경학과 · 2024년 가을학기 파견', semester: '2024-2', text: '캠퍼스가 반도 끝에 있어서 시내까지 버스로 30분 정도 걸려요. U-Pass로 버스는 무제한 이용 가능해서 부담은 적어요.' },
+    { tag: '상권', author: '컴퓨터공학과 · 2025년 봄학기 파견', semester: '2025-1', text: '캠퍼스 안에 빌리지가 있어서 웬만한 건 다 해결되지만, 시내만큼 다양하진 않아요. 다운타운은 버스로 금방이에요.' },
+    { tag: '치안', author: '경영학과 · 2023년 가을학기 파견', semester: '2023-2', text: '캠퍼스 자체가 반도에 위치해서 안전하다고 느꼈어요. 다만 밤에 인적 드문 산책로는 피하는 게 좋아요.' },
+    { tag: '학업', author: '환경학과 · 2024년 봄학기 파견', semester: '2024-1', text: '그룹 프로젝트와 참여 점수 비중이 큰 편이라 적극적으로 수업에 참여하는 게 중요해요. 한국인 교환학생 커뮤니티가 활발해서 정보 얻기 편했어요.' },
+    { tag: '날씨', author: '컴퓨터공학과 · 2025년 봄학기 파견', semester: '2025-1', text: '비 오는 날이 정말 많아요. 방수 자켓이랑 우산은 필수템이에요.' },
+    { tag: '생활비', author: '경영학과 · 2024년 가을학기 파견', semester: '2024-2', text: '밴쿠버 물가가 꽤 높은 편이에요, 특히 외식비. 학교 식당 밀플랜을 활용하면 절약할 수 있어요.' }
+  ]
+};
+
+/* ---------------------------------------------------------------------
  * F5. 학점 인정 — 강의계획서 유사도 비교 목업
  * ------------------------------------------------------------------- */
 MOCK.courseMatches = [
   {
     id: 'm1',
+    homeMajor: '경영학과',
     homeCourse: '국제경영론 (3학점)',
     targetCourse: 'International Business Strategy (4 ECTS)',
     school: 'uva',
@@ -385,6 +436,7 @@ MOCK.courseMatches = [
   },
   {
     id: 'm2',
+    homeMajor: '경영학과',
     homeCourse: '조직행동론 (3학점)',
     targetCourse: 'Organizational Behavior (3 credits)',
     school: 'amherst',
@@ -394,6 +446,7 @@ MOCK.courseMatches = [
   },
   {
     id: 'm3',
+    homeMajor: '컴퓨터과학과',
     homeCourse: '데이터베이스 (3학점)',
     targetCourse: 'Database Systems (4 credits)',
     school: 'nus',
@@ -403,12 +456,73 @@ MOCK.courseMatches = [
   },
   {
     id: 'm4',
+    homeMajor: '경제학과',
     homeCourse: '미시경제학 (3학점)',
     targetCourse: 'Microeconomic Theory (3 credits)',
     school: 'lse',
     similarity: 68,
     matchedTopics: ['소비자이론', '게임이론 기초'],
     note: '수리적 난이도가 원 강의보다 높은 편, 선수 지식 확인 권장'
+  },
+  {
+    id: 'm5',
+    homeMajor: '심리학과',
+    homeCourse: '소비자심리학 (3학점)',
+    targetCourse: 'Consumer Psychology (3 credits)',
+    school: 'amherst',
+    similarity: 82,
+    matchedTopics: ['소비자 행동', '인지 편향', '실험 설계'],
+    note: '실습 비중이 높아 조모임 발표가 추가로 있음'
+  },
+  {
+    id: 'm6',
+    homeMajor: '전기전자공학전공',
+    homeCourse: '회로이론 (3학점)',
+    targetCourse: 'Circuit Theory (5 ECTS)',
+    school: 'kth',
+    similarity: 79,
+    matchedTopics: ['전기회로', '아날로그 회로', '회로 해석'],
+    note: '실습(랩) 시수가 원 강의보다 많아 별도 신청 필요'
+  },
+  {
+    id: 'm7',
+    homeMajor: '국제학전공',
+    homeCourse: '국제기구론 (3학점)',
+    targetCourse: 'International Organizations (5 ECTS)',
+    school: 'sciencespo',
+    similarity: 88,
+    matchedTopics: ['UN 체제', '국제 레짐', '다자 외교'],
+    note: '토론·에세이 과제 비중이 커서 프랑스어보다 영어 트랙 권장'
+  },
+  {
+    id: 'm8',
+    homeMajor: '사회학과',
+    homeCourse: '사회조사방법론 (3학점)',
+    targetCourse: 'Social Research Methods (3 credits)',
+    school: 'unimelb',
+    similarity: 77,
+    matchedTopics: ['설문 설계', '통계 분석', '질적 연구'],
+    note: '통계 프로그램(R) 실습이 추가로 포함됨'
+  },
+  {
+    id: 'm9',
+    homeMajor: '화학과',
+    homeCourse: '유기화학 (3학점)',
+    targetCourse: 'Organic Chemistry (3 credits)',
+    school: 'ntu-tw',
+    similarity: 71,
+    matchedTopics: ['반응 메커니즘', '입체화학', '분광학'],
+    note: '실험 리포트는 영어로 작성해야 함, 안전교육 별도 이수 필요'
+  },
+  {
+    id: 'm10',
+    homeMajor: '인공지능학과',
+    homeCourse: '머신러닝개론 (3학점)',
+    targetCourse: 'Introduction to Machine Learning (4 credits)',
+    school: 'nus',
+    similarity: 85,
+    matchedTopics: ['지도학습', '신경망 기초', '모델 평가'],
+    note: '선수과목으로 선형대수·확률통계 요구, 사전 확인 필요'
   }
 ];
 

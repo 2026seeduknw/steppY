@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>지원 준비하기 — steppY</title>
+<title>교환 준비하기 — steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -18,18 +18,21 @@
 
 <div class="page-shell prepare-grid">
   <div class="prepare-main">
+    <div id="prepareMap"></div>
+    <div id="prepareScore"></div>
+
     <section class="card card-pad" id="checklistSection">
       <div class="section-title"><div><span class="eyebrow">DOCUMENTS</span><h2>비자 및 서류 체크리스트</h2></div></div>
       <div class="checklist" id="checklistList"></div>
     </section>
 
-    <section id="livingSection">
+    <section class="card card-pad" id="livingSection">
       <div class="section-title"><div><span class="eyebrow">LIVING PREP</span><h2>생활 준비 — 준비물</h2></div></div>
       <div class="living-grid" id="livingGrid"></div>
     </section>
 
     <section class="card card-pad" id="tipsSection">
-      <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>꿀강</h2></div></div>
+      <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>Tips</h2></div></div>
       <div class="tip-row" id="tipsList"></div>
       <div class="section-title" style="margin-top:var(--space-5);"><div><span class="eyebrow">NEARBY</span><h2>주변 가볼만한 곳</h2></div></div>
       <div class="tip-row" id="spotsList"></div>
@@ -57,6 +60,7 @@
 <script src="js/components/radar-chart.js"></script>
 <script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
+<script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/prepare.js"></script>

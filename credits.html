@@ -24,7 +24,10 @@
   <main>
     <div class="section-title">
       <div><span class="eyebrow">SYLLABUS MATCH</span><h2>강의계획서 유사도 비교</h2></div>
-      <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
+      <div class="section-title__actions">
+        <div id="majorFilterMount" class="major-filter-mount"></div>
+        <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
+      </div>
     </div>
     <p class="spec-note" id="matchExampleNote" style="display:none; margin-bottom: var(--space-4);">
       ⚠️ <strong>예시 데이터</strong> — 확정한 학교와 매칭되는 강의계획서 비교 데이터가 아직 없어 전체 예시를 보여드려요. 실제 서비스에서는 확정 학교 개설 과목 기준으로만 계산됩니다.
@@ -43,11 +46,13 @@
 <script src="js/state.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
+<script src="js/components/searchable-select.js"></script>
 <script src="js/components/auth.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
 <script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
+<script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/credits.js"></script>

@@ -1,5 +1,5 @@
 /**
- * F4 지원 준비하기 화면 렌더링.
+ * F4 교환 준비하기 화면 렌더링.
  * prepare.html이 직접 로드하는 경우와, 다른 화면(F2/F3/F5)에서 학교를 확정한
  * 순간 그 자리에서 F4 레이아웃으로 전환(morphToPreparePage)하는 경우 모두에서 공유.
  */
@@ -8,18 +8,21 @@ const PREPARE_MARKUP = `
 
   <div class="page-shell prepare-grid">
     <div class="prepare-main">
+      <div id="prepareMap"></div>
+      <div id="prepareScore"></div>
+
       <section class="card card-pad" id="checklistSection">
         <div class="section-title"><div><span class="eyebrow">DOCUMENTS</span><h2>비자 및 서류 체크리스트</h2></div></div>
         <div class="checklist" id="checklistList"></div>
       </section>
 
-      <section id="livingSection">
+      <section class="card card-pad" id="livingSection">
         <div class="section-title"><div><span class="eyebrow">LIVING PREP</span><h2>생활 준비 — 준비물</h2></div></div>
         <div class="living-grid" id="livingGrid"></div>
       </section>
 
       <section class="card card-pad" id="tipsSection">
-        <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>꿀강</h2></div></div>
+        <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>Tips</h2></div></div>
         <div class="tip-row" id="tipsList"></div>
         <div class="section-title" style="margin-top:var(--space-5);"><div><span class="eyebrow">NEARBY</span><h2>주변 가볼만한 곳</h2></div></div>
         <div class="tip-row" id="spotsList"></div>
@@ -37,6 +40,8 @@ function renderPrepareView() {
   renderProfileCard(document.getElementById('profileCard'));
   renderTodoCard(document.getElementById('todoCard'));
   renderPrepareHero();
+  renderPrepareMap();
+  renderPrepareScore();
   renderPrepareChecklist();
   renderPrepareLiving();
   renderPrepareTips();
@@ -64,17 +69,49 @@ function renderPrepareHero() {
   document.getElementById('tipsSection').style.display = '';
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
-      <div>
-        <span class="eyebrow" style="color:var(--sky-100)">확정된 학교</span>
-        <div class="confirmed-card__name">${confirmed.name}</div>
-        <div class="confirmed-card__meta">${confirmed.country} · ${confirmed.city}${confirmed.qsRank ? ` · QS ${confirmed.qsRank}` : ''}</div>
-        <div class="confirmed-card__badges">
-          <span class="badge badge--amber">${AppState.profile.exchangeTerm.year} ${AppState.profile.exchangeTerm.season}</span>
+      <div class="confirmed-card__identity">
+        ${SCHOOL_LOGOS[confirmed.id]
+          ? `<img class="confirmed-card__logo" src="assets/school-logos/${SCHOOL_LOGOS[confirmed.id]}" alt="${confirmed.name} 로고">`
+          : `<div class="confirmed-card__logo confirmed-card__logo--empty"></div>`}
+        <div>
+          <span class="eyebrow" style="color:var(--sky-100)">확정된 학교</span>
+          <div class="confirmed-card__name">${confirmed.name}</div>
+          <div class="confirmed-card__meta">${confirmed.country} · ${confirmed.city}${confirmed.qsRank ? ` · QS ${confirmed.qsRank}` : ''}</div>
+          <div class="confirmed-card__badges">
+            <span class="badge badge--amber">${AppState.profile.exchangeTerm.year} ${AppState.profile.exchangeTerm.season}</span>
+          </div>
         </div>
       </div>
-      <span class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.4);">학교 정보 보기</span>
+      <div class="confirmed-card__actions">
+        <span class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.4);">학교 정보 보기</span>
+        <button type="button" class="confirmed-card__cancel" id="cancelConfirmBtn">학교 확정 취소</button>
+      </div>
     </div>`;
   document.getElementById('confirmedCardBtn').addEventListener('click', () => openSchoolModal(confirmed.id, { onChange: renderPrepareView }));
+  document.getElementById('cancelConfirmBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    AppState.confirmSchool(null);
+    window.location.href = 'home.html';
+  });
+}
+
+function renderPrepareMap() {
+  const confirmed = AppState.getConfirmedSchool();
+  const mount = document.getElementById('prepareMap');
+  if (!confirmed) { mount.innerHTML = ''; return; }
+  mount.innerHTML = `
+    <section class="card card-pad">
+      <div class="section-title"><div><span class="eyebrow">LOCATION</span><h2>학교 위치</h2></div></div>
+      <div class="map-embed">
+        <iframe src="${mapEmbedUrl(confirmed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${confirmed.name} 지도"></iframe>
+      </div>
+      <p class="map-caption">${confirmed.mapNote}</p>
+    </section>`;
+}
+
+function renderPrepareScore() {
+  const confirmed = AppState.getConfirmedSchool();
+  document.getElementById('prepareScore').innerHTML = confirmed ? scoreCardHtml(confirmed, { numbered: false }) : '';
 }
 
 function renderPrepareChecklist() {
@@ -163,7 +200,7 @@ function morphToPreparePage() {
   document.querySelectorAll('body > .page-shell').forEach(el => el.remove());
   document.getElementById('mentor-float').insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
   document.body.dataset.page = 'prepare';
-  document.title = '지원 준비하기 — steppY';
+  document.title = '교환 준비하기 — steppY';
   renderAppNav('prepare');
   renderPrepareView();
   window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -124,6 +124,27 @@
 }
 .card--interactive { cursor: pointer; }
 .card--interactive:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-3px); }
+.card-pad { padding: var(--space-5); }
+
+/* ---- 할일 진행률 (todo-card.js, 홈·교환 준비하기 공유) ---- */
+.todo-card__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line-100);
+}
+.progress-ring-wrap { position: relative; flex: 0 0 auto; }
+.progress-ring-wrap .progress-ring circle:last-child { transition: stroke-dashoffset var(--dur-slow) var(--ease-out); }
+.progress-ring__label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 700;
+  color: var(--ink-900);
+}
+.todo-card__progress-text { font-size: var(--fs-small); color: var(--ink-600); }
+.todo-card__progress-text strong { display: block; font-size: var(--fs-h2); color: var(--ink-900); font-family: var(--font-mono); }
 
 .section-title {
   display: flex;
@@ -299,6 +320,10 @@
 .profile-stat__label { font-size: var(--fs-micro); font-family: var(--font-mono); letter-spacing: 0.06em; color: var(--sky-700); text-transform: uppercase; }
 .profile-stat__value { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); }
 .profile-stat__value em { font-style: normal; font-size: var(--fs-small); font-weight: 400; color: var(--ink-400); }
+
+.profile-stats--compact { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+.profile-stats--compact .profile-stat { padding: var(--space-3); gap: 2px; }
+.profile-stats--compact .profile-stat__value { font-size: var(--fs-body); }
 
 .profile-form {
   display: grid;

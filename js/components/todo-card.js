@@ -14,11 +14,21 @@ function renderTodoCard(mount) {
 
 function todoCardTemplate() {
   const todos = AppState.getTodos().slice(0, 4);
+  const total = todos.length;
   const remaining = todos.filter(t => !t.done).length;
+  const done = total - remaining;
+  const percent = total ? Math.round((done / total) * 100) : 0;
   return `
     <div class="section-title">
       <div><span class="eyebrow">TODAY</span><h2>오늘의 할 일</h2></div>
-      <a href="calendar.html" class="badge badge--neutral tnum">${remaining}/${todos.length}</a>
+      <a href="calendar.html" class="badge badge--neutral tnum">${remaining}/${total}</a>
+    </div>
+    <div class="todo-card__progress">
+      ${progressRingHtml(percent, { size: 56, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
+      <div class="todo-card__progress-text">
+        <strong>${done}/${total}</strong> 완료
+        <span>오늘 남은 일 ${remaining}개</span>
+      </div>
     </div>
     <ul class="todo-list">
       ${todos.map(t => `
