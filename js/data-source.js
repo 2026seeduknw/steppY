@@ -116,8 +116,10 @@
 
   async function loadCourseMatches() {
     const { data } = await supabaseClient.from('course_matches').select('*');
+    // home_course는 연세대 "전공명"을 그대로 담고 있음(과목명 단위 아님) — homeMajor로도 노출해
+    // credits.js의 전공 필터가 실 데이터에서도 동작하게 한다.
     return (data || []).map(m => ({
-      id: m.id, homeCourse: m.home_course, targetCourse: m.target_course, school: m.school_id,
+      id: m.id, homeCourse: m.home_course, homeMajor: m.home_course, targetCourse: m.target_course, school: m.school_id,
       similarity: m.similarity, matchedTopics: m.matched_topics || [], note: m.note
     }));
   }

@@ -27,10 +27,8 @@
     let matches = MOCK.courseMatches.filter(m => confirmed && m.school === confirmed.id);
     const isExample = matches.length === 0;
     if (isExample) matches = MOCK.courseMatches;
-    // 전공 필드가 있는 데이터(목업)에서만 전공으로 좁힘 — 실 서버 데이터는 아직
-    // 전공 구분이 없어 필터를 걸면 아무것도 안 남으므로 그대로 통과시킴
-    if (selectedMajor && matches.some(m => m.homeMajor)) {
-      matches = matches.filter(m => !m.homeMajor || m.homeMajor === selectedMajor);
+    if (selectedMajor) {
+      matches = matches.filter(m => m.homeMajor === selectedMajor);
     }
 
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => `
