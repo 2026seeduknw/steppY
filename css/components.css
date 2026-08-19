@@ -32,6 +32,17 @@ body[data-page="consult"]::before {
   from { background-position-x: 0; }
   to { background-position-x: 2400px; }
 }
+/* 페이지별 시간대 연출 — 같은 구름 이미지를 필터로만 색을 바꿔 재사용 */
+body[data-page="search"]::before {
+  filter: hue-rotate(175deg) saturate(1.4) brightness(1.05);
+}
+body[data-page="credits"]::before {
+  filter: hue-rotate(55deg) saturate(1.3) brightness(0.7);
+}
+body[data-page="calendar"]::before {
+  filter: hue-rotate(-15deg) saturate(1.3) brightness(0.32) contrast(1.1);
+  opacity: 0.55;
+}
 
 /* ---- Top nav (F2/F3/F4/F5 공통) ---- */
 .app-nav {
