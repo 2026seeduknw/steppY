@@ -399,6 +399,7 @@
 .info-panel--wide { grid-column: 1 / -1; }
 .info-panel--map { margin-bottom: var(--space-4); }
 .tag-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.visa-source-list { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
 
 /* ---- 지역 지도 임베드 (OpenStreetMap, API 키 불필요) ---- */
 .map-embed {
