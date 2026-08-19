@@ -49,7 +49,7 @@ function renderMentorFloat() {
     <a class="mentor-float" href="consult.html">
       <span class="mentor-float__icon">💬</span>
       <span>
-        <span class="mentor-float__label">멘토 없는 멘토 상담</span>
+        <span class="mentor-float__label">Mentor's Step</span>
         <span class="mentor-float__sub">막막할 때 바로 물어보세요</span>
       </span>
     </a>
