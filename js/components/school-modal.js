@@ -95,14 +95,37 @@ function lifeOrbitCard(school, initials) {
   const weatherLine = seasonEntries.length
     ? seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ')
     : '날씨 정보 준비 중';
+  const reviews = (MOCK.schoolReviews[school.id] || []).slice(0, 3);
   const body = `
     <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
     ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
-    <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
+    ${reviews.length
+      ? `<ul class="review-list">${reviews.map(r => `<li>${r.tag ? `#${r.tag} ` : ''}${r.text}</li>`).join('')}</ul>`
+      : `<p class="info-panel__text">아직 등록된 선배 후기가 없어요.</p>`}
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
   `;
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
+}
+
+const HOUSING_BADGE = {
+  Yes: { cls: 'badge--go', label: '기숙사 보장' },
+  Partial: { cls: 'badge--amber', label: '기숙사 부분보장' },
+  No: { cls: 'badge--warn', label: '기숙사 미보장' }
+};
+
+/** 어학 자격증(TOEFL 외)·기숙사 보장 여부 — 기존 배지 줄 바로 아래에 별도 줄로 보여준다.
+ * 둘 다 원본 데이터가 없는 학교가 많아(어학 62/271, 기숙사 103/271), 값이 있을 때만 렌더링. */
+function extraInfoBadgesHtml(school) {
+  const badges = [];
+  if (!school.langTest.cut && school.langTest.level) {
+    badges.push(`<span class="badge badge--neutral" title="${school.langTest.notes || ''}">${school.langTest.level} 이상</span>`);
+  }
+  const housing = HOUSING_BADGE[school.housing.guaranteed];
+  if (housing) {
+    badges.push(`<span class="badge ${housing.cls}" title="${school.housing.info || ''}">${housing.label}</span>`);
+  }
+  return badges.length ? `<div class="school-modal__badges school-modal__badges--extra">${badges.join('')}</div>` : '';
 }
 
 /** 학점 인정 추천 과목 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
@@ -113,6 +136,25 @@ function creditRecommendHtml(school, profile) {
     return `<p class="info-panel__text">${profile.major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 추천 과목을 보여드려요.'}</p>`;
   }
   return `<div class="tag-row">${matches.map(m => `<span class="chip">${m.targetMajor}</span>`).join('')}</div>`;
+}
+
+/** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
+ *  visa 서류(출입국)와 달리 여기는 지원/입학용 서류(성적증명서 등)를 다룬다. */
+function applicationDocsPanelHtml(school) {
+  const docs = MOCK.schoolDocuments[school.id] || [];
+  if (!docs.length) return '';
+  const baseline = docs.filter(d => d.type === 'baseline');
+  const hint = docs.filter(d => d.type !== 'baseline');
+  return `
+    <section class="info-panel info-panel--wide">
+      <h3>⑧ 지원 서류 안내</h3>
+      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
+      ${baseline.length ? `<div class="tag-row">${baseline.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>` : ''}
+      ${hint.length ? `
+        <p class="info-panel__text" style="margin-top:var(--space-3);">참고용 힌트 (미검증)</p>
+        <div class="tag-row">${hint.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>
+      ` : ''}
+    </section>`;
 }
 
 /** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
@@ -172,6 +214,7 @@ function schoolModalTemplate(school) {
             <span class="badge badge--amber">GPA ${school.gpaCut}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
+          ${extraInfoBadgesHtml(school)}
         </div>
         <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
           <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
@@ -208,6 +251,7 @@ function schoolModalTemplate(school) {
         </section>
 
         ${visaDocsPanelHtml(school)}
+        ${applicationDocsPanelHtml(school)}
       </div>
 
       <footer class="school-modal__footer" id="modalFooter">
