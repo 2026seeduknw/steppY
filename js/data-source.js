@@ -13,15 +13,15 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), reviews, wishlistCount —
+ *   - majors(지원 가능 연세대 전공), wishlistCount —
  *     원본에 대응 데이터 없음 → 빈 배열/기본값(wishlistCount는 시드 기반 데모 숫자).
  *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐.
  *      climate/climateType는 climate_staging 테이블의 계절별 실측 평균기온으로 채워짐 —
  *      climateType은 그 기온으로부터 파생 분류한 값이라 원본에 직접 있는 필드는 아님)
  *     이 때문에 검색 화면의 "전공" 필터는 실제 학교에는 아직 걸리지 않습니다.
- *   - creditRecommend는 school 객체가 아니라 js/components/school-modal.js가
- *     MOCK.majorMatches를 (학교 + 내 재학 학과)로 직접 필터링해 채웁니다 —
- *     학교x전공 조합별로 달라지는 값이라 school 객체에는 넣지 않습니다.
+ *   - creditRecommend/reviews는 school 객체가 아니라 각 컴포넌트가
+ *     MOCK.majorMatches/MOCK.schoolReviews를 school.id로 직접 필터링해 채웁니다 —
+ *     학교(x전공) 조합별로 달라지는 값이라 school 객체 자체에는 넣지 않습니다.
  *   - langTest — TOEFL iBT 컷은 영어 트랙에만 있어 그 값만 배지 판정(langTest.cut)에 사용.
  *     비영어 트랙은 language_level/language_notes를 langTest.level/notes로 그대로 노출해
  *     school-modal.js가 별도 배지로 보여줌(원본 자체가 B2/HSK6처럼 다양해 자동 판정은 안 함).
@@ -126,7 +126,6 @@
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
-        reviews: [],
         wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
@@ -199,6 +198,41 @@
     return (data || []).map(s => ({ school: s.school_id, title: s.title, summary: s.summary }));
   }
 
+  // school_exchange_reports는 학교당 여러 개의 긴 서술형 후기 항목(개요/학업/기숙사·식사 등)을
+  // 담고 있다. js/consult.js·school-modal.js가 기대하는 "짧게 태그된 인용구" 형태로
+  // 펼쳐서 변환한다. 필드 하나당 인용구 하나, 태그는 근접한 항목으로 근사 매핑한다
+  // (원본 서술이 여러 주제를 한 문단에 섞어 쓰는 경우가 많아 완벽한 분류는 아님).
+  const REPORT_FIELD_TAGS = [
+    ['housing_food', '기숙사'], ['academics', '학업'],
+    ['surroundings', '상권'], ['campus_facilities', '상권'],
+    ['overview', null], ['cultural_adaptation', null],
+    ['international_support', null], ['tips', null]
+  ];
+
+  function truncateReview(text, max) {
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const lastBreak = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('. \n'));
+    return (lastBreak > max * 0.5 ? cut.slice(0, lastBreak + 1) : cut) + '…';
+  }
+
+  async function loadSchoolExchangeReports() {
+    const { data } = await supabaseClient
+      .from('school_exchange_reports')
+      .select('school_id, semester, title, overview, surroundings, housing_food, academics, international_support, campus_facilities, cultural_adaptation, tips')
+      .not('school_id', 'is', null);
+    const out = {};
+    (data || []).forEach(r => {
+      const author = r.semester ? `${r.semester} 파견 후기` : (r.title || '선배 후기');
+      REPORT_FIELD_TAGS.forEach(([field, tag]) => {
+        const text = r[field];
+        if (!text || !text.trim()) return;
+        (out[r.school_id] || (out[r.school_id] = [])).push({ tag, author, text: truncateReview(text.trim(), 320) });
+      });
+    });
+    return out;
+  }
+
   // 치안은 별도 원본(2027-1_치안.xlsx, Numbeo+GPI+외교부 여행경보 가중합)이라
   // livability_column_definitions에 행이 없다 — SECURITY_TEXT와 짝지어 여기서 직접 채운다.
   const SECURITY_LIVABILITY_DEF = {
@@ -256,8 +290,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadLivabilityDefs()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, livabilityDefs]) => {
+    loadCountryPrep(), loadLivabilityDefs(), loadSchoolExchangeReports()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, livabilityDefs, schoolReviews]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -270,6 +304,7 @@
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
     if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
     if (countryPrep.length) MOCK.countryPrep = countryPrep;
+    if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);

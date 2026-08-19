@@ -1,7 +1,8 @@
 /**
  * 멘토 없는 멘토 상담 — 학교를 고르면 선배 경험보고서 후기를 질문 키워드로
- * 매칭해 챗봇 형태로 보여주는 목업. 실제 AI/백엔드 없이 클라이언트 키워드
- * 매칭(js/mock-data.js의 MOCK.schoolReviews)으로만 동작.
+ * 매칭해 챗봇 형태로 보여준다. 실제 AI/백엔드 없이 클라이언트 키워드 매칭으로만
+ * 동작하며, 후기 원문은 Supabase school_exchange_reports에서 온다
+ * (js/data-source.js::loadSchoolExchangeReports → MOCK.schoolReviews).
  */
 (function () {
   AppState.load();
@@ -18,19 +19,6 @@
     { tag: '생활비', keywords: ['생활비', '물가', '비용', '식비', '외식'] }
   ];
   const SUGGEST_TAGS = TOPIC_DICT.map(t => t.tag);
-
-  // MOCK.schoolReviews는 목업 학교 id(keio/nus/ubc) 기준으로 작성됨. Supabase가
-  // 연결돼 있으면 data-source.js가 MOCK.schools를 실제 DB id(예: keio-university)로
-  // 덮어쓰므로, 실제 id → 목업 id로 매핑해 후기를 계속 찾을 수 있게 함.
-  const SCHOOL_ID_ALIASES = {
-    'keio-university': 'keio',
-    'national-university-of-singapore': 'nus',
-    'the-university-of-british-columbia': 'ubc'
-  };
-  function reviewsKeyFor(schoolId) {
-    if (MOCK.schoolReviews[schoolId]) return schoolId;
-    return SCHOOL_ID_ALIASES[schoolId] || schoolId;
-  }
 
   const params = new URLSearchParams(location.search);
   const preselect = params.get('school');
@@ -60,14 +48,12 @@
 
   function matchReviews(schoolId, questionText) {
     const topics = matchTopics(questionText);
-    const tagged = MOCK.schoolReviews[reviewsKeyFor(schoolId)] || [];
+    const all = MOCK.schoolReviews[schoolId] || [];
     if (topics.length) {
-      const hits = tagged.filter(r => topics.includes(r.tag));
+      const hits = all.filter(r => topics.includes(r.tag));
       if (hits.length) return { hits, fallback: false, topics };
     }
-    const school = MOCK.schools.find(s => s.id === schoolId);
-    const fallbackHits = (school.reviews || []).map(text => ({ tag: null, author: '선배 후기', text }));
-    return { hits: fallbackHits, fallback: true, topics };
+    return { hits: all.slice(0, 3), fallback: true, topics };
   }
 
   function addMessage(msg) { messages.push(msg); renderMessages(); }

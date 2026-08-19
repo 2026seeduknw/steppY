@@ -95,11 +95,14 @@ function lifeOrbitCard(school, initials) {
   const weatherLine = seasonEntries.length
     ? seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ')
     : '날씨 정보 준비 중';
+  const reviews = (MOCK.schoolReviews[school.id] || []).slice(0, 3);
   const body = `
     <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
     ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
-    <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
+    ${reviews.length
+      ? `<ul class="review-list">${reviews.map(r => `<li>${r.tag ? `#${r.tag} ` : ''}${r.text}</li>`).join('')}</ul>`
+      : `<p class="info-panel__text">아직 등록된 선배 후기가 없어요.</p>`}
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
   `;
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
