@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전공 매칭 — steppY</title>
+<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/credits.css">
+<link rel="stylesheet" href="css/pages/major-matching.css">
+</head>
+<body data-page="major-matching">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell home-hero">
+  <h1>내 전공과 잘 맞는 해외 전공</h1>
+  <p>연세대 전공을 고르면, 262개 파견교 중 의미와 학문분류가 가까운 전공을 순위로 보여드려요.</p>
+</div>
+
+<div class="page-shell credits-grid">
+  <main>
+    <div class="section-title">
+      <div></div>
+      <div class="section-title__actions">
+        <div id="majorFilterMount" class="major-filter-mount"></div>
+      </div>
+    </div>
+    <p id="confirmedSchoolNote" class="major-match-confirmed-note" hidden></p>
+    <div id="matchList"></div>
+  </main>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/school-logos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/components/searchable-select.js"></script>
+<script src="js/major-matching.js"></script>
+</body>
+</html>

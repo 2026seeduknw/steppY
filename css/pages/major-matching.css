@@ -1,0 +1,34 @@
+/* ==========================================================================
+   F-신규. 전공 매칭
+   ========================================================================== */
+
+body[data-page="major-matching"] .home-hero {
+  padding-left: 57px;
+  background: url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 148px;
+  gap: var(--space-2);
+}
+body[data-page="major-matching"] .home-hero p { color: var(--ink-600); font-size: var(--fs-small); }
+
+.major-match-confirmed-note {
+  font-size: var(--fs-small);
+  color: var(--sky-700);
+  background: var(--sky-50);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+}
+
+.match-card--confirmed { border: 1.5px solid var(--mint-500); }
+
+.major-match-school {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--ink-600);
+}
+.major-match-school__logo { width: 18px; height: 18px; object-fit: contain; border-radius: 3px; }

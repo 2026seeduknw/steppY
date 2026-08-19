@@ -161,9 +161,24 @@
 
   async function loadCourseMatches() {
     const { data } = await supabaseClient.from('course_matches').select('*');
+    // home_course는 연세대 "전공명"을 그대로 담고 있음(과목명 단위 아님) — homeMajor로도 노출해
+    // credits.js의 전공 필터가 실 데이터에서도 동작하게 한다.
     return (data || []).map(m => ({
-      id: m.id, homeCourse: m.home_course, targetCourse: m.target_course, school: m.school_id,
+      id: m.id, homeCourse: m.home_course, homeMajor: m.home_course, targetCourse: m.target_course, school: m.school_id,
       similarity: m.similarity, matchedTopics: m.matched_topics || [], note: m.note
+    }));
+  }
+
+  async function loadMajorMatches() {
+    const { data } = await supabaseClient
+      .from('major_matches')
+      .select('*')
+      .order('korean_major_id')
+      .order('rank');
+    return (data || []).map(m => ({
+      id: m.id, koreanMajorId: m.korean_major_id, homeMajor: m.home_major, school: m.school_id,
+      targetMajor: m.target_major, similarity: m.similarity, semanticScore: m.semantic_score,
+      taxonomyScore: m.taxonomy_score, matchedTopics: m.matched_topics || [], note: m.note, rank: m.rank
     }));
   }
 
@@ -208,14 +223,15 @@
 
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
+    loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
     loadCountryPrep()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep]) => {
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
     if (Object.keys(livingPrep).length) MOCK.livingPrep = livingPrep;
     if (courseMatches.length) MOCK.courseMatches = courseMatches;
+    if (majorMatches.length) MOCK.majorMatches = majorMatches;
     if (tips.length) MOCK.tips = tips;
     if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
