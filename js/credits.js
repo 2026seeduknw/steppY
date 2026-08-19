@@ -37,8 +37,6 @@
       matches = matches.filter(m => !m.homeMajor || m.homeMajor === selectedMajor);
     }
 
-    document.getElementById('matchExampleNote').style.display = isExample && matches.length ? 'block' : 'none';
-
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => `
       <div class="card match-card">
         <div class="match-card__top">
