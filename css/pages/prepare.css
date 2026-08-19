@@ -1,0 +1,111 @@
+/* ==========================================================================
+   F4. 지원 준비하기 홈화면
+   ========================================================================== */
+
+.prepare-hero {
+  padding: var(--space-6) 0 0;
+}
+
+.confirmed-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, var(--ink-900), var(--sky-700));
+  color: #fff;
+  cursor: pointer;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+.confirmed-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.confirmed-card__name { font-family: var(--font-display); font-size: var(--fs-display); margin: 4px 0 6px; }
+.confirmed-card__meta { color: var(--sky-100); font-size: var(--fs-small); }
+.confirmed-card__badges { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+
+.empty-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--sky-300);
+  background: var(--sky-50);
+}
+.empty-hero h2 { font-size: var(--fs-h2); margin-bottom: 4px; }
+.empty-hero p { color: var(--ink-600); font-size: var(--fs-small); }
+
+.prepare-grid {
+  display: grid;
+  grid-template-columns: 1fr 336px;
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-9);
+  align-items: start;
+}
+.prepare-main { display: flex; flex-direction: column; gap: var(--space-5); }
+.prepare-aside { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(var(--header-h) + var(--space-5)); }
+
+/* ---- 체크리스트 ---- */
+.checklist { display: flex; flex-direction: column; gap: var(--space-2); }
+.checklist-item {
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.checklist-item__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.checklist-item__check {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--sky-300);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+}
+.checklist-item.is-done .checklist-item__check { background: var(--mint-500); border-color: var(--mint-500); }
+.checklist-item__title { font-weight: 600; flex: 1; }
+.checklist-item.is-done .checklist-item__title { color: var(--ink-400); text-decoration: line-through; }
+.checklist-item__due { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); }
+.checklist-item__caret { color: var(--ink-400); transition: transform var(--dur-fast) var(--ease-out); }
+.checklist-item.is-expanded .checklist-item__caret { transform: rotate(180deg); }
+.checklist-item__detail {
+  padding: 0 var(--space-4) var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--ink-700);
+  display: none;
+}
+.checklist-item.is-expanded .checklist-item__detail { display: block; }
+.checklist-item__source {
+  margin-top: var(--space-2);
+  font-size: var(--fs-micro);
+  color: var(--ink-400);
+  font-family: var(--font-mono);
+}
+
+/* ---- 생활 정보 카드 ---- */
+.living-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.living-card { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.living-card__title { font-weight: 700; }
+.living-card__summary { font-size: var(--fs-small); color: var(--ink-700); flex: 1; }
+.living-card .spec-note { font-size: var(--fs-micro); padding: var(--space-2) var(--space-3); }
+
+.scholarship-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.scholarship-row { padding: var(--space-3); background: var(--sky-50); border-radius: var(--radius-sm); }
+.scholarship-row__name { font-weight: 700; font-size: var(--fs-small); }
+.scholarship-row__amount { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); }
+.scholarship-row__elig { font-size: var(--fs-micro); color: var(--ink-600); margin-top: 2px; }
+
+/* ---- 꿀강 / 주변 ---- */
+.tip-row { display: flex; flex-direction: column; gap: var(--space-2); }
+.tip-item { padding: var(--space-3) var(--space-4); border: 1px solid var(--line-200); border-radius: var(--radius-md); }
+.tip-item__title { font-weight: 600; font-size: var(--fs-small); }
+.tip-item__summary { font-size: var(--fs-micro); color: var(--ink-600); }

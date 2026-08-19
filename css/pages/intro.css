@@ -1,0 +1,170 @@
+/* ==========================================================================
+   F1. 인트로 페이지
+   ========================================================================== */
+
+body[data-page="intro"] {
+  min-width: 0;
+  overflow: hidden;
+  height: 100vh;
+  background: var(--ink-900);
+}
+
+/* ---- 시간대별 컬러 매핑 ----
+   확인 필요 항목(§5 F1) 해석: 실제 위치 기반 API 대신, 기기의 로컬 시간
+   (new Date().getHours())을 사용해 4구간(새벽/낮/노을/밤)으로 하늘·지구본
+   색을 매핑했습니다. 실서비스에서는 IP/GPS 기반 타임존 API로 교체 가능합니다. */
+.intro { --scene-top:#BADCF4; --scene-mid:#DCEEFB; --scene-bottom:#F7FBFE; --globe-lit:#9FC6E4; --globe-shadow:#1F4463; --sun:#FFE1AE; --ink-top: var(--ink-900); --ink-bottom: var(--ink-900); }
+body[data-tod="dawn"] .intro { --scene-top:#F6C89A; --scene-mid:#F3D9BE; --scene-bottom:#FCEEDD; --globe-lit:#E3A876; --globe-shadow:#5A3A57; --sun:#FFD98A; --ink-top: var(--ink-900); --ink-bottom: var(--ink-900); }
+body[data-tod="dusk"] .intro { --scene-top:#7A5273; --scene-mid:#C97A5D; --scene-bottom:#F2B27E; --globe-lit:#C97A2B; --globe-shadow:#2C1B3D; --sun:#F2A65A; --ink-top: #F8F6F0; --ink-bottom: var(--ink-900); }
+body[data-tod="night"] .intro { --scene-top:#0B1526; --scene-mid:#13223B; --scene-bottom:#1F3552; --globe-lit:#3E6E96; --globe-shadow:#060C16; --sun:#F2A65A; --ink-top: #F8F6F0; --ink-bottom: #F8F6F0; }
+
+.intro {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-7) 0 var(--space-8);
+  background: linear-gradient(180deg, var(--scene-top) 0%, var(--scene-mid) 55%, var(--scene-bottom) 100%);
+  transition: background 900ms var(--ease-out);
+}
+
+.intro__sky {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(120px 120px at 82% 12%, var(--sun), transparent 70%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* ---- 국가명 split-flap 보드 ---- */
+.intro__marquee {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.intro__marquee-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.2em;
+  color: var(--ink-top);
+  opacity: 0.65;
+  transition: color 900ms var(--ease-out);
+}
+.intro__marquee .splitflap { justify-content: center; }
+.intro__marquee .splitflap__char {
+  background: rgba(21,34,56,0.9);
+  color: #F7F5EF;
+  border-radius: 3px;
+  margin: 0 1px;
+  width: 1.15em;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* ---- 지구본 ---- */
+.intro__globe-wrap {
+  position: relative;
+  z-index: 1;
+  width: 300px; height: 300px;
+  display: flex; align-items: center; justify-content: center;
+}
+.globe {
+  position: relative;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    inset -26px -18px 50px rgba(0,0,0,0.35),
+    inset 14px 14px 30px rgba(255,255,255,0.25),
+    0 30px 60px rgba(21,34,56,0.35);
+  background: var(--globe-lit);
+  transition: background 900ms var(--ease-out);
+}
+.globe__surface {
+  position: absolute;
+  top: -10%; left: -50%;
+  width: 300%; height: 120%;
+  background-image: var(--continents-svg);
+  background-repeat: repeat-x;
+  background-size: 33.33% 100%;
+  animation: globe-spin 16s linear infinite;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+.globe__shade {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5), transparent 45%),
+              radial-gradient(circle at 72% 78%, var(--globe-shadow), transparent 60%);
+  transition: background 900ms var(--ease-out);
+}
+@keyframes globe-spin {
+  from { background-position-x: 0; }
+  to { background-position-x: -100%; }
+}
+
+/* ---- 타이틀 ---- */
+.intro__title {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.intro__title .eyebrow { color: var(--ink-bottom); opacity: 0.6; transition: color 900ms var(--ease-out); }
+.intro__brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-hero);
+  color: var(--ink-bottom);
+  letter-spacing: -0.01em;
+  transition: color 900ms var(--ease-out);
+}
+.intro__tagline {
+  font-size: var(--fs-body);
+  color: var(--ink-bottom);
+  opacity: 0.75;
+  transition: color 900ms var(--ease-out);
+}
+
+/* ---- 스크롤 힌트 ---- */
+.intro__scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 3;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.16em;
+  color: var(--ink-bottom);
+  opacity: 0.7;
+  transition: color 900ms var(--ease-out);
+}
+.intro__scroll-hint svg { animation: hint-bounce 1.6s ease-in-out infinite; }
+@keyframes hint-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* ---- 전환 오버레이 ---- */
+.intro__transition {
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: linear-gradient(180deg, var(--sky-50) 0%, var(--cloud-50) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms var(--ease-out);
+}
+.intro__transition.is-active { opacity: 1; }

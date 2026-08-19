@@ -1,0 +1,104 @@
+/* ==========================================================================
+   F2. 홈화면
+   ========================================================================== */
+
+body[data-page="home"] {
+  background: var(--cloud-50);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 336px;
+  gap: var(--space-6);
+  padding-bottom: var(--space-9);
+  align-items: start;
+}
+
+.home-main { display: flex; flex-direction: column; gap: var(--space-5); }
+.home-aside { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(var(--header-h) + var(--space-5)); }
+
+.card-pad { padding: var(--space-5); }
+
+/* ---- 지망 학교 슬롯 ---- */
+.wishlist-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.wishlist-slot {
+  border: 1.5px dashed var(--line-200);
+  border-radius: var(--radius-md);
+  background: var(--cloud-0);
+  padding: var(--space-4);
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.wishlist-slot.is-filled {
+  border-style: solid;
+  border-color: var(--line-200);
+  background: var(--cloud-0);
+  justify-content: space-between;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+.wishlist-slot.is-filled:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+.wishlist-slot__rank { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); font-weight: 700; letter-spacing: 0.06em; }
+.wishlist-slot__empty { text-align: center; color: var(--ink-400); font-size: var(--fs-small); }
+.wishlist-slot__empty a { color: var(--sky-500); font-weight: 600; }
+.wishlist-slot__name { font-weight: 700; margin: var(--space-2) 0 2px; }
+.wishlist-slot__meta { font-size: var(--fs-small); color: var(--ink-600); margin-bottom: var(--space-2); }
+
+/* ---- CTA banner ---- */
+.search-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, var(--sky-700), var(--sky-500));
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+}
+.search-cta::after {
+  content: '';
+  position: absolute; right: -40px; top: -40px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--amber-500), transparent 70%);
+  opacity: 0.5;
+}
+.search-cta h2 { font-family: var(--font-display); font-size: var(--fs-h1); margin-bottom: 6px; }
+.search-cta p { color: var(--sky-100); font-size: var(--fs-small); }
+
+/* ---- 여정 단계 ---- */
+.journey-steps { display: flex; flex-direction: column; gap: 0; }
+.journey-step {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  position: relative;
+}
+.journey-step:not(:last-child)::before {
+  content: '';
+  position: absolute; left: 11px; top: 32px; bottom: -4px;
+  width: 2px;
+  background: var(--line-200);
+}
+.journey-step__dot {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--sky-50);
+  border: 2px solid var(--line-200);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+  color: var(--ink-400);
+  z-index: 1;
+}
+.journey-step.is-done .journey-step__dot { background: var(--mint-500); border-color: var(--mint-500); color: #fff; }
+.journey-step.is-current .journey-step__dot { background: var(--amber-500); border-color: var(--amber-500); color: var(--ink-900); }
+.journey-step__label { font-size: var(--fs-small); font-weight: 600; color: var(--ink-900); }
+.journey-step__sub { font-size: var(--fs-micro); color: var(--ink-400); }

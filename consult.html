@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>멘토 없는 멘토 상담 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/consult.css">
+</head>
+<body data-page="consult">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell home-hero">
+  <p class="eyebrow">MENTORLESS MENTORING</p>
+  <h1>멘토 없는 멘토 상담</h1>
+  <p class="spec-note" style="margin-top:var(--space-3);">
+    ⚠️ <strong>신규 와이어프레임</strong> — 원본 기획에 상담 방식(FAQ/AI 답변/실제 멘토 연결 여부)이 정의되어 있지 않아(PRD §4.3), 이번 데모에서는 "선배 후기 카드 열람 + 질문 남기기" 흐름으로 가정해 설계했습니다. 실제 답변·매칭 로직은 범위 밖입니다.
+  </p>
+</div>
+
+<div class="page-shell consult-grid">
+  <main>
+    <div class="section-title"><div><span class="eyebrow">REVIEWS</span><h2>선배 후기</h2></div></div>
+    <div class="school-filter-row" id="schoolFilterRow"></div>
+    <div id="reviewList"></div>
+  </main>
+
+  <aside class="card card-pad ask-panel">
+    <div class="section-title" style="margin-bottom:0;"><div><span class="eyebrow">ASK</span><h2>질문 남기기</h2></div></div>
+    <form id="askForm">
+      <select id="askSchoolSelect" name="school" style="margin-bottom:var(--space-3); width:100%;"></select>
+      <textarea name="question" placeholder="궁금한 점을 자유롭게 남겨주세요" required></textarea>
+      <button type="submit" class="btn btn--primary btn--block" style="margin-top:var(--space-3);">질문 등록하기</button>
+    </form>
+  </aside>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/consult.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Design tokens — 교환학생 준비 플랫폼 클릭 데모
+   색상/타이포/간격 결정 이유는 채팅 응답 및 README 참고
+   ========================================================================== */
+
+:root {
+  /* ---- Color: "Ice & Butter" 팔레트 (사용자 지정) ----
+     deep navy #2F4860 / clean white #FFFFFF / soft cobalt #7DA7D9 /
+     butter yellow #FFF7CC / ice blue #DCEEFF
+     배경은 deep navy 고정. 나머지 톤은 이 5색에서만 파생(밝기 조절)했습니다. */
+
+  /* ---- Color: ink — 흰 카드 위에 올라가는 텍스트 (페이지 배경과는 별개) ---- */
+  --ink-900: #1E3245;
+  --ink-700: #35506C;
+  --ink-600: #4A6883;
+  --ink-400: #90A7BC;
+
+  /* ---- Color: 네이비 배경 위에 올라가는 텍스트 ---- */
+  --onnavy-100: #FFFFFF;
+  --onnavy-300: #DCEEFF;   /* ice blue */
+  --onnavy-500: #93B0C7;
+
+  /* ---- Color: sky (brand primary = soft cobalt) ---- */
+  --sky-700: #3E6690;
+  --sky-500: #7DA7D9;   /* soft cobalt */
+  --sky-400: #96B8E0;
+  --sky-300: #B9D2EA;
+  --sky-100: #DCEEFF;   /* ice blue */
+  --sky-50:  #EEF6FC;
+
+  /* ---- Color: cloud (surface) ---- */
+  --cloud-0:  #FFFFFF;   /* clean white — 카드 표면 */
+  --cloud-50: #DCEEFF;   /* cloud blue(ice blue) — 페이지 배경 */
+  --cloud-100:#C7E2FA;
+
+  /* ---- Color: amber (butter yellow accent) ---- */
+  --amber-700: #B4901F; /* 텍스트 전용 진한 머스터드 — 배지/라벨 글자색 (버터색은 배경 전용) */
+  --amber-600: #E9DA9A; /* 버튼 hover 배경 전용(진한 ink 텍스트와 짝) — 텍스트 색으로 쓰지 않음 */
+  --amber-500: #FFF7CC; /* butter yellow — 강조 배지/CTA 배경 (진한 ink 텍스트와 짝) */
+  --amber-200: #FFFBE0;
+  --amber-100: #FFFDF6;
+
+  /* ---- Color: status ---- */
+  --coral-600: #C4432E;
+  --coral-500: #E15D46; /* 경고/마감임박/불가 배지 — 여권 스탬프 잉크 느낌 */
+  --coral-100: #FBE4DF;
+
+  --mint-600:  #1F7C65;
+  --mint-500:  #2F9E82; /* 지원가능/완료 배지 — 탁한 민트, 원색 그린 지양 */
+  --mint-100:  #DCF1EA;
+
+  /* ---- Line ---- */
+  --line-200: #C9DCEC;  /* 헤어라인 보더 — ice blue 계열 */
+  --line-100: #E4EFF9;
+
+  /* ---- Typography ---- */
+  /* 전체 Pretendard 단일 사용 (사용자 피드백 반영) — 굵기 차등으로 위계 구성 */
+  --font-display: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  --font-mono: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+
+  --fs-hero: clamp(2.6rem, 5vw, 4.4rem);
+  --fs-display: clamp(1.75rem, 2.6vw, 2.4rem);
+  --fs-h1: 1.75rem;
+  --fs-h2: 1.375rem;
+  --fs-h3: 1.125rem;
+  --fs-body: 0.9375rem;
+  --fs-small: 0.8125rem;
+  --fs-micro: 0.6875rem;
+
+  /* ---- Spacing (8px base, 4px half-step) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;    /* input, chip */
+  --radius-md: 10px;   /* button, card */
+  --radius-lg: 18px;   /* 대형 패널, 모달 */
+  --radius-pill: 999px;/* 배지, 플로팅 버튼, 필터 칩 */
+
+  /* ---- Shadow ---- */
+  --shadow-card: 0 2px 10px rgba(21, 34, 56, 0.07);
+  --shadow-card-hover: 0 10px 24px rgba(21, 34, 56, 0.12);
+  --shadow-float: 0 10px 28px rgba(21, 34, 56, 0.22);
+  --shadow-modal: 0 28px 72px rgba(21, 34, 56, 0.30);
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-base: 260ms;
+  --dur-slow: 480ms;
+
+  /* ---- Layout ---- */
+  --page-max: 1200px;
+  --header-h: 72px;
+}

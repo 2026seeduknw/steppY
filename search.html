@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학교 찾기 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/search.css">
+</head>
+<body data-page="search">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell">
+  <div class="search-toolbar">
+    <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명 · 학과명으로 검색">
+    <select class="sort-select" id="sortSelect">
+      <option value="default">기본순</option>
+      <option value="major">전공 유사도 순</option>
+      <option value="slot">정원 많은 순</option>
+    </select>
+  </div>
+
+  <div class="sim-banner">
+    <form class="sim-banner__form" id="simForm">
+      <div class="sim-banner__field"><span>목표 GPA</span><input type="number" step="0.01" name="targetGpa" placeholder="예: 3.8"></div>
+      <div class="sim-banner__field"><span>목표 어학 점수</span><input type="number" name="targetLang" placeholder="예: 105"></div>
+      <button type="submit" class="btn btn--accent btn--sm">시뮬레이션</button>
+    </form>
+    <p class="sim-banner__result" id="simResult">목표 점수를 입력하면 지금보다 몇 개 학교를 더 갈 수 있는지 알려드려요</p>
+  </div>
+
+  <div class="search-layout">
+    <aside class="card filter-panel">
+      <div class="section-title" style="margin-bottom:0;">
+        <div><span class="eyebrow">FILTER</span></div>
+        <button class="btn--text filter-reset" id="resetFilters">초기화</button>
+      </div>
+
+      <div class="filter-group">
+        <span class="filter-group__title">국가</span>
+        <div class="filter-chip-list" id="countryFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">학과</span>
+        <div class="filter-chip-list" id="majorFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">지역</span>
+        <div class="filter-chip-list" id="regionFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">상권</span>
+        <div class="filter-chip-list" id="commerceFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">기후</span>
+        <div class="filter-chip-list" id="climateFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">치안</span>
+        <div class="filter-chip-list" id="securityFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">QS 순위</span>
+        <select class="sort-select" id="qsSelect" style="height:36px;">
+          <option value="">전체</option>
+          <option value="50">Top 50</option>
+          <option value="100">Top 100</option>
+          <option value="200">Top 200</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="toggle-row"><span>지원 가능만 보기</span><button class="toggle-switch" id="onlyEligibleToggle"></button></div>
+      </div>
+      <div class="filter-group">
+        <div class="toggle-row"><span>즐겨찾기만 보기</span><button class="toggle-switch" id="onlyFavoriteToggle"></button></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="result-meta">
+        <span class="result-meta__count" id="resultCount"></span>
+      </div>
+      <div class="school-grid" id="schoolGrid"></div>
+    </main>
+  </div>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/components/searchable-select.js"></script>
+<script src="js/components/eligibility.js"></script>
+<script src="js/components/radar-chart.js"></script>
+<script src="js/components/school-modal.js"></script>
+<script src="js/search.js"></script>
+</body>
+</html>

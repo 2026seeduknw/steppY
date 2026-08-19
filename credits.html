@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학점 인정 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/credits.css">
+</head>
+<body data-page="credits">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell home-hero">
+  <p class="eyebrow">CREDIT TRANSFER</p>
+  <h1>학점 인정 사전 확인</h1>
+  <p id="creditsContext"></p>
+</div>
+
+<div class="page-shell credits-grid">
+  <aside class="card card-pad calc-panel">
+    <div class="section-title" style="margin-bottom:0;"><div><span class="eyebrow">§7.6</span><h2>인정 상한 계산기</h2></div></div>
+    <label class="calc-field"><span>졸업 이수 학점</span><input type="number" id="gradCredits" value="130"></label>
+    <label class="calc-field"><span>파견 기간</span>
+      <select id="durationSelect">
+        <option value="1">1학기</option>
+        <option value="2">2학기(1년)</option>
+      </select>
+    </label>
+    <label class="calc-check"><input type="checkbox" id="quarterCheck"> 쿼터제 대학이에요</label>
+    <label class="calc-check"><input type="checkbox" id="archCheck"> 건축학과(5년제)예요</label>
+    <div class="cap-result">
+      <div class="cap-result__value" id="capValue">-</div>
+      <div class="cap-result__label">학기당 최대 인정 상한 (§7.6)</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="section-title">
+      <div><span class="eyebrow">SYLLABUS MATCH</span><h2>강의계획서 유사도 비교</h2></div>
+      <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
+    </div>
+    <p class="spec-note" id="matchExampleNote" style="display:none; margin-bottom: var(--space-4);">
+      ⚠️ <strong>예시 데이터</strong> — 확정한 학교와 매칭되는 강의계획서 비교 데이터가 아직 없어 전체 예시를 보여드려요. 실제 서비스에서는 확정 학교 개설 과목 기준으로만 계산됩니다.
+    </p>
+    <div id="matchList"></div>
+  </main>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/components/eligibility.js"></script>
+<script src="js/components/radar-chart.js"></script>
+<script src="js/components/school-modal.js"></script>
+<script src="js/credits.js"></script>
+</body>
+</html>

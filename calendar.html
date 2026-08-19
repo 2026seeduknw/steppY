@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캘린더 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/calendar.css">
+</head>
+<body data-page="calendar">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell home-hero">
+  <p class="eyebrow">CALENDAR</p>
+  <h1>캘린더</h1>
+  <p class="spec-note" style="margin-top:var(--space-3);">
+    ⚠️ <strong>신규 와이어프레임</strong> — 원본 기획에 캘린더 화면 정의가 없어(PRD §4.2), "오늘의 할 일"에서 넘어오는 목적에 맞춰 이번 데모에서 새로 설계했습니다. 서비스 자체 캘린더만 다루며, 외부 캘린더 연동은 포함하지 않았습니다.
+  </p>
+</div>
+
+<div class="page-shell cal-grid">
+  <section class="card card-pad">
+    <div class="cal-nav">
+      <h2 class="cal-nav__title" id="calTitle"></h2>
+      <div class="cal-nav__btns">
+        <button id="calPrev" aria-label="이전 달">‹</button>
+        <button id="calNext" aria-label="다음 달">›</button>
+      </div>
+    </div>
+    <div class="cal-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+    <div class="cal-month" id="calMonth"></div>
+  </section>
+
+  <aside class="card card-pad cal-side">
+    <span class="eyebrow">SELECTED DAY</span>
+    <h2 id="calSideDate"></h2>
+    <ul class="cal-side-list" id="calSideList"></ul>
+
+    <form class="cal-add-form" id="addTodoForm">
+      <span class="eyebrow">할 일 추가</span>
+      <input type="text" name="title" placeholder="할 일" required>
+      <input type="date" name="date" required>
+      <select name="tag">
+        <option value="서류">서류</option>
+        <option value="지원">지원</option>
+        <option value="어학">어학</option>
+        <option value="기타">기타</option>
+      </select>
+      <button type="submit" class="btn btn--primary btn--sm">추가하기</button>
+    </form>
+  </aside>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/calendar.js"></script>
+</body>
+</html>

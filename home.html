@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>홈 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/home.css">
+</head>
+<body data-page="home">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell home-hero">
+  <p class="eyebrow">OVERVIEW</p>
+  <h1 id="greeting">안녕하세요</h1>
+  <p id="greetingSub"></p>
+</div>
+
+<div class="page-shell home-grid">
+  <div class="home-main">
+    <section class="card card-pad" id="profileCard"></section>
+
+    <section class="card card-pad">
+      <div class="section-title">
+        <div><span class="eyebrow">WISHLIST</span><h2>지망하는 학교</h2></div>
+        <a href="search.html" class="btn btn--accent btn--sm">학교 찾기</a>
+      </div>
+      <div class="wishlist-row" id="wishlistRow"></div>
+    </section>
+
+    <a href="search.html" class="search-cta" style="text-decoration:none;">
+      <div>
+        <h2>내 스펙에 맞는 학교를 더 찾아볼까요?</h2>
+        <p>GPA·어학 성적으로 지원 가능한 교환학교를 바로 확인해요</p>
+      </div>
+      <span class="btn btn--accent">검색 시작하기</span>
+    </a>
+  </div>
+
+  <aside class="home-aside">
+    <section class="card card-pad" id="todoCard"></section>
+    <section class="card card-pad">
+      <div class="section-title"><div><span class="eyebrow">JOURNEY</span><h2>나의 진행 단계</h2></div></div>
+      <div class="journey-steps" id="journeySteps"></div>
+    </section>
+  </aside>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/components/searchable-select.js"></script>
+<script src="js/components/eligibility.js"></script>
+<script src="js/components/radar-chart.js"></script>
+<script src="js/components/school-modal.js"></script>
+<script src="js/components/profile-card.js"></script>
+<script src="js/components/todo-card.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

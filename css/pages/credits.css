@@ -1,0 +1,60 @@
+/* ==========================================================================
+   F5. 학점 인정
+   ========================================================================== */
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-9);
+  align-items: start;
+}
+
+.calc-panel { position: sticky; top: calc(var(--header-h) + var(--space-5)); display: flex; flex-direction: column; gap: var(--space-4); }
+.calc-field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-small); color: var(--ink-600); }
+.calc-field input, .calc-field select {
+  height: 40px; padding: 0 var(--space-3);
+  border: 1.5px solid var(--line-200); border-radius: var(--radius-sm);
+}
+.calc-check { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
+
+.cap-result {
+  padding: var(--space-4);
+  background: var(--sky-50);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.cap-result__value { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: var(--sky-700); }
+.cap-result__label { font-size: var(--fs-micro); color: var(--ink-600); }
+
+.match-card { padding: var(--space-5); margin-bottom: var(--space-4); }
+.match-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }
+.match-card__courses { font-size: var(--fs-small); }
+.match-card__home { font-weight: 700; color: var(--ink-900); }
+.match-card__arrow { color: var(--ink-400); margin: 0 6px; }
+.match-card__target { color: var(--sky-700); }
+
+.similarity-ring {
+  flex: 0 0 auto;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-small);
+  color: #fff;
+}
+
+.match-card__topics { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--space-3) 0; }
+.match-card__note { font-size: var(--fs-small); color: var(--ink-600); background: var(--sky-50); padding: var(--space-3); border-radius: var(--radius-sm); }
+
+.summary-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-5); border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, var(--sky-700), var(--sky-500)); color: #fff;
+  margin-bottom: var(--space-5);
+}
+.summary-banner__value { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; }
+
+
+@media print {
+  .app-nav, #mentor-float, .calc-panel .btn, #downloadReportBtn { display: none !important; }
+}

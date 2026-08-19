@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지원 준비하기 — 날개가방</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/prepare.css">
+</head>
+<body data-page="prepare">
+
+<div id="app-nav" class="app-nav"></div>
+
+<div class="page-shell prepare-hero" id="prepareHero"></div>
+
+<div class="page-shell prepare-grid">
+  <div class="prepare-main">
+    <section class="card card-pad" id="checklistSection">
+      <div class="section-title"><div><span class="eyebrow">DOCUMENTS</span><h2>비자 및 서류 체크리스트</h2></div></div>
+      <div class="checklist" id="checklistList"></div>
+    </section>
+
+    <section id="livingSection">
+      <div class="section-title"><div><span class="eyebrow">LIVING PREP</span><h2>생활 준비 — 준비물</h2></div></div>
+      <div class="living-grid" id="livingGrid"></div>
+    </section>
+
+    <section class="card card-pad" id="tipsSection">
+      <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>꿀강</h2></div></div>
+      <div class="tip-row" id="tipsList"></div>
+      <div class="section-title" style="margin-top:var(--space-5);"><div><span class="eyebrow">NEARBY</span><h2>주변 가볼만한 곳</h2></div></div>
+      <div class="tip-row" id="spotsList"></div>
+    </section>
+  </div>
+
+  <aside class="prepare-aside">
+    <section class="card card-pad" id="profileCard"></section>
+    <section class="card card-pad" id="todoCard"></section>
+  </aside>
+</div>
+
+<div id="mentor-float"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/state.js"></script>
+<script src="js/components/layout.js"></script>
+<script src="js/components/modal.js"></script>
+<script src="js/components/eligibility.js"></script>
+<script src="js/components/radar-chart.js"></script>
+<script src="js/components/school-modal.js"></script>
+<script src="js/components/profile-card.js"></script>
+<script src="js/components/todo-card.js"></script>
+<script src="js/prepare.js"></script>
+</body>
+</html>

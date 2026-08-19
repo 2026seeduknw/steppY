@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>날개가방 — 교환학생 준비 플랫폼 (클릭 데모)</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages/intro.css">
+</head>
+<body data-page="intro">
+
+<main class="intro" id="introScreen">
+  <div class="intro__sky"></div>
+
+  <div class="intro__marquee" aria-label="교환 가능 국가 목록">
+    <span class="intro__marquee-label">EXCHANGE DESTINATIONS —</span>
+    <div class="splitflap" id="countryBoard"></div>
+  </div>
+
+  <div class="intro__globe-wrap">
+    <div class="globe" id="globe">
+      <div class="globe__surface"></div>
+      <div class="globe__shade"></div>
+    </div>
+  </div>
+
+  <div class="intro__title">
+    <p class="eyebrow">EXCHANGE PREP PLATFORM</p>
+    <h1 class="intro__brand">날개가방</h1>
+    <p class="intro__tagline">학교 탐색부터 출국 준비까지, 교환학생 여정의 모든 순간</p>
+  </div>
+
+  <button class="intro__scroll-hint" id="scrollHint" aria-label="스크롤하여 시작하기">
+    <span>SCROLL</span>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+</main>
+
+<div class="intro__transition" id="transitionOverlay"></div>
+
+<script src="js/mock-data.js"></script>
+<script src="js/components/splitflap.js"></script>
+<script src="js/intro.js"></script>
+</body>
+</html>
