@@ -240,6 +240,13 @@
 }
 .modal-close:hover { background: var(--sky-100); }
 
+.modal-panel--sm { width: min(400px, 92vw); padding: var(--space-6); }
+.auth-modal h2 { font-family: var(--font-display); font-size: var(--fs-h2); margin: var(--space-2) 0 var(--space-2); }
+.auth-modal p { color: var(--ink-700); font-size: var(--fs-small); margin-bottom: var(--space-5); }
+
+/* ---- Login gate hint (프로필 등 저장형 UI 하단 안내) ---- */
+.auth-hint { font-size: var(--fs-micro); color: var(--ink-400); margin-top: var(--space-3); }
+
 /* ---- Toast ---- */
 .toast {
   position: fixed;

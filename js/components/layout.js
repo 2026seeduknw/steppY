@@ -16,6 +16,9 @@ function renderAppNav(activeKey) {
   if (!mount) return;
   const profile = AppState.profile;
   const initial = profile.name ? profile.name.slice(-2) : '학생';
+  const userSection = AppState.isLoggedIn()
+    ? `<span class="eyebrow tnum">D-DAY 확인 필요</span><div class="app-nav__avatar">${initial}</div>`
+    : `<button type="button" class="btn btn--primary btn--sm" id="navLoginBtn">로그인</button>`;
   mount.innerHTML = `
     <a class="app-nav__brand" href="home.html">
       <img class="logo-mark" src="assets/logo-mark-circle.png" width="26" height="26" alt="">
@@ -25,10 +28,11 @@ function renderAppNav(activeKey) {
       ${LAYOUT_NAV_ITEMS.map(item => `<a href="${item.href}" class="${item.key === activeKey ? 'is-active' : ''}">${item.label}</a>`).join('')}
     </nav>
     <div class="app-nav__user">
-      <span class="eyebrow tnum">D-DAY 확인 필요</span>
-      <div class="app-nav__avatar">${initial}</div>
+      ${userSection}
     </div>
   `;
+  const loginBtn = document.getElementById('navLoginBtn');
+  if (loginBtn) loginBtn.addEventListener('click', () => openAuthModal());
 }
 
 function renderMentorFloat() {
@@ -49,3 +53,5 @@ document.addEventListener('DOMContentLoaded', () => {
   const page = document.body.dataset.page;
   if (page) { renderAppNav(page); renderMentorFloat(); }
 });
+
+document.addEventListener('auth:changed', () => renderAppNav(document.body.dataset.page));

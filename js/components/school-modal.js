@@ -210,6 +210,7 @@ function wireSchoolModalActions(scrim, school, opts) {
 
   const confirmBtn = scrim.querySelector('#confirmSchoolBtn');
   confirmBtn.addEventListener('click', () => {
+    if (!AppState.isLoggedIn()) { openAuthModal('학교를 확정하려면 로그인이 필요해요'); return; }
     const confirmed = AppState.getConfirmedSchool();
     if (confirmed && confirmed.id === school.id) { showToast('이미 확정된 학교예요'); return; }
     const footer = scrim.querySelector('#modalFooter');
