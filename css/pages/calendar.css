@@ -3,7 +3,12 @@
    ========================================================================== */
 
 body[data-page="calendar"] .home-hero {
-  background: var(--beige);
+  padding-left: 57px;
+  background: url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 148px;
 }
 
 .cal-grid {
