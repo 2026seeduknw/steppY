@@ -13,10 +13,14 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), climateType, reviews, creditRecommend,
- *     wishlistCount, climate 텍스트 — 원본에 대응 데이터 없음 → 빈 배열/기본값.
+ *   - majors(지원 가능 연세대 전공), climateType(검색 필터용 카테고리), reviews,
+ *     wishlistCount — 원본에 대응 데이터 없음 → 빈 배열/기본값.
  *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐)
  *     이 때문에 검색 화면의 "전공/기후" 필터는 실제 학교에는 아직 걸리지 않습니다.
+ *   - climate는 temp_spring_c/temp_autumn_c + climate_notes로 학교 상세 모달의
+ *     "② 날씨 · 생활 정보"에 채워집니다. creditRecommend는 school 객체가 아니라
+ *     js/components/school-modal.js가 MOCK.majorMatches를 직접 필터링해 채웁니다
+ *     (학교 + 내 전공 조합별로 달라지는 값이라 school 객체에 넣지 않음).
  *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
  *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
  */
@@ -62,6 +66,13 @@
     return schools.map(s => {
       const toeflScore = coerce(s.toefl_ibt);
       const isEnglish = s.track === 'english';
+      const climate = {};
+      if (s.spring_available && s.temp_spring_c != null) {
+        climate['봄학기'] = `평균 ${s.temp_spring_c}°C${s.climate_notes ? ` · ${s.climate_notes}` : ''}`;
+      }
+      if (s.fall_available && s.temp_autumn_c != null) {
+        climate['가을학기'] = `평균 ${s.temp_autumn_c}°C${s.climate_notes ? ` · ${s.climate_notes}` : ''}`;
+      }
       return {
         id: s.id, lat: s.lat, lng: s.lng,
         scores: {
@@ -81,12 +92,12 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
-        climate: {},
+        climate, koreaComparison: s.korea_comparison || '',
         security: SECURITY_TEXT[s.security_level] || '치안 점수 데이터 준비 중', securityLevel: s.security_level || undefined,
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: undefined,
-        creditRecommend: [], reviews: [],
+        reviews: [],
         wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
