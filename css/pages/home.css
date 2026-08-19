@@ -10,6 +10,7 @@ body[data-page="home"] {
   display: grid;
   grid-template-columns: 1fr 336px;
   gap: var(--space-6);
+  padding-top: var(--space-6);
   padding-bottom: var(--space-9);
   align-items: start;
 }

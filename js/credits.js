@@ -6,31 +6,6 @@
     ? `${confirmed.name} 기준으로 계산해요`
     : '아직 확정한 학교가 없어요. 학교 확정 전에는 예시 데이터로 보여드려요.';
 
-  function computeCap() {
-    const grad = parseFloat(document.getElementById('gradCredits').value) || 130;
-    const duration = document.getElementById('durationSelect').value;
-    const isQuarter = document.getElementById('quarterCheck').checked;
-    const isArch = document.getElementById('archCheck').checked;
-
-    let ratio;
-    if (duration === '1') ratio = isArch ? 1 / 10 : 1 / 8;
-    else ratio = isArch ? 1 / 5 : 1 / 4;
-
-    let cap = grad * ratio;
-    if (isQuarter) cap = cap; // 상한은 동일, 실제 인정은 취득학점의 2/3만 반영(아래 요약에서 별도 적용)
-    return { cap: Math.floor(cap * 10) / 10, isQuarter };
-  }
-
-  function renderCap() {
-    const { cap } = computeCap();
-    document.getElementById('capValue').textContent = `${cap}학점`;
-  }
-
-  ['gradCredits', 'durationSelect', 'quarterCheck', 'archCheck'].forEach(id => {
-    document.getElementById(id).addEventListener('input', renderCap);
-    document.getElementById(id).addEventListener('change', renderCap);
-  });
-
   function similarityColor(pct) {
     if (pct >= 80) return 'var(--mint-500)';
     if (pct >= 60) return 'var(--amber-500)';
@@ -64,8 +39,7 @@
     setTimeout(() => window.print(), 400);
   });
 
-  renderCap();
   renderMatches();
 
-  document.addEventListener('MOCK:updated', () => { renderCap(); renderMatches(); });
+  document.addEventListener('MOCK:updated', renderMatches);
 })();
