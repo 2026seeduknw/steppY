@@ -61,7 +61,7 @@ function radarChartSvg(scores) {
     const p = pentPoint(i, 1.34, cx, cy, R);
     const dx = p.x - cx;
     const anchor = Math.abs(dx) < 6 ? 'middle' : (dx > 0 ? 'start' : 'end');
-    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label}</text>`;
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label} ⓘ</text>`;
   }).join('');
 
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
@@ -73,7 +73,7 @@ function scoreRowsHtml(scores) {
     const band = scoreBand(v);
     return `
       <div class="score-row">
-        <span class="score-row__label" title="${escapeAttr(axisTooltip(ax))}">${ax.icon} ${ax.label}</span>
+        <span class="score-row__label">${ax.icon} ${ax.label}<span class="score-row__help" title="${escapeAttr(axisTooltip(ax))}">?</span></span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
         <span class="score-row__value tnum">${v}</span>
         <span class="score-row__band" style="color:${band.color};">${band.label}</span>
