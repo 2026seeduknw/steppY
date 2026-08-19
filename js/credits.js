@@ -37,9 +37,9 @@
       matches = matches.filter(m => !m.homeMajor || m.homeMajor === selectedMajor);
     }
 
-    document.getElementById('matchExampleNote').style.display = isExample ? 'block' : 'none';
+    document.getElementById('matchExampleNote').style.display = isExample && matches.length ? 'block' : 'none';
 
-    document.getElementById('matchList').innerHTML = matches.map(m => `
+    document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => `
       <div class="card match-card">
         <div class="match-card__top">
           <div class="match-card__courses">
@@ -51,7 +51,7 @@
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>
         <div class="match-card__note">${m.note}</div>
       </div>
-    `).join('');
+    `).join('') : `<p class="info-panel__text">아직 등록된 강의계획서 매칭 데이터가 없어요.</p>`;
   }
 
   document.getElementById('downloadReportBtn').addEventListener('click', () => {

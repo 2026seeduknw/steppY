@@ -116,6 +116,10 @@ function renderPrepareScore() {
 
 function renderPrepareChecklist() {
   const mount = document.getElementById('checklistList');
+  if (!MOCK.checklist.length) {
+    mount.innerHTML = `<p class="info-panel__text">아직 등록된 체크리스트 항목이 없어요.</p>`;
+    return;
+  }
   mount.innerHTML = MOCK.checklist.map(item => `
     <div class="checklist-item" data-id="${item.id}">
       <button type="button" class="checklist-item__row" data-toggle-expand>
@@ -149,7 +153,11 @@ function renderPrepareChecklist() {
 function renderPrepareLiving() {
   const lp = MOCK.livingPrep;
   const mount = document.getElementById('livingGrid');
-  const keys = ['insurance', 'scholarship', 'telecom', 'bank'];
+  const keys = ['insurance', 'scholarship', 'telecom', 'bank'].filter(k => lp[k]);
+  if (!keys.length) {
+    mount.innerHTML = `<p class="info-panel__text">아직 등록된 생활 준비 정보가 없어요.</p>`;
+    return;
+  }
   mount.innerHTML = keys.map(k => {
     const d = lp[k];
     const scholarshipExtra = k === 'scholarship' ? `

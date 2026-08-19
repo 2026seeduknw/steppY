@@ -3,8 +3,9 @@
  * 참고 데이터를 Supabase에서 불러와 MOCK.*를 그대로 덮어쓰고 'MOCK:updated' 이벤트를 발생시킵니다.
  *
  * 각 페이지 컨트롤러(js/home.js 등)는 이 이벤트를 듣고 있다가 화면을 다시 그립니다.
- * 설정이 안 돼 있거나 네트워크 오류가 나면 아무것도 하지 않고 mock-data.js 값을
- * 그대로 씁니다 — 데모가 절대 깨지지 않는 걸 우선했습니다.
+ * mock-data.js는 더 이상 목업 콘텐츠를 갖고 있지 않습니다 — 설정이 안 돼 있거나
+ * 네트워크 오류가 나면 해당 컬렉션은 빈 배열/객체인 채로 남고, 각 페이지의 빈 상태
+ * UI(예: "아직 등록된 정보가 없어요")가 그대로 보입니다.
  *
  * 사용자별 데이터(프로필/지망/즐겨찾기/확정 학교/할일)는 아직 로그인이 없어서
  * 여기서 다루지 않고 계속 js/state.js(localStorage)가 담당합니다.
@@ -49,7 +50,7 @@
           transitMobility: s.mobility_score, travelMobility: s.travel_mobility_score
         },
         name: s.name, nameKo: s.name_ko || s.name,
-        country: s.country_ko || s.country_en, region: s.region_ko || s.continent, city: s.city || '',
+        country: s.country_ko || s.country_en, countryEn: s.country_en, region: s.region_ko || s.continent, city: s.city || '',
         qsRank: s.qs_rank, slot: s.quota, track: s.track,
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
@@ -116,10 +117,34 @@
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
   }
 
+  /** 국가별 비자 서류 정보 (exchange-doc-crawler가 채운 visa_requirements/visa_documents 테이블).
+   *  status: 'available'(자동추출된 서류 있음) | 'preparing'(서비스 준비중) | 'excluded'(다국가 컨소시엄 프로그램) */
+  async function loadVisaRequirements() {
+    const [{ data: reqs }, { data: docs }] = await Promise.all([
+      supabaseClient.from('visa_requirements').select('*'),
+      supabaseClient.from('visa_documents').select('*')
+    ]);
+    const docsByCountry = {};
+    (docs || []).forEach(d => {
+      (docsByCountry[d.country_en] || (docsByCountry[d.country_en] = [])).push({
+        standardType: d.standard_type, rawName: d.raw_name, sourceUrl: d.source_url
+      });
+    });
+    const out = {};
+    (reqs || []).forEach(r => {
+      out[r.country_en] = {
+        status: r.status, statusLabelKo: r.status_label_ko,
+        sources: r.sources || [], exclusionReason: r.exclusion_reason,
+        documents: docsByCountry[r.country_en] || []
+      };
+    });
+    return out;
+  }
+
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors]) => {
+    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors, visaRequirements]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -128,6 +153,7 @@
     if (tips.length) MOCK.tips = tips;
     if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
+    if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);
