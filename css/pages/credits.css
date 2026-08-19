@@ -3,11 +3,12 @@
    ========================================================================== */
 
 body[data-page="credits"] .home-hero {
-  background: var(--teal);
-  padding-left: 0;
+  padding-left: 57px;
+  background: url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
-body[data-page="credits"] .home-hero h1 { color: var(--onnavy-100); }
-body[data-page="credits"] .home-hero p { color: var(--onnavy-300); }
 
 .credits-grid {
   padding: var(--space-8) 0 var(--space-9);
