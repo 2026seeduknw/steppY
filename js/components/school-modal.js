@@ -45,7 +45,7 @@ function mapEmbedUrl(school) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${school.lat}%2C${school.lng}`;
 }
 
-function orbitCardHtml({ title, initials, chips, body }) {
+function orbitCardHtml({ title, initials, logoFile, chips, body }) {
   const lines = chips.map(c => {
     const p = ORBIT_POS[c.pos];
     return `<line x1="50" y1="46" x2="${p.x}" y2="${p.y}" />`;
@@ -55,6 +55,9 @@ function orbitCardHtml({ title, initials, chips, body }) {
       <span class="orbit-chip__icon">${c.icon}</span>
       <span class="orbit-chip__text"><span class="orbit-chip__label">${c.label}</span><strong class="orbit-chip__value">${c.value}</strong></span>
     </div>`).join('');
+  const avatarHtml = logoFile
+    ? `<div class="orbit-avatar orbit-avatar--logo"><img src="assets/school-logos/${logoFile}" alt="${initials}" loading="lazy"></div>`
+    : `<span class="orbit-avatar">${initials}</span>`;
   return `
     <div class="orbit-card orbit-card--wide">
       <div class="orbit-stage">
@@ -63,7 +66,7 @@ function orbitCardHtml({ title, initials, chips, body }) {
         <div class="orbit-card__center">
           <span class="orbit-ring orbit-ring--outer"></span>
           <span class="orbit-ring orbit-ring--inner"></span>
-          <span class="orbit-avatar">${initials}</span>
+          ${avatarHtml}
         </div>
       </div>
       <div class="orbit-card__content">
@@ -91,7 +94,7 @@ function lifeOrbitCard(school, initials) {
     <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
   `;
-  return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, chips, body });
+  return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
 }
 
 function schoolModalTemplate(school) {
