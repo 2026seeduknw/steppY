@@ -609,4 +609,13 @@ MOCK.yonseiMajors = [
   { college: '글로벌인재대학', division: '글로벌인재학부', majorName: '응용정보공학전공' }
 ];
 
+/* ---------------------------------------------------------------------
+ * Supabase 전용 데이터(필요서류/비자/국가별 생활준비) — 목업에는 없고
+ * js/data-source.js가 로드에 성공하면 school.id / country_en 기준으로 채워짐.
+ * 연결 실패 시에도 화면이 깨지지 않도록 빈 객체로 기본값을 둠.
+ * ------------------------------------------------------------------- */
+MOCK.schoolDocuments = {};
+MOCK.visaByCountry = {};
+MOCK.countryPrepByCountry = {};
+
 if (typeof module !== 'undefined') { module.exports = MOCK; }

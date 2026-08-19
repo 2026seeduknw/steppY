@@ -114,9 +114,40 @@ function renderPrepareScore() {
   document.getElementById('prepareScore').innerHTML = confirmed ? scoreCardHtml(confirmed, { numbered: false }) : '';
 }
 
+/** 확정된 학교의 school_documents/visa_documents(Supabase 연결분)를 체크리스트 항목 형태로 변환 */
+function buildSchoolSpecificChecklistItems(confirmed) {
+  if (!confirmed) return [];
+  const items = [];
+  const docInfo = MOCK.schoolDocuments ? MOCK.schoolDocuments[confirmed.id] : null;
+  if (docInfo) {
+    docInfo.baseline.forEach((name, i) => items.push({
+      id: `doc-base-${confirmed.id}-${i}`, title: name, done: false, dueOffset: '지원 시 제출',
+      source: docInfo.sourceLabel, updatedAt: '학교 공식 자료 기준', sourceUrl: docInfo.sourceUrl,
+      detail: `${confirmed.name} 지원에 필요한 기본 제출서류예요.`
+    }));
+    docInfo.hint.forEach((name, i) => items.push({
+      id: `doc-hint-${confirmed.id}-${i}`, title: `${name} (참고용)`, done: false,
+      dueOffset: '학교 공식 자료로 재확인 필요', source: docInfo.sourceLabel, updatedAt: '미검증 힌트', sourceUrl: docInfo.sourceUrl,
+      detail: docInfo.hintDisclaimer || '참고용 힌트(미검증) — 반드시 학교 공식 자료로 재확인하세요.'
+    }));
+  }
+  const visaInfo = MOCK.visaByCountry && confirmed.countryEn ? MOCK.visaByCountry[confirmed.countryEn] : null;
+  if (visaInfo) {
+    visaInfo.documents.forEach((d, i) => items.push({
+      id: `visa-${confirmed.countryEn}-${i}`, title: `[비자] ${d.name}`, done: false, dueOffset: '비자 신청 시',
+      source: `${confirmed.country} 비자 안내${visaInfo.statusLabel ? ` (${visaInfo.statusLabel})` : ''}`,
+      updatedAt: '확인 필요', sourceUrl: d.sourceUrl,
+      detail: d.sourceQuote || '비자 신청에 필요한 서류예요. 국가·영사관별 최신 공지를 반드시 재확인하세요.'
+    }));
+  }
+  return items;
+}
+
 function renderPrepareChecklist() {
+  const confirmed = AppState.getConfirmedSchool();
+  const items = [...MOCK.checklist, ...buildSchoolSpecificChecklistItems(confirmed)];
   const mount = document.getElementById('checklistList');
-  mount.innerHTML = MOCK.checklist.map(item => `
+  mount.innerHTML = items.map(item => `
     <div class="checklist-item" data-id="${item.id}">
       <button type="button" class="checklist-item__row" data-toggle-expand>
         <span class="checklist-item__check" data-toggle-done>${item.done ? '✓' : ''}</span>
@@ -126,7 +157,7 @@ function renderPrepareChecklist() {
       </button>
       <div class="checklist-item__detail">
         <p>${item.detail}</p>
-        <p class="checklist-item__source">출처 · ${item.source} (최종 업데이트 ${item.updatedAt})</p>
+        <p class="checklist-item__source">출처 · ${item.source} (최종 업데이트 ${item.updatedAt})${item.sourceUrl ? ` · <a class="btn--text" href="${item.sourceUrl}" target="_blank" rel="noopener">원문 보기 ↗</a>` : ''}</p>
       </div>
     </div>
   `).join('');
@@ -146,12 +177,41 @@ function renderPrepareChecklist() {
   });
 }
 
+/** country_prep(Supabase 연결분)로 통신/보험/계좌 카드의 "확인 필요" 자리표시자를 실제 값으로 교체 */
+function enrichLivingCard(key, base, countryPrep) {
+  if (!countryPrep) return base;
+  if (key === 'telecom' && countryPrep.telecom && countryPrep.telecom.recommend) {
+    return {
+      title: base.title,
+      summary: [countryPrep.telecom.recommend, countryPrep.telecom.price].filter(Boolean).join(' · '),
+      caution: countryPrep.telecom.note || base.caution
+    };
+  }
+  if (key === 'bank' && countryPrep.bank && countryPrep.bank.recommend) {
+    return {
+      title: base.title,
+      summary: [countryPrep.bank.recommend, countryPrep.bank.accountDocs ? `필요서류: ${countryPrep.bank.accountDocs}` : null].filter(Boolean).join(' · '),
+      caution: base.caution
+    };
+  }
+  if (key === 'insurance' && countryPrep.insurance && countryPrep.insurance.name) {
+    return {
+      title: base.title,
+      summary: [countryPrep.insurance.name, countryPrep.insurance.price].filter(Boolean).join(' · '),
+      caution: countryPrep.insurance.note || base.caution
+    };
+  }
+  return base;
+}
+
 function renderPrepareLiving() {
   const lp = MOCK.livingPrep;
+  const confirmed = AppState.getConfirmedSchool();
+  const countryPrep = confirmed && MOCK.countryPrepByCountry ? MOCK.countryPrepByCountry[confirmed.countryEn] : null;
   const mount = document.getElementById('livingGrid');
   const keys = ['insurance', 'scholarship', 'telecom', 'bank'];
   mount.innerHTML = keys.map(k => {
-    const d = lp[k];
+    const d = enrichLivingCard(k, lp[k], countryPrep);
     const scholarshipExtra = k === 'scholarship' ? `
       <div class="scholarship-list">
         ${MOCK.scholarships.map(s => `

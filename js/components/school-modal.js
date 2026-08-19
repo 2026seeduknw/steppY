@@ -97,6 +97,47 @@ function lifeOrbitCard(school, initials) {
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
 }
 
+/** school_documents/visa_documents(Supabase 연결분) → 필요서류·기숙사 정보 패널. 데이터 없으면 빈 문자열 */
+function requiredDocumentsCardHtml(school) {
+  const docInfo = (typeof MOCK !== 'undefined' && MOCK.schoolDocuments) ? MOCK.schoolDocuments[school.id] : null;
+  const visaInfo = (typeof MOCK !== 'undefined' && MOCK.visaByCountry && school.countryEn) ? MOCK.visaByCountry[school.countryEn] : null;
+  const housing = school.housing || {};
+
+  const priceText = housing.priceKrw
+    ? `학기 평균 ${housing.priceLocal != null ? housing.priceLocal.toLocaleString() : '?'} ${housing.currency || ''} (약 ${housing.priceKrw.toLocaleString()}원)`
+    : null;
+  const housingLine = housing.guaranteedLabel || priceText
+    ? `<p class="info-panel__text"><strong>기숙사</strong> — ${[housing.guaranteedLabel, priceText].filter(Boolean).join(' · ')}</p>`
+    : '';
+
+  const baselineChips = docInfo && docInfo.baseline.length
+    ? `<p class="info-panel__text" style="margin-top:8px;"><strong>기본 제출서류</strong></p><div class="tag-row">${docInfo.baseline.map(d => `<span class="chip">${d}</span>`).join('')}</div>`
+    : '';
+  const hintChips = docInfo && docInfo.hint.length
+    ? `<p class="info-panel__text" style="margin-top:8px;"><strong>추가 참고서류 (미검증)</strong></p><div class="tag-row">${docInfo.hint.map(d => `<span class="chip">${d}</span>`).join('')}</div>
+       <p class="spec-note">⚠️ ${docInfo.hintDisclaimer || '참고용 힌트(미검증) — 반드시 학교 공식 자료로 재확인하세요'}</p>`
+    : '';
+  const docSourceLine = docInfo && docInfo.sourceUrl
+    ? `<a class="btn--text" href="${docInfo.sourceUrl}" target="_blank" rel="noopener">${docInfo.sourceLabel} 확인하기 ↗</a>` : '';
+
+  const visaBlock = visaInfo && visaInfo.documents.length
+    ? `<p class="info-panel__text" style="margin-top:12px;"><strong>비자 서류 (${school.country})</strong>${visaInfo.statusLabel ? ` — ${visaInfo.statusLabel}` : ''}</p>
+       <div class="tag-row">${visaInfo.documents.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>`
+    : '';
+
+  if (!housingLine && !baselineChips && !hintChips && !visaBlock) return '';
+
+  return `
+    <section class="info-panel info-panel--wide">
+      <h3>④ 필요서류 · 기숙사</h3>
+      ${housingLine}
+      ${baselineChips}
+      ${hintChips}
+      ${docSourceLine}
+      ${visaBlock}
+    </section>`;
+}
+
 function schoolModalTemplate(school) {
   const profile = AppState.profile;
   const elig = computeEligibility(profile, school);
@@ -138,20 +179,22 @@ function schoolModalTemplate(school) {
 
       ${scoreCardHtml(school)}
 
+      ${requiredDocumentsCardHtml(school)}
+
       <div class="school-modal__grid">
         <section class="info-panel info-panel--wide">
-          <h3>④ 학점 인정 추천 과목</h3>
+          <h3>⑤ 학점 인정 추천 과목</h3>
           <div class="tag-row">${school.creditRecommend.map(c => `<span class="chip">${c}</span>`).join('')}</div>
         </section>
 
         <section class="info-panel">
-          <h3>⑤ 지망 통계</h3>
+          <h3>⑥ 지망 통계</h3>
           <p class="info-panel__text">1지망으로 <strong class="tnum">${school.wishlistCount.rank1}명</strong>이 선택했어요</p>
           <p class="info-panel__text">1~3지망 합계 <strong class="tnum">${school.wishlistCount.total}명</strong>이 선택했어요</p>
         </section>
 
         <section class="info-panel">
-          <h3>⑥ 공식 링크</h3>
+          <h3>⑦ 공식 링크</h3>
           <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
         </section>
       </div>
