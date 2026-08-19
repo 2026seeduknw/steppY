@@ -15,8 +15,7 @@ function defaultState() {
     confirmedSchoolId: null,
     todos: MOCK.todos.map(t => ({ id: t.id, done: t.done })),
     customTodos: [],
-    targetScores: null,
-    loggedIn: false
+    targetScores: null
   };
 }
 
@@ -100,19 +99,5 @@ const AppState = {
   reset() {
     this._cache = defaultState();
     this.save();
-  },
-
-  isLoggedIn() { return !!this.load().loggedIn; },
-
-  login() {
-    this.load().loggedIn = true;
-    this.save();
-    document.dispatchEvent(new CustomEvent('auth:changed'));
-  },
-
-  logout() {
-    this.load().loggedIn = false;
-    this.save();
-    document.dispatchEvent(new CustomEvent('auth:changed'));
   }
 };

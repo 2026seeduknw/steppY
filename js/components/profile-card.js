@@ -11,7 +11,6 @@ function renderProfileCard(mount) {
     wireProfileEdit(mount);
     wireMajorSelect(mount);
   });
-  document.addEventListener('auth:changed', () => renderProfileCard(mount), { once: true });
 }
 
 function profileViewTemplate() {
@@ -28,7 +27,6 @@ function profileViewTemplate() {
       <div class="profile-stat"><span class="profile-stat__label">교환 시기</span><span class="profile-stat__value">${p.exchangeTerm.year} ${p.exchangeTerm.season}</span></div>
       <div class="profile-stat"><span class="profile-stat__label">재학 학과</span><span class="profile-stat__value">${p.major}</span></div>
     </div>
-    ${AppState.isLoggedIn() ? '' : '<p class="auth-hint">* 로그인하면 입력한 기본 정보가 저장돼요</p>'}
   `;
 }
 

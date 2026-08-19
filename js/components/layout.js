@@ -21,9 +21,6 @@ function renderAppNav(activeKey) {
   const confirmed = !!AppState.getConfirmedSchool();
   const homeHref = confirmed ? 'prepare.html' : 'home.html';
   const homeLabel = confirmed ? '교환 준비하기' : '홈';
-  const userSection = AppState.isLoggedIn()
-    ? `<span class="eyebrow tnum">D-DAY 확인 필요</span><div class="app-nav__avatar">${initial}</div>`
-    : `<button type="button" class="btn btn--primary btn--sm" id="navLoginBtn">로그인</button>`;
   mount.innerHTML = `
     <a class="app-nav__brand" href="${homeHref}">
       <img class="logo-mark" src="assets/logo-mark-circle.png" width="26" height="26" alt="">
@@ -39,11 +36,10 @@ function renderAppNav(activeKey) {
       }).join('')}
     </nav>
     <div class="app-nav__user">
-      ${userSection}
+      <span class="eyebrow tnum">D-DAY 확인 필요</span>
+      <div class="app-nav__avatar">${initial}</div>
     </div>
   `;
-  const loginBtn = document.getElementById('navLoginBtn');
-  if (loginBtn) loginBtn.addEventListener('click', () => openAuthModal());
 }
 
 function renderMentorFloat() {
@@ -72,4 +68,3 @@ document.addEventListener('MOCK:updated', () => {
   const page = document.body.dataset.page;
   if (page) renderAppNav(page);
 });
-document.addEventListener('auth:changed', () => renderAppNav(document.body.dataset.page));
