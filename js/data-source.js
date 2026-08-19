@@ -195,6 +195,31 @@
     return (data || []).map(s => ({ school: s.school_id, title: s.title, summary: s.summary }));
   }
 
+  // 치안은 별도 원본(2027-1_치안.xlsx, Numbeo+GPI+외교부 여행경보 가중합)이라
+  // livability_column_definitions에 행이 없다 — SECURITY_TEXT와 짝지어 여기서 직접 채운다.
+  const SECURITY_LIVABILITY_DEF = {
+    meaning: '외교부 여행경보·Numbeo 범죄지수·평화지수(GPI)를 종합한 0-100 치안 점수',
+    source: 'Numbeo 범죄지수 + GPI + 외교부 여행경보 가중합 (2027-1_치안.xlsx)'
+  };
+  const LIVABILITY_COLUMN_TO_AXIS = {
+    '물가점수': 'costOfLiving', '상권점수': 'commerce',
+    '이동성점수': 'transitMobility', '여행이동성점수': 'travelMobility'
+  };
+
+  /** 생활 점수 레이더차트 라벨 호버 설명 (livability_column_definitions, 31행 중 4개만 사용). */
+  async function loadLivabilityDefs() {
+    const { data } = await supabaseClient
+      .from('livability_column_definitions')
+      .select('*')
+      .eq('sheet_name', '학교별_종합');
+    const out = { security: SECURITY_LIVABILITY_DEF };
+    (data || []).forEach(d => {
+      const axis = LIVABILITY_COLUMN_TO_AXIS[d.column_name];
+      if (axis) out[axis] = { meaning: d.meaning, source: d.source };
+    });
+    return out;
+  }
+
   async function loadYonseiMajors() {
     const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
@@ -227,11 +252,12 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep]) => {
+    loadCountryPrep(), loadLivabilityDefs()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, livabilityDefs]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
+    if (Object.keys(livabilityDefs).length) MOCK.livabilityDefs = livabilityDefs;
     if (Object.keys(livingPrep).length) MOCK.livingPrep = livingPrep;
     if (courseMatches.length) MOCK.courseMatches = courseMatches;
     if (majorMatches.length) MOCK.majorMatches = majorMatches;

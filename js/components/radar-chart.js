@@ -18,6 +18,18 @@ function scoreBand(v) {
   return { label: '주의', color: 'var(--coral-500)' };
 }
 
+function escapeAttr(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/** 라벨 호버 시 보여줄 설명. MOCK.livabilityDefs(Supabase livability_column_definitions)가
+ * 로드되기 전이면 지표명만 보여준다. */
+function axisTooltip(ax) {
+  const def = (MOCK.livabilityDefs || {})[ax.key];
+  if (!def) return ax.label;
+  return `${def.meaning}\n\n산출 방식: ${def.source}`;
+}
+
 function pentPoint(i, frac, cx, cy, R) {
   const angle = (-90 + i * 72) * Math.PI / 180;
   return { x: cx + R * frac * Math.cos(angle), y: cy + R * frac * Math.sin(angle) };
@@ -49,7 +61,7 @@ function radarChartSvg(scores) {
     const p = pentPoint(i, 1.34, cx, cy, R);
     const dx = p.x - cx;
     const anchor = Math.abs(dx) < 6 ? 'middle' : (dx > 0 ? 'start' : 'end');
-    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label">${ax.icon} ${ax.label}</text>`;
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label}</text>`;
   }).join('');
 
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
@@ -61,7 +73,7 @@ function scoreRowsHtml(scores) {
     const band = scoreBand(v);
     return `
       <div class="score-row">
-        <span class="score-row__label">${ax.icon} ${ax.label}</span>
+        <span class="score-row__label" title="${escapeAttr(axisTooltip(ax))}">${ax.icon} ${ax.label}</span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
         <span class="score-row__value tnum">${v}</span>
         <span class="score-row__band" style="color:${band.color};">${band.label}</span>
