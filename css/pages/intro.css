@@ -85,6 +85,7 @@ body[data-page="intro"] {
 .intro__earth {
   width: 100%; height: 100%;
   object-fit: contain;
+  opacity: 0.3;
   animation: earth-float 7s var(--ease-out) infinite;
 }
 @keyframes earth-float {
