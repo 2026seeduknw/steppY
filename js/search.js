@@ -4,7 +4,7 @@
   const LABELS = {
     climateType: { 'four-season': '사계절 뚜렷', hot: '고온다습', cold: '한랭·일조 짧음', 'mild-winter': '온화·잦은 비' },
     commerceLevel: { high: '상권 풍부', medium: '상권 보통', low: '상권 작음' },
-    securityLevel: { high: '치안 우수', medium: '치안 보통' }
+    securityLevel: { high: '치안 우수', medium: '치안 보통', low: '치안 주의' }
   };
 
   const state = {

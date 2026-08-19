@@ -2,12 +2,11 @@
  * 학교 상세 인포그래픽 모달 (F3 카드 클릭 시, F2/F4 지망·확정 카드 클릭 시 공통 사용).
  * §5 F3 "지망 선택 및 학교 확정" + §7.3 "확정 버튼은 재확인 모달 + 불이익 고지 필수" 반영.
  * 지역 패널은 OpenStreetMap 무료 임베드(iframe, API 키 불필요)를 사용합니다.
- * 날씨 · 치안 · 생활 정보(후기)는 학교 이니셜을 중심에 둔 하나의 궤도형 인포그래픽으로 묶어 표현합니다.
+ * 날씨 · 생활 정보(후기)는 학교 이니셜을 중심에 둔 하나의 궤도형 인포그래픽으로 묶어 표현합니다.
  */
 const ORBIT_POS = { tl: { x: 14, y: 12 }, tr: { x: 86, y: 12 }, bl: { x: 16, y: 88 }, br: { x: 84, y: 88 } };
 const ORBIT_ORDER = ['tl', 'tr', 'bl', 'br'];
 const SEASON_ICON = { '봄학기': '🌸', '여름학기': '☀️', '가을학기': '🍁', '겨울학기': '❄️' };
-const SECURITY_LABEL = { high: '우수', medium: '보통' };
 const COMMERCE_LABEL = { high: '풍부', medium: '보통', low: '작음' };
 
 function ensureSchoolModalScrim() {
@@ -46,7 +45,7 @@ function mapEmbedUrl(school) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${school.lat}%2C${school.lng}`;
 }
 
-function orbitCardHtml({ title, initials, chips, body }) {
+function orbitCardHtml({ title, initials, logoFile, chips, body }) {
   const lines = chips.map(c => {
     const p = ORBIT_POS[c.pos];
     return `<line x1="50" y1="46" x2="${p.x}" y2="${p.y}" />`;
@@ -56,6 +55,9 @@ function orbitCardHtml({ title, initials, chips, body }) {
       <span class="orbit-chip__icon">${c.icon}</span>
       <span class="orbit-chip__text"><span class="orbit-chip__label">${c.label}</span><strong class="orbit-chip__value">${c.value}</strong></span>
     </div>`).join('');
+  const avatarHtml = logoFile
+    ? `<div class="orbit-avatar orbit-avatar--logo"><img src="assets/school-logos/${logoFile}" alt="${initials}" loading="lazy"></div>`
+    : `<span class="orbit-avatar">${initials}</span>`;
   return `
     <div class="orbit-card orbit-card--wide">
       <div class="orbit-stage">
@@ -64,7 +66,7 @@ function orbitCardHtml({ title, initials, chips, body }) {
         <div class="orbit-card__center">
           <span class="orbit-ring orbit-ring--outer"></span>
           <span class="orbit-ring orbit-ring--inner"></span>
-          <span class="orbit-avatar">${initials}</span>
+          ${avatarHtml}
         </div>
       </div>
       <div class="orbit-card__content">
@@ -82,7 +84,6 @@ function lifeOrbitCard(school, initials) {
     label: season.replace('학기', ''),
     value: text.split(/[,.]/)[0]
   }));
-  chipDefs.push({ icon: '🛡️', label: '치안', value: SECURITY_LABEL[school.securityLevel] || '보통' });
   chipDefs.push({ icon: '🚉', label: '상권', value: COMMERCE_LABEL[school.commerceLevel] || '보통' });
   const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
 
@@ -93,7 +94,7 @@ function lifeOrbitCard(school, initials) {
     <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
   `;
-  return orbitCardHtml({ title: '② 날씨 · 치안 · 생활 정보', initials, chips, body });
+  return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
 }
 
 function schoolModalTemplate(school) {
@@ -210,6 +211,7 @@ function wireSchoolModalActions(scrim, school, opts) {
 
   const confirmBtn = scrim.querySelector('#confirmSchoolBtn');
   confirmBtn.addEventListener('click', () => {
+    if (!AppState.isLoggedIn()) { openAuthModal('학교를 확정하려면 로그인이 필요해요'); return; }
     const confirmed = AppState.getConfirmedSchool();
     if (confirmed && confirmed.id === school.id) { showToast('이미 확정된 학교예요'); return; }
     const footer = scrim.querySelector('#modalFooter');

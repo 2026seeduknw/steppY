@@ -11,8 +11,6 @@
 -- localStorage에 남아 있고 이 스키마에는 없습니다.
 --
 -- 알려진 한계:
---   - security_score(치안 점수) 원본 파일이 이번 공유분에는 없어 전부 null.
---     해당 파일 도착 시 build_import.py에 병합 로직 추가 후 재실행하면 됨.
 --   - checklist_items / scholarships / living_prep / course_matches / tips /
 --     nearby_spots 는 실제 데이터로 대체된 게 아직 없어 mock-data.js 기준 그대로 유지.
 --
@@ -63,7 +61,8 @@ create table if not exists schools (
   website                       text,
   factsheet_url                 text,
   detail_link                   text,
-  security_score                integer check (security_score between 0 and 100), -- 원본 없음, 항상 null (알려진 한계 참고)
+  security_score                numeric check (security_score between 0 and 100), -- 2027-1_치안.xlsx 최종 치안점수 (Numbeo+GPI+외교부 여행경보 가중합)
+  security_level                text check (security_level in ('high', 'medium', 'low')), -- 치안 등급(매우양호·양호→high, 보통→medium, 주의·고위험→low) 원본이 '산출불가'면 null
   cost_score                    numeric,
   commerce_score                numeric,
   mobility_score                numeric,

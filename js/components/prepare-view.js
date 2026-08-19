@@ -70,8 +70,8 @@ function renderPrepareHero() {
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
       <div class="confirmed-card__identity">
-        ${confirmed.logo
-          ? `<img class="confirmed-card__logo" src="${confirmed.logo}" alt="${confirmed.name} 로고">`
+        ${SCHOOL_LOGOS[confirmed.id]
+          ? `<img class="confirmed-card__logo" src="assets/school-logos/${SCHOOL_LOGOS[confirmed.id]}" alt="${confirmed.name} 로고">`
           : `<div class="confirmed-card__logo confirmed-card__logo--empty"></div>`}
         <div>
           <span class="eyebrow" style="color:var(--sky-100)">확정된 학교</span>

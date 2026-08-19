@@ -17,8 +17,9 @@
     분리돼 있고 안내 문서도 "9개 캠퍼스를 하나로 묶지 말 것"이라고 명시함 -> 9개 캠퍼스
     행으로 분리하되, 어학/GPA/마감일 등 공통 지원조건은 그대로 복제하고 QS 랭킹만
     캠퍼스별로 채움 (Merced/Riverside/Santa Cruz는 QS 랭킹 없음 -> null).
-  - 치안(security) 점수 원본 파일은 이번 공유분에 포함되지 않아 school.security_score는
-    전부 null로 남김 (추후 해당 파일 도착 시 재실행하면 자동 반영됨).
+  - 치안(security) 점수는 2027-1_치안.xlsx의 Universities 시트(최종 치안점수/치안 등급)에서
+    가져오고, UC는 UC_Campus_Detail 시트(캠퍼스별 최종 치안점수)를 캠퍼스명으로 직접 매칭함.
+    등급 매핑: 매우양호·양호→high, 보통→medium, 주의·고위험→low, 산출불가→null.
   - Weekly Plans 시트(15만행, 강의계획서 원문)는 용량/활용도 대비 부담이 커 이번엔 제외.
 """
 import json
@@ -80,6 +81,17 @@ def yn_to_bool(v):
     return str(v).strip().upper() == "Y"
 
 
+SECURITY_GRADE_TO_LEVEL = {
+    "매우양호": "high", "양호": "high",
+    "보통": "medium",
+    "주의": "low", "고위험": "low",
+}
+
+
+def security_level(grade):
+    return SECURITY_GRADE_TO_LEVEL.get(clean(grade))
+
+
 def num(v):
     v = clean(v)
     if v is None:
@@ -110,12 +122,16 @@ def build_schools():
     cost = pd.read_excel(SRC_DIR / "물가_여행지수_이동지수.xlsx", sheet_name="학교별_종합")
     dorm = pd.read_excel(SRC_DIR / "학교별_기숙사비용.xlsx", sheet_name="semester_krw")
     qs = pd.read_excel(SRC_DIR / "2027-1_파견_대학_QS_정리.xlsx", sheet_name="QS 랭킹")
+    security = pd.read_excel(SRC_DIR / "2027-1_치안.xlsx", sheet_name="Universities")
+    uc_security = pd.read_excel(SRC_DIR / "2027-1_치안.xlsx", sheet_name="UC_Campus_Detail")
 
     cost_by_name = {row["학교"]: row for _, row in cost.iterrows()}
     dorm_by_name = {}
     for _, row in dorm.iterrows():
         dorm_by_name.setdefault(row["학교"], row)  # 첫 매칭 행만 사용(통화별 중복 행 존재)
     qs_by_name = {row["학교명"]: row["QS 랭킹"] for _, row in qs.iterrows()}
+    security_by_name = {row["University"]: row for _, row in security.iterrows()}
+    uc_security_by_campus = {row["캠퍼스"]: row for _, row in uc_security.iterrows()}
 
     rows = []
     for _, r in u.iterrows():
@@ -130,12 +146,18 @@ def build_schools():
                             if kw in qs_name:
                                 qs_rank = num(rank)
                                 break
-                rows.append(_school_row(r, campus_name, website, uc_cost_row, dorm_by_name.get(name), qs_rank))
+                sec_row = uc_security_by_campus.get(campus_name)
+                sec_score = num(sec_row["최종 치안점수"]) if sec_row is not None else None
+                sec_level = security_level(sec_row["치안 등급"]) if sec_row is not None else None
+                rows.append(_school_row(r, campus_name, website, uc_cost_row, dorm_by_name.get(name), qs_rank, sec_score, sec_level))
             continue
         c = cost_by_name.get(name)
         d = dorm_by_name.get(name)
         q = qs_by_name.get(name)
-        rows.append(_school_row(r, name, clean(r["Website"]), c, d, num(q)))
+        s = security_by_name.get(name)
+        sec_score = num(s["최종 치안점수"]) if s is not None else None
+        sec_level = security_level(s["치안 등급"]) if s is not None else None
+        rows.append(_school_row(r, name, clean(r["Website"]), c, d, num(q), sec_score, sec_level))
 
     ids = make_unique_ids([row["name"] for row in rows])
     for row, sid in zip(rows, ids):
@@ -143,7 +165,7 @@ def build_schools():
     return rows
 
 
-def _school_row(r, name, website, cost_row, dorm_row, qs_rank):
+def _school_row(r, name, website, cost_row, dorm_row, qs_rank, security_score=None, security_level_value=None):
     return {
         "name": name,
         "name_ko": None,
@@ -186,7 +208,8 @@ def _school_row(r, name, website, cost_row, dorm_row, qs_rank):
         "website": website,
         "factsheet_url": clean(r["Factsheet"]),
         "detail_link": clean(r["Detail Link"]),
-        "security_score": None,
+        "security_score": security_score,
+        "security_level": security_level_value,
         "cost_score": clean(cost_row["물가점수"]) if cost_row is not None else None,
         "commerce_score": clean(cost_row["상권점수"]) if cost_row is not None else None,
         "mobility_score": clean(cost_row["이동성점수"]) if cost_row is not None else None,

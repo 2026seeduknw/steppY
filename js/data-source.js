@@ -13,13 +13,20 @@
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
  *   - majors(지원 가능 연세대 전공), climateType, reviews, creditRecommend,
- *     wishlistCount, security/climate 텍스트 — 원본에 대응 데이터 없음 → 빈 배열/기본값.
+ *     wishlistCount, climate 텍스트 — 원본에 대응 데이터 없음 → 빈 배열/기본값.
+ *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐)
  *     이 때문에 검색 화면의 "전공/기후" 필터는 실제 학교에는 아직 걸리지 않습니다.
  *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
  *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
  */
 (function () {
   if (typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED) return;
+
+  const SECURITY_TEXT = {
+    high: '치안 양호 — Numbeo·GPI·외교부 여행경보 종합 기준',
+    medium: '치안 보통 — Numbeo·GPI·외교부 여행경보 종합 기준',
+    low: '치안 주의 — Numbeo·GPI·외교부 여행경보 종합 기준'
+  };
 
   function coerce(v) {
     if (v === null || v === undefined || v === '') return v;
@@ -37,7 +44,7 @@
       return {
         id: s.id, lat: s.lat, lng: s.lng,
         scores: {
-          security: s.security_score,
+          security: coerce(s.security_score),
           costOfLiving: s.cost_score, commerce: s.commerce_score,
           transitMobility: s.mobility_score, travelMobility: s.travel_mobility_score
         },
@@ -54,7 +61,7 @@
           ...(s.fall_available ? ['가을학기'] : [])
         ],
         climate: {},
-        security: '치안 점수 데이터 준비 중', securityLevel: undefined,
+        security: SECURITY_TEXT[s.security_level] || '치안 점수 데이터 준비 중', securityLevel: s.security_level || undefined,
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: undefined,
