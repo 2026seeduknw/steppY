@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>학점 인정 — 날개가방</title>
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>학점 인정 — steppY</title>
+<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
@@ -21,23 +21,6 @@
 </div>
 
 <div class="page-shell credits-grid">
-  <aside class="card card-pad calc-panel">
-    <div class="section-title" style="margin-bottom:0;"><div><span class="eyebrow">§7.6</span><h2>인정 상한 계산기</h2></div></div>
-    <label class="calc-field"><span>졸업 이수 학점</span><input type="number" id="gradCredits" value="130"></label>
-    <label class="calc-field"><span>파견 기간</span>
-      <select id="durationSelect">
-        <option value="1">1학기</option>
-        <option value="2">2학기(1년)</option>
-      </select>
-    </label>
-    <label class="calc-check"><input type="checkbox" id="quarterCheck"> 쿼터제 대학이에요</label>
-    <label class="calc-check"><input type="checkbox" id="archCheck"> 건축학과(5년제)예요</label>
-    <div class="cap-result">
-      <div class="cap-result__value" id="capValue">-</div>
-      <div class="cap-result__label">학기당 최대 인정 상한 (§7.6)</div>
-    </div>
-  </aside>
-
   <main>
     <div class="section-title">
       <div><span class="eyebrow">SYLLABUS MATCH</span><h2>강의계획서 유사도 비교</h2></div>
@@ -62,6 +45,9 @@
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
 <script src="js/components/school-modal.js"></script>
+<script src="js/components/profile-card.js"></script>
+<script src="js/components/todo-card.js"></script>
+<script src="js/components/prepare-view.js"></script>
 <script src="js/credits.js"></script>
 </body>
 </html>

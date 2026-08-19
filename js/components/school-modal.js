@@ -89,8 +89,6 @@ function lifeOrbitCard(school, initials) {
   const weatherLine = seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ');
   const body = `
     <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
-    <p class="orbit-card__line"><strong>치안</strong> — ${school.security}</p>
-    <p class="orbit-card__line"><strong>접근성</strong> — ${school.access}</p>
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
     <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
@@ -224,7 +222,7 @@ function wireSchoolModalActions(scrim, school, opts) {
       AppState.confirmSchool(school.id);
       closeModal(scrim);
       if (opts.onChange) opts.onChange();
-      if (!location.pathname.endsWith('prepare.html')) window.location.href = 'prepare.html';
+      morphToPreparePage();
     });
   });
 }

@@ -200,29 +200,6 @@
 .mentor-float__label { font-size: var(--fs-small); font-weight: 600; }
 .mentor-float__sub { font-size: var(--fs-micro); color: var(--sky-300); display: block; }
 
-/* ---- Split-flap board (departure-board 느낌의 시그니처 컴포넌트) ---- */
-.splitflap {
-  display: inline-flex;
-  gap: 3px;
-  font-family: var(--font-mono);
-}
-.splitflap__char {
-  position: relative;
-  width: 1ch;
-  min-width: 0.72em;
-  height: 1.4em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  perspective: 60px;
-}
-.splitflap__char span {
-  display: inline-block;
-  transition: transform var(--dur-fast) var(--ease-out);
-  will-change: transform, opacity;
-}
-
 /* ---- Modal ---- */
 .modal-scrim {
   position: fixed; inset: 0;

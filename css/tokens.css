@@ -4,41 +4,51 @@
    ========================================================================== */
 
 :root {
-  /* ---- Color: "Ice & Butter" 팔레트 (사용자 지정) ----
-     deep navy #2F4860 / clean white #FFFFFF / soft cobalt #7DA7D9 /
-     butter yellow #FFF7CC / ice blue #DCEEFF
-     배경은 deep navy 고정. 나머지 톤은 이 5색에서만 파생(밝기 조절)했습니다. */
+  /* ---- Color: "Moonlight / Frost Blue / Steel / Storm / Oxford Blue" 팔레트 ----
+     moonlight(cream) #F0ECDD / frost blue #8BA3C5 / steel #495B7D /
+     storm #23354D / oxford blue #02122F — Figma 목업에서 확정한 단일 블루 램프.
+     나머지 톤은 이 5색에서만 파생(밝기 조절)했습니다. F1은 oxford blue,
+     F2는 storm을 원색 배경으로 직접 사용(아래 --storm/--oxford 참고). */
+  --moonlight: #F0ECDD;
+  --frost-blue: #8BA3C5;
+  --steel: #495B7D;
+  --storm: #23354D;
+  --oxford: #02122F;
+
+  /* ---- Color: 유틸리티 화면(캘린더/학점 인정) 전용 강조 배경 ---- */
+  --beige: #F2EFE7;
+  --teal: #4B6B7C;
 
   /* ---- Color: ink — 흰 카드 위에 올라가는 텍스트 (페이지 배경과는 별개) ---- */
-  --ink-900: #1E3245;
-  --ink-700: #35506C;
-  --ink-600: #4A6883;
-  --ink-400: #90A7BC;
+  --ink-900: #23354D;   /* storm */
+  --ink-700: #495B7D;   /* steel */
+  --ink-600: #607496;
+  --ink-400: #8BA3C5;   /* frost blue */
 
   /* ---- Color: 네이비 배경 위에 올라가는 텍스트 ---- */
-  --onnavy-100: #FFFFFF;
-  --onnavy-300: #DCEEFF;   /* ice blue */
-  --onnavy-500: #93B0C7;
+  --onnavy-100: #F0ECDD;   /* moonlight */
+  --onnavy-300: #8BA3C5;   /* frost blue */
+  --onnavy-500: #6A7FA1;
 
-  /* ---- Color: sky (brand primary = soft cobalt) ---- */
-  --sky-700: #3E6690;
-  --sky-500: #7DA7D9;   /* soft cobalt */
-  --sky-400: #96B8E0;
-  --sky-300: #B9D2EA;
-  --sky-100: #DCEEFF;   /* ice blue */
-  --sky-50:  #EEF6FC;
+  /* ---- Color: sky (brand primary = steel/storm 램프) ---- */
+  --sky-700: #23354D;   /* storm */
+  --sky-500: #495B7D;   /* steel */
+  --sky-400: #677B9D;
+  --sky-300: #8BA3C5;   /* frost blue */
+  --sky-100: #CBD6E5;
+  --sky-50:  #EEF1F6;
 
   /* ---- Color: cloud (surface) ---- */
   --cloud-0:  #FFFFFF;   /* clean white — 카드 표면 */
-  --cloud-50: #DCEEFF;   /* cloud blue(ice blue) — 페이지 배경 */
-  --cloud-100:#C7E2FA;
+  --cloud-50: #F3F6F9;   /* 페이지 배경(라이트 스크린) — frost blue 톤 */
+  --cloud-100:#E5EBF2;
 
-  /* ---- Color: amber (butter yellow accent) ---- */
-  --amber-700: #B4901F; /* 텍스트 전용 진한 머스터드 — 배지/라벨 글자색 (버터색은 배경 전용) */
-  --amber-600: #E9DA9A; /* 버튼 hover 배경 전용(진한 ink 텍스트와 짝) — 텍스트 색으로 쓰지 않음 */
-  --amber-500: #FFF7CC; /* butter yellow — 강조 배지/CTA 배경 (진한 ink 텍스트와 짝) */
-  --amber-200: #FFFBE0;
-  --amber-100: #FFFDF6;
+  /* ---- Color: amber (moonlight 액센트) ---- */
+  --amber-700: #23354D; /* 텍스트 전용(진한 storm) — 배지/라벨 글자색 (moonlight는 배경 전용) */
+  --amber-600: #D9D8D0; /* 버튼 hover 배경 전용(진한 ink 텍스트와 짝) — 텍스트 색으로 쓰지 않음 */
+  --amber-500: #F0ECDD; /* moonlight — 강조 배지/CTA 배경 (진한 ink 텍스트와 짝) */
+  --amber-200: #F7F5EC;
+  --amber-100: #FBFAF5;
 
   /* ---- Color: status ---- */
   --coral-600: #C4432E;
@@ -50,8 +60,8 @@
   --mint-100:  #DCF1EA;
 
   /* ---- Line ---- */
-  --line-200: #C9DCEC;  /* 헤어라인 보더 — ice blue 계열 */
-  --line-100: #E4EFF9;
+  --line-200: #D3DCE9;  /* 헤어라인 보더 — frost blue 계열 */
+  --line-100: #EAEEF5;
 
   /* ---- Typography ---- */
   /* 전체 Pretendard 단일 사용 (사용자 피드백 반영) — 굵기 차등으로 위계 구성 */
@@ -86,10 +96,10 @@
   --radius-pill: 999px;/* 배지, 플로팅 버튼, 필터 칩 */
 
   /* ---- Shadow ---- */
-  --shadow-card: 0 2px 10px rgba(21, 34, 56, 0.07);
-  --shadow-card-hover: 0 10px 24px rgba(21, 34, 56, 0.12);
-  --shadow-float: 0 10px 28px rgba(21, 34, 56, 0.22);
-  --shadow-modal: 0 28px 72px rgba(21, 34, 56, 0.30);
+  --shadow-card: 0 2px 10px rgba(35, 53, 77, 0.07);
+  --shadow-card-hover: 0 10px 24px rgba(35, 53, 77, 0.12);
+  --shadow-float: 0 10px 28px rgba(35, 53, 77, 0.22);
+  --shadow-modal: 0 28px 72px rgba(35, 53, 77, 0.30);
 
   /* ---- Motion ---- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
