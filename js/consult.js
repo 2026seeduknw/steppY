@@ -99,6 +99,8 @@
   }
 
   function renderMessages() {
+    const logoFile = activeSchool && SCHOOL_LOGOS[activeSchool];
+    const avatarInner = logoFile ? `<img src="assets/school-logos/${logoFile}" alt="">` : '🐾';
     messagesEl.innerHTML = messages.map(m => {
       if (m.role === 'user') {
         return `<div class="chat-message chat-message--user">
@@ -108,7 +110,7 @@
       }
       return `<div class="chat-message chat-message--bot">
         <div class="chat-message__row">
-          <div class="chat-message__avatar">🐾</div>
+          <div class="chat-message__avatar">${avatarInner}</div>
           <div class="chat-message__bubble">${botBubbleInner(m)}</div>
         </div>
         ${m.type === 'typing' ? '' : `<div class="chat-message__meta">${m.time || ''}</div>`}

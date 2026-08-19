@@ -141,7 +141,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 }
 
 /* ---- 생활 정보 카드 ---- */
-.living-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.living-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
 .living-card { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
 .living-card__title { font-weight: 700; }
 .living-card__summary { font-size: var(--fs-small); color: var(--ink-700); flex: 1; }
