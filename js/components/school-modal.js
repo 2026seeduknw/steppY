@@ -92,14 +92,27 @@ function lifeOrbitCard(school, initials) {
   chipDefs.push({ icon: '🚉', label: '상권', value: COMMERCE_LABEL[school.commerceLevel] || '보통' });
   const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
 
-  const weatherLine = seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ');
+  const weatherLine = seasonEntries.length
+    ? seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ')
+    : '날씨 정보 준비 중';
   const body = `
     <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
+    ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
     <ul class="review-list">${school.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
     <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
   `;
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
+}
+
+/** 학점 인정 추천 과목 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
+ *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다. */
+function creditRecommendHtml(school, profile) {
+  const matches = (MOCK.majorMatches || []).filter(m => m.school === school.id && m.homeMajor === profile.major);
+  if (!matches.length) {
+    return `<p class="info-panel__text">${profile.major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 추천 과목을 보여드려요.'}</p>`;
+  }
+  return `<div class="tag-row">${matches.map(m => `<span class="chip">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
 /** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
@@ -180,7 +193,7 @@ function schoolModalTemplate(school) {
       <div class="school-modal__grid">
         <section class="info-panel info-panel--wide">
           <h3>④ 학점 인정 추천 과목</h3>
-          <div class="tag-row">${school.creditRecommend.map(c => `<span class="chip">${c}</span>`).join('')}</div>
+          ${creditRecommendHtml(school, profile)}
         </section>
 
         <section class="info-panel">

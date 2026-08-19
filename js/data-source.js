@@ -13,12 +13,15 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), reviews, creditRecommend, wishlistCount —
+ *   - majors(지원 가능 연세대 전공), reviews, wishlistCount —
  *     원본에 대응 데이터 없음 → 빈 배열/기본값(wishlistCount는 시드 기반 데모 숫자).
  *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐.
  *      climate/climateType는 climate_staging 테이블의 계절별 실측 평균기온으로 채워짐 —
  *      climateType은 그 기온으로부터 파생 분류한 값이라 원본에 직접 있는 필드는 아님)
  *     이 때문에 검색 화면의 "전공" 필터는 실제 학교에는 아직 걸리지 않습니다.
+ *   - creditRecommend는 school 객체가 아니라 js/components/school-modal.js가
+ *     MOCK.majorMatches를 (학교 + 내 재학 학과)로 직접 필터링해 채웁니다 —
+ *     학교x전공 조합별로 달라지는 값이라 school 객체에는 넣지 않습니다.
  *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
  *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
  */
@@ -114,12 +117,12 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
-        climate,
+        climate, koreaComparison: c ? (c.korea_comparison || '') : '',
         security: SECURITY_TEXT[s.security_level] || '치안 점수 데이터 준비 중', securityLevel: s.security_level || undefined,
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
-        creditRecommend: [], reviews: [],
+        reviews: [],
         wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
