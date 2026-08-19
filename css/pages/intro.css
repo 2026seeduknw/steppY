@@ -1,170 +1,234 @@
 /* ==========================================================================
-   F1. 인트로 페이지
+   F1. 인트로 페이지 (랜딩)
    ========================================================================== */
 
 body[data-page="intro"] {
   min-width: 0;
-  overflow: hidden;
-  height: 100vh;
-  background: var(--ink-900);
+  background: var(--oxford);
 }
-
-/* ---- 시간대별 컬러 매핑 ----
-   확인 필요 항목(§5 F1) 해석: 실제 위치 기반 API 대신, 기기의 로컬 시간
-   (new Date().getHours())을 사용해 4구간(새벽/낮/노을/밤)으로 하늘·지구본
-   색을 매핑했습니다. 실서비스에서는 IP/GPS 기반 타임존 API로 교체 가능합니다. */
-.intro { --scene-top:#BADCF4; --scene-mid:#DCEEFB; --scene-bottom:#F7FBFE; --globe-lit:#9FC6E4; --globe-shadow:#1F4463; --sun:#FFE1AE; --ink-top: var(--ink-900); --ink-bottom: var(--ink-900); }
-body[data-tod="dawn"] .intro { --scene-top:#F6C89A; --scene-mid:#F3D9BE; --scene-bottom:#FCEEDD; --globe-lit:#E3A876; --globe-shadow:#5A3A57; --sun:#FFD98A; --ink-top: var(--ink-900); --ink-bottom: var(--ink-900); }
-body[data-tod="dusk"] .intro { --scene-top:#7A5273; --scene-mid:#C97A5D; --scene-bottom:#F2B27E; --globe-lit:#C97A2B; --globe-shadow:#2C1B3D; --sun:#F2A65A; --ink-top: #F8F6F0; --ink-bottom: var(--ink-900); }
-body[data-tod="night"] .intro { --scene-top:#0B1526; --scene-mid:#13223B; --scene-bottom:#1F3552; --globe-lit:#3E6E96; --globe-shadow:#060C16; --sun:#F2A65A; --ink-top: #F8F6F0; --ink-bottom: #F8F6F0; }
 
 .intro {
   position: relative;
-  height: 100vh;
-  width: 100vw;
+}
+
+/* ---- 상단 내비게이션 ---- */
+.intro__nav {
+  position: relative;
+  z-index: 10;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-7) 0 var(--space-8);
-  background: linear-gradient(180deg, var(--scene-top) 0%, var(--scene-mid) 55%, var(--scene-bottom) 100%);
-  transition: background 900ms var(--ease-out);
+  padding: var(--space-4) var(--space-7);
+}
+.intro__nav-left { position: relative; display: flex; align-items: center; }
+.intro__hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--onnavy-100);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.intro__hamburger:hover { background: rgba(240,236,221,0.1); }
+.intro__navmenu {
+  position: absolute;
+  top: 48px; left: 0;
+  display: none;
+  flex-direction: column;
+  min-width: 180px;
+  padding: var(--space-2);
+  background: var(--cloud-0);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+}
+.intro__navmenu.is-open { display: flex; }
+.intro__navmenu a {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--ink-900);
+  text-decoration: none;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.intro__navmenu a:hover { background: var(--sky-50); }
+
+.intro__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+}
+.intro__brand img { width: 28px; height: 28px; border-radius: 50%; }
+.intro__brand span {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--onnavy-100);
 }
 
-.intro__sky {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(120px 120px at 82% 12%, var(--sun), transparent 70%);
-  opacity: 0.9;
+/* ---- 히어로 ---- */
+.intro__hero {
+  position: relative;
+  padding: var(--space-6) var(--space-7) 0;
+  overflow: hidden;
+}
+
+.intro__earth-wrap {
+  position: absolute;
+  top: 0; right: -80px;
+  width: 780px; height: 780px;
   pointer-events: none;
 }
+.intro__earth {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  animation: earth-float 7s var(--ease-out) infinite;
+}
+@keyframes earth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-22px); }
+}
 
-/* ---- 국가명 split-flap 보드 ---- */
+.intro__footsteps {
+  position: absolute;
+  inset: 0;
+}
+.intro__step {
+  position: absolute;
+  left: var(--sx);
+  top: var(--sy);
+  width: 22px;
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: step-appear 2s ease-in-out infinite;
+  animation-delay: var(--sd);
+}
+@keyframes step-appear {
+  0%, 8% { opacity: 0; }
+  20%, 85% { opacity: 0.9; }
+  100% { opacity: 0.9; }
+}
+
+.intro__content {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
+  padding: var(--space-8) 0 var(--space-9);
+}
+.intro__logo-badge {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  margin-bottom: var(--space-4);
+}
+.intro__heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  color: var(--onnavy-100);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-4);
+}
+.intro__desc {
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--onnavy-300);
+  max-width: 520px;
+  margin-bottom: var(--space-6);
+}
+.intro__cta {
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--amber-500);
+  color: var(--amber-700);
+  font-weight: 700;
+  font-size: var(--fs-body);
+  text-decoration: none;
+  box-shadow: var(--shadow-float);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.intro__cta:hover { transform: translateY(-2px); }
+
+/* ---- 국가명 플로팅 마퀴 ---- */
 .intro__marquee {
   position: relative;
   z-index: 2;
+  overflow: hidden;
+  border-top: 1px solid rgba(240,236,221,0.15);
+  padding: var(--space-4) 0;
+  margin-top: var(--space-7);
+}
+.intro__marquee-track {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-5);
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
 }
-.intro__marquee-label {
+.intro__marquee-track .country {
   font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.2em;
-  color: var(--ink-top);
-  opacity: 0.65;
-  transition: color 900ms var(--ease-out);
+  font-size: var(--fs-small);
+  letter-spacing: 0.14em;
+  color: var(--onnavy-300);
+  white-space: nowrap;
 }
-.intro__marquee .splitflap { justify-content: center; }
-.intro__marquee .splitflap__char {
-  background: rgba(21,34,56,0.9);
-  color: #F7F5EF;
-  border-radius: 3px;
-  margin: 0 1px;
-  width: 1.15em;
-  font-size: 1.05rem;
-  font-weight: 600;
+.intro__marquee-track .dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--onnavy-300);
+  opacity: 0.6;
+  flex: 0 0 auto;
+}
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
-/* ---- 지구본 ---- */
-.intro__globe-wrap {
+/* ---- 서비스 설명 ---- */
+.intro__services {
   position: relative;
   z-index: 1;
-  width: 300px; height: 300px;
-  display: flex; align-items: center; justify-content: center;
+  background: var(--cloud-0);
+  padding: var(--space-9) var(--space-7);
 }
-.globe {
-  position: relative;
-  width: 260px; height: 260px;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow:
-    inset -26px -18px 50px rgba(0,0,0,0.35),
-    inset 14px 14px 30px rgba(255,255,255,0.25),
-    0 30px 60px rgba(21,34,56,0.35);
-  background: var(--globe-lit);
-  transition: background 900ms var(--ease-out);
-}
-.globe__surface {
-  position: absolute;
-  top: -10%; left: -50%;
-  width: 300%; height: 120%;
-  background-image: var(--continents-svg);
-  background-repeat: repeat-x;
-  background-size: 33.33% 100%;
-  animation: globe-spin 16s linear infinite;
-  opacity: 0.85;
-  mix-blend-mode: multiply;
-}
-.globe__shade {
-  position: absolute; inset: 0;
-  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5), transparent 45%),
-              radial-gradient(circle at 72% 78%, var(--globe-shadow), transparent 60%);
-  transition: background 900ms var(--ease-out);
-}
-@keyframes globe-spin {
-  from { background-position-x: 0; }
-  to { background-position-x: -100%; }
-}
-
-/* ---- 타이틀 ---- */
-.intro__title {
-  position: relative;
-  z-index: 2;
+.intro__services h2 {
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-.intro__title .eyebrow { color: var(--ink-bottom); opacity: 0.6; transition: color 900ms var(--ease-out); }
-.intro__brand {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: var(--fs-hero);
-  color: var(--ink-bottom);
-  letter-spacing: -0.01em;
-  transition: color 900ms var(--ease-out);
+  font-size: var(--fs-display);
+  color: var(--ink-900);
+  margin-bottom: var(--space-7);
 }
-.intro__tagline {
-  font-size: var(--fs-body);
-  color: var(--ink-bottom);
-  opacity: 0.75;
-  transition: color 900ms var(--ease-out);
+.intro__service-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  max-width: var(--page-max);
+  margin: 0 auto;
 }
-
-/* ---- 스크롤 힌트 ---- */
-.intro__scroll-hint {
-  position: absolute;
-  left: 50%;
-  bottom: var(--space-5);
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  z-index: 3;
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.16em;
-  color: var(--ink-bottom);
-  opacity: 0.7;
-  transition: color 900ms var(--ease-out);
+.intro__service-card {
+  display: block;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--amber-500);
+  text-decoration: none;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
-.intro__scroll-hint svg { animation: hint-bounce 1.6s ease-in-out infinite; }
-@keyframes hint-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(6px); }
+.intro__service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
+.intro__service-card h3 {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: var(--space-2);
 }
-
-/* ---- 전환 오버레이 ---- */
-.intro__transition {
-  position: fixed; inset: 0;
-  z-index: 200;
-  background: linear-gradient(180deg, var(--sky-50) 0%, var(--cloud-50) 100%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 700ms var(--ease-out);
+.intro__service-card p {
+  font-size: var(--fs-small);
+  color: var(--ink-700);
+  line-height: 1.5;
 }
-.intro__transition.is-active { opacity: 1; }

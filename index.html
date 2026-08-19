@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>날개가방 — 교환학생 준비 플랫폼 (클릭 데모)</title>
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<title>steppY — 교환학생 준비 플랫폼 (클릭 데모)</title>
+<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
@@ -12,37 +12,77 @@
 </head>
 <body data-page="intro">
 
-<main class="intro" id="introScreen">
-  <div class="intro__sky"></div>
+<main class="intro">
+  <nav class="intro__nav">
+    <div class="intro__nav-left">
+      <button class="intro__hamburger" id="hamburgerBtn" aria-haspopup="true" aria-expanded="false" aria-label="메뉴 열기">
+        <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <div class="intro__navmenu" id="navMenu">
+        <a href="home.html">홈</a>
+        <a href="search.html">학교 찾기</a>
+        <a href="prepare.html">지원 준비하기</a>
+        <a href="credits.html">학점 인정</a>
+        <a href="calendar.html">캘린더</a>
+      </div>
+    </div>
+    <a class="intro__brand" href="index.html">
+      <img src="assets/logo-mark-circle.png" width="28" height="28" alt="">
+      <span>steppY</span>
+    </a>
+  </nav>
 
-  <div class="intro__marquee" aria-label="교환 가능 국가 목록">
-    <span class="intro__marquee-label">EXCHANGE DESTINATIONS —</span>
-    <div class="splitflap" id="countryBoard"></div>
-  </div>
+  <div class="intro__hero">
+    <div class="intro__earth-wrap">
+      <img class="intro__earth" src="assets/hero-earth.png" alt="교환학생들이 향하는 세계 지도">
+      <div class="intro__footsteps" aria-hidden="true">
+        <img class="intro__step" style="--sx:21.9%; --sy:61.0%; --sd:0.0s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:30.2%; --sy:58.5%; --sd:0.25s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:36.6%; --sy:52.8%; --sd:0.5s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:44.8%; --sy:50.2%; --sd:0.75s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:51.2%; --sy:44.5%; --sd:1.0s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:59.5%; --sy:42.0%; --sd:1.25s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:65.9%; --sy:36.2%; --sd:1.5s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:74.1%; --sy:33.7%; --sd:1.75s" src="assets/footstep-right.png" alt="">
+      </div>
+    </div>
 
-  <div class="intro__globe-wrap">
-    <div class="globe" id="globe">
-      <div class="globe__surface"></div>
-      <div class="globe__shade"></div>
+    <div class="intro__content">
+      <img class="intro__logo-badge" src="assets/logo-mark-circle.png" alt="steppY">
+      <h1 class="intro__heading">교환학생 준비, steppY로 한번에</h1>
+      <p class="intro__desc">학교 검색부터 서류 준비, 학점 인정까지 — 교환학생 여정의 모든 단계를 하나의 공간에서 관리하세요. 목표 점수 시뮬레이션부터 선배 후기까지, 막막한 준비 과정을 체계적으로 도와드려요.</p>
+      <a class="intro__cta" href="home.html">지금 바로 시작하기</a>
+    </div>
+
+    <div class="intro__marquee" aria-hidden="true">
+      <div class="intro__marquee-track" id="marqueeTrack"></div>
     </div>
   </div>
 
-  <div class="intro__title">
-    <p class="eyebrow">EXCHANGE PREP PLATFORM</p>
-    <h1 class="intro__brand">날개가방</h1>
-    <p class="intro__tagline">학교 탐색부터 출국 준비까지, 교환학생 여정의 모든 순간</p>
-  </div>
-
-  <button class="intro__scroll-hint" id="scrollHint" aria-label="스크롤하여 시작하기">
-    <span>SCROLL</span>
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
+  <section class="intro__services">
+    <h2>무엇이든 준비할 수 있는 하나의 공간</h2>
+    <div class="intro__service-grid">
+      <a class="intro__service-card" href="search.html">
+        <h3>학교 찾기</h3>
+        <p>조건에 맞는 파견교를 검색하고 목표 점수를 시뮬레이션해요</p>
+      </a>
+      <a class="intro__service-card" href="prepare.html">
+        <h3>지원 준비하기</h3>
+        <p>서류 체크리스트와 생활 준비까지 한 번에 관리해요</p>
+      </a>
+      <a class="intro__service-card" href="credits.html">
+        <h3>학점 인정</h3>
+        <p>강의계획서를 비교해 학점 인정 가능성을 확인해요</p>
+      </a>
+      <a class="intro__service-card" href="consult.html">
+        <h3>멘토 없는 멘토 상담</h3>
+        <p>선배들의 생생한 후기로 막막함을 줄여요</p>
+      </a>
+    </div>
+  </section>
 </main>
 
-<div class="intro__transition" id="transitionOverlay"></div>
-
 <script src="js/mock-data.js"></script>
-<script src="js/components/splitflap.js"></script>
 <script src="js/intro.js"></script>
 </body>
 </html>

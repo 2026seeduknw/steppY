@@ -3,8 +3,14 @@
    ========================================================================== */
 
 body[data-page="home"] {
-  background: var(--cloud-50);
+  background: var(--storm);
 }
+body[data-page="home"] .home-hero {
+  background: transparent;
+}
+body[data-page="home"] .home-hero h1 { color: var(--onnavy-100); }
+body[data-page="home"] .home-hero p { color: var(--onnavy-300); }
+body[data-page="home"] .home-hero .eyebrow { color: var(--onnavy-300); }
 
 .home-grid {
   display: grid;
