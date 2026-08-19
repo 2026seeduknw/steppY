@@ -171,6 +171,27 @@ create table if not exists course_matches (
   note            text
 );
 
+-- 전공 매칭 (F-신규) — 연세대 전공 -> 해외 파견교 전공 유사도 매칭.
+-- major-matching 파이프라인(seed/major-matching, multilingual embedding + CIP taxonomy
+-- hybrid ranking)이 majors.csv를 실제 schools 원본과 동일한 university name 기준으로
+-- 만들어서 school_id/korean_major_id 모두 실제 FK가 걸린다 — school_id는 mock id 문제가
+-- 있던 course_matches와 달리 처음부터 정확한 값이라 FK를 둔다.
+create table if not exists major_matches (
+  id               text primary key,
+  korean_major_id  integer not null references yonsei_majors(id),
+  home_major       text not null,
+  school_id        text not null references schools(id),
+  target_major     text not null,
+  similarity       integer not null check (similarity between 0 and 100),
+  semantic_score   numeric not null,
+  taxonomy_score   numeric not null,
+  matched_topics   text[] not null default '{}',
+  note             text,
+  rank             integer not null
+);
+create index if not exists major_matches_korean_major_id_idx on major_matches(korean_major_id);
+create index if not exists major_matches_school_id_idx on major_matches(school_id);
+
 -- 꿀강 (F4) — 아직 mock 유지, school_id FK 없음 (위 course_matches와 동일한 이유)
 create table if not exists tips (
   id         serial primary key,
@@ -198,6 +219,7 @@ alter table living_prep       enable row level security;
 alter table course_matches    enable row level security;
 alter table tips              enable row level security;
 alter table nearby_spots      enable row level security;
+alter table major_matches     enable row level security;
 
 create policy "public read" on schools         for select using (true);
 create policy "public read" on country_prep     for select using (true);
@@ -209,3 +231,4 @@ create policy "public read" on living_prep      for select using (true);
 create policy "public read" on course_matches   for select using (true);
 create policy "public read" on tips             for select using (true);
 create policy "public read" on nearby_spots     for select using (true);
+create policy "public read" on major_matches    for select using (true);
