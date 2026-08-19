@@ -222,7 +222,7 @@ function wireSchoolModalActions(scrim, school, opts) {
       AppState.confirmSchool(school.id);
       closeModal(scrim);
       if (opts.onChange) opts.onChange();
-      if (!location.pathname.endsWith('prepare.html')) window.location.href = 'prepare.html';
+      morphToPreparePage();
     });
   });
 }
