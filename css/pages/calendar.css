@@ -2,6 +2,10 @@
    캘린더 (신규 와이어프레임 — PRD §4.2 미정 항목)
    ========================================================================== */
 
+body[data-page="calendar"] .home-hero {
+  background: var(--beige);
+}
+
 .cal-grid {
   display: grid;
   grid-template-columns: 1fr 320px;

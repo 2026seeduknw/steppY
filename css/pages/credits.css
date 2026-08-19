@@ -2,6 +2,13 @@
    F5. 학점 인정
    ========================================================================== */
 
+body[data-page="credits"] .home-hero {
+  background: var(--teal);
+}
+body[data-page="credits"] .home-hero h1 { color: var(--onnavy-100); }
+body[data-page="credits"] .home-hero p { color: var(--onnavy-300); }
+body[data-page="credits"] .home-hero .eyebrow { color: var(--onnavy-300); }
+
 .credits-grid {
   padding: var(--space-6) 0 var(--space-9);
 }
