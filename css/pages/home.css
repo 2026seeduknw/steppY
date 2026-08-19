@@ -10,10 +10,10 @@ body[data-page="home"] {
    그 위에 텍스트를 얹는다. 이미지는 배너(좌)+비행기(우)가 한 장으로 합쳐진 것.
    배너 그림 자체가 양끝은 뾰족하고 가운데만 넓은 모양이라, 텍스트는 배너의
    넓은 안쪽 영역과 겹치도록 57px만큼 오른쪽으로 밀어 아래 '지망하는 학교'
-   카드 제목과 좌측 정렬을 맞춘다. 배경색은 없애 페이지 공통 구름 배경이 비친다. */
+   카드 제목과 좌측 정렬을 맞춘다. */
 body[data-page="home"] .home-hero {
   padding-left: 57px;
-  background: url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
+  background: var(--sky-100) url('../../assets/hero-banner-plane.png') left bottom / auto 148px no-repeat;
 }
 
 .home-grid {

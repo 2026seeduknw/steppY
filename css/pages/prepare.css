@@ -2,6 +2,23 @@
    F4. 교환 준비하기 홈화면
    ========================================================================== */
 
+/* 사용자가 첨부한 노을/황혼 픽셀아트 사진의 색감(짙은 인디고 → 주황 → 골드)을
+   그라디언트로 얹어서, 기존 구름 텍스처는 유지한 채 색만 그 사진에 맞춘다.
+   레이어 순서: [그라디언트, 구름 이미지] → background-position도 레이어별로 지정. */
+body[data-page="prepare"]::before {
+  background:
+    linear-gradient(180deg, #4d5480 0%, #8a5f6e 30%, #d3835a 55%, #e0965f 100%),
+    url('../../assets/bg-pixel-clouds.jpg') left top repeat;
+  background-size: auto, 2400px 1200px;
+  background-blend-mode: multiply;
+  opacity: 0.6;
+  animation: bg-clouds-drift-prepare 50s linear infinite;
+}
+@keyframes bg-clouds-drift-prepare {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 0, 2400px 0; }
+}
+
 .prepare-hero {
   padding: var(--space-6) 0 0;
 }
