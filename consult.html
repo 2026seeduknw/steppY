@@ -18,25 +18,26 @@
   <p class="eyebrow">MENTORLESS MENTORING</p>
   <h1>멘토 없는 멘토 상담</h1>
   <p class="spec-note" style="margin-top:var(--space-3);">
-    ⚠️ <strong>신규 와이어프레임</strong> — 원본 기획에 상담 방식(FAQ/AI 답변/실제 멘토 연결 여부)이 정의되어 있지 않아(PRD §4.3), 이번 데모에서는 "선배 후기 카드 열람 + 질문 남기기" 흐름으로 가정해 설계했습니다. 실제 답변·매칭 로직은 범위 밖입니다.
+    💬 선배들의 교환학생 경험보고서 후기를 키워드로 매칭해 보여주는 데모예요. 실제 AI 답변이 아니라, 미리 준비된 후기 중 질문과 관련 있는 내용을 찾아드려요.
   </p>
 </div>
 
-<div class="page-shell consult-grid">
-  <main>
-    <div class="section-title"><div><span class="eyebrow">REVIEWS</span><h2>선배 후기</h2></div></div>
-    <div class="school-filter-row" id="schoolFilterRow"></div>
-    <div id="reviewList"></div>
-  </main>
+<div class="page-shell consult-layout">
+  <section class="card card-pad">
+    <div class="section-title" style="margin-bottom:0;"><div><span class="eyebrow">SCHOOL</span><h2>학교를 검색해서 선택하세요</h2></div></div>
+    <div id="schoolPicker"></div>
+  </section>
 
-  <aside class="card card-pad ask-panel">
-    <div class="section-title" style="margin-bottom:0;"><div><span class="eyebrow">ASK</span><h2>질문 남기기</h2></div></div>
-    <form id="askForm">
-      <select id="askSchoolSelect" name="school" style="margin-bottom:var(--space-3); width:100%;"></select>
-      <textarea name="question" placeholder="궁금한 점을 자유롭게 남겨주세요" required></textarea>
-      <button type="submit" class="btn btn--primary btn--block" style="margin-top:var(--space-3);">질문 등록하기</button>
+  <section class="card card-pad chat-panel" id="chatPanel" hidden>
+    <div class="section-title"><div><span class="eyebrow">CHAT</span><h2 id="chatSchoolName">선배 후기 챗봇</h2></div></div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <form class="chat-input-row" id="chatForm">
+      <input type="text" id="chatInput" placeholder="궁금한 점을 자유롭게 물어보세요 (예: 기숙사 어때?)" autocomplete="off">
+      <button type="submit" class="chat-send-btn" aria-label="전송">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 12L20.5 4L13 20.5L11 13L3.5 12Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      </button>
     </form>
-  </aside>
+  </section>
 </div>
 
 <div id="mentor-float"></div>
@@ -48,6 +49,7 @@
 <script src="js/state.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
+<script src="js/components/searchable-select.js"></script>
 <script src="js/consult.js"></script>
 </body>
 </html>

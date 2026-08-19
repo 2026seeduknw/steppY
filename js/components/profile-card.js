@@ -21,7 +21,7 @@ function profileViewTemplate() {
       <div><span class="eyebrow">PROFILE</span><h2>기본 정보</h2></div>
       <button class="btn--text" data-edit-profile>수정</button>
     </div>
-    <div class="profile-stats">
+    <div class="profile-stats profile-stats--compact">
       <div class="profile-stat"><span class="profile-stat__label">GPA</span><span class="profile-stat__value tnum">${p.gpa.toFixed(2)} <em>/ ${p.gpaScale}</em></span></div>
       <div class="profile-stat"><span class="profile-stat__label">어학 성적</span><span class="profile-stat__value tnum">${lang ? `${lang.type} ${lang.score}` : '미등록'}</span></div>
       <div class="profile-stat"><span class="profile-stat__label">교환 시기</span><span class="profile-stat__value">${p.exchangeTerm.year} ${p.exchangeTerm.season}</span></div>

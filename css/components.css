@@ -300,6 +300,10 @@
 .profile-stat__value { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); }
 .profile-stat__value em { font-style: normal; font-size: var(--fs-small); font-weight: 400; color: var(--ink-400); }
 
+.profile-stats--compact { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+.profile-stats--compact .profile-stat { padding: var(--space-3); gap: 2px; }
+.profile-stats--compact .profile-stat__value { font-size: var(--fs-body); }
+
 .profile-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

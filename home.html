@@ -22,14 +22,17 @@
 
 <div class="page-shell home-grid">
   <div class="home-main">
-    <section class="card card-pad" id="profileCard"></section>
-
     <section class="card card-pad">
       <div class="section-title">
         <div><span class="eyebrow">WISHLIST</span><h2>지망하는 학교</h2></div>
         <a href="search.html" class="btn btn--accent btn--sm">학교 찾기</a>
       </div>
       <div class="wishlist-row" id="wishlistRow"></div>
+    </section>
+
+    <section class="card card-pad journey-bar">
+      <div class="section-title"><div><span class="eyebrow">JOURNEY</span><h2>나의 진행 단계</h2></div></div>
+      <div class="journey-track" id="journeySteps"></div>
     </section>
 
     <a href="search.html" class="search-cta" style="text-decoration:none;">
@@ -42,11 +45,8 @@
   </div>
 
   <aside class="home-aside">
+    <section class="card card-pad--sm" id="profileCard"></section>
     <section class="card card-pad" id="todoCard"></section>
-    <section class="card card-pad">
-      <div class="section-title"><div><span class="eyebrow">JOURNEY</span><h2>나의 진행 단계</h2></div></div>
-      <div class="journey-steps" id="journeySteps"></div>
-    </section>
   </aside>
 </div>
 
@@ -62,6 +62,7 @@
 <script src="js/components/searchable-select.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
+<script src="js/components/progress-ring.js"></script>
 <script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/todo-card.js"></script>

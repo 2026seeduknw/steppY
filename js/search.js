@@ -8,7 +8,7 @@
   };
 
   const state = {
-    query: '', countries: new Set(), majors: new Set(), regions: new Set(),
+    query: '', country: '', majors: new Set(), regions: new Set(),
     commerce: new Set(), climate: new Set(), security: new Set(),
     qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default'
   };
@@ -16,7 +16,7 @@
   function uniq(field) { return [...new Set(MOCK.schools.map(s => s[field]).filter(v => v != null))]; }
 
   function renderFilters() {
-    renderChipGroup('countryFilters', uniq('country'), state.countries);
+    renderCountrySelect();
     renderMajorFilter();
     renderChipGroup('regionFilters', uniq('region'), state.regions);
     renderChipGroup('commerceFilters', uniq('commerceLevel'), state.commerce, LABELS.commerceLevel);
@@ -41,6 +41,19 @@
     mount.appendChild(select.el);
   }
 
+  function renderCountrySelect() {
+    const mount = document.getElementById('countryFilters');
+    const countries = uniq('country');
+    mount.innerHTML = `<select class="sort-select filter-select" id="countrySelect">
+      <option value="">전체</option>
+      ${countries.map(c => `<option value="${c}" ${state.country === c ? 'selected' : ''}>${c}</option>`).join('')}
+    </select>`;
+    document.getElementById('countrySelect').addEventListener('change', (e) => {
+      state.country = e.target.value;
+      renderGrid();
+    });
+  }
+
   function renderChipGroup(mountId, values, selectedSet, labelMap) {
     const mount = document.getElementById(mountId);
     mount.innerHTML = values.map(v => `<button type="button" class="chip ${selectedSet.has(v) ? 'is-selected' : ''}" data-value="${v}">${labelMap ? labelMap[v] : v}</button>`).join('');
@@ -60,7 +73,7 @@
       const hay = `${school.name} ${school.nameKo} ${school.country} ${school.majors.join(' ')}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
-    if (state.countries.size && !state.countries.has(school.country)) return false;
+    if (state.country && school.country !== state.country) return false;
     if (state.majors.size && !school.majors.some(m => state.majors.has(m))) return false;
     if (state.regions.size && !state.regions.has(school.region)) return false;
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
@@ -158,7 +171,7 @@
   favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; favToggle.classList.toggle('is-on'); renderGrid(); });
 
   document.getElementById('resetFilters').addEventListener('click', () => {
-    state.countries.clear(); state.majors.clear(); state.regions.clear();
+    state.country = ''; state.majors.clear(); state.regions.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
     document.getElementById('qsSelect').value = '';
