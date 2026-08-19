@@ -18,7 +18,7 @@ function profileViewTemplate() {
   const lang = p.languageTests[0];
   return `
     <div class="section-title">
-      <div><span class="eyebrow">PROFILE</span><h2>기본 정보</h2></div>
+      <div><h2>기본 정보</h2></div>
       <button class="btn--text" data-edit-profile>수정</button>
     </div>
     <div class="profile-stats profile-stats--compact">
@@ -35,7 +35,7 @@ function profileEditTemplate() {
   const lang = p.languageTests[0] || { type: 'TOEFL', score: '' };
   return `
     <div class="section-title">
-      <div><span class="eyebrow">PROFILE</span><h2>기본 정보 수정</h2></div>
+      <div><h2>기본 정보 수정</h2></div>
     </div>
     <form class="profile-form" id="profileForm">
       <label class="field">

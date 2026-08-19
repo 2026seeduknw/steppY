@@ -151,7 +151,7 @@ function schoolModalTemplate(school) {
     <div class="school-modal">
       <header class="school-modal__header">
         <div>
-          <p class="eyebrow">${school.country} · ${school.city}${school.qsRank ? ` · QS ${school.qsRank}` : ''}</p>
+          
           <h2 class="school-modal__title">${school.name}</h2>
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}

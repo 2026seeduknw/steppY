@@ -20,7 +20,7 @@ function todoCardTemplate() {
   const percent = total ? Math.round((done / total) * 100) : 0;
   return `
     <div class="section-title">
-      <div><span class="eyebrow">TODAY</span><h2>오늘의 할 일</h2></div>
+      <div><h2>오늘의 할 일</h2></div>
       <a href="calendar.html" class="badge badge--neutral tnum">${remaining}/${total}</a>
     </div>
     <div class="todo-card__progress">

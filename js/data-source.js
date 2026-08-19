@@ -35,6 +35,26 @@
     return Number.isFinite(n) ? n : v;
   }
 
+  // 지망 통계는 원본 데이터에 대응 항목이 없어 학교별로 값이 고정되는
+  // 시드 기반 데모 숫자를 생성한다(매 새로고침마다 값이 안 바뀌도록).
+  function hashSeed(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) / 4294967295;
+  }
+
+  function mockWishlistCount(id, qsRank) {
+    const seed = hashSeed(id);
+    const seed2 = hashSeed(id + ':total');
+    const prestige = qsRank ? Math.max(0, 1 - qsRank / 800) : 0.3;
+    const rank1 = Math.round((seed * 0.6 + prestige * 0.4) * 14);
+    const extra = Math.round(seed2 * 22);
+    return { rank1, total: rank1 + extra };
+  }
+
   async function loadSchools() {
     const { data: schools, error } = await supabaseClient.from('schools').select('*');
     if (error || !schools) throw error || new Error('schools fetch failed');
@@ -67,7 +87,7 @@
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: undefined,
         creditRecommend: [], reviews: [],
-        wishlistCount: { rank1: 0, total: 0 },
+        wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
       };

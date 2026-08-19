@@ -38,7 +38,7 @@
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-sm);
-  background: var(--sky-500);
+  background: #84c62c;
   color: #fff;
   font-size: var(--fs-body);
   line-height: 1.6;

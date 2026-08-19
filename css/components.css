@@ -187,7 +187,6 @@ body[data-page="consult"]::before {
   margin-bottom: var(--space-4);
 }
 .section-title h2 { font-size: var(--fs-h2); font-weight: 700; color: var(--ink-900); }
-.section-title .eyebrow { display: block; margin-bottom: 2px; }
 /* .card 안에 들어간 section-title은 흰 카드 위이므로 어두운 텍스트로 재정의 */
 .card .section-title h2 { color: var(--ink-900); }
 
@@ -196,7 +195,6 @@ body[data-page="consult"]::before {
 .home-hero { padding: var(--space-7) var(--space-6) var(--space-6) var(--space-9); background: var(--sky-100); }
 .home-hero h1 { font-family: var(--font-display); font-size: var(--fs-display); font-weight: 800; margin: var(--space-2) 0 var(--space-1); color: var(--ink-900); }
 .home-hero p { color: var(--ink-700); }
-.home-hero .eyebrow { color: var(--sky-700); }
 
 /* ---- Favorite (하트) ---- */
 .fav-btn {

@@ -75,7 +75,7 @@ function scoreCardHtml(school, opts) {
   return `
     <div class="card score-card">
       <div class="section-title">
-        <div><span class="eyebrow">SCORE DATA</span><h2>${numbered ? '③ ' : ''}생활 점수 인포그래픽</h2></div>
+        <div><h2>${numbered ? '③ ' : ''}생활 점수 인포그래픽</h2></div>
       </div>
       <p class="score-card__note">치안 · 물가 · 상권 · 교통 이동성 · 여행 이동성 5개 지표를 100점 만점으로 점수화했어요. 모두 높을수록 유리해요 (물가는 저렴할수록 높은 점수).</p>
       <div class="score-card__body">

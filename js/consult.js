@@ -78,14 +78,14 @@
     }
     if (m.type === 'chips') {
       return `
-        <div class="chat-message__sender">날개가방 후기봇</div>
+        <div class="chat-message__sender">Mentor's Step</div>
         <p>${escapeHtml(m.text)}</p>
         <div class="chat-suggest-chips">${m.chips.map(c => `<button type="button" class="chip" data-suggest="${c}">${c}</button>`).join('')}</div>
       `;
     }
     if (m.type === 'reviews') {
       return `
-        <div class="chat-message__sender">날개가방 후기봇</div>
+        <div class="chat-message__sender">Mentor's Step</div>
         <p>${escapeHtml(m.text)}</p>
         ${m.reviews.map(r => `
           <div class="chat-message__quote">
@@ -95,7 +95,7 @@
         `).join('')}
       `;
     }
-    return `<div class="chat-message__sender">날개가방 후기봇</div><p>${escapeHtml(m.text)}</p>`;
+    return `<div class="chat-message__sender">Mentor's Step</div><p>${escapeHtml(m.text)}</p>`;
   }
 
   function renderMessages() {
@@ -108,7 +108,7 @@
       }
       return `<div class="chat-message chat-message--bot">
         <div class="chat-message__row">
-          <div class="chat-message__avatar">✈️</div>
+          <div class="chat-message__avatar">🐾</div>
           <div class="chat-message__bubble">${botBubbleInner(m)}</div>
         </div>
         ${m.type === 'typing' ? '' : `<div class="chat-message__meta">${m.time || ''}</div>`}

@@ -64,14 +64,6 @@ img { max-width: 100%; display: block; }
   padding: 0 var(--space-6);
 }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--sky-500);
-}
-
 .tnum { font-variant-numeric: tabular-nums; }
 
 /* ---- Scrollbar (webkit) — 톤에 맞춘 얇은 스크롤바 ---- */

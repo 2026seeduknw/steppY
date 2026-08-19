@@ -12,19 +12,19 @@ const PREPARE_MARKUP = `
       <div id="prepareScore"></div>
 
       <section class="card card-pad" id="checklistSection">
-        <div class="section-title"><div><span class="eyebrow">DOCUMENTS</span><h2>비자 및 서류 체크리스트</h2></div></div>
+        <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
         <div class="checklist" id="checklistList"></div>
       </section>
 
       <section class="card card-pad" id="livingSection">
-        <div class="section-title"><div><span class="eyebrow">LIVING PREP</span><h2>생활 준비 — 준비물</h2></div></div>
+        <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
         <div class="living-grid" id="livingGrid"></div>
       </section>
 
       <section class="card card-pad" id="tipsSection">
-        <div class="section-title"><div><span class="eyebrow">TIPS</span><h2>Tips</h2></div></div>
+        <div class="section-title"><div><h2>Tips</h2></div></div>
         <div class="tip-row" id="tipsList"></div>
-        <div class="section-title" style="margin-top:var(--space-5);"><div><span class="eyebrow">NEARBY</span><h2>주변 가볼만한 곳</h2></div></div>
+        <div class="section-title" style="margin-top:var(--space-5);"><div><h2>주변 가볼만한 곳</h2></div></div>
         <div class="tip-row" id="spotsList"></div>
       </section>
     </div>
@@ -74,7 +74,7 @@ function renderPrepareHero() {
           ? `<img class="confirmed-card__logo" src="assets/school-logos/${SCHOOL_LOGOS[confirmed.id]}" alt="${confirmed.name} 로고">`
           : `<div class="confirmed-card__logo confirmed-card__logo--empty"></div>`}
         <div>
-          <span class="eyebrow" style="color:var(--sky-100)">확정된 학교</span>
+          
           <div class="confirmed-card__name">${confirmed.name}</div>
           <div class="confirmed-card__meta">${confirmed.country} · ${confirmed.city}${confirmed.qsRank ? ` · QS ${confirmed.qsRank}` : ''}</div>
           <div class="confirmed-card__badges">
@@ -101,7 +101,7 @@ function renderPrepareMap() {
   if (!confirmed) { mount.innerHTML = ''; return; }
   mount.innerHTML = `
     <section class="card card-pad">
-      <div class="section-title"><div><span class="eyebrow">LOCATION</span><h2>학교 위치</h2></div></div>
+      <div class="section-title"><div><h2>학교 위치</h2></div></div>
       <div class="map-embed">
         <iframe src="${mapEmbedUrl(confirmed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${confirmed.name} 지도"></iframe>
       </div>

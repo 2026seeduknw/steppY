@@ -36,7 +36,7 @@ function renderAppNav(activeKey) {
       }).join('')}
     </nav>
     <div class="app-nav__user">
-      <span class="eyebrow tnum">D-DAY 확인 필요</span>
+      
       <div class="app-nav__avatar">${initial}</div>
     </div>
   `;
