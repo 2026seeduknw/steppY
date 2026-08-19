@@ -105,6 +105,26 @@ function lifeOrbitCard(school, initials) {
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
 }
 
+const HOUSING_BADGE = {
+  Yes: { cls: 'badge--go', label: '기숙사 보장' },
+  Partial: { cls: 'badge--amber', label: '기숙사 부분보장' },
+  No: { cls: 'badge--warn', label: '기숙사 미보장' }
+};
+
+/** 어학 자격증(TOEFL 외)·기숙사 보장 여부 — 기존 배지 줄 바로 아래에 별도 줄로 보여준다.
+ * 둘 다 원본 데이터가 없는 학교가 많아(어학 62/271, 기숙사 103/271), 값이 있을 때만 렌더링. */
+function extraInfoBadgesHtml(school) {
+  const badges = [];
+  if (!school.langTest.cut && school.langTest.level) {
+    badges.push(`<span class="badge badge--neutral" title="${school.langTest.notes || ''}">${school.langTest.level} 이상</span>`);
+  }
+  const housing = HOUSING_BADGE[school.housing.guaranteed];
+  if (housing) {
+    badges.push(`<span class="badge ${housing.cls}" title="${school.housing.info || ''}">${housing.label}</span>`);
+  }
+  return badges.length ? `<div class="school-modal__badges school-modal__badges--extra">${badges.join('')}</div>` : '';
+}
+
 /** 학점 인정 추천 과목 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
  *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다. */
 function creditRecommendHtml(school, profile) {
@@ -172,6 +192,7 @@ function schoolModalTemplate(school) {
             <span class="badge badge--amber">GPA ${school.gpaCut}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
+          ${extraInfoBadgesHtml(school)}
         </div>
         <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
           <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>

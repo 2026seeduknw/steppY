@@ -22,8 +22,10 @@
  *   - creditRecommend는 school 객체가 아니라 js/components/school-modal.js가
  *     MOCK.majorMatches를 (학교 + 내 재학 학과)로 직접 필터링해 채웁니다 —
  *     학교x전공 조합별로 달라지는 값이라 school 객체에는 넣지 않습니다.
- *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
- *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
+ *   - langTest — TOEFL iBT 컷은 영어 트랙에만 있어 그 값만 배지 판정(langTest.cut)에 사용.
+ *     비영어 트랙은 language_level/language_notes를 langTest.level/notes로 그대로 노출해
+ *     school-modal.js가 별도 배지로 보여줌(원본 자체가 B2/HSK6처럼 다양해 자동 판정은 안 함).
+ *   - housing — housing_guaranteed('Yes'|'No'|'Partial'|null)/housing_info 그대로 노출.
  */
 (function () {
   if (typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED) return;
@@ -110,8 +112,10 @@
         qsRank: s.qs_rank, slot: s.quota, track: s.track,
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
-          cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null
+          cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,
+          level: s.language_level || '', notes: s.language_notes || ''
         },
+        housing: { guaranteed: s.housing_guaranteed || '', info: s.housing_info || '' },
         gpaCut: coerce(s.gpa_required),
         majors: [], seasons: [
           ...(s.spring_available ? ['봄학기'] : []),
