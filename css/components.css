@@ -17,8 +17,14 @@ body[data-page="prepare"]::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: url('../assets/bg-pixel-clouds.jpg') center / cover no-repeat;
+  background: url('../assets/bg-pixel-clouds.jpg') left top repeat;
+  background-size: 2400px 1200px;
   opacity: 0.4;
+  animation: bg-clouds-drift 50s linear infinite;
+}
+@keyframes bg-clouds-drift {
+  from { background-position-x: 0; }
+  to { background-position-x: 2400px; }
 }
 
 /* ---- Top nav (F2/F3/F4/F5 공통) ---- */
