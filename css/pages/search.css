@@ -86,7 +86,7 @@
   gap: var(--space-5);
   padding: var(--space-5);
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, var(--amber-100), var(--sky-50));
+  background: var(--beige);
   border: 1px solid var(--amber-200);
   margin-bottom: var(--space-5);
 }
