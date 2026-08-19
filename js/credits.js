@@ -51,7 +51,7 @@
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>
         <div class="match-card__note">${m.note}</div>
       </div>
-    `).join('') : `<p class="info-panel__text">아직 등록된 강의계획서 매칭 데이터가 없어요.</p>`;
+    `).join('') : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
   }
 
   document.getElementById('downloadReportBtn').addEventListener('click', () => {

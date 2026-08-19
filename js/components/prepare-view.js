@@ -117,7 +117,7 @@ function renderPrepareScore() {
 function renderPrepareChecklist() {
   const mount = document.getElementById('checklistList');
   if (!MOCK.checklist.length) {
-    mount.innerHTML = `<p class="info-panel__text">아직 등록된 체크리스트 항목이 없어요.</p>`;
+    mount.innerHTML = `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
     return;
   }
   mount.innerHTML = MOCK.checklist.map(item => `
@@ -155,7 +155,7 @@ function renderPrepareLiving() {
   const mount = document.getElementById('livingGrid');
   const keys = ['insurance', 'scholarship', 'telecom', 'bank'].filter(k => lp[k]);
   if (!keys.length) {
-    mount.innerHTML = `<p class="info-panel__text">아직 등록된 생활 준비 정보가 없어요.</p>`;
+    mount.innerHTML = `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
     return;
   }
   mount.innerHTML = keys.map(k => {
@@ -186,10 +186,10 @@ function renderPrepareTips() {
   const spots = MOCK.nearbySpots.filter(s => s.school === schoolId);
   document.getElementById('tipsList').innerHTML = tips.length
     ? tips.map(t => `<div class="tip-item"><div class="tip-item__title">${t.title}</div><div class="tip-item__summary">${t.summary}</div></div>`).join('')
-    : `<p class="info-panel__text">아직 등록된 꿀강 정보가 없어요. 멘토 상담에서 물어보세요.</p>`;
+    : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
   document.getElementById('spotsList').innerHTML = spots.length
     ? spots.map(s => `<div class="tip-item"><div class="tip-item__title">${s.title}</div><div class="tip-item__summary">${s.summary}</div></div>`).join('')
-    : `<p class="info-panel__text">아직 등록된 장소 정보가 없어요.</p>`;
+    : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
 }
 
 function ensurePrepareStylesLoaded() {
