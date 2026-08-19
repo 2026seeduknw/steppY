@@ -3,10 +3,6 @@
   const confirmed = AppState.getConfirmedSchool();
   let selectedMajor = AppState.profile.major;
 
-  document.getElementById('creditsContext').textContent = confirmed
-    ? `${confirmed.name} 기준으로 계산해요`
-    : '아직 확정한 학교가 없어요. 학교 확정 전에는 예시 데이터로 보여드려요.';
-
   function renderMajorFilter() {
     const mount = document.getElementById('majorFilterMount');
     mount.innerHTML = '';

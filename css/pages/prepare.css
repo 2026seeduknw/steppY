@@ -19,6 +19,12 @@ body[data-page="prepare"]::before {
   to { background-position: 0 0, 2400px 0; }
 }
 
+/* F1(index.html)의 좌우 페이지 패딩(48px)에 맞춤 — 기본 .page-shell은 32px */
+body[data-page="prepare"] .page-shell {
+  padding-left: var(--space-7);
+  padding-right: var(--space-7);
+}
+
 .prepare-hero {
   padding: var(--space-6) 0 0;
 }
