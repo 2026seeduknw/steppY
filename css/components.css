@@ -3,6 +3,24 @@
    split-flap board
    ========================================================================== */
 
+/* ---- F2~F4 배경(픽셀 구름 하늘, 40% 불투명도) ----
+   opacity를 body에 직접 걸면 콘텐츠까지 흐려지므로 ::before로 배경만 분리. */
+body[data-page="home"],
+body[data-page="search"],
+body[data-page="prepare"] {
+  position: relative;
+}
+body[data-page="home"]::before,
+body[data-page="search"]::before,
+body[data-page="prepare"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url('../assets/bg-pixel-clouds.jpg') center / cover no-repeat;
+  opacity: 0.4;
+}
+
 /* ---- Top nav (F2/F3/F4/F5 공통) ---- */
 .app-nav {
   position: sticky;
