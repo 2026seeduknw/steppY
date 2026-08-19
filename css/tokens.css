@@ -64,8 +64,8 @@
   --line-100: #EAEEF5;
 
   /* ---- Typography ---- */
-  /* 전체 Pretendard 단일 사용 (사용자 피드백 반영) — 굵기 차등으로 위계 구성 */
-  --font-display: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  /* 본문/UI는 Pretendard 유지, 큰 타이틀(--font-display)만 Gmarket Sans로 차별화 */
+  --font-display: 'GmarketSans', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   --font-mono: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
 
