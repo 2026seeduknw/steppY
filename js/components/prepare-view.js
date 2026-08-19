@@ -151,7 +151,23 @@ function renderPrepareChecklist() {
 }
 
 function renderPrepareLiving() {
-  const lp = MOCK.livingPrep;
+  const confirmed = AppState.getConfirmedSchool();
+  const countryInfo = confirmed && MOCK.countryPrep.find(c => c.countryEn === confirmed.countryEn);
+  const lp = Object.assign({}, MOCK.livingPrep);
+  if (countryInfo) {
+    lp.telecom = {
+      title: '통신사', summary: `${countryInfo.telecomRecommend} · ${countryInfo.telecomPrice}`,
+      caution: countryInfo.telecomNote
+    };
+    lp.insurance = {
+      title: '보험', summary: `${countryInfo.insurance} · ${countryInfo.insurancePrice}`,
+      caution: countryInfo.insuranceNote
+    };
+    lp.bank = {
+      title: '계좌 개설', summary: countryInfo.bankRecommend,
+      caution: `필요 서류: ${countryInfo.accountDocs}`
+    };
+  }
   const mount = document.getElementById('livingGrid');
   const keys = ['insurance', 'scholarship', 'telecom', 'bank'].filter(k => lp[k]);
   if (!keys.length) {

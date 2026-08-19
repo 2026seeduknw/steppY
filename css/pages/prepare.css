@@ -28,6 +28,11 @@ body[data-page="prepare"] .page-shell {
 .prepare-hero {
   padding: var(--space-6) 0 0;
 }
+/* 확정 카드(위)를 아래 학교 위치 카드(.prepare-main, 사이드바 336px 제외한 폭)와
+   같은 너비로 맞춤 */
+body[data-page="prepare"] .page-shell.prepare-hero {
+  padding-right: calc(var(--space-7) + 336px + var(--space-6));
+}
 
 .confirmed-card {
   display: flex;

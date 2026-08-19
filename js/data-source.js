@@ -114,6 +114,18 @@
     return out;
   }
 
+  /** 국가별 통신사/보험/계좌 실데이터(32개국). 학교별이 아니라 국가별이라 원본
+   *  그대로 country_en으로 반환하고, 확정 학교 국가로 찾는 건 화면 쪽(prepare-view.js)에서 처리. */
+  async function loadCountryPrep() {
+    const { data } = await supabaseClient.from('country_prep').select('*');
+    return (data || []).map(c => ({
+      countryEn: c.country_en, countryKo: c.country_ko,
+      telecomRecommend: c.telecom_recommend, telecomPrice: c.telecom_price, telecomNote: c.telecom_note,
+      insurance: c.insurance, insurancePrice: c.insurance_price, insuranceNote: c.insurance_note,
+      bankRecommend: c.bank_recommend, accountDocs: c.account_docs
+    }));
+  }
+
   async function loadCourseMatches() {
     const { data } = await supabaseClient.from('course_matches').select('*');
     return (data || []).map(m => ({
@@ -163,8 +175,9 @@
 
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors, visaRequirements]) => {
+    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
+    loadCountryPrep()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -174,6 +187,7 @@
     if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
     if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
+    if (countryPrep.length) MOCK.countryPrep = countryPrep;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);

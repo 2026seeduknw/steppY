@@ -57,9 +57,13 @@ MOCK.checklist = [];
 
 /* ---------------------------------------------------------------------
  * 생활 준비 정보 카드 (F4) — 보험/장학금/통신사/계좌. Supabase living_prep
- * 테이블에서 채워짐.
+ * 테이블에서 채워짐(장학금만 여기 해당 — 국가별 아님).
  * ------------------------------------------------------------------- */
 MOCK.livingPrep = {};
+
+/* 국가별 통신사/보험/계좌 실데이터 (32개국). Supabase country_prep 테이블에서
+ * 채워짐. renderPrepareLiving()에서 확정 학교의 country_en으로 찾아 씀. */
+MOCK.countryPrep = [];
 
 /* Supabase scholarships 테이블에서 채워짐. */
 MOCK.scholarships = [];
