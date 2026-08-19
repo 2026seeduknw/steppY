@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "steppY-static",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["tools/no-cache-server.py", "8123"],
+      "port": 8123,
+      "autoPort": true
+    }
+  ]
+}

@@ -122,6 +122,19 @@
     }));
   }
 
+  async function loadMajorMatches() {
+    const { data } = await supabaseClient
+      .from('major_matches')
+      .select('*')
+      .order('korean_major_id')
+      .order('rank');
+    return (data || []).map(m => ({
+      id: m.id, koreanMajorId: m.korean_major_id, homeMajor: m.home_major, school: m.school_id,
+      targetMajor: m.target_major, similarity: m.similarity, semanticScore: m.semantic_score,
+      taxonomyScore: m.taxonomy_score, matchedTopics: m.matched_topics || [], note: m.note, rank: m.rank
+    }));
+  }
+
   async function loadTips() {
     const { data } = await supabaseClient.from('tips').select('*');
     return (data || []).map(t => ({ school: t.school_id, title: t.title, summary: t.summary }));
@@ -163,13 +176,14 @@
 
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadCourseMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, tips, nearbySpots, yonseiMajors, visaRequirements]) => {
+    loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
     if (Object.keys(livingPrep).length) MOCK.livingPrep = livingPrep;
     if (courseMatches.length) MOCK.courseMatches = courseMatches;
+    if (majorMatches.length) MOCK.majorMatches = majorMatches;
     if (tips.length) MOCK.tips = tips;
     if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
