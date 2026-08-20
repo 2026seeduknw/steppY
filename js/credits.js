@@ -63,7 +63,9 @@
           </div>
           <div class="similarity-ring" style="background:${similarityColor(m.similarity)}">${m.similarity}%</div>
         </div>
-        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>
+        ${m.matchedTopics.length ? `
+        <div class="match-card__topics-label">관련 키워드</div>
+        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
         <div class="match-card__note">${m.note}</div>
       </div>
     `;

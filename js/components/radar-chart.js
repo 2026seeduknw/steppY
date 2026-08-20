@@ -63,11 +63,17 @@ function radarChartSvg(scores) {
     return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${band.color}" stroke="#fff" stroke-width="1.5"/>`;
   }).join('');
 
+  // 라벨은 "교통 이동성"/"여행 이동성"처럼 긴 텍스트가 있어, 1.34배 반지름에 한 줄로
+  // 놓으면 카드 바깥으로 삐져나갔다. 반지름을 1.15배로 줄이고, 공백이 있는 라벨은
+  // 두 줄(tspan)로 접어 가로 폭을 좁혀서 카드 안에 들어오게 한다.
   const labels = RADAR_AXES.map((ax, i) => {
-    const p = pentPoint(i, 1.34, cx, cy, R);
+    const p = pentPoint(i, 1.15, cx, cy, R);
     const dx = p.x - cx;
     const anchor = Math.abs(dx) < 6 ? 'middle' : (dx > 0 ? 'start' : 'end');
-    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label}</text>`;
+    const parts = ax.label.split(' ');
+    const lines = parts.length > 1 ? [`${ax.icon} ${parts[0]}`, parts.slice(1).join(' ')] : [`${ax.icon} ${ax.label}`];
+    const tspans = lines.map((line, li) => `<tspan x="${p.x.toFixed(1)}" dy="${li === 0 ? (lines.length > 1 ? '-0.3em' : '0') : '1.15em'}">${line}</tspan>`).join('');
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${tspans}</text>`;
   }).join('');
 
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
