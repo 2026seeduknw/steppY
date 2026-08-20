@@ -196,6 +196,7 @@
       });
       const newCount = MOCK.schools.filter(s => computeEligibility(simulatedProfile, s).status === 'go').length;
       const diff = Math.max(0, newCount - currentCount);
+      trackEvent('gpa_sim_run', { targetGpa: targetGpa || 0, targetLang: targetLang || 0, diff });
       document.getElementById('simResult').innerHTML = diff > 0
         ? `목표 점수를 달성하면 <strong>${diff}개</strong>의 학교를 더 갈 수 있어요`
         : `입력하신 목표 점수로는 지원 가능 학교 수가 늘어나지 않아요. 더 높은 점수를 시도해보세요`;

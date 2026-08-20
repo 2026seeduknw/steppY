@@ -398,6 +398,7 @@ body[data-page="calendar"]::before {
 .school-modal__title { font-size: var(--fs-h1); font-weight: 700; margin: var(--space-1) 0 var(--space-3); }
 .school-modal__en { font-size: var(--fs-body); font-weight: 400; color: var(--ink-600); margin-left: var(--space-2); }
 .school-modal__badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.school-modal__badges--extra { margin-top: var(--space-2); }
 
 .school-modal__grid {
   display: grid;
@@ -513,8 +514,22 @@ body[data-page="calendar"]::before {
 .radar-chart { flex: 0 0 264px; width: 264px; height: 244px; overflow: visible; }
 .radar-label { font-size: 10.5px; font-family: var(--font-body); fill: var(--ink-700); font-weight: 600; }
 .score-rows { flex: 1; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-.score-row { display: grid; grid-template-columns: 108px 1fr 34px 64px; align-items: center; gap: var(--space-3); }
-.score-row__label { font-size: var(--fs-small); color: var(--ink-700); white-space: nowrap; }
+.score-row { display: grid; grid-template-columns: 128px 1fr 34px 64px; align-items: center; gap: var(--space-3); }
+.score-row__label { font-size: var(--fs-small); color: var(--ink-700); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.score-row__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--sky-100);
+  color: var(--sky-700);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+}
 .score-row__bar { height: 8px; border-radius: var(--radius-pill); background: var(--sky-50); overflow: hidden; }
 .score-row__fill { height: 100%; border-radius: var(--radius-pill); transition: width var(--dur-slow) var(--ease-out); }
 .score-row__value { font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-small); color: var(--ink-900); text-align: right; }

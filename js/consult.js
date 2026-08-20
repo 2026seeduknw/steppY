@@ -1,36 +1,15 @@
 /**
  * 멘토 없는 멘토 상담 — 학교를 고르면 선배 경험보고서 후기를 질문 키워드로
- * 매칭해 챗봇 형태로 보여주는 목업. 실제 AI/백엔드 없이 클라이언트 키워드
- * 매칭(js/mock-data.js의 MOCK.schoolReviews)으로만 동작.
+ * 매칭해 챗봇 형태로 보여준다. 실제 AI/백엔드 없이 클라이언트 키워드 매칭으로만
+ * 동작하며, 후기 원문은 Supabase school_exchange_reports에서 온다
+ * (js/data-source.js::loadSchoolExchangeReports → MOCK.schoolReviews).
+ * 질문 키워드 사전은 js/review-topics.js(REVIEW_TOPICS)를 후기 태깅 쪽과 공유한다 —
+ * 두 곳이 따로 놀면 여기서 제안하는 주제 칩이 실제 후기 태그와 어긋날 수 있어서다.
  */
 (function () {
   AppState.load();
 
-  // 짧은 한 글자 키워드(비/방/돈/밤 등)는 다른 단어(생활비/가방/비싸다 등)의 부분
-  // 문자열로 우연히 매칭되는 오탐이 잦아 의도적으로 배제함.
-  const TOPIC_DICT = [
-    { tag: '기숙사', keywords: ['기숙사', 'dorm', 'dormitory', '주거', '룸메이트'] },
-    { tag: '교통', keywords: ['교통', '버스', '지하철', '통학', '이동수단', '대중교통', 'mrt'] },
-    { tag: '상권', keywords: ['상권', '편의점', '쇼핑', '맛집', '다운타운', '시내'] },
-    { tag: '치안', keywords: ['치안', '안전', '위험', '밤길', '소매치기'] },
-    { tag: '학업', keywords: ['수업', '학업', '과제', '교수', '강의', '시험', '조모임', '팀플'] },
-    { tag: '날씨', keywords: ['날씨', '기후', '우천', '더위', '추위', '계절'] },
-    { tag: '생활비', keywords: ['생활비', '물가', '비용', '식비', '외식'] }
-  ];
-  const SUGGEST_TAGS = TOPIC_DICT.map(t => t.tag);
-
-  // MOCK.schoolReviews는 목업 학교 id(keio/nus/ubc) 기준으로 작성됨. Supabase가
-  // 연결돼 있으면 data-source.js가 MOCK.schools를 실제 DB id(예: keio-university)로
-  // 덮어쓰므로, 실제 id → 목업 id로 매핑해 후기를 계속 찾을 수 있게 함.
-  const SCHOOL_ID_ALIASES = {
-    'keio-university': 'keio',
-    'national-university-of-singapore': 'nus',
-    'the-university-of-british-columbia': 'ubc'
-  };
-  function reviewsKeyFor(schoolId) {
-    if (MOCK.schoolReviews[schoolId]) return schoolId;
-    return SCHOOL_ID_ALIASES[schoolId] || schoolId;
-  }
+  const SUGGEST_TAGS = REVIEW_TOPICS.map(t => t.tag);
 
   const params = new URLSearchParams(location.search);
   const preselect = params.get('school');
@@ -53,21 +32,14 @@
     return new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
   }
 
-  function matchTopics(text) {
-    const q = text.toLowerCase();
-    return TOPIC_DICT.filter(t => t.keywords.some(k => q.includes(k.toLowerCase()))).map(t => t.tag);
-  }
-
   function matchReviews(schoolId, questionText) {
-    const topics = matchTopics(questionText);
-    const tagged = MOCK.schoolReviews[reviewsKeyFor(schoolId)] || [];
+    const topics = matchReviewTopics(questionText);
+    const all = MOCK.schoolReviews[schoolId] || [];
     if (topics.length) {
-      const hits = tagged.filter(r => topics.includes(r.tag));
+      const hits = all.filter(r => topics.includes(r.tag));
       if (hits.length) return { hits, fallback: false, topics };
     }
-    const school = MOCK.schools.find(s => s.id === schoolId);
-    const fallbackHits = (school.reviews || []).map(text => ({ tag: null, author: '선배 후기', text }));
-    return { hits: fallbackHits, fallback: true, topics };
+    return { hits: all.slice(0, 3), fallback: true, topics };
   }
 
   function addMessage(msg) { messages.push(msg); renderMessages(); }
@@ -132,6 +104,7 @@
 
   function askQuestion(text) {
     if (!activeSchool || !text.trim()) return;
+    trackEvent('consult_question', { schoolId: activeSchool });
     addMessage({ role: 'user', text, time: nowLabel() });
 
     const typingMsg = { role: 'bot', type: 'typing' };

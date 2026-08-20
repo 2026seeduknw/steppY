@@ -13,17 +13,19 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), reviews, wishlistCount —
+ *   - majors(지원 가능 연세대 전공), wishlistCount —
  *     원본에 대응 데이터 없음 → 빈 배열/기본값(wishlistCount는 시드 기반 데모 숫자).
  *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐.
  *      climate/climateType는 climate_staging 테이블의 계절별 실측 평균기온으로 채워짐 —
  *      climateType은 그 기온으로부터 파생 분류한 값이라 원본에 직접 있는 필드는 아님)
  *     이 때문에 검색 화면의 "전공" 필터는 실제 학교에는 아직 걸리지 않습니다.
- *   - creditRecommend는 school 객체가 아니라 js/components/school-modal.js가
- *     MOCK.majorMatches를 (학교 + 내 재학 학과)로 직접 필터링해 채웁니다 —
- *     학교x전공 조합별로 달라지는 값이라 school 객체에는 넣지 않습니다.
- *   - langTest — TOEFL iBT 점수만 원본에 있어 그 값만 사용. 그 외 어학시험(IELTS/JLPT 등)
- *     요건은 language_notes/language_level에 원문 그대로 남아있지만 배지 판정에는 아직 미반영.
+ *   - creditRecommend/reviews는 school 객체가 아니라 각 컴포넌트가
+ *     MOCK.majorMatches/MOCK.schoolReviews를 school.id로 직접 필터링해 채웁니다 —
+ *     학교(x전공) 조합별로 달라지는 값이라 school 객체 자체에는 넣지 않습니다.
+ *   - langTest — TOEFL iBT 컷은 영어 트랙에만 있어 그 값만 배지 판정(langTest.cut)에 사용.
+ *     비영어 트랙은 language_level/language_notes를 langTest.level/notes로 그대로 노출해
+ *     school-modal.js가 별도 배지로 보여줌(원본 자체가 B2/HSK6처럼 다양해 자동 판정은 안 함).
+ *   - housing — housing_guaranteed('Yes'|'No'|'Partial'|null)/housing_info 그대로 노출.
  */
 (function () {
   if (typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED) return;
@@ -111,8 +113,17 @@
         qsRank: s.qs_rank, slot: s.quota, track: s.track,
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
-          cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null
+          cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,
+          level: s.language_level || '', notes: s.language_notes || ''
         },
+        housing: {
+          guaranteed: s.housing_guaranteed || '', info: s.housing_info || '',
+          dormCost: s.dorm_semester_avg_krw != null ? {
+            local: coerce(s.dorm_semester_avg_local), currency: s.dorm_currency || '',
+            krw: coerce(s.dorm_semester_avg_krw), confidence: s.dorm_confidence || ''
+          } : null
+        },
+        monthlyLivingCostKrw: coerce(s.monthly_living_cost_krw),
         gpaCut: coerce(s.gpa_required),
         majors: [], seasons: [
           ...(s.spring_available ? ['봄학기'] : []),
@@ -123,7 +134,6 @@
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
-        reviews: [],
         wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
@@ -196,9 +206,75 @@
     return (data || []).map(s => ({ school: s.school_id, title: s.title, summary: s.summary }));
   }
 
+  // school_exchange_reports는 학교당 여러 개의 긴 서술형 후기 항목(개요/학업/기숙사·식사 등)을
+  // 담고 있다. 원본 서술이 여러 주제를 한 문단에 섞어 쓰는 경우가 많아(예: '상권' 항목에
+  // 치안 얘기가 섞여 있음) 필드 단위로 태그를 고정하지 않고, 문장 단위로 쪼개 각 문장이
+  // 실제로 어떤 주제(REVIEW_TOPICS, js/review-topics.js)를 언급하는지 키워드로 분류한다.
+  // 키워드가 하나도 안 걸리는 문장은 그 필드의 기본 주제(FIELD_FALLBACK_TAG)로 묶는다.
+  // 이렇게 하면 학생이 Mentor's Step에서 교통/치안/날씨/생활비를 물어봤을 때도(예전엔
+  // 이 네 태그가 실제 후기에 한 번도 안 붙어서 항상 "정확히 일치하는 후기 없음"으로 빠졌음)
+  // 해당 키워드가 들어간 문장을 실제로 찾아 보여줄 수 있다.
+  const REPORT_FIELDS = ['housing_food', 'academics', 'surroundings', 'campus_facilities', 'overview', 'cultural_adaptation', 'international_support', 'tips'];
+  const FIELD_FALLBACK_TAG = { housing_food: '기숙사', academics: '학업', surroundings: '상권', campus_facilities: '상권' };
+  const QUOTE_MAX_SENTENCES = 2;
+  const QUOTE_MAX_CHARS = 110;
+
+  function splitSentences(text) {
+    return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length >= 5);
+  }
+
+  function truncateReview(text, max) {
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const lastBreak = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('. \n'));
+    return (lastBreak > max * 0.5 ? cut.slice(0, lastBreak + 1) : cut) + '…';
+  }
+
+  async function loadSchoolExchangeReports() {
+    const { data } = await supabaseClient
+      .from('school_exchange_reports')
+      .select('school_id, semester, title, overview, surroundings, housing_food, academics, international_support, campus_facilities, cultural_adaptation, tips')
+      .not('school_id', 'is', null);
+    const out = {};
+    (data || []).forEach(r => {
+      const author = r.semester ? `${r.semester} 파견 후기` : (r.title || '선배 후기');
+      const tagSentences = {};
+      REPORT_FIELDS.forEach(field => {
+        const text = r[field];
+        if (!text || !text.trim()) return;
+        const fallbackTag = FIELD_FALLBACK_TAG[field] || null;
+        splitSentences(text.trim()).forEach(sentence => {
+          const tags = matchReviewTopics(sentence);
+          (tags.length ? tags : (fallbackTag ? [fallbackTag] : [])).forEach(tag => {
+            (tagSentences[tag] || (tagSentences[tag] = [])).push(sentence);
+          });
+        });
+      });
+      Object.entries(tagSentences).forEach(([tag, sentences]) => {
+        const text = truncateReview(sentences.slice(0, QUOTE_MAX_SENTENCES).join(' '), QUOTE_MAX_CHARS);
+        (out[r.school_id] || (out[r.school_id] = [])).push({ tag, author, text });
+      });
+    });
+    return out;
+  }
+
   async function loadYonseiMajors() {
     const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
+  }
+
+  /** 학교별 지원 서류 목록 (exchange-doc-crawler가 채운 school_documents 테이블, 999행).
+   *  document_type: 'baseline'(공식 확인) | 'hint'(참고용, 미검증). */
+  async function loadSchoolDocuments() {
+    const { data } = await supabaseClient
+      .from('school_documents')
+      .select('school_id, document_name, document_type, sort_order, source_url')
+      .order('sort_order');
+    const out = {};
+    (data || []).forEach(d => {
+      (out[d.school_id] || (out[d.school_id] = [])).push({ name: d.document_name, type: d.document_type, sourceUrl: d.source_url });
+    });
+    return out;
   }
 
   /** 국가별 비자 서류 정보 (exchange-doc-crawler가 채운 visa_requirements/visa_documents 테이블).
@@ -228,8 +304,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep]) => {
+    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -241,6 +317,8 @@
     if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
     if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
     if (countryPrep.length) MOCK.countryPrep = countryPrep;
+    if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
+    if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);
