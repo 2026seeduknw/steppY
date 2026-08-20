@@ -20,7 +20,7 @@ body[data-page="home"] .home-hero {
 }
 body[data-page="home"] #greeting {
   position: relative;
-  top: 7px;
+  top: 10px;
 }
 
 .home-grid {
