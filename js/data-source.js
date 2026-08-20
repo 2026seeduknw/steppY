@@ -115,7 +115,14 @@
           cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,
           level: s.language_level || '', notes: s.language_notes || ''
         },
-        housing: { guaranteed: s.housing_guaranteed || '', info: s.housing_info || '' },
+        housing: {
+          guaranteed: s.housing_guaranteed || '', info: s.housing_info || '',
+          dormCost: s.dorm_semester_avg_krw != null ? {
+            local: coerce(s.dorm_semester_avg_local), currency: s.dorm_currency || '',
+            krw: coerce(s.dorm_semester_avg_krw), confidence: s.dorm_confidence || ''
+          } : null
+        },
+        monthlyLivingCostKrw: coerce(s.monthly_living_cost_krw),
         gpaCut: coerce(s.gpa_required),
         majors: [], seasons: [
           ...(s.spring_available ? ['봄학기'] : []),
