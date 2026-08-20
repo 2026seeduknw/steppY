@@ -545,6 +545,37 @@ body[data-page="calendar"]::before {
 .confirm-warning li::before { content: '—'; position: absolute; left: 0; color: var(--coral-500); }
 .confirm-warning__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 
+/* ---- UC 캠퍼스 목록 모달(지도/날씨/점수 카드 대신 캠퍼스 선택 화면) ---- */
+.uc-group-modal { position: relative; padding: var(--space-6); }
+.uc-group-modal__header { padding-right: var(--space-6); margin-bottom: var(--space-5); }
+.uc-campus-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.uc-campus-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  text-align: left;
+}
+.uc-campus-row__logo {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  padding: 6px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line-200);
+  object-fit: contain;
+}
+.uc-campus-row__logo--fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sky-100);
+  color: var(--sky-700);
+  font-weight: 700;
+  font-size: var(--fs-micro);
+}
+.uc-campus-row__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.uc-campus-row__name { font-weight: 700; font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uc-campus-row__meta { font-size: var(--fs-micro); color: var(--ink-600); font-family: var(--font-mono); }
+
 /* ---- Empty / undecided-spec notice ---- */
 .spec-note {
   display: flex;

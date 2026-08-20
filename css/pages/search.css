@@ -130,3 +130,14 @@
   padding: var(--space-9) 0;
   color: var(--ink-400);
 }
+
+/* ---- UC 통합 카드(9개 캠퍼스 → 카드 1장) ---- */
+.uc-group-card__logos { display: flex; flex-wrap: wrap; gap: 6px; padding-top: var(--space-3); border-top: 1px solid var(--line-100); }
+.uc-group-card__logo {
+  width: 28px; height: 28px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line-200);
+  object-fit: contain;
+}
