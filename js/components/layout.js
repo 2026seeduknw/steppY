@@ -47,7 +47,7 @@ function renderMentorFloat() {
   if (!mount) return;
   mount.innerHTML = `
     <a class="mentor-float" href="consult.html">
-      <span class="mentor-float__icon">💬</span>
+      <span class="mentor-float__icon">🐾</span>
       <span>
         <span class="mentor-float__label">Mentor's Step</span>
         <span class="mentor-float__sub">막막할 때 바로 물어보세요</span>

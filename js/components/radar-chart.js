@@ -81,14 +81,15 @@ function radarChartSvg(scores) {
 
 function scoreRowsHtml(scores) {
   return RADAR_AXES.map(ax => {
+    const hasData = typeof scores[ax.key] === 'number';
     const v = scores[ax.key] || 0;
     const band = scoreBand(v);
     return `
       <div class="score-row">
         <span class="score-row__label">${ax.icon} ${ax.label}<span class="score-row__help" title="${escapeAttr(axisTooltip(ax))}">?</span></span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
-        <span class="score-row__value tnum">${v}</span>
-        <span class="score-row__band" style="color:${band.color};">${band.label}</span>
+        <span class="score-row__value tnum">${hasData ? v : '준비중'}</span>
+        <span class="score-row__band" style="color:${band.color};">${hasData ? band.label : ''}</span>
       </div>`;
   }).join('');
 }

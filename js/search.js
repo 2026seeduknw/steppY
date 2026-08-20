@@ -96,6 +96,24 @@
     return list;
   }
 
+  // UC는 9개 캠퍼스가 개별 school 레코드라 검색 결과에 9장 나란히 뜨는 게 어색함 —
+  // 카드 한 장으로 합치고, 클릭하면 캠퍼스 목록 전용 모달(openUCGroupModal)을 띄움.
+  const isUCCampus = (school) => school.id.startsWith('university-of-california-');
+
+  function groupUCCampuses(list) {
+    const result = [];
+    let ucGroup = null;
+    list.forEach(school => {
+      if (isUCCampus(school)) {
+        if (!ucGroup) { ucGroup = { isUCGroup: true, campuses: [] }; result.push(ucGroup); }
+        ucGroup.campuses.push(school);
+      } else {
+        result.push(school);
+      }
+    });
+    return result;
+  }
+
   function renderGrid() {
     const filtered = sortSchools(MOCK.schools.filter(matchesFilters));
     document.getElementById('resultCount').innerHTML = `<strong>${filtered.length}</strong>개 학교`;
@@ -104,12 +122,16 @@
       grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요. 필터를 조정해보세요.</div>`;
       return;
     }
-    grid.innerHTML = filtered.map(schoolCardTemplate).join('');
+    const rows = groupUCCampuses(filtered);
+    grid.innerHTML = rows.map(row => row.isUCGroup ? ucGroupCardTemplate(row.campuses) : schoolCardTemplate(row)).join('');
     grid.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav-toggle-card]')) return;
         openSchoolModal(el.dataset.openSchool, { onChange: renderGrid });
       });
+    });
+    grid.querySelectorAll('[data-open-uc-group]').forEach(el => {
+      el.addEventListener('click', () => openUCGroupModal(renderGrid));
     });
     grid.querySelectorAll('[data-fav-toggle-card]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -117,6 +139,25 @@
         btn.classList.toggle('is-active', active);
       });
     });
+  }
+
+  function ucGroupCardTemplate(campuses) {
+    return `
+      <button type="button" class="card card--interactive school-card" data-open-uc-group="1">
+        <div class="school-card__top">
+          <span class="school-card__qs">${campuses.length}개 캠퍼스</span>
+        </div>
+        <div class="school-card__name">University of California</div>
+        <div class="school-card__loc">미국 · 캘리포니아 (${campuses.map(c => c.campusCity).filter(Boolean).join(' · ')})</div>
+        <div class="school-card__badges"><span class="badge badge--neutral">캠퍼스별로 지원 요건이 달라요</span></div>
+        <div class="uc-group-card__logos">
+          ${campuses.map(c => SCHOOL_LOGOS[c.id]
+            ? `<img class="uc-group-card__logo" src="assets/school-logos/${SCHOOL_LOGOS[c.id]}" alt="${c.name}" title="${c.name}">`
+            : ''
+          ).join('')}
+        </div>
+      </button>
+    `;
   }
 
   function schoolCardTemplate(school) {

@@ -12,6 +12,7 @@ body[data-page="major-matching"] .home-hero {
   gap: var(--space-2);
 }
 body[data-page="major-matching"] .home-hero p { color: var(--ink-600); font-size: var(--fs-small); }
+body[data-page="major-matching"] .home-hero h1 { position: relative; top: 10px; }
 
 .major-match-confirmed-note {
   font-size: var(--fs-small);

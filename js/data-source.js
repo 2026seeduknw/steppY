@@ -109,6 +109,7 @@
         },
         name: s.name, nameKo: s.name_ko || s.name,
         country: s.country_ko || s.country_en, countryEn: s.country_en, region: s.region_ko || s.continent, city: s.city || '',
+        campusCity: c ? (c.city || '') : '',
         qsRank: s.qs_rank, slot: s.quota, track: s.track,
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),

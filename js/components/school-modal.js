@@ -37,6 +37,46 @@ function openSchoolModal(schoolId, opts = {}) {
   openModal(scrim);
 }
 
+/** UC는 캠퍼스 9곳이 검색 결과에서 카드 한 장으로 합쳐지는데, 그 카드를 누르면
+ *  개별 학교 모달(지도·날씨·점수 카드) 대신 캠퍼스 목록만 보여주는 전용 모달을 띄운다.
+ *  캠퍼스마다 지원 요건·위치가 달라 지도/날씨/점수는 이 화면에서 의미가 없기 때문. */
+function openUCGroupModal(onChange) {
+  const campuses = MOCK.schools
+    .filter(s => s.id.startsWith('university-of-california-'))
+    .sort((a, b) => (a.qsRank || 9999) - (b.qsRank || 9999));
+  if (!campuses.length) return;
+  const scrim = ensureSchoolModalScrim();
+  scrim.innerHTML = `
+    <div class="modal-panel">
+    <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
+    <div class="uc-group-modal">
+      <header class="uc-group-modal__header">
+        <h2 class="school-modal__title">University of California</h2>
+        <p class="info-panel__text">UC는 캠퍼스마다 위치·지원 요건·모집 인원이 달라요. 캠퍼스를 선택하면 상세 정보를 볼 수 있어요.</p>
+      </header>
+      <div class="uc-campus-list">
+        ${campuses.map(c => `
+          <button type="button" class="card card--interactive uc-campus-row" data-open-campus="${c.id}">
+            ${SCHOOL_LOGOS[c.id]
+              ? `<img class="uc-campus-row__logo" src="assets/school-logos/${SCHOOL_LOGOS[c.id]}" alt="${c.name}">`
+              : `<span class="uc-campus-row__logo uc-campus-row__logo--fallback">${schoolInitials(c.name)}</span>`}
+            <span class="uc-campus-row__body">
+              <span class="uc-campus-row__name">${c.name.replace('University of California, ', '')}</span>
+              <span class="uc-campus-row__meta">${c.campusCity || c.city}${c.qsRank ? ` · QS ${c.qsRank}` : ''}</span>
+            </span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+    </div>
+  `;
+  wireModalCloseButtons(scrim);
+  scrim.querySelectorAll('[data-open-campus]').forEach(btn => {
+    btn.addEventListener('click', () => openSchoolModal(btn.dataset.openCampus, { onChange }));
+  });
+  openModal(scrim);
+}
+
 /** "National University of Singapore" → "NUS" 처럼 관사/전치사를 제외한 이니셜 생성 */
 function schoolInitials(name) {
   const stop = new Set(['of', 'the', 'and', '&']);
