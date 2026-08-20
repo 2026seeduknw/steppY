@@ -22,12 +22,18 @@ function escapeAttr(str) {
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-/** 라벨 호버 시 보여줄 설명. MOCK.livabilityDefs(Supabase livability_column_definitions)가
- * 로드되기 전이면 지표명만 보여준다. */
+/** 라벨 호버 시 보여줄 설명. 전문 용어(GPI·Foursquare·정규화 등) 대신
+ * 학생이 바로 이해할 수 있는 일상적인 말로 풀어씀. */
+const AXIS_TOOLTIPS = {
+  security: '이 지역이 얼마나 안전한지 보여주는 점수예요. 외교부 여행경보, 실제 범죄 통계, 세계 평화지수를 참고해서 계산했어요.',
+  costOfLiving: '이 도시 물가가 전 세계 기준으로 비싼 편인지 저렴한 편인지 보여주는 점수예요. 점수가 높을수록 물가가 저렴한 도시예요.',
+  commerce: '학교 근처에 밥 먹을 곳, 카페, 편의점·마트, 놀거리 같은 게 얼마나 다양하고 많은지 보여주는 점수예요. 점수가 높을수록 학교 주변에서 생활하기 편해요.',
+  transitMobility: '학교에서 시내(도심)로 이동하거나 버스·지하철 같은 대중교통을 이용하기 얼마나 편한지 보여주는 점수예요.',
+  travelMobility: '교환학생 기간에 다른 나라로 여행 가기 얼마나 쉬운지 보여주는 점수예요. 공항이 가까운지, 기차나 버스로 옆 나라까지 갈 수 있는지를 반영해요.'
+};
+
 function axisTooltip(ax) {
-  const def = (MOCK.livabilityDefs || {})[ax.key];
-  if (!def) return ax.label;
-  return `${def.meaning}\n\n산출 방식: ${def.source}`;
+  return AXIS_TOOLTIPS[ax.key] || ax.label;
 }
 
 function pentPoint(i, frac, cx, cy, R) {
@@ -61,7 +67,7 @@ function radarChartSvg(scores) {
     const p = pentPoint(i, 1.34, cx, cy, R);
     const dx = p.x - cx;
     const anchor = Math.abs(dx) < 6 ? 'middle' : (dx > 0 ? 'start' : 'end');
-    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label} ⓘ</text>`;
+    return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" text-anchor="${anchor}" class="radar-label"><title>${escapeAttr(axisTooltip(ax))}</title>${ax.icon} ${ax.label}</text>`;
   }).join('');
 
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
