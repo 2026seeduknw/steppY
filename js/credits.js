@@ -60,10 +60,16 @@
       <div class="card match-card">
         <div class="match-card__top">
           <div class="match-card__courses">
-            <div class="match-card__target-course">${stripSchoolSuffix(m.targetCourse)}</div>
-            <div class="match-card__school">
-              ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
-              <span class="match-card__school-name">${school.name}</span>
+            <div class="match-card__field">
+              <span class="match-card__field-label">과목명</span>
+              <span class="match-card__target-course">${stripSchoolSuffix(m.targetCourse)}</span>
+            </div>
+            <div class="match-card__field">
+              <span class="match-card__field-label">학교</span>
+              <div class="match-card__school">
+                ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
+                <span class="match-card__school-name">${school.name}</span>
+              </div>
             </div>
           </div>
           <div class="similarity-ring" style="background:${similarityColor(m.similarity)}">${m.similarity}%</div>
