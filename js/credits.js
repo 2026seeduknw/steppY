@@ -144,13 +144,6 @@
 
   function applyModeUI() {
     document.getElementById('creditsPageTitle').textContent = mode === 'major' ? '내 전공과 잘 맞는 해외 전공' : '학점 인정 사전 확인';
-    const subtitle = document.getElementById('creditsPageSubtitle');
-    if (mode === 'major') {
-      subtitle.textContent = '262개 파견교 중 의미와 학문분류가 가까운 전공을 보여드려요.';
-      subtitle.hidden = false;
-    } else {
-      subtitle.hidden = true;
-    }
     document.getElementById('downloadReportBtn').style.display = mode === 'major' ? 'none' : '';
     document.querySelectorAll('.mode-toggle__btn').forEach(btn => {
       btn.classList.toggle('is-active', btn.dataset.mode === mode);

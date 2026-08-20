@@ -10,6 +10,7 @@ body[data-page="credits"] .home-hero {
   justify-content: center;
   min-height: 148px;
 }
+body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
 
 .credits-grid {
   padding: calc(var(--space-8) - 5px) 5px var(--space-9);
