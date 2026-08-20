@@ -128,14 +128,16 @@ function extraInfoBadgesHtml(school) {
   return badges.length ? `<div class="school-modal__badges school-modal__badges--extra">${badges.join('')}</div>` : '';
 }
 
-/** 학점 인정 추천 과목 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
- *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다. */
-function creditRecommendHtml(school, profile) {
+/** 유사 전공 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
+ *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다.
+ *  과목(course_matches) 매칭이 아니라 전공(major_matches) 매칭이라 예전엔 "학점 인정
+ *  추천 과목"이라는 제목이 내용과 안 맞았음 — 제목·빈 상태 문구를 전공 매칭으로 정정. */
+function similarMajorsHtml(school, profile) {
   const matches = (MOCK.majorMatches || []).filter(m => m.school === school.id && m.homeMajor === profile.major);
   if (!matches.length) {
-    return `<p class="info-panel__text">${profile.major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 추천 과목을 보여드려요.'}</p>`;
+    return `<p class="info-panel__text">${profile.major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 유사 전공을 보여드려요.'}</p>`;
   }
-  return `<div class="tag-row">${matches.map(m => `<span class="chip">${m.targetMajor}</span>`).join('')}</div>`;
+  return `<div class="tag-row">${matches.map(m => `<span class="chip" title="유사도 ${m.similarity}%${m.note ? ` · ${m.note}` : ''}">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
 /** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
@@ -251,8 +253,8 @@ function schoolModalTemplate(school) {
 
       <div class="school-modal__grid">
         <section class="info-panel info-panel--wide">
-          <h3>④ 학점 인정 추천 과목</h3>
-          ${creditRecommendHtml(school, profile)}
+          <h3>④ 유사 전공</h3>
+          ${similarMajorsHtml(school, profile)}
         </section>
 
         <section class="info-panel">

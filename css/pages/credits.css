@@ -42,7 +42,8 @@ body[data-page="credits"] .home-hero {
   color: #fff;
 }
 
-.match-card__topics { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--space-3) 0; }
+.match-card__topics-label { font-size: var(--fs-micro); color: var(--ink-500); margin-top: var(--space-3); }
+.match-card__topics { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 var(--space-3); }
 .match-card__note { font-size: var(--fs-small); color: var(--ink-600); background: var(--sky-50); padding: var(--space-3); border-radius: var(--radius-sm); }
 
 .summary-banner {
