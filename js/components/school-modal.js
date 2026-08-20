@@ -133,20 +133,21 @@ function lifeOrbitCard(school, initials) {
   chipDefs.push({ icon: '🚉', label: '상권', value: COMMERCE_LABEL[school.commerceLevel] || '보통' });
   const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
 
-  const weatherLine = seasonEntries.length
-    ? seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ')
-    : '날씨 정보 준비 중';
+  const weatherLines = seasonEntries.length
+    ? seasonEntries.map(([season, text]) => `<p class="orbit-card__line"><strong>${season}</strong> — ${text}</p>`).join('')
+    : `<p class="orbit-card__line">날씨 정보 준비 중</p>`;
   const dormCurrency = school.housing.dormCost ? school.housing.dormCost.currency : null;
   const reviews = (MOCK.schoolReviews[school.id] || []).slice(0, 3);
   const body = `
-    <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
+    <p class="orbit-card__line"><strong>날씨</strong></p>
+    ${weatherLines}
     ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
     ${dormCurrency ? mentalRateShortTipHtml(dormCurrency) : ''}
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
     ${reviews.length
       ? `<ul class="review-list">${reviews.map(r => `<li>${r.tag ? `#${r.tag} ` : ''}${r.text}</li>`).join('')}</ul>`
       : `<p class="info-panel__text">아직 등록된 선배 후기가 없어요.</p>`}
-    <a class="btn--text" href="consult.html?school=${school.id}">멘토 없는 멘토 상담에서 더 물어보기 →</a>
+    <a class="btn--text" href="consult.html?school=${school.id}">Mentor's Step에서 더 물어보기 →</a>
   `;
   return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
 }
