@@ -199,15 +199,21 @@
   }
 
   // school_exchange_reports는 학교당 여러 개의 긴 서술형 후기 항목(개요/학업/기숙사·식사 등)을
-  // 담고 있다. js/consult.js·school-modal.js가 기대하는 "짧게 태그된 인용구" 형태로
-  // 펼쳐서 변환한다. 필드 하나당 인용구 하나, 태그는 근접한 항목으로 근사 매핑한다
-  // (원본 서술이 여러 주제를 한 문단에 섞어 쓰는 경우가 많아 완벽한 분류는 아님).
-  const REPORT_FIELD_TAGS = [
-    ['housing_food', '기숙사'], ['academics', '학업'],
-    ['surroundings', '상권'], ['campus_facilities', '상권'],
-    ['overview', null], ['cultural_adaptation', null],
-    ['international_support', null], ['tips', null]
-  ];
+  // 담고 있다. 원본 서술이 여러 주제를 한 문단에 섞어 쓰는 경우가 많아(예: '상권' 항목에
+  // 치안 얘기가 섞여 있음) 필드 단위로 태그를 고정하지 않고, 문장 단위로 쪼개 각 문장이
+  // 실제로 어떤 주제(REVIEW_TOPICS, js/review-topics.js)를 언급하는지 키워드로 분류한다.
+  // 키워드가 하나도 안 걸리는 문장은 그 필드의 기본 주제(FIELD_FALLBACK_TAG)로 묶는다.
+  // 이렇게 하면 학생이 Mentor's Step에서 교통/치안/날씨/생활비를 물어봤을 때도(예전엔
+  // 이 네 태그가 실제 후기에 한 번도 안 붙어서 항상 "정확히 일치하는 후기 없음"으로 빠졌음)
+  // 해당 키워드가 들어간 문장을 실제로 찾아 보여줄 수 있다.
+  const REPORT_FIELDS = ['housing_food', 'academics', 'surroundings', 'campus_facilities', 'overview', 'cultural_adaptation', 'international_support', 'tips'];
+  const FIELD_FALLBACK_TAG = { housing_food: '기숙사', academics: '학업', surroundings: '상권', campus_facilities: '상권' };
+  const QUOTE_MAX_SENTENCES = 2;
+  const QUOTE_MAX_CHARS = 110;
+
+  function splitSentences(text) {
+    return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(s => s.length >= 5);
+  }
 
   function truncateReview(text, max) {
     if (text.length <= max) return text;
@@ -224,10 +230,21 @@
     const out = {};
     (data || []).forEach(r => {
       const author = r.semester ? `${r.semester} 파견 후기` : (r.title || '선배 후기');
-      REPORT_FIELD_TAGS.forEach(([field, tag]) => {
+      const tagSentences = {};
+      REPORT_FIELDS.forEach(field => {
         const text = r[field];
         if (!text || !text.trim()) return;
-        (out[r.school_id] || (out[r.school_id] = [])).push({ tag, author, text: truncateReview(text.trim(), 320) });
+        const fallbackTag = FIELD_FALLBACK_TAG[field] || null;
+        splitSentences(text.trim()).forEach(sentence => {
+          const tags = matchReviewTopics(sentence);
+          (tags.length ? tags : (fallbackTag ? [fallbackTag] : [])).forEach(tag => {
+            (tagSentences[tag] || (tagSentences[tag] = [])).push(sentence);
+          });
+        });
+      });
+      Object.entries(tagSentences).forEach(([tag, sentences]) => {
+        const text = truncateReview(sentences.slice(0, QUOTE_MAX_SENTENCES).join(' '), QUOTE_MAX_CHARS);
+        (out[r.school_id] || (out[r.school_id] = [])).push({ tag, author, text });
       });
     });
     return out;

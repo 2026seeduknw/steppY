@@ -3,22 +3,13 @@
  * 매칭해 챗봇 형태로 보여준다. 실제 AI/백엔드 없이 클라이언트 키워드 매칭으로만
  * 동작하며, 후기 원문은 Supabase school_exchange_reports에서 온다
  * (js/data-source.js::loadSchoolExchangeReports → MOCK.schoolReviews).
+ * 질문 키워드 사전은 js/review-topics.js(REVIEW_TOPICS)를 후기 태깅 쪽과 공유한다 —
+ * 두 곳이 따로 놀면 여기서 제안하는 주제 칩이 실제 후기 태그와 어긋날 수 있어서다.
  */
 (function () {
   AppState.load();
 
-  // 짧은 한 글자 키워드(비/방/돈/밤 등)는 다른 단어(생활비/가방/비싸다 등)의 부분
-  // 문자열로 우연히 매칭되는 오탐이 잦아 의도적으로 배제함.
-  const TOPIC_DICT = [
-    { tag: '기숙사', keywords: ['기숙사', 'dorm', 'dormitory', '주거', '룸메이트'] },
-    { tag: '교통', keywords: ['교통', '버스', '지하철', '통학', '이동수단', '대중교통', 'mrt'] },
-    { tag: '상권', keywords: ['상권', '편의점', '쇼핑', '맛집', '다운타운', '시내'] },
-    { tag: '치안', keywords: ['치안', '안전', '위험', '밤길', '소매치기'] },
-    { tag: '학업', keywords: ['수업', '학업', '과제', '교수', '강의', '시험', '조모임', '팀플'] },
-    { tag: '날씨', keywords: ['날씨', '기후', '우천', '더위', '추위', '계절'] },
-    { tag: '생활비', keywords: ['생활비', '물가', '비용', '식비', '외식'] }
-  ];
-  const SUGGEST_TAGS = TOPIC_DICT.map(t => t.tag);
+  const SUGGEST_TAGS = REVIEW_TOPICS.map(t => t.tag);
 
   const params = new URLSearchParams(location.search);
   const preselect = params.get('school');
@@ -41,13 +32,8 @@
     return new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
   }
 
-  function matchTopics(text) {
-    const q = text.toLowerCase();
-    return TOPIC_DICT.filter(t => t.keywords.some(k => q.includes(k.toLowerCase()))).map(t => t.tag);
-  }
-
   function matchReviews(schoolId, questionText) {
-    const topics = matchTopics(questionText);
+    const topics = matchReviewTopics(questionText);
     const all = MOCK.schoolReviews[schoolId] || [];
     if (topics.length) {
       const hits = all.filter(r => topics.includes(r.tag));
@@ -118,6 +104,7 @@
 
   function askQuestion(text) {
     if (!activeSchool || !text.trim()) return;
+    trackEvent('consult_question', { schoolId: activeSchool });
     addMessage({ role: 'user', text, time: nowLabel() });
 
     const typingMsg = { role: 'bot', type: 'typing' };

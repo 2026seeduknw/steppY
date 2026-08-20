@@ -292,6 +292,7 @@ function wireSchoolModalActions(scrim, school, opts) {
     const active = AppState.toggleFavorite(school.id);
     e.currentTarget.classList.toggle('is-active', active);
     showToast(active ? '즐겨찾기에 추가했어요' : '즐겨찾기를 해제했어요');
+    trackEvent('wishlist_toggle', { schoolId: school.id, active });
     if (opts.onChange) opts.onChange();
   });
 
@@ -301,7 +302,7 @@ function wireSchoolModalActions(scrim, school, opts) {
       const already = btn.classList.contains('is-selected');
       scrim.querySelectorAll('.rank-chip').forEach(b => b.classList.remove('is-selected'));
       AppState.setWishlistRank(rank, already ? null : school.id);
-      if (!already) { btn.classList.add('is-selected'); showToast(`${rank}지망으로 등록했어요`); }
+      if (!already) { btn.classList.add('is-selected'); showToast(`${rank}지망으로 등록했어요`); trackEvent('wishlist_rank_select', { schoolId: school.id, rank }); }
       else { showToast('지망 등록을 취소했어요'); }
       if (opts.onChange) opts.onChange();
     });
@@ -319,6 +320,7 @@ function wireSchoolModalActions(scrim, school, opts) {
     });
     scrim.querySelector('#finalConfirmBtn').addEventListener('click', () => {
       AppState.confirmSchool(school.id);
+      trackEvent('school_confirm', { schoolId: school.id });
       closeModal(scrim);
       if (opts.onChange) opts.onChange();
       morphToPreparePage();
