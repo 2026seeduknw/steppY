@@ -25,6 +25,13 @@
   renderWishlistRow();
   renderJourney();
 
+  // 제휴 업체(보험/어학원/여행) 배너 — 아직 실제 제휴처가 없는 더미 CTA.
+  // 클릭 수만 세어 실제 수요가 있는지 검증하는 용도라 트래킹이 핵심이다.
+  document.getElementById('partnerPromoBanner').addEventListener('click', () => {
+    trackEvent('partner_promo_click');
+    showToast('서비스 준비중입니다. 관심 가져주셔서 감사해요 — 곧 찾아뵐게요!');
+  });
+
   document.addEventListener('profile:updated', renderWishlistRow);
   document.addEventListener('MOCK:updated', () => {
     if (redirectIfConfirmed()) return;

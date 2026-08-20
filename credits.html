@@ -9,17 +9,23 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/credits.css">
+<link rel="stylesheet" href="css/pages/major-matching.css">
 </head>
 <body data-page="credits">
 
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell home-hero">
-  <h1>학점 인정 사전 확인</h1>
+  <h1 id="creditsPageTitle">학점 인정 사전 확인</h1>
+  <p id="creditsPageSubtitle" hidden></p>
 </div>
 
 <div class="page-shell credits-grid">
   <main>
+    <div class="mode-toggle" id="modeToggle">
+      <button type="button" class="mode-toggle__btn is-active" data-mode="course">학점인정 과목 찾기</button>
+      <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭 찾기</button>
+    </div>
     <div class="section-title">
       <div></div>
       <div class="section-title__actions">
@@ -27,6 +33,7 @@
         <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
       </div>
     </div>
+    <p id="confirmedSchoolNote" class="major-match-confirmed-note" hidden></p>
     <div id="matchList"></div>
   </main>
 </div>
@@ -36,6 +43,7 @@
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
 <script src="js/currency-rates.js"></script>
+<script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/school-logos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
