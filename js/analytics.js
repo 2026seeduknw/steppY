@@ -12,7 +12,13 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
   document.head.appendChild(script);
 })();
 
-/** 버튼 클릭 등 커스텀 이벤트 기록. props는 문자열/숫자/불리언 값만 허용된다(Vercel 제약). */
+/** 버튼 클릭 등 커스텀 이벤트 기록. props는 문자열/숫자/불리언 값만 허용된다(Vercel 제약).
+ * Vercel Web Analytics의 커스텀 이벤트(Events 탭)는 Hobby 플랜에서 지원되지 않아
+ * 실제 집계는 안 되므로, Supabase click_events 테이블에도 함께 남겨 SQL로 바로
+ * 집계할 수 있게 한다(va() 호출은 나중에 Pro로 올릴 경우를 대비해 그대로 둠). */
 function trackEvent(name, props) {
   window.va('event', props ? { name, ...props } : { name });
+  if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+    supabaseClient.from('click_events').insert({ event_name: name, metadata: props || {} }).then(() => {});
+  }
 }

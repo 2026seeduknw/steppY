@@ -15,6 +15,22 @@
 
   function uniq(field) { return [...new Set(MOCK.schools.map(s => s[field]).filter(v => v != null))]; }
 
+  // school.majors(학교별 지원 가능 전공)는 원본 데이터가 없어 항상 빈 배열이라(알려진
+  // 한계) 학과 필터가 실제로는 아무것도 안 걸러냈다 — 대신 major_matches(전공 매칭
+  // 결과)에 이 학교·전공 조합이 있는지로 판단한다. school.id -> 매칭된 홈전공 Set.
+  let schoolMajorMatchMap = new Map();
+  function rebuildMajorMatchMap() {
+    schoolMajorMatchMap = new Map();
+    (MOCK.majorMatches || []).forEach(m => {
+      if (!schoolMajorMatchMap.has(m.school)) schoolMajorMatchMap.set(m.school, new Set());
+      schoolMajorMatchMap.get(m.school).add(m.homeMajor);
+    });
+  }
+  function schoolHasMajorMatch(school, major) {
+    const set = schoolMajorMatchMap.get(school.id);
+    return !!set && set.has(major);
+  }
+
   function renderFilters() {
     renderCountrySelect();
     renderMajorFilter();
@@ -25,8 +41,8 @@
   }
 
   // 연세대 전공 마스터 리스트(76개) 기준 검색 가능한 다중 선택 드롭다운.
-  // school.majors(학교별 지원 가능 전공)가 아니라 MOCK.yonseiMajors를 옵션으로 씀 —
-  // 실데이터 학교들은 majors가 비어있어(알려진 한계) 선택해도 결과가 안 나올 수 있음.
+  // school.majors(학교별 지원 가능 전공)는 원본에 없어 항상 비어있으므로 옵션 목록만
+  // MOCK.yonseiMajors로 채우고, 실제 필터링은 schoolHasMajorMatch()로 major_matches를 본다.
   function renderMajorFilter() {
     const mount = document.getElementById('majorFilters');
     mount.innerHTML = '';
@@ -74,7 +90,7 @@
       if (!hay.includes(q)) return false;
     }
     if (state.country && school.country !== state.country) return false;
-    if (state.majors.size && !school.majors.some(m => state.majors.has(m))) return false;
+    if (state.majors.size && ![...state.majors].some(m => schoolHasMajorMatch(school, m))) return false;
     if (state.regions.size && !state.regions.has(school.region)) return false;
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
     if (state.climate.size && !state.climate.has(school.climateType)) return false;
@@ -88,7 +104,7 @@
   function sortSchools(list) {
     const profile = AppState.profile;
     if (state.sort === 'major') {
-      return [...list].sort((a, b) => Number(b.majors.includes(profile.major)) - Number(a.majors.includes(profile.major)) || a.qsRank - b.qsRank);
+      return [...list].sort((a, b) => Number(schoolHasMajorMatch(b, profile.major)) - Number(schoolHasMajorMatch(a, profile.major)) || a.qsRank - b.qsRank);
     }
     if (state.sort === 'slot') {
       return [...list].sort((a, b) => b.slot - a.slot);
@@ -127,7 +143,11 @@
     grid.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav-toggle-card]')) return;
-        openSchoolModal(el.dataset.openSchool, { onChange: renderGrid });
+        const schoolId = el.dataset.openSchool;
+        // 학과 필터로 찾아 들어온 거면, 모달의 "유사 전공"도 그 필터 기준으로 보여준다
+        // (여러 학과를 동시에 선택했으면 이 학교가 실제로 매칭되는 학과를 고른다).
+        const contextMajor = [...state.majors].find(m => schoolHasMajorMatch({ id: schoolId }, m));
+        openSchoolModal(schoolId, { onChange: renderGrid, contextMajor });
       });
     });
     grid.querySelectorAll('[data-open-uc-group]').forEach(el => {
@@ -171,7 +191,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
           </span>
         </div>
-        <div class="school-card__name">${school.name}</div>
+        <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
         <div class="school-card__badges">${eligibilityBadgeHtml(elig)}<span class="badge badge--neutral">모집 ${school.slot}명</span></div>
         <div class="school-card__stats">
@@ -221,9 +241,10 @@
     renderFilters(); renderGrid();
   });
 
+  rebuildMajorMatchMap();
   renderFilters();
   renderGrid();
   wireSimulation();
 
-  document.addEventListener('MOCK:updated', () => { renderFilters(); renderGrid(); });
+  document.addEventListener('MOCK:updated', () => { rebuildMajorMatchMap(); renderFilters(); renderGrid(); });
 })();

@@ -31,7 +31,7 @@ function openSchoolModal(schoolId, opts = {}) {
   const school = MOCK.schools.find(s => s.id === schoolId);
   if (!school) return;
   const scrim = ensureSchoolModalScrim();
-  scrim.innerHTML = schoolModalTemplate(school);
+  scrim.innerHTML = schoolModalTemplate(school, opts);
   wireModalCloseButtons(scrim);
   wireSchoolModalActions(scrim, school, opts);
   openModal(scrim);
@@ -124,8 +124,9 @@ function orbitCardHtml({ title, initials, logoFile, chips, body }) {
 /** 날씨 + 치안 + 생활 정보(후기)를 한 인포그래픽으로 묶어서 렌더링 */
 function lifeOrbitCard(school, initials) {
   const seasonEntries = Object.entries(school.climate);
-  const chipDefs = seasonEntries.slice(0, 2).map(([season, text]) => ({
-    icon: SEASON_ICON[season] || '🌤️',
+  const flag = countryFlag(school.countryEn);
+  const chipDefs = seasonEntries.slice(0, 2).map(([season, text], i) => ({
+    icon: (i === 1 && flag) ? flag : (SEASON_ICON[season] || '🌤️'),
     label: season.replace('학기', ''),
     value: text.split(/[,.]/)[0]
   }));
@@ -135,10 +136,12 @@ function lifeOrbitCard(school, initials) {
   const weatherLine = seasonEntries.length
     ? seasonEntries.map(([season, text]) => `<strong>${season}</strong> — ${text}`).join(' · ')
     : '날씨 정보 준비 중';
+  const dormCurrency = school.housing.dormCost ? school.housing.dormCost.currency : null;
   const reviews = (MOCK.schoolReviews[school.id] || []).slice(0, 3);
   const body = `
     <p class="orbit-card__line"><strong>날씨</strong> — ${weatherLine}</p>
     ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
+    ${dormCurrency ? mentalRateShortTipHtml(dormCurrency) : ''}
     <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
     ${reviews.length
       ? `<ul class="review-list">${reviews.map(r => `<li>${r.tag ? `#${r.tag} ` : ''}${r.text}</li>`).join('')}</ul>`
@@ -168,14 +171,20 @@ function extraInfoBadgesHtml(school) {
   return badges.length ? `<div class="school-modal__badges school-modal__badges--extra">${badges.join('')}</div>` : '';
 }
 
-/** 학점 인정 추천 과목 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
- *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다. */
-function creditRecommendHtml(school, profile) {
-  const matches = (MOCK.majorMatches || []).filter(m => m.school === school.id && m.homeMajor === profile.major);
+/** 유사 전공 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
+ *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다.
+ *  과목(course_matches) 매칭이 아니라 전공(major_matches) 매칭이라 예전엔 "학점 인정
+ *  추천 과목"이라는 제목이 내용과 안 맞았음 — 제목·빈 상태 문구를 전공 매칭으로 정정.
+ *  기준 전공은 내 프로필 전공이 기본값이지만, 검색 화면에서 학과 필터로 걸어서 들어온
+ *  경우엔 그 필터 전공(contextMajor)을 우선한다 — 안 그러면 "중어중문학과로 필터링해서
+ *  찾은 학교인데 모달에서는 왜 매칭이 없냐"는 혼란이 생긴다(필터는 내 프로필 전공이
+ *  아니라 필터로 고른 전공 기준으로 학교를 찾아준 것이기 때문). */
+function similarMajorsHtml(school, major) {
+  const matches = (MOCK.majorMatches || []).filter(m => m.school === school.id && m.homeMajor === major);
   if (!matches.length) {
-    return `<p class="info-panel__text">${profile.major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 추천 과목을 보여드려요.'}</p>`;
+    return `<p class="info-panel__text">${major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 유사 전공을 보여드려요.'}</p>`;
   }
-  return `<div class="tag-row">${matches.map(m => `<span class="chip">${m.targetMajor}</span>`).join('')}</div>`;
+  return `<div class="tag-row">${matches.map(m => `<span class="chip" title="유사도 ${m.similarity}%${m.note ? ` · ${m.note}` : ''}">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
 /** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
@@ -197,8 +206,26 @@ function applicationDocsPanelHtml(school) {
     </section>`;
 }
 
+/** 통화 환산 팁. MENTAL_FX_RATES(js/currency-rates.js, 암산용 반올림 환율)로
+ *  "1 통화 ≈ 대략 얼마원"을 보여준다. 특정 금액이 있으면(예: 기숙사비) 그 금액에
+ *  곱한 예시까지 함께 보여주고, 없으면(② 날씨·생활 정보처럼 일반 안내용) 짧게 한 줄만. */
+function mentalRateShortTipHtml(currency) {
+  const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
+  if (!rate) return '';
+  const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+  return `<p class="orbit-card__line" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 이 학교 통화(${currency})는 ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이에요.</p>`;
+}
+
 /** 기숙사비·월 생활비 안내 (⑨). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
  *  둘 다 원본 없는 학교가 있어(기숙사비 187/271, 생활비 268/271) 있는 값만 보여준다. */
+function mentalRateTipHtml(local, currency) {
+  const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
+  if (!rate || local == null) return '';
+  const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+  const approx = mentalToKrw(local, currency);
+  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁 — ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
+}
+
 function livingCostPanelHtml(school) {
   const dorm = school.housing.dormCost;
   const monthly = school.monthlyLivingCostKrw;
@@ -208,6 +235,7 @@ function livingCostPanelHtml(school) {
     <section class="info-panel info-panel--wide">
       <h3>⑨ 생활비 안내</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
+      ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
       <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
     </section>`;
@@ -247,8 +275,9 @@ function visaDocsPanelHtml(school) {
     </section>`;
 }
 
-function schoolModalTemplate(school) {
+function schoolModalTemplate(school, opts = {}) {
   const profile = AppState.profile;
+  const similarMajorsFor = opts.contextMajor || profile.major;
   const elig = computeEligibility(profile, school);
   const isFav = AppState.isFavorite(school.id);
   const wishlist = AppState.getWishlist();
@@ -291,8 +320,8 @@ function schoolModalTemplate(school) {
 
       <div class="school-modal__grid">
         <section class="info-panel info-panel--wide">
-          <h3>④ 학점 인정 추천 과목</h3>
-          ${creditRecommendHtml(school, profile)}
+          <h3>④ 유사 전공</h3>
+          ${similarMajorsHtml(school, similarMajorsFor)}
         </section>
 
         <section class="info-panel">
