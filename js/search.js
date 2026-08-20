@@ -171,7 +171,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
           </span>
         </div>
-        <div class="school-card__name">${school.name}</div>
+        <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
         <div class="school-card__badges">${eligibilityBadgeHtml(elig)}<span class="badge badge--neutral">모집 ${school.slot}명</span></div>
         <div class="school-card__stats">
