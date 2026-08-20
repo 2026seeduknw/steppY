@@ -157,6 +157,22 @@ function applicationDocsPanelHtml(school) {
     </section>`;
 }
 
+/** 기숙사비·월 생활비 안내 (⑨). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
+ *  둘 다 원본 없는 학교가 있어(기숙사비 187/271, 생활비 268/271) 있는 값만 보여준다. */
+function livingCostPanelHtml(school) {
+  const dorm = school.housing.dormCost;
+  const monthly = school.monthlyLivingCostKrw;
+  if (!dorm && monthly == null) return '';
+  const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+  return `
+    <section class="info-panel info-panel--wide">
+      <h3>⑨ 생활비 안내</h3>
+      ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
+      ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
+    </section>`;
+}
+
 /** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
 function visaDocsPanelHtml(school) {
   const info = MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
@@ -252,6 +268,7 @@ function schoolModalTemplate(school) {
 
         ${visaDocsPanelHtml(school)}
         ${applicationDocsPanelHtml(school)}
+        ${livingCostPanelHtml(school)}
       </div>
 
       <footer class="school-modal__footer" id="modalFooter">
