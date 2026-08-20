@@ -201,6 +201,16 @@ function applicationDocsPanelHtml(school) {
 
 /** 기숙사비·월 생활비 안내 (⑨). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
  *  둘 다 원본 없는 학교가 있어(기숙사비 187/271, 생활비 268/271) 있는 값만 보여준다. */
+/** 통화 환산 팁 한 줄. MENTAL_FX_RATES(js/currency-rates.js, 암산용 반올림 환율)로
+ *  "1 통화 ≈ 대략 얼마원"과 그 학교 실제 금액에 곱한 예시를 함께 보여준다. */
+function mentalRateTipHtml(local, currency) {
+  const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
+  if (!rate || local == null) return '';
+  const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+  const approx = mentalToKrw(local, currency);
+  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁 — ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
+}
+
 function livingCostPanelHtml(school) {
   const dorm = school.housing.dormCost;
   const monthly = school.monthlyLivingCostKrw;
@@ -210,6 +220,7 @@ function livingCostPanelHtml(school) {
     <section class="info-panel info-panel--wide">
       <h3>⑨ 생활비 안내</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
+      ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
       <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
     </section>`;

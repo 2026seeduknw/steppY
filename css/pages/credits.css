@@ -21,10 +21,12 @@ body[data-page="credits"] .home-hero {
 
 .match-card { padding: var(--space-5); margin-bottom: var(--space-4); }
 .match-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }
-.match-card__courses { font-size: var(--fs-small); display: flex; flex-direction: column; gap: 6px; }
-.match-card__home { font-weight: 700; color: var(--ink-900); }
+.match-card__courses { display: flex; flex-direction: column; gap: 10px; }
+.match-card__field { display: flex; align-items: baseline; gap: 10px; }
+.match-card__field-label { flex: 0 0 52px; font-size: var(--fs-micro); color: var(--ink-500); }
+.match-card__home { font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
 .match-card__arrow { color: var(--ink-400); margin: 0 6px; }
-.match-card__target { color: var(--sky-700); }
+.match-card__target { font-size: var(--fs-body); font-weight: 600; color: var(--sky-700); }
 
 /* 학점 인정(F5) 카드 전용 — 과목명과 대학명을 같은 크기로 크게 보여준다.
    전공명은 위쪽 필터로 이미 정해져 있어 카드마다 반복 표시하지 않는다. */

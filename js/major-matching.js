@@ -57,17 +57,28 @@
       <div class="card match-card${isConfirmed ? ' match-card--confirmed' : ''}">
         <div class="match-card__top">
           <div class="match-card__courses">
-            <div class="match-card__home">${m.homeMajor}</div>
-            <div><span class="match-card__arrow">↔</span><span class="match-card__target">${m.targetMajor}</span></div>
-            <div class="major-match-school">
-              ${school.logo ? `<img class="major-match-school__logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
-              <span>${school.name}${school.country ? ` · ${school.country}` : ''}</span>
-              ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
+            <div class="match-card__field">
+              <span class="match-card__field-label">내 전공</span>
+              <span class="match-card__home">${m.homeMajor}</span>
+            </div>
+            <div class="match-card__field">
+              <span class="match-card__field-label">유사 전공</span>
+              <span class="match-card__target">${m.targetMajor}</span>
+            </div>
+            <div class="match-card__field">
+              <span class="match-card__field-label">학교</span>
+              <div class="major-match-school">
+                ${school.logo ? `<img class="major-match-school__logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
+                <span>${school.name}${school.country ? ` · ${school.country}` : ''}</span>
+                ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
+              </div>
             </div>
           </div>
           <div class="similarity-ring" style="background:${similarityColor(m.similarity)}">${m.similarity}%</div>
         </div>
-        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>
+        ${m.matchedTopics.length ? `
+        <div class="match-card__topics-label">관련 키워드</div>
+        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
         <div class="match-card__note">${m.note || ''}</div>
       </div>
     `;
