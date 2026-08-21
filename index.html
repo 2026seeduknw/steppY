@@ -3,90 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>steppY — 교환학생 준비 플랫폼 (클릭 데모)</title>
-<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/pages/intro.css">
+<title>steppY — 서비스 준비 중</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background: radial-gradient(120% 140% at 50% -10%, #23354D 0%, #02122F 55%, #02122F 100%);
+    color: #F0ECDD;
+  }
+
+  .wrap {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px 24px;
+  }
+
+  .badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #F0ECDD;
+    color: #02122F;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 28px rgba(2, 18, 47, 0.45);
+  }
+
+  h1 {
+    font-weight: 800;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    letter-spacing: -0.01em;
+    margin: 0 0 16px;
+  }
+
+  p.desc {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: #8BA3C5;
+    max-width: 440px;
+    margin: 0 0 32px;
+  }
+
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 32px;
+    border-radius: 999px;
+    background: #F0ECDD;
+    color: #23354D;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms;
+  }
+  .cta:hover { transform: translateY(-2px); }
+  .cta:active { transform: translateY(0); }
+
+  .toast {
+    margin-top: 20px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: rgba(225, 93, 70, 0.14);
+    color: #E15D46;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 220ms ease, transform 220ms ease;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  footer {
+    margin-top: 48px;
+    font-size: 0.8125rem;
+    color: #495B7D;
+    letter-spacing: 0.02em;
+  }
+</style>
 </head>
-<body data-page="intro">
+<body>
 
-<main class="intro">
-  <nav class="intro__nav">
-    <div class="intro__nav-left">
-      <button class="intro__hamburger" id="hamburgerBtn" aria-haspopup="true" aria-expanded="false" aria-label="메뉴 열기">
-        <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
-      <div class="intro__navmenu" id="navMenu">
-        <a href="home.html">홈</a>
-        <a href="search.html">학교 찾기</a>
-        <a href="prepare.html">교환 준비하기</a>
-        <a href="credits.html">학점 인정</a>
-        <a href="calendar.html">캘린더</a>
-      </div>
-    </div>
-    <a class="intro__brand" href="index.html">
-      <img src="assets/logo-mark-circle.png" width="28" height="28" alt="">
-      <span>steppY</span>
-    </a>
-  </nav>
+<main class="wrap">
+  <div class="badge">S</div>
+  <h1>서비스 준비 중입니다</h1>
+  <p class="desc">더 나은 모습으로 다시 찾아뵙기 위해 잠시 점검하고 있어요.<br>조금만 기다려 주세요!</p>
 
-  <div class="intro__hero">
-    <div class="intro__earth-wrap">
-      <img class="intro__earth" src="assets/hero-earth.png" alt="교환학생들이 향하는 세계 지도">
-      <div class="intro__footsteps" aria-hidden="true">
-        <img class="intro__step" style="--sx:21.9%; --sy:61.0%; --sd:0.0s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:30.2%; --sy:58.5%; --sd:0.25s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:36.6%; --sy:52.8%; --sd:0.5s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:44.8%; --sy:50.2%; --sd:0.75s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:51.2%; --sy:44.5%; --sd:1.0s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:59.5%; --sy:42.0%; --sd:1.25s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:65.9%; --sy:36.2%; --sd:1.5s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:74.1%; --sy:33.7%; --sd:1.75s" src="assets/footstep-right.png" alt="">
-      </div>
-    </div>
+  <button type="button" class="cta" id="enterBtn">서비스 살펴보기</button>
+  <div class="toast" id="toast" role="status" aria-live="polite">서비스 수리중입니다!</div>
 
-    <div class="intro__content">
-      <img class="intro__logo-badge" src="assets/logo-mark-circle.png" alt="steppY">
-      <h1 class="intro__heading">교환학생 준비, steppY로 한번에</h1>
-      <p class="intro__desc">나만의 조건에 맞는 파견교를 검색하고, GPA·어학 성적 목표 점수로 지원 가능한 학교를 시뮬레이션해보세요. 학과·과목 비교 기반의 전공 추천과 선배들의 생생한 후기까지 — 학교 검색부터 서류·학점까지, 교환학생 여정 전체를 하나의 공간에서 관리할 수 있어요.</p>
-      <a class="intro__cta" href="home.html">지금 바로 시작하기</a>
-    </div>
-
-    <div class="intro__marquee" aria-hidden="true">
-      <div class="intro__marquee-track" id="marqueeTrack"></div>
-    </div>
-  </div>
-
-  <section class="intro__services">
-    <h2>무엇이든 준비할 수 있는 하나의 공간</h2>
-    <div class="intro__service-grid">
-      <a class="intro__service-card" href="search.html">
-        <h3>학교 찾기</h3>
-        <p>조건에 맞는 파견교를 검색하고 목표 점수를 시뮬레이션해요</p>
-      </a>
-      <a class="intro__service-card" href="prepare.html">
-        <h3>교환 준비하기</h3>
-        <p>서류 체크리스트와 생활 준비까지 한 번에 관리해요</p>
-      </a>
-      <a class="intro__service-card" href="credits.html">
-        <h3>학점 인정</h3>
-        <p>강의계획서를 비교해 학점 인정 가능성을 확인해요</p>
-      </a>
-      <a class="intro__service-card" href="consult.html">
-        <h3>멘토 없는 멘토 상담</h3>
-        <p>선배들의 생생한 후기로 막막함을 줄여요</p>
-      </a>
-    </div>
-  </section>
+  <footer>steppY</footer>
 </main>
 
-<script src="js/analytics.js"></script>
-<script src="js/review-topics.js"></script>
-<script src="js/currency-rates.js"></script>
-<script src="js/country-flags.js"></script>
-<script src="js/mock-data.js"></script>
-<script src="js/intro.js"></script>
+<script>
+  var btn = document.getElementById('enterBtn');
+  var toast = document.getElementById('toast');
+  var hideTimer = null;
+
+  btn.addEventListener('click', function () {
+    toast.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () {
+      toast.classList.remove('show');
+    }, 2600);
+  });
+</script>
+
 </body>
 </html>
