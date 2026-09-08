@@ -16,14 +16,27 @@
 
   if (redirectIfConfirmed()) return;
 
-  document.getElementById('greeting').textContent = `안녕하세요, ${AppState.profile.name}님`;
-  document.getElementById('greetingSub').textContent =
-    `${AppState.profile.exchangeTerm.year} ${AppState.profile.exchangeTerm.season} 파견을 준비하고 있어요`;
+  // 로그인 상태에서는 AppState가 서버에서 채워지기 전에 이 IIFE가 먼저 돌아,
+  // 최초 1회는 게스트 기본값으로 그려진다. 하이드레이션이 끝나면 'MOCK:updated'가
+  // 오므로 그때 아래 네 가지를 통째로 다시 그린다(renderAll).
+  function renderGreeting() {
+    const p = AppState.profile;
+    const term = p.exchangeTerm || {};
+    document.getElementById('greeting').textContent = `안녕하세요, ${p.name || '회원'}님`;
+    document.getElementById('greetingSub').textContent = term.year
+      ? `${term.year} ${term.season} 파견을 준비하고 있어요`
+      : '교환 시기를 등록하면 준비 일정을 정리해 드려요';
+  }
 
-  renderProfileCard(document.getElementById('profileCard'));
-  renderTodoCard(document.getElementById('todoCard'));
-  renderWishlistRow();
-  renderJourney();
+  function renderAll() {
+    renderGreeting();
+    renderProfileCard(document.getElementById('profileCard'));
+    renderTodoCard(document.getElementById('todoCard'));
+    renderWishlistRow();
+    renderJourney();
+  }
+
+  renderAll();
 
   // 제휴 업체(보험/어학원/여행) 배너 — 아직 실제 제휴처가 없는 더미 CTA.
   // 클릭 수만 세어 실제 수요가 있는지 검증하는 용도라 트래킹이 핵심이다.
@@ -35,8 +48,7 @@
   document.addEventListener('profile:updated', renderWishlistRow);
   document.addEventListener('MOCK:updated', () => {
     if (redirectIfConfirmed()) return;
-    renderWishlistRow();
-    renderJourney();
+    renderAll();
   });
 
   // 본문(위시리스트+여정+CTA배너)과 아사이드(프로필+할일)는 각자 콘텐츠양에 따라

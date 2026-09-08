@@ -76,6 +76,10 @@
     showToast('할 일을 추가했어요');
   });
 
+  // 할 일은 로그인 계정의 서버 데이터라 AppState 하이드레이션 이후에야 확정된다.
+  // (다른 화면들과 달리 이 컨트롤러에는 재렌더 훅이 없어 첫 렌더에 멈춰 있었다)
+  document.addEventListener('MOCK:updated', () => { renderMonth(); renderSide(); });
+
   renderMonth();
   renderSide();
 })();
