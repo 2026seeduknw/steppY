@@ -1,0 +1,268 @@
+/* ==========================================================================
+   Responsive overrides — 데스크탑 전용이던 레이아웃을 태블릿·모바일까지 확장
+
+   설계 원칙
+   - 기존 css/pages/*.css 와 components.css 는 손대지 않는다. 이 파일은 각 페이지에서
+     "마지막"에 로드되어 같은 특이도끼리 나중 규칙이 이기는 방식으로만 덮어쓴다.
+     → 되돌리려면 이 파일과 <link> 8줄만 지우면 원래 데스크탑 레이아웃으로 복귀.
+   - base.css의 body{min-width:1120px} 제거가 이 파일의 전제. 그게 있으면
+     뷰포트가 아무리 좁아도 가로 스크롤이 생겨 미디어쿼리가 무의미해진다.
+   - --header-h 를 모바일에서 재정의한다. 여러 페이지의 sticky top 오프셋이
+     calc(var(--header-h) + ...) 로 잡혀 있어 토큰만 바꾸면 함께 따라온다.
+
+   브레이크포인트
+     1024px 이하 — 태블릿: 사이드바 폭 축소, 3열 → 2열
+      768px 이하 — 모바일: 모든 2단 레이아웃 1단, 상단 내비 2줄, 가로 스크롤 트랙
+      420px 이하 — 소형 단말: 히어로 배너·캘린더 셀 추가 축소
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1024px 이하 — 태블릿
+   ========================================================================== */
+@media (max-width: 1024px) {
+  /* 우측 336px 사이드바를 붙일 자리가 없다 → 본문 아래로 내린다 */
+  .home-grid,
+  .prepare-grid,
+  .cal-grid { grid-template-columns: 1fr; }
+  .home-aside,
+  .prepare-aside,
+  .cal-side { position: static; top: auto; }
+
+  /* 그리드/플렉스 자식의 기본 min-width는 auto라서, 내부에 가로로 긴 요소(가로 스크롤
+     트랙·긴 학교명·넓은 카드)가 있으면 트랙이 1fr이어도 자식이 콘텐츠 폭만큼 부풀어
+     페이지 전체에 가로 스크롤이 생긴다. 0으로 낮춰 실제로 줄어들 수 있게 한다. */
+  .home-grid > *,
+  .prepare-grid > *,
+  .cal-grid > *,
+  .search-layout > *,
+  .home-main > *,
+  .prepare-main > * { min-width: 0; }
+
+  /* 필터 사이드바는 유지하되 좁히고, 결과는 3열 → 2열 */
+  .search-layout { grid-template-columns: 208px 1fr; gap: var(--space-5); }
+  .school-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .intro__service-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* 학교 상세 모달 안의 좌우 2단 블록도 한 단으로 */
+  .orbit-card--wide { flex-direction: column; gap: var(--space-4); }
+  .orbit-card--wide .orbit-stage { flex: 0 0 auto; width: 100%; max-width: 240px; height: 240px; margin: 0 auto; }
+  .score-card__body { flex-direction: column; gap: var(--space-4); }
+  .radar-chart { flex: 0 0 auto; width: 100%; max-width: 264px; height: auto; margin: 0 auto; }
+  .score-rows { width: 100%; }
+
+  .uc-campus-list { grid-template-columns: repeat(2, 1fr); }
+}
+
+
+/* ==========================================================================
+   768px 이하 — 모바일
+   ========================================================================== */
+@media (max-width: 768px) {
+
+  /* ---- 토큰 재정의 ----
+     내비가 2줄이 되면서 높이가 72px → 약 104px 로 늘어난다. sticky 오프셋들이
+     이 토큰을 참조하므로 여기서 한 번만 바꾼다. */
+  :root {
+    --header-h: 104px;
+    --page-max: 100%;
+  }
+
+  .page-shell { padding: 0 var(--space-4); }
+
+  /* ---- 상단 내비: [브랜드][아바타] / [링크 가로 스크롤] 2줄 ---- */
+  .app-nav {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+  .app-nav__brand { order: 1; font-size: 1.1rem; }
+  .app-nav__brand .logo-mark { width: 26px; height: 26px; }
+  .app-nav__user { order: 2; margin-left: auto; }
+  .app-nav__avatar { width: 30px; height: 30px; }
+  .app-nav__links {
+    order: 3;
+    width: 100%;
+    gap: var(--space-5);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .app-nav__links::-webkit-scrollbar { display: none; }
+  .app-nav__links a { white-space: nowrap; flex: 0 0 auto; }
+
+  /* ---- 페이지 히어로 (홈·학점인정·캘린더·상담·전공매칭 공용) ----
+     hero-banner-plane.png 배너 그래픽이 148px 높이로 좌측을 덮고 있어
+     좁은 화면에서는 텍스트를 밀어낸다 → 배너와 좌측 패딩을 함께 축소. */
+  .home-hero { padding: var(--space-6) var(--space-4) var(--space-5); }
+  body[data-page="home"] .home-hero,
+  body[data-page="credits"] .home-hero,
+  body[data-page="calendar"] .home-hero,
+  body[data-page="major-matching"] .home-hero {
+    padding-left: var(--space-5);
+    background-size: auto 104px;
+    min-height: 104px;
+  }
+  body[data-page="home"] #greeting,
+  body[data-page="credits"] .home-hero h1,
+  body[data-page="major-matching"] .home-hero h1 { top: 0; }
+
+  /* ---- 플로팅 멘토 버튼: 설명줄 감추고 컴팩트하게 ---- */
+  .mentor-float {
+    right: var(--space-4);
+    bottom: var(--space-4);
+    height: 48px;
+    padding: 0 var(--space-4) 0 var(--space-2);
+    gap: var(--space-2);
+  }
+  .mentor-float__icon { width: 28px; height: 28px; font-size: 0.9rem; }
+  .mentor-float__sub { display: none; }
+
+  /* ---- 모달: 화면을 거의 꽉 채우고 내부 여백 축소 ---- */
+  .modal-panel { width: 100%; max-width: 100%; max-height: 92vh; border-radius: var(--radius-lg); }
+  .school-modal,
+  .uc-group-modal { padding: var(--space-4); }
+  .school-modal__header { flex-direction: column; gap: var(--space-2); padding-right: var(--space-7); margin-bottom: var(--space-4); }
+  .school-modal__title { font-size: var(--fs-h2); }
+  .school-modal__en { display: block; margin-left: 0; font-size: var(--fs-small); }
+  .school-modal__grid { grid-template-columns: 1fr; }
+  .school-modal__footer { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+  .school-modal__rank { justify-content: space-between; }
+  .school-modal__footer .btn { width: 100%; }
+  .confirm-warning__actions { flex-direction: column-reverse; }
+  .confirm-warning__actions .btn { width: 100%; }
+  .uc-campus-list { grid-template-columns: 1fr; }
+  .map-embed { aspect-ratio: 4 / 3; }
+  .score-row { grid-template-columns: 92px 1fr 28px 48px; gap: var(--space-2); }
+  .score-row__label { font-size: var(--fs-micro); }
+
+  /* ---- F1 인트로 ---- */
+  .intro__nav { padding: var(--space-3) var(--space-4); }
+  .intro__hero { padding: var(--space-4) var(--space-4) 0; }
+  /* 지구 그래픽은 절대배치라 좁은 화면에서 콘텐츠를 덮는다 → 축소 후 우측으로 뺀다 */
+  .intro__earth-wrap { top: 24px; right: -150px; width: 440px; height: 440px; }
+  /* 좁은 화면에서는 지구가 헤드라인 바로 뒤에 깔려 대비가 떨어진다 → 더 흐리게 */
+  .intro__earth { opacity: 0.18; }
+  .intro__content { padding: var(--space-6) 0 var(--space-7); max-width: 100%; }
+  .intro__logo-badge { width: 52px; height: 52px; }
+  .intro__desc { max-width: 100%; }
+  .intro__marquee { margin-top: var(--space-6); }
+  .intro__services { padding: var(--space-7) var(--space-4); }
+  .intro__services h2 { margin-bottom: var(--space-5); }
+  .intro__service-grid { grid-template-columns: 1fr; }
+
+  /* ---- F2 홈 ---- */
+  .home-grid { padding-top: var(--space-5); padding-bottom: var(--space-8); gap: var(--space-4); }
+  /* 지망 학교 3칸을 세로로 쌓으면 첫 화면이 전부 빈 슬롯이 된다 → 가로 스크롤 트랙 */
+  .wishlist-row {
+    grid-template-columns: repeat(3, 74vw);
+    gap: var(--space-3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-2);
+  }
+  .wishlist-slot { scroll-snap-align: start; min-height: 118px; }
+  /* 여정 단계 5칸도 동일하게 가로 스크롤 */
+  .journey-track { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: var(--space-2); }
+  .journey-card { flex: 0 0 auto; min-width: 168px; }
+  .search-cta { flex-direction: column; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); }
+  .search-cta h2 { font-size: var(--fs-h2); }
+  .search-cta .btn { width: 100%; }
+
+  /* ---- F3 학교 찾기 ---- */
+  .search-toolbar { flex-wrap: wrap; padding: var(--space-4) 0; }
+  .search-input { flex: 1 1 100%; height: 44px; }
+  .sort-select { flex: 1 1 auto; height: 44px; }
+  .sim-banner { flex-direction: column; align-items: stretch; gap: var(--space-3); padding: var(--space-4); }
+  .sim-banner__form { gap: var(--space-2); }
+  .sim-banner__field { flex: 1 1 120px; }
+  .sim-banner__field input { width: 100%; }
+  .sim-banner__field--result { flex: 1 1 100%; min-width: 0; }
+  .search-layout { grid-template-columns: 1fr; gap: var(--space-4); }
+  /* 필터 8묶음을 그대로 쌓으면 결과가 한참 아래로 밀린다 → 높이를 제한하고 내부 스크롤 */
+  .filter-panel { position: static; top: auto; max-height: 46vh; overflow-y: auto; padding: var(--space-4); gap: var(--space-4); }
+  /* 검색 가능한 드롭다운(.ss)은 데스크탑에서 콘텐츠 폭을 따르므로 좁게 남는다 */
+  .filter-group .ss { width: 100%; }
+  .school-grid { grid-template-columns: 1fr; }
+
+  /* ---- F4 교환 준비하기 ---- */
+  body[data-page="prepare"] .page-shell { padding-left: var(--space-4); padding-right: var(--space-4); }
+  body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4); }
+  .prepare-hero { padding-top: var(--space-5); }
+  .prepare-grid { padding: var(--space-4) 0 var(--space-8); gap: var(--space-4); }
+  .prepare-main { padding-left: 0; }
+  .confirmed-card { flex-direction: column; align-items: stretch; gap: var(--space-4); padding: var(--space-5); }
+  .confirmed-card__identity { gap: var(--space-3); }
+  .confirmed-card__logo { width: 60px; height: 60px; }
+  .confirmed-card__name { font-size: var(--fs-h2); }
+  .confirmed-card__actions { flex-direction: row; align-items: center; justify-content: space-between; }
+  .empty-hero { flex-direction: column; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); }
+  .empty-hero .btn { width: 100%; }
+
+  /* ---- F5 학점 인정 / 전공 매칭 ---- */
+  .credits-grid { padding: var(--space-6) 0 var(--space-8); }
+  /* 데스크탑에선 flex-nowrap 으로 한 줄에 붙는 "전공 필터 + 리포트 버튼"을 두 줄로 푼다.
+     .section-title 전체가 아니라 이 묶음을 가진 학점인정/전공매칭 화면만 대상으로 한다
+     (홈의 "지망하는 학교 / 학교 찾기"처럼 짧은 조합은 한 줄로 두는 편이 낫다). */
+  .credits-grid .section-title { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+  .section-title__actions { flex-wrap: wrap; width: 100%; gap: var(--space-2); }
+  .major-filter-mount { flex: 1 1 100%; }
+  .major-filter-mount .ss { width: 100%; }
+  .section-title__actions .btn { flex: 1 1 auto; }
+  .match-card { padding: var(--space-4); }
+  .match-card__top { gap: var(--space-3); }
+  .match-card__field { flex-wrap: wrap; gap: 6px; }
+  .similarity-ring { width: 52px; height: 52px; font-size: var(--fs-micro); }
+  .summary-banner { flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); }
+
+  /* ---- 캘린더 ---- */
+  .cal-grid { padding: var(--space-4) 0 var(--space-8); gap: var(--space-4); }
+  .cal-nav__title { font-size: var(--fs-h2); }
+  .cal-month { gap: 4px; }
+  .cal-day { min-height: 56px; padding: 5px; gap: 3px; }
+  .cal-day__num { font-size: var(--fs-micro); }
+
+  /* ---- Mentor's Step 상담 ---- */
+  .consult-layout { padding: var(--space-4) 0 var(--space-8); gap: var(--space-4); }
+  .consult-layout > .card-pad { padding: var(--space-4); }
+  .chat-messages { max-height: 58vh; }
+  .chat-message--user .chat-message__bubble { max-width: 88%; padding: var(--space-3) var(--space-4); }
+  .chat-message--bot .chat-message__bubble { padding: var(--space-4); }
+  .chat-message__avatar { width: 32px; height: 32px; }
+  .chat-message--bot .chat-message__meta { margin-left: calc(32px + var(--space-3)); }
+  .chat-input-row input { height: 44px; padding: 0 var(--space-4); }
+  .chat-send-btn { width: 42px; height: 42px; }
+
+  /* ---- 폼 공통: iOS 사파리는 폰트 16px 미만 입력창에 포커스하면 화면을 확대한다 ---- */
+  .field input, .field select,
+  .search-input, .sort-select,
+  .sim-banner__field input,
+  .cal-add-form input, .cal-add-form select,
+  .ss__trigger, .ss__search,
+  .chat-input-row input { font-size: 16px; }
+}
+
+
+/* ==========================================================================
+   420px 이하 — 소형 단말
+   ========================================================================== */
+@media (max-width: 420px) {
+  .home-hero h1 { font-size: 1.5rem; }
+  body[data-page="home"] .home-hero,
+  body[data-page="credits"] .home-hero,
+  body[data-page="calendar"] .home-hero,
+  body[data-page="major-matching"] .home-hero {
+    background-size: auto 84px;
+    min-height: 84px;
+    padding-left: var(--space-4);
+  }
+  .wishlist-row { grid-template-columns: repeat(3, 80vw); }
+  .cal-day { min-height: 46px; padding: 4px; }
+  .cal-month { gap: 3px; }
+  .score-row { grid-template-columns: 76px 1fr 26px 42px; }
+  .intro__earth-wrap { width: 360px; height: 360px; right: -130px; }
+}
