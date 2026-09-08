@@ -1,17 +1,39 @@
 /**
- * 데모용 클라이언트 상태 저장소.
- * 실제 백엔드가 없는 정적 데모이므로, 페이지 이동 간(F2→F3→F4) 데이터가
- * 유지되도록 localStorage를 얕은 DB처럼 사용합니다.
- * 실서비스에서는 이 모듈 전체가 서버 API 호출로 대체됩니다.
+ * 사용자 상태 저장소.
+ *
+ *   로그인 전(게스트) — 지금까지처럼 localStorage. 데모를 그대로 둘러볼 수 있고
+ *     데이터는 그 기기 안에만 남는다.
+ *   로그인 후 — Supabase(profiles / user_favorites / user_wishlist / user_todos)가
+ *     정본이다. localStorage는 아예 쓰지 않는다 — 다른 계정으로 로그인했을 때
+ *     이전 사용자의 캐시가 섞이는 사고를 원천 차단하기 위해서다.
+ *
+ * 페이지 컨트롤러(js/home.js, search.js …)를 한 줄도 고치지 않으려고 조회 API는
+ * 전부 동기로 유지했다. 부팅 시 hydrate()가 서버 상태를 _cache에 채운 뒤
+ * 'MOCK:updated'를 쏘고, 각 컨트롤러가 이미 그 이벤트를 듣고 다시 그린다.
+ * 변경은 낙관적 갱신 — _cache를 먼저 바꾸고 서버 쓰기가 비동기로 따라간다.
+ *
+ * 게스트 상태를 로그인 계정으로 옮기지는 않는다. 게스트 기본값에는 데모용
+ * 시드(이서연 프로필, keio/nus 즐겨찾기)가 들어 있어서, 그걸 실제 계정에
+ * 올리면 남의 데이터처럼 보이는 값이 계정에 박힌다.
  */
 
 const STORAGE_KEY = 'xchg_demo_state_v1';
 
-function defaultState() {
+/**
+ * 로그인하지 않은 방문자의 초기 상태.
+ *
+ * 예전에는 favorites:['keio','nus'], wishlist:{1:'keio',2:'nus',3:'ubc'} 시드가
+ * 들어 있었는데, Supabase에 실제 271개교를 넣으면서 학교 id 체계가 슬러그
+ * ('keio' → 'keio-university' 류)로 바뀌어 이 id들이 아무것도 가리키지 않게 됐다.
+ * 그 결과 "지망하는 학교" 카드는 전부 비어 있는데 진행 단계는 '지망 선택 완료'로
+ * 표시되는 모순이 생겼다 — 존재하지 않는 id도 길이는 3이라 hasWishlist가 true였다.
+ * 비워두는 쪽이 실제 상태와 맞다.
+ */
+function guestState() {
   return {
     profile: Object.assign({}, MOCK.defaultProfile),
-    favorites: ['keio', 'nus'],
-    wishlist: { 1: 'keio', 2: 'nus', 3: 'ubc' },
+    favorites: [],
+    wishlist: {},
     confirmedSchoolId: null,
     todos: MOCK.todos.map(t => ({ id: t.id, done: t.done })),
     customTodos: [],
@@ -19,58 +41,62 @@ function defaultState() {
   };
 }
 
+/** 가입 직후처럼 서버에 아무것도 없는 계정의 초기 형태. */
+function emptyState(displayName) {
+  return {
+    profile: {
+      name: displayName || '회원',
+      major: null,
+      gpa: null,
+      gpaScale: 4.3,
+      languageTests: [],
+      // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다
+      exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1 },
+      targetScoreSimUsed: false
+    },
+    favorites: [],
+    wishlist: {},
+    confirmedSchoolId: null,
+    todos: [],
+    customTodos: [],
+    targetScores: null
+  };
+}
+
 const AppState = {
   _cache: null,
+  _hydrated: false,
 
   load() {
     if (this._cache) return this._cache;
+    // hydrate() 이전에 동기로 불리면 일단 게스트 상태로 시작한다.
+    // 로그인 상태라면 hydrate()가 곧 서버 값으로 통째로 갈아끼운다.
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      this._cache = raw ? Object.assign(defaultState(), JSON.parse(raw)) : defaultState();
+      this._cache = raw ? Object.assign(guestState(), JSON.parse(raw)) : guestState();
     } catch (e) {
-      this._cache = defaultState();
+      this._cache = guestState();
     }
     return this._cache;
   },
 
+  get isAuthed() { return typeof Auth !== 'undefined' && Auth.isAuthed; },
+
   save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this._cache));
+    // 로그인 상태에서는 서버가 정본이라 로컬에 남기지 않는다.
+    if (this.isAuthed) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._cache)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
   },
+
+  /* ------------------------------------------------------------------ 읽기 */
 
   get profile() { return this.load().profile; },
-
-  updateProfile(patch) {
-    Object.assign(this.load().profile, patch);
-    this.save();
-  },
-
   isFavorite(schoolId) { return this.load().favorites.includes(schoolId); },
-
-  toggleFavorite(schoolId) {
-    const s = this.load();
-    const idx = s.favorites.indexOf(schoolId);
-    if (idx >= 0) s.favorites.splice(idx, 1); else s.favorites.push(schoolId);
-    this.save();
-    return idx < 0;
-  },
-
   getWishlist() { return this.load().wishlist; },
-
-  setWishlistRank(rank, schoolId) {
-    const s = this.load();
-    Object.keys(s.wishlist).forEach(r => { if (s.wishlist[r] === schoolId) delete s.wishlist[r]; });
-    if (schoolId) s.wishlist[rank] = schoolId; else delete s.wishlist[rank];
-    this.save();
-  },
 
   getConfirmedSchool() {
     const id = this.load().confirmedSchoolId;
     return id ? MOCK.schools.find(sc => sc.id === id) : null;
-  },
-
-  confirmSchool(schoolId) {
-    this.load().confirmedSchoolId = schoolId;
-    this.save();
   },
 
   getTodos() {
@@ -80,24 +106,209 @@ const AppState = {
     return base.concat(s.customTodos).sort((a, b) => a.date.localeCompare(b.date));
   },
 
+  /* ------------------------------------------------------------------ 쓰기 */
+
+  updateProfile(patch) {
+    Object.assign(this.load().profile, patch);
+    this.save();
+    const p = this.load().profile;
+    this._push(() => supabaseClient.from('profiles').upsert({
+      id: Auth.userId,
+      name: p.name,
+      major: p.major,
+      gpa: p.gpa,
+      gpa_scale: p.gpaScale,
+      language_tests: p.languageTests || [],
+      exchange_term: p.exchangeTerm
+    }), '프로필');
+  },
+
+  toggleFavorite(schoolId) {
+    const s = this.load();
+    const idx = s.favorites.indexOf(schoolId);
+    const added = idx < 0;
+    if (added) s.favorites.push(schoolId); else s.favorites.splice(idx, 1);
+    this.save();
+    this._push(() => added
+      ? supabaseClient.from('user_favorites').insert({ user_id: Auth.userId, school_id: schoolId })
+      : supabaseClient.from('user_favorites').delete().eq('user_id', Auth.userId).eq('school_id', schoolId),
+      '즐겨찾기');
+    return added;
+  },
+
+  setWishlistRank(rank, schoolId) {
+    const s = this.load();
+    // 같은 학교가 다른 순위에 있으면 먼저 뺀다 (DB의 user_wishlist_school_once 제약과 동일)
+    Object.keys(s.wishlist).forEach(r => { if (s.wishlist[r] === schoolId) delete s.wishlist[r]; });
+    if (schoolId) s.wishlist[rank] = schoolId; else delete s.wishlist[rank];
+    this.save();
+
+    const rows = Object.keys(s.wishlist).map(r => ({
+      user_id: Auth.userId, rank: Number(r), school_id: s.wishlist[r]
+    }));
+    // 순위 재배치는 부분 갱신보다 "이 사용자 지망 전체를 다시 쓰기"가 안전하다.
+    this._push(async () => {
+      const del = await supabaseClient.from('user_wishlist').delete().eq('user_id', Auth.userId);
+      if (del.error) return del;
+      return rows.length ? supabaseClient.from('user_wishlist').insert(rows) : del;
+    }, '지망 학교');
+  },
+
+  confirmSchool(schoolId) {
+    this.load().confirmedSchoolId = schoolId;
+    this.save();
+    this._push(() => supabaseClient.from('profiles')
+      .upsert({ id: Auth.userId, confirmed_school_id: schoolId }), '확정 학교');
+  },
+
   toggleTodo(id) {
     const s = this.load();
-    let item = s.todos.find(t => t.id === id);
-    if (item) { item.done = !item.done; this.save(); return; }
-    item = s.customTodos.find(t => t.id === id);
-    if (item) { item.done = !item.done; this.save(); }
+    const base = s.todos.find(t => t.id === id);
+    if (base) {
+      base.done = !base.done;
+      this.save();
+      this._push(() => supabaseClient.from('user_todos')
+        .upsert({ user_id: Auth.userId, base_id: id, done: base.done },
+                { onConflict: 'user_id,base_id' }), '할 일');
+      return;
+    }
+    // MOCK.todos에는 있지만 아직 오버라이드 행이 없는 기본 항목
+    const seed = MOCK.todos.find(t => t.id === id);
+    if (seed) {
+      const row = { id, done: !seed.done };
+      s.todos.push(row);
+      this.save();
+      this._push(() => supabaseClient.from('user_todos')
+        .upsert({ user_id: Auth.userId, base_id: id, done: row.done },
+                { onConflict: 'user_id,base_id' }), '할 일');
+      return;
+    }
+    const custom = s.customTodos.find(t => t.id === id);
+    if (custom) {
+      custom.done = !custom.done;
+      this.save();
+      this._push(() => supabaseClient.from('user_todos')
+        .update({ done: custom.done }).eq('id', id).eq('user_id', Auth.userId), '할 일');
+    }
   },
 
   addTodo({ title, date, tag }) {
     const s = this.load();
-    const id = 'ct' + Date.now();
-    s.customTodos.push({ id, title, date, tag: tag || '기타', done: false });
+    // 서버가 uuid를 돌려주기 전까지 쓸 임시 id. 응답이 오면 아래에서 바꿔치기한다.
+    const tempId = 'ct' + Date.now();
+    const item = { id: tempId, title, date, tag: tag || '기타', done: false };
+    s.customTodos.push(item);
     this.save();
-    return id;
+
+    if (this.isAuthed) {
+      this._push(async () => {
+        const res = await supabaseClient.from('user_todos')
+          .insert({ user_id: Auth.userId, title, due_date: date, tag: item.tag, done: false })
+          .select('id')
+          .single();
+        // 이후 toggleTodo가 서버 행을 찾을 수 있도록 실제 id로 교체
+        if (!res.error && res.data) item.id = res.data.id;
+        return res;
+      }, '할 일 추가');
+    }
+    return tempId;
   },
 
   reset() {
-    this._cache = defaultState();
+    this._cache = this.isAuthed ? emptyState(this._displayName()) : guestState();
     this.save();
+  },
+
+  /* ------------------------------------------------------------ 부팅/동기화 */
+
+  _displayName() {
+    const user = typeof Auth !== 'undefined' ? Auth.user : null;
+    if (!user) return null;
+    const meta = user.user_metadata || {};
+    return meta.name || (user.email ? user.email.split('@')[0] : '회원');
+  },
+
+  /**
+   * 서버 상태를 _cache에 채운다. 페이지 컨트롤러들이 이미 듣고 있는
+   * 'MOCK:updated'를 재사용해 다시 그리게 한다(전체 재렌더 신호로 쓰인다).
+   */
+  async hydrate() {
+    if (typeof Auth === 'undefined') { this.load(); return; }
+    await Auth.init();
+
+    if (!Auth.isAuthed) {
+      this._cache = null;
+      this.load();
+      this._hydrated = true;
+      document.dispatchEvent(new CustomEvent('MOCK:updated'));
+      return;
+    }
+
+    const uid = Auth.userId;
+    // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
+    const [prof, favs, wish, todos] = await Promise.all([
+      supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
+      supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
+      supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid)
+    ]);
+
+    const next = emptyState(this._displayName());
+    const p = prof.data;
+    if (p) {
+      next.profile = {
+        name: p.name || this._displayName(),
+        major: p.major,
+        gpa: p.gpa === null ? null : Number(p.gpa),
+        gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
+        languageTests: p.language_tests || [],
+        exchangeTerm: p.exchange_term || next.profile.exchangeTerm,
+        targetScoreSimUsed: false
+      };
+      next.confirmedSchoolId = p.confirmed_school_id || null;
+      next.targetScores = p.target_scores || null;
+    }
+    if (favs.data) next.favorites = favs.data.map(r => r.school_id);
+    if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
+    if (todos.data) {
+      next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));
+      next.customTodos = todos.data.filter(r => !r.base_id).map(r => ({
+        id: r.id, title: r.title, date: r.due_date, tag: r.tag, done: r.done
+      }));
+    }
+
+    this._cache = next;
+    this._hydrated = true;
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+  },
+
+  // 서버 쓰기 직렬화 큐.
+  // setWishlistRank()는 "이 사용자 지망 전체 삭제 후 재삽입"이라, 순위를 연속으로
+  // 빠르게 바꾸면 두 요청이 겹쳐 앞선 insert와 뒤이은 insert가 user_wishlist_pkey를
+  // 두고 충돌한다(23505). 낙관적 갱신이라 화면은 이미 맞는 값이므로, 서버 쓰기만
+  // 순서대로 흘려보내면 된다.
+  _queue: Promise.resolve(),
+
+  /** 로그인 상태에서만 서버로 쓴다. 실패는 조용히 삼키지 않고 토스트로 알린다. */
+  _push(run, label) {
+    if (!this.isAuthed) return;
+    this._queue = this._queue
+      .then(run)
+      .then(res => {
+        if (res && res.error) throw res.error;
+      })
+      .catch(err => {
+        console.error(`[AppState] ${label} 저장 실패`, err);
+        if (typeof showToast === 'function') showToast(`${label} 저장에 실패했어요. 잠시 후 다시 시도해 주세요.`);
+        // 체인을 끊지 않아야 이후 쓰기가 계속 흐른다
+      });
   }
 };
+
+// 로그아웃/로그인 전환 시 이전 사용자의 상태가 남지 않도록 통째로 다시 읽는다.
+document.addEventListener('auth:changed', () => {
+  AppState._cache = null;
+  AppState.hydrate();
+});
+
+AppState.hydrate();

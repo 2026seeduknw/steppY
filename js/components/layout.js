@@ -51,6 +51,7 @@ function homeSlot() {
 function renderAppBar(activeKey) {
   const mount = document.getElementById('app-nav');
   if (!mount) return;
+  const authed = typeof Auth !== 'undefined' && Auth.isAuthed;
   const profile = AppState.profile;
   const initial = profile.name ? profile.name.slice(-2) : '학생';
   mount.innerHTML = `
@@ -58,8 +59,51 @@ function renderAppBar(activeKey) {
       <img class="appbar__mark" src="assets/logo-mark-circle.png" width="26" height="26" alt="">
       <h1 class="appbar__title">${PAGE_TITLES[activeKey] || 'steppY'}</h1>
     </div>
-    <div class="appbar__avatar">${initial}</div>
+    ${authed
+      ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${initial}</button>`
+      : `<a class="appbar__login" href="auth.html">로그인</a>`}
   `;
+  const account = document.getElementById('appbarAccount');
+  if (account) account.addEventListener('click', openAccountSheet);
+}
+
+/**
+ * 계정 시트 — 로그인한 이메일 확인과 로그아웃.
+ * 로그아웃하면 AppState가 'auth:changed'를 받아 게스트 상태로 다시 읽는다.
+ */
+function openAccountSheet() {
+  document.querySelectorAll('.app-sheet--account').forEach(el => el.remove());
+
+  const sheet = document.createElement('div');
+  sheet.className = 'app-sheet app-sheet--account';
+  sheet.innerHTML = `
+    <div class="app-sheet__scrim" data-close></div>
+    <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="계정">
+      <div class="app-sheet__grip" data-close></div>
+      <div class="account-sheet">
+        <p class="account-sheet__label">로그인 계정</p>
+        <p class="account-sheet__email">${Auth.email || ''}</p>
+        <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
+        <button type="button" class="btn btn--text account-sheet__cancel" data-close>닫기</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(sheet);
+  // 삽입 직후 바로 is-open을 주면 transition 시작 상태가 없어 슬라이드가 생략된다
+  requestAnimationFrame(() => sheet.classList.add('is-open'));
+  document.body.classList.add('is-sheet-open');
+
+  const close = () => {
+    sheet.classList.remove('is-open');
+    document.body.classList.remove('is-sheet-open');
+    setTimeout(() => sheet.remove(), 300);
+  };
+  sheet.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+  sheet.querySelector('#signOutBtn').addEventListener('click', async () => {
+    await Auth.signOut();
+    close();
+    location.replace('home.html');
+  });
 }
 
 function renderTabBar(activeKey) {
@@ -146,5 +190,15 @@ document.addEventListener('DOMContentLoaded', () => {
 // prepare.html로 바뀌어야 하는 경우가 있어 데이터 갱신 후 탭바만 다시 그린다.
 document.addEventListener('MOCK:updated', () => {
   const page = document.body.dataset.page;
-  if (page) renderTabBar(page);
+  if (!page) return;
+  // 프로필 이름(아바타 이니셜)과 확정 여부(홈 탭 목적지)가 하이드레이션 후에
+  // 확정되므로 앱바와 탭바를 함께 다시 그린다.
+  renderAppBar(page);
+  renderTabBar(page);
+});
+
+// 로그인/로그아웃 직후에는 아직 서버 상태를 못 받았어도 앱바 표시는 즉시 바꾼다.
+document.addEventListener('auth:changed', () => {
+  const page = document.body.dataset.page;
+  if (page) renderAppBar(page);
 });

@@ -6,9 +6,9 @@
 -- + 연세대 전공/개설과목)로 교체한 버전. supabase/build_import.py로 생성한
 -- supabase/generated/*.json을 이 스키마에 맞춰 적재함.
 --
--- 지금은 로그인 이전 단계라 전부 "누구나 읽기 가능(public SELECT)" 데이터예요.
--- 프로필/지망·즐겨찾기/확정 학교/할일처럼 사용자별로 달라지는 데이터는 아직
--- localStorage에 남아 있고 이 스키마에는 없습니다.
+-- 이 파일의 테이블은 전부 "누구나 읽기 가능(public SELECT)"인 참고 데이터예요.
+-- 프로필/지망·즐겨찾기/확정 학교/할일처럼 사용자별로 달라지는 데이터는
+-- supabase/auth_schema.sql로 분리했습니다(auth.users에 묶이고 RLS로 잠김).
 --
 -- 알려진 한계:
 --   - checklist_items / scholarships / living_prep / course_matches / tips /

@@ -533,3 +533,121 @@ body[data-page="intro"] { padding-bottom: 0; }
 @media (prefers-reduced-motion: reduce) {
   .app-sheet__panel, .modal-panel { transition: none; }
 }
+
+
+/* ==========================================================================
+   9. 인증 — 로그인 화면 · 앱바 계정 영역 · 계정 시트
+   ========================================================================== */
+
+.appbar__login {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--sky-500);
+  color: #fff;
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+.appbar__login:active { transform: scale(0.97); }
+/* button으로 바뀌어도 원래 div일 때와 같은 원형을 유지 */
+button.appbar__avatar { border: none; cursor: pointer; }
+
+.account-sheet { padding: var(--space-4) var(--space-5) var(--space-6); }
+.account-sheet__label {
+  font-size: var(--fs-micro);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+}
+.account-sheet__email {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 4px 0 var(--space-5);
+  overflow-wrap: anywhere;
+}
+.account-sheet__cancel { display: block; width: 100%; margin-top: var(--space-3); text-align: center; }
+
+/* ---- auth.html ---- */
+body[data-page="auth"] {
+  background: var(--oxford);
+  padding-bottom: 0;
+  min-height: 100dvh;
+}
+.auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100dvh;
+  max-width: var(--app-width);
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + var(--space-7)) var(--space-5) calc(var(--safe-bottom) + var(--space-6));
+}
+.auth__head { margin-bottom: var(--space-6); }
+.auth__logo { border-radius: 50%; margin-bottom: var(--space-4); }
+.auth__title {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--onnavy-100);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+.auth__sub { font-size: var(--fs-small); line-height: 1.6; color: var(--onnavy-300); }
+
+/* 세그먼티드 컨트롤을 어두운 배경 위에서 쓰도록 톤만 바꾼다 */
+.auth__modes { background: rgba(240, 236, 221, 0.1); margin-bottom: var(--space-5); }
+.auth__modes .mode-toggle__btn { color: var(--onnavy-300); }
+.auth__modes .mode-toggle__btn.is-active { background: var(--moonlight); color: var(--oxford); }
+
+.auth__form { display: flex; flex-direction: column; gap: var(--space-4); }
+.auth__field { gap: 8px; color: var(--onnavy-300); font-size: var(--fs-small); }
+.auth__field[hidden] { display: none; }
+.auth__field input {
+  height: 50px;
+  padding: 0 var(--space-4);
+  border-radius: 12px;
+  border: 1.5px solid rgba(240, 236, 221, 0.22);
+  background: rgba(240, 236, 221, 0.06);
+  color: var(--onnavy-100);
+  font-size: 16px;
+}
+.auth__field input::placeholder { color: var(--onnavy-500); }
+.auth__field input:focus {
+  outline: none;
+  border-color: var(--frost-blue);
+  background: rgba(240, 236, 221, 0.1);
+}
+
+.auth__error,
+.auth__notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+.auth__error { background: rgba(225, 93, 70, 0.16); color: #FFC4B8; }
+.auth__notice { background: rgba(47, 158, 130, 0.16); color: #A6E6D3; }
+.auth__error[hidden], .auth__notice[hidden] { display: none; }
+
+.auth__form .btn--primary {
+  height: 52px;
+  margin-top: var(--space-2);
+  background: var(--moonlight);
+  color: var(--oxford);
+  font-size: var(--fs-body);
+}
+.auth__form .btn--primary:hover { background: var(--amber-600); color: var(--oxford); }
+.auth__form .btn--primary[disabled] { opacity: 0.6; }
+
+.auth__skip {
+  margin-top: var(--space-6);
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--onnavy-300);
+}
+.auth__skip:active { color: var(--onnavy-100); }
