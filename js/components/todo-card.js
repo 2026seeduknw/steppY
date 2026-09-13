@@ -21,13 +21,12 @@ function todoCardTemplate() {
   return `
     <div class="section-title">
       <div><h2>오늘의 할 일</h2></div>
-      <a href="calendar.html" class="badge badge--neutral tnum">${remaining}/${total}</a>
     </div>
     <div class="todo-card__progress">
       ${progressRingHtml(percent, { size: 56, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
       <div class="todo-card__progress-text">
-        <strong>${done}/${total}</strong> 완료
-        <span>오늘 남은 일 ${remaining}개</span>
+        <span class="todo-card__progress-count"><strong>${done}/${total}</strong> 완료</span>
+        <span class="todo-card__progress-sub">오늘 남은 일 ${remaining}개</span>
       </div>
     </div>
     <ul class="todo-list">

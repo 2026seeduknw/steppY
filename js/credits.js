@@ -23,6 +23,21 @@
     mount.appendChild(select.el);
   }
 
+  /**
+   * course_matches.note는 DB에 완성된 문장으로 저장돼 있고, 원본 단위 표기가
+   * 숫자에 붙어 있다("6.0credit points", "3.0units", "6.0ECTS").
+   * 화면에서만 떼어 읽는다 — 원본 데이터는 건드리지 않는다.
+   *
+   * '학점:' 구간에만 적용한다. 과목코드에는 "204B" 같은 표기가 있을 수 있어
+   * 문장 전체에 숫자-문자 규칙을 걸면 엉뚱한 곳이 벌어진다.
+   */
+  function formatNote(note) {
+    if (!note) return '';
+    return note.split(' · ')
+      .map(part => part.startsWith('학점:') ? part.replace(/(\d)([A-Za-z])/g, '$1 $2') : part)
+      .join(' · ');
+  }
+
   function similarityColor(pct) {
     if (pct >= 80) return 'var(--mint-500)';
     if (pct >= 60) return 'var(--amber-500)';
@@ -83,7 +98,7 @@
         ${m.matchedTopics.length ? `
         <div class="match-card__topics-label">관련 키워드</div>
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
-        <div class="match-card__note">${m.note}</div>
+        <div class="match-card__note">${formatNote(m.note)}</div>
       </div>
     `;
     }).join('') : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;

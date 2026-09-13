@@ -39,6 +39,10 @@ body {
   /* 데스크탑 전용 잠금(min-width:1120px) 해제 — 앱은 좁은 폭이 기본이다 */
   min-width: 0;
   background: var(--cloud-50);
+  /* 콘텐츠가 짧은 화면(예: 학교를 아직 고르지 않은 Mentor's Step)에서 body가
+     뷰포트보다 작아지면, 데스크탑 기기 컬럼용으로 html에 깔아둔 oxford 배경이
+     아래쪽에 그대로 드러난다. 최소 한 화면은 채우게 한다. */
+  min-height: 100dvh;
   padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
   overscroll-behavior-y: none;
 }
@@ -281,18 +285,32 @@ body[data-page="major-matching"] .home-hero {
   min-height: 0;
 }
 .home-hero h1 { font-size: 1.5rem; letter-spacing: -0.02em; }
-/* 앱바에 이미 화면 이름이 있어 같은 크기로 반복하면 제목이 두 번 나온다 */
+/* 앱바가 이미 화면 이름을 갖고 있다. 히어로가 같은 이름을 한 번 더 쓰면
+   제목이 두 번 나오고 첫 화면의 세로 공간만 먹는다 → 히어로 제목은 지운다.
+   (major-matching의 설명 <p>처럼 제목이 아닌 요소는 그대로 남긴다) */
 body[data-page="credits"] .home-hero h1,
 body[data-page="major-matching"] .home-hero h1,
-body[data-page="consult"] .home-hero h1 { font-size: 1.125rem; }
+body[data-page="calendar"] .home-hero h1 { display: none; }
+
+/* h1만 있던 화면은 히어로가 통째로 비므로 여백도 걷어낸다 */
+body[data-page="credits"] .home-hero,
+body[data-page="calendar"] .home-hero { padding-top: var(--space-3); padding-bottom: 0; min-height: 0; }
+
+/* 툴팁 대신 본문으로 내려온 설명문 */
+.page-lede {
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--ink-600);
+  word-break: keep-all;
+}
+
+/* 홈 인사말은 제목이 아니라 인사다 — 제목만 한 크기를 차지할 이유가 없다 */
+body[data-page="home"] .home-hero { padding: var(--space-4) var(--space-4) var(--space-3); }
+body[data-page="home"] .home-hero h1 { font-size: 1.25rem; }
 body[data-page="home"] #greeting { top: 0; }
 body[data-page="credits"] .home-hero h1,
 body[data-page="major-matching"] .home-hero h1 { top: 0; }
-/* 앱바 제목과 겹치는 화면에서는 히어로 제목을 감춘다 */
-body[data-page="calendar"] .home-hero,
-body[data-page="consult"] .home-hero,
-body[data-page="credits"] .home-hero { padding-bottom: var(--space-2); }
-body[data-page="calendar"] .home-hero h1 { display: none; }
+body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
 
 /* ---- F2 홈 ---- */
 .home-grid {
