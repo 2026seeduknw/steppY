@@ -1096,3 +1096,7 @@ a.todo-pill__add { text-decoration: none; }
 .score-detail__how strong { color: var(--ink-900); }
 .score-detail__caveat { color: var(--amber-700); }
 .score-detail__source { font-family: var(--font-mono); color: var(--ink-400); }
+
+/* 앱바 좌측은 랜딩(소개) 화면으로 돌아가는 링크다 */
+a.appbar__lead { text-decoration: none; color: inherit; }
+a.appbar__lead:active { opacity: 0.6; }

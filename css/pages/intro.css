@@ -108,10 +108,12 @@ body[data-page="intro"] {
   animation: step-appear 2s ease-in-out infinite;
   animation-delay: var(--sd);
 }
+/* 발자국은 브랜드 모티프지만 히어로 제목과 겹치는 자리라, 또렷하면 글자를
+   방해한다. 최고 불투명도를 0.9 → 0.45로 낮춰 배경 질감처럼 깔리게 한다. */
 @keyframes step-appear {
   0%, 8% { opacity: 0; }
-  20%, 85% { opacity: 0.9; }
-  100% { opacity: 0.9; }
+  20%, 85% { opacity: 0.45; }
+  100% { opacity: 0.45; }
 }
 
 .intro__content {
@@ -132,6 +134,9 @@ body[data-page="intro"] {
   color: var(--onnavy-100);
   letter-spacing: -0.01em;
   margin-bottom: var(--space-4);
+  /* 없으면 "한번에"가 "한번 / 에"로 쪼개져 마지막 줄에 한 글자만 남는다.
+     한국어는 단어 중간이 아니라 어절 단위로 끊어야 읽힌다. */
+  word-break: keep-all;
 }
 .intro__desc {
   font-size: var(--fs-body);

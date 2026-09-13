@@ -52,10 +52,10 @@ function renderAppBar(activeKey) {
   const profile = AppState.profile;
   const initial = profile.name ? profile.name.slice(-2) : '학생';
   mount.innerHTML = `
-    <div class="appbar__lead">
+    <a class="appbar__lead" href="index.html" aria-label="steppY 소개 화면으로">
       <img class="appbar__mark" src="assets/logo-mark-circle.png" width="26" height="26" alt="">
       <h1 class="appbar__title">${PAGE_TITLES[activeKey] || 'steppY'}</h1>
-    </div>
+    </a>
     ${authed
       ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${initial}</button>`
       : `<a class="appbar__login" href="auth.html">로그인</a>`}
