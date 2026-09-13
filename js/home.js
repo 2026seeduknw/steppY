@@ -120,13 +120,11 @@
         </ol>
         <div class="journey__track" aria-hidden="true">
           <span class="journey__line"></span>
-          <span class="journey__line-done" style="width:${at(currentIdx)}%"></span>
+          <span class="journey__trail" style="width:${at(currentIdx)}%"></span>
           ${steps.map((s, i) => `
             <span class="journey__node ${s.done ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}"
                   style="left:${at(i)}%"></span>`).join('')}
-          <span class="journey__foot" style="left:${at(currentIdx)}%"></span>
         </div>
-        <p class="journey__now">지금은 <strong>${steps[currentIdx].label}</strong> 단계예요</p>
       </div>`;
   }
 })();

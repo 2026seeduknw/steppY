@@ -36,6 +36,12 @@
      깨지지 않도록 고정 폭 대신 이 값은 상한으로만 쓴다. */
   --app-width: 402px;
   --radius-row: 14px;
+  /* 걷는 방향(좌→우)으로 눕힌 발자국 두 개가 한 타일. 위/아래로 엇갈리게 놓아
+     좌·우 발을 번갈아 디딘 것처럼 보이게 했다. 26px 타일에서는 발이 9px밖에
+     안 돼 점처럼 뭉개져서, 타일을 36px로 넓히고 발도 키웠다. */
+  --journey-steps-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='26' viewBox='0 0 36 26'%3E%3Cg fill='%23000'%3E%3Cellipse cx='11' cy='7' rx='5' ry='3.4'/%3E%3Cellipse cx='3.6' cy='7.9' rx='2' ry='2.3'/%3E%3Cellipse cx='29' cy='18' rx='5' ry='3.4'/%3E%3Cellipse cx='21.6' cy='18.9' rx='2' ry='2.3'/%3E%3C/g%3E%3C/svg%3E")
+    repeat-x left center / 36px 26px;
 }
 
 html { background: var(--oxford); }
@@ -951,52 +957,48 @@ body[data-page="onboarding"] {
 .journey__label.is-done { color: var(--ink-400); font-weight: 500; }
 .journey__label.is-current { color: var(--ink-900); font-weight: 800; }
 
-/* 시작과 끝을 잇는 한 줄. 노드와 발자국을 그 위에 얹는다. */
-.journey__track { position: relative; height: 30px; }
-.journey__line,
-.journey__line-done {
+/* 지나온 구간은 선이 아니라 "걸어온 발자국"으로 채운다.
+   에셋(footstep-*.png)은 세로로 서 있는 흰 실루엣이라 가로로 반복시키면
+   타일 간격만큼 눌린다. 그래서 걷는 방향(좌→우)에 맞춰 눕힌 발자국을 SVG로
+   그려 좌우 엇갈리게 타일링한다. 한 타일에 두 발이 들어가고 repeat-x로
+   이어지므로, 진행률만큼 잘라내면 딱 걸어온 만큼만 발자국이 찍힌다. */
+.journey__track { position: relative; height: 26px; }
+.journey__line {
   position: absolute;
-  top: 13px;
-  left: 0;
-  height: 3px;
+  top: 11px;
+  left: 0; right: 0;
+  height: 2px;
   border-radius: var(--radius-pill);
+  background: var(--line-100);
 }
-.journey__line { right: 0; background: var(--line-200); }
-.journey__line-done { background: var(--sky-500); }
+.journey__trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 26px;
+  background: var(--sky-700);
+  -webkit-mask: var(--journey-steps-mask);
+  mask: var(--journey-steps-mask);
+  transition: width var(--dur-base) var(--ease-out);
+}
 
 .journey__node {
   position: absolute;
-  top: 9px;
-  width: 11px; height: 11px;
-  margin-left: -5.5px;
+  top: 8px;
+  width: 10px; height: 10px;
+  margin-left: -5px;
   border-radius: 50%;
   background: var(--cloud-0);
   box-shadow: inset 0 0 0 2.5px var(--line-200);
 }
 .journey__node.is-done { box-shadow: inset 0 0 0 2.5px var(--sky-500); }
-.journey__node.is-current { box-shadow: inset 0 0 0 3px var(--sky-700); }
-
-/* 브랜드 발자국 에셋은 흰 실루엣이라 밝은 배경에서는 보이지 않는다.
-   mask로 써서 원하는 색을 입힌다. */
-.journey__foot {
-  position: absolute;
-  top: -2px;
-  width: 17px; height: 26px;
-  margin-left: -8.5px;
+.journey__node.is-current {
+  width: 13px; height: 13px;
+  top: 6px;
+  margin-left: -6.5px;
   background: var(--sky-700);
-  -webkit-mask: url('../assets/footstep-right.png') no-repeat center / contain;
-  mask: url('../assets/footstep-right.png') no-repeat center / contain;
-  transition: left var(--dur-base) var(--ease-out);
+  box-shadow: 0 0 0 3px rgba(62, 102, 144, 0.18);
 }
-
-.journey__now {
-  margin-top: var(--space-3);
-  font-size: var(--fs-small);
-  color: var(--ink-600);
-  text-align: center;
-}
-.journey__now strong { color: var(--ink-900); font-weight: 700; }
-
 
 /* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
 /* 입력창 자체의 font-size는 16px로 둔다 — 그보다 작으면 iOS가 포커스할 때
