@@ -30,7 +30,11 @@
      브라우저에서는 0이라 레이아웃이 그대로다. */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --app-width: 430px;
+  /* 설계 기준 기기: iPhone 17 — 402 x 874pt (6.3", 2622x1206 @3x).
+     데스크탑에서 앱을 볼 때의 기기 컬럼 폭이자, 화면을 맞춰보는 기준 폭이다.
+     Pro Max(440x956) · Air(420x912) · 구형 6.1"(390x844)에서도 레이아웃이
+     깨지지 않도록 고정 폭 대신 이 값은 상한으로만 쓴다. */
+  --app-width: 402px;
   --radius-row: 14px;
 }
 
@@ -345,9 +349,6 @@ body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
 .wishlist-slot__meta { margin: 0; font-size: var(--fs-micro); }
 .wishlist-slot__empty { text-align: left; font-size: var(--fs-small); }
 
-.journey-track { overflow-x: auto; scrollbar-width: none; padding-bottom: var(--space-1); }
-.journey-track::-webkit-scrollbar { display: none; }
-.journey-card { flex: 0 0 auto; min-width: 150px; border-radius: 12px; }
 
 .search-cta {
   flex-direction: column;
@@ -900,21 +901,6 @@ body[data-page="onboarding"] {
 }
 
 
-/* ---- 가로 캐러셀 인디케이터 ---- */
-.carousel-dots {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding-top: var(--space-3);
-}
-.carousel-dots__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--line-200);
-  transition: background var(--dur-fast) var(--ease-out), width var(--dur-fast) var(--ease-out);
-}
-.carousel-dots__dot.is-active { width: 18px; border-radius: var(--radius-pill); background: var(--sky-500); }
 
 
 /* 계정 시트 안의 기본 정보 카드 — 시트 배경 위에서 한 겹 더 들어가지 않도록 납작하게 */
@@ -940,3 +926,85 @@ body[data-page="onboarding"] {
 }
 .school-card__meta .badge { height: 22px; padding: 0 8px; font-size: var(--fs-micro); }
 .school-card__name { margin-top: var(--space-1); }
+
+
+/* ==========================================================================
+   11. 나의 진행 단계 — 한 줄 흐름 + 발자국
+   ========================================================================== */
+
+.journey__labels {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+}
+.journey__label {
+  text-align: center;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: var(--ink-600);
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+/* 이미 지난 단계는 연하게 */
+.journey__label.is-done { color: var(--ink-400); font-weight: 500; }
+.journey__label.is-current { color: var(--ink-900); font-weight: 800; }
+
+/* 시작과 끝을 잇는 한 줄. 노드와 발자국을 그 위에 얹는다. */
+.journey__track { position: relative; height: 30px; }
+.journey__line,
+.journey__line-done {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  height: 3px;
+  border-radius: var(--radius-pill);
+}
+.journey__line { right: 0; background: var(--line-200); }
+.journey__line-done { background: var(--sky-500); }
+
+.journey__node {
+  position: absolute;
+  top: 9px;
+  width: 11px; height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: var(--cloud-0);
+  box-shadow: inset 0 0 0 2.5px var(--line-200);
+}
+.journey__node.is-done { box-shadow: inset 0 0 0 2.5px var(--sky-500); }
+.journey__node.is-current { box-shadow: inset 0 0 0 3px var(--sky-700); }
+
+/* 브랜드 발자국 에셋은 흰 실루엣이라 밝은 배경에서는 보이지 않는다.
+   mask로 써서 원하는 색을 입힌다. */
+.journey__foot {
+  position: absolute;
+  top: -2px;
+  width: 17px; height: 26px;
+  margin-left: -8.5px;
+  background: var(--sky-700);
+  -webkit-mask: url('../assets/footstep-right.png') no-repeat center / contain;
+  mask: url('../assets/footstep-right.png') no-repeat center / contain;
+  transition: left var(--dur-base) var(--ease-out);
+}
+
+.journey__now {
+  margin-top: var(--space-3);
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  text-align: center;
+}
+.journey__now strong { color: var(--ink-900); font-weight: 700; }
+
+
+/* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
+/* 입력창 자체의 font-size는 16px로 둔다 — 그보다 작으면 iOS가 포커스할 때
+   화면을 확대해버린다. 확대 판정은 입력창의 font-size만 보므로, ::placeholder
+   에만 작은 크기를 줘서 "예: 3.8" 같은 예시 글씨만 옆의 셀렉트와 맞춘다. */
+.search-input::placeholder,
+.sim-banner__field input::placeholder,
+.todo-add-form input::placeholder,
+.chat-input-row input::placeholder {
+  font-size: var(--fs-small);
+}

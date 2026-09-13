@@ -87,40 +87,46 @@
     });
   }
 
+  /**
+   * 진행 단계 — 시작과 끝을 잇는 한 줄 위에 발자국으로 현재 위치를 표시한다.
+   *
+   * 예전엔 단계마다 카드를 만들어 가로로 스크롤시켰는데, 4단계 중 2개만 보이고
+   * 나머지는 밀어야 나와서 "지금 어디쯤인지"가 한눈에 안 잡혔다. 이제 네 단계를
+   * 한 줄에 두고 지나온 구간만 선을 채운다.
+   */
   function renderJourney() {
     const wishlist = AppState.getWishlist();
     const hasWishlist = Object.keys(wishlist).length > 0;
     const confirmed = AppState.getConfirmedSchool();
     const steps = [
-      { label: '학교 탐색', sub: '조건에 맞는 학교 비교', done: hasWishlist || AppState.load().favorites.length > 0 },
-      { label: '지망 선택', sub: '1~3지망 등록', done: hasWishlist },
-      { label: '학교 확정', sub: "'학교 확정' 버튼 클릭", done: !!confirmed },
-      { label: '교환 준비', sub: '서류·비자·생활 준비', done: false }
+      { label: '학교 탐색', done: hasWishlist || AppState.load().favorites.length > 0 },
+      { label: '지망 선택', done: hasWishlist },
+      { label: '학교 확정', done: !!confirmed },
+      { label: '교환 준비', done: false }
     ];
-    const currentIdx = steps.findIndex(s => !s.done);
+    const firstUndone = steps.findIndex(s => !s.done);
+    const currentIdx = firstUndone === -1 ? steps.length - 1 : firstUndone;
 
-    const track = document.getElementById('journeySteps');
-    track.innerHTML = steps.map((s, i) => `
-      <div class="journey-card ${s.done ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}" data-step="${i}">
-        <div class="journey-card__dot">${s.done ? '✓' : i + 1}</div>
-        <div class="journey-card__body">
-          <div class="journey-card__label">${s.label}</div>
-          <div class="journey-card__sub">${s.sub}</div>
+    // 각 단계는 자기 구간의 한가운데에 놓인다 (4단계면 12.5% / 37.5% / …)
+    const at = (i) => ((i + 0.5) / steps.length) * 100;
+
+    document.getElementById('journeySteps').innerHTML = `
+      <div class="journey">
+        <ol class="journey__labels">
+          ${steps.map((s, i) => `
+            <li class="journey__label ${s.done ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}">
+              ${s.label}
+            </li>`).join('')}
+        </ol>
+        <div class="journey__track" aria-hidden="true">
+          <span class="journey__line"></span>
+          <span class="journey__line-done" style="width:${at(currentIdx)}%"></span>
+          ${steps.map((s, i) => `
+            <span class="journey__node ${s.done ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}"
+                  style="left:${at(i)}%"></span>`).join('')}
+          <span class="journey__foot" style="left:${at(currentIdx)}%"></span>
         </div>
-      </div>
-    `).join('');
-
-    const cards = [...track.querySelectorAll('.journey-card')];
-    const focusStep = (idx) => cards.forEach((c, i) => c.classList.toggle('is-focused', i === idx));
-
-    track.addEventListener('mousemove', (e) => {
-      const rect = track.getBoundingClientRect();
-      const ratio = (e.clientX - rect.left) / rect.width;
-      const idx = Math.min(steps.length - 1, Math.max(0, Math.floor(ratio * steps.length)));
-      focusStep(idx);
-    });
-    track.addEventListener('mouseleave', () => focusStep(currentIdx >= 0 ? currentIdx : steps.length - 1));
-
-    attachCarouselDots(track);
+        <p class="journey__now">지금은 <strong>${steps[currentIdx].label}</strong> 단계예요</p>
+      </div>`;
   }
 })();
