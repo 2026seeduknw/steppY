@@ -70,9 +70,15 @@ function renderPrepareHero() {
     document.getElementById('tipsSection').style.display = 'none';
     return;
   }
-  document.getElementById('checklistSection').style.display = '';
+  // 출국하면 비자·서류 체크리스트와 학점 인정 카드를 내린다. 비자는 나오면 끝이고
+  // 학점 인정은 수강신청까지 끝난 뒤라, 남겨두면 이미 끝낸 일이 할 일처럼 보인다.
+  // 생활 준비와 Tips는 현지에서도 쓰는 정보라 그대로 둔다.
+  const departed = typeof hasDeparted === 'function' && hasDeparted();
+  document.getElementById('checklistSection').style.display = departed ? 'none' : '';
   document.getElementById('livingSection').style.display = '';
   document.getElementById('tipsSection').style.display = '';
+  const creditsCta = document.querySelector('.credits-cta');
+  if (creditsCta) creditsCta.style.display = departed ? 'none' : '';
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
       <div class="confirmed-card__identity">

@@ -46,6 +46,21 @@ function departureInfo() {
   };
 }
 
+/**
+ * 출국일이 지났는가.
+ *
+ * 비자 서류와 학점 인정은 출국 전에만 쓰는 화면이다. 비자는 나오면 끝이고,
+ * 학점 인정은 수강신청까지 끝난 뒤라 더 고를 것이 없다. 떠난 뒤에도 남겨두면
+ * 이미 끝낸 일이 계속 할 일처럼 보인다.
+ *
+ * 출국일을 아직 안 골랐으면 false다 — 날짜를 모르는 채로 화면을 지우면
+ * 사용자 입장에서는 기능이 이유 없이 사라진 것이 된다.
+ */
+function hasDeparted() {
+  const info = departureInfo();
+  return info.hasRange && info.phase !== DEPARTURE_PHASES.BEFORE;
+}
+
 /** 오늘 남기는 기록이 '출국 전'인지 '파견 중'인지. 사용자가 매번 고르지 않아도 되게 한다. */
 function departurePhaseFor(iso) {
   const range = AppState.getProgramRange();

@@ -124,9 +124,14 @@ function renderTabBar(activeKey) {
   // 고르라고 권하는 자리가 되기 때문이다. 다시 고르고 싶으면 '학교 확정 취소'를
   // 누르면 되고, 그러면 이 탭도 같이 돌아온다(search.html 자체는 계속 열린다 —
   // 위시리스트·홈의 '학교 찾기' 링크는 그대로 동작).
-  const tabs = AppState.getConfirmedSchool()
-    ? APP_TABS.filter(tab => tab.key !== 'search')
-    : APP_TABS;
+  // 출국하면 학점 인정도 뺀다 — 수강신청까지 끝난 뒤라 더 고를 것이 없다.
+  // (departure.js가 layout.js보다 먼저 실려 있다. 혹시 없더라도 탭은 그대로 둔다)
+  const departed = typeof hasDeparted === 'function' && hasDeparted();
+  const tabs = APP_TABS.filter(tab => {
+    if (tab.key === 'search' && AppState.getConfirmedSchool()) return false;
+    if (tab.key === 'credits' && departed) return false;
+    return true;
+  });
   mount.innerHTML = `
     <nav class="tabbar" role="navigation" aria-label="주요 화면">
       ${tabs.map(tab => {
