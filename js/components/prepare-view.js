@@ -8,6 +8,8 @@ const PREPARE_MARKUP = `
 
   <div class="page-shell prepare-grid">
     <div class="prepare-main">
+      <div id="targetMajorCard"></div>
+
       <div id="departureCard"></div>
 
       <section class="card card-pad" id="todoCard"></section>
@@ -42,6 +44,7 @@ const PREPARE_MARKUP = `
 `;
 
 function renderPrepareView() {
+  renderTargetMajorCard(document.getElementById('targetMajorCard'));
   renderDepartureCard(document.getElementById('departureCard'));
   renderTodoCard(document.getElementById('todoCard'));
   renderPrepareHero();

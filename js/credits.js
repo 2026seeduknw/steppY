@@ -27,49 +27,7 @@
     mount.appendChild(select.el);
   }
 
-  /**
-   * "신청 전공" 드롭다운 — 확정한 학교에서 어떤 전공으로 신청했는지.
-   *
-   * 후보는 그 학교 과목 매칭의 matched_topics(현지 학과명)에서 뽑는다. 목록에 없는
-   * 학과를 넣어봐야 걸리는 과목이 없어서다. 확정 전에는 고를 대상이 없으니 아예
-   * 띄우지 않는다.
-   *
-   * 고른 값은 프로필에 저장한다 — 매번 다시 고르게 하면 드롭다운이 아니라 필터다.
-   */
-  function renderTargetMajorFilter() {
-    const mount = document.getElementById('targetMajorMount');
-    if (!mount) return;
-    const confirmed = AppState.getConfirmedSchool();
-    if (!confirmed) { mount.innerHTML = ''; return; }
-
-    const topics = [...new Set(
-      MOCK.courseMatches
-        .filter(m => m.school === confirmed.id)
-        .flatMap(m => m.matchedTopics || [])
-    )].sort((a, b) => a.localeCompare(b));
-
-    if (!topics.length) { mount.innerHTML = ''; return; }
-
-    // 저장해둔 값이 이 학교에 없는 학과면(학교를 바꿨을 때) 선택을 푼다
-    if (selectedTargetMajor && !topics.includes(selectedTargetMajor)) selectedTargetMajor = '';
-
-    mount.innerHTML = '';
-    const select = createSearchableSelect({
-      items: topics.map(t => ({ value: t, label: t })),
-      selected: selectedTargetMajor,
-      multiple: false,
-      placeholder: '신청 전공 선택',
-      onChange: (value) => {
-        selectedTargetMajor = value || '';
-        AppState.updateProfile({ targetMajor: selectedTargetMajor || null });
-        trackEvent('credits_target_major', { major: selectedTargetMajor || 'all' });
-        renderMatches();
-      }
-    });
-    mount.appendChild(select.el);
-  }
-
-  /** 신청 전공을 골랐으면 그 학과 과목만 남긴다. */
+  /** 홈에서 고른 신청 전공의 과목만 남긴다. 여기서는 고르지 않고 읽기만 한다. */
   function byTargetMajor(matches) {
     if (!selectedTargetMajor) return matches;
     return matches.filter(m => (m.matchedTopics || []).includes(selectedTargetMajor));
@@ -247,8 +205,29 @@
     let matches = MOCK.courseMatches;
     if (confirmed) {
       matches = matches.filter(m => m.school === confirmed.id);
+
+      // 학교는 정했는데 신청 전공을 아직 안 골랐다면 목록을 내보내지 않는다.
+      // 전공을 모르는 채로 그 학교 과목 전부를 늘어놓으면(수백 개) 무엇이 내
+      // 학점으로 인정되는지 판단할 수 없다. 입력은 홈 한 곳에서만 받는다.
+      if (!selectedTargetMajor && matches.length && targetMajorOptions(confirmed.id).length) {
+        renderRelevanceFilter([]);
+        renderCountryFilter([]);
+        note.hidden = true;
+        document.getElementById('matchList').innerHTML = `
+          <div class="info-panel">
+            <p class="info-panel__text">
+              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려주시면
+              그 전공 과목만 모아서 보여드려요.
+            </p>
+            <a class="btn btn--primary btn--sm" href="home.html">홈에서 신청 전공 고르기</a>
+          </div>`;
+        return;
+      }
+
       note.hidden = false;
-      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}의 과목만 보여드려요.`;
+      note.textContent = selectedTargetMajor
+        ? `확정하신 ${confirmed.nameKo || confirmed.name} · ${selectedTargetMajor} 기준이에요.`
+        : `확정하신 ${confirmed.nameKo || confirmed.name}의 과목만 보여드려요.`;
     } else {
       note.hidden = true;
     }
@@ -257,7 +236,6 @@
       matches = matches.filter(m => m.homeMajor === selectedMajor);
     }
 
-    renderTargetMajorFilter();
     matches = byTargetMajor(matches);
 
     renderRelevanceFilter(matches);
@@ -286,7 +264,7 @@
     `;
     }).join('') : `<p class="info-panel__text">${
       selectedCountry || selectedRelevance || selectedTargetMajor
-        ? '조건에 맞는 과목이 없어요. 신청 전공이나 관련도를 바꿔보세요.'
+        ? '조건에 맞는 과목이 없어요. 관련도를 바꿔보세요.'
         : confirmed
           ? `${confirmed.nameKo || confirmed.name}의 학점 인정 과목 자료가 아직 없어요.`
           : '서비스 준비 중이에요.'
@@ -303,8 +281,6 @@
       return;
     }
 
-    const tm = document.getElementById('targetMajorMount');
-    if (tm) tm.innerHTML = '';   // 이 탭은 전공을 고르는 화면이라 신청 전공 필터가 겹친다
     let all = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
     // 과목 탭과 같은 이유로 확정 학교만 남긴다
     if (confirmed) all = all.filter(m => m.school === confirmed.id);

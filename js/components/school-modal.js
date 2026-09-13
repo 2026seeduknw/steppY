@@ -189,25 +189,6 @@ function similarMajorsHtml(school, major) {
   return `<div class="tag-row">${matches.map(m => `<span class="chip" title="유사도 ${m.similarity}%${m.note ? ` · ${m.note}` : ''}">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
-/** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
- *  visa 서류(출입국)와 달리 여기는 지원/입학용 서류(성적증명서 등)를 다룬다. */
-function applicationDocsPanelHtml(school) {
-  const docs = MOCK.schoolDocuments[school.id] || [];
-  if (!docs.length) return '';
-  const baseline = docs.filter(d => d.type === 'baseline');
-  const hint = docs.filter(d => d.type !== 'baseline');
-  return `
-    <section class="info-panel info-panel--wide">
-      <h3>⑧ 지원 서류 안내</h3>
-      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
-      ${baseline.length ? `<div class="tag-row">${baseline.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>` : ''}
-      ${hint.length ? `
-        <p class="info-panel__text" style="margin-top:var(--space-3);">참고용 힌트 (미검증)</p>
-        <div class="tag-row">${hint.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>
-      ` : ''}
-    </section>`;
-}
-
 /** 통화 환산 팁. MENTAL_FX_RATES(js/currency-rates.js, 암산용 반올림 환율)로
  *  "1 통화 ≈ 대략 얼마원"을 보여준다. 특정 금액이 있으면(예: 기숙사비) 그 금액에
  *  곱한 예시까지 함께 보여주고, 없으면(② 날씨·생활 정보처럼 일반 안내용) 짧게 한 줄만. */
@@ -240,40 +221,6 @@ function livingCostPanelHtml(school) {
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
       <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
-    </section>`;
-}
-
-/** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
-function visaDocsPanelHtml(school) {
-  const info = MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
-  if (!info) return '';
-
-  const sourceLinks = (info.sources || []).map(s => `
-    <a class="btn--text" href="${s.url}" target="_blank" rel="noopener">${VISA_SOURCE_KIND_LABEL[s.kind] || '공식 출처'} ↗</a>
-  `).join('');
-
-  let body;
-  if (info.status === 'available') {
-    const docChips = info.documents.map(d => `<span class="chip">${d.rawName || d.standardType}</span>`).join('');
-    body = `
-      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
-      <div class="tag-row">${docChips}</div>
-      <div class="visa-source-list">${sourceLinks}</div>
-    `;
-  } else if (info.status === 'preparing') {
-    body = `
-      <p class="info-panel__text"><span class="badge badge--amber">${info.statusLabelKo || '서비스 준비중'}</span></p>
-      <p class="info-panel__text">아직 자동 조사가 완료되지 않았어요. 아래 공식 사이트에서 최신 요건을 직접 확인해주세요.</p>
-      <div class="visa-source-list">${sourceLinks}</div>
-    `;
-  } else {
-    body = `<p class="info-panel__text">${info.statusLabelKo || '다수 국가·대학 프로그램이라 파견 확정 국가에 따라 비자 요건이 달라요. 파견 국가가 정해지면 다시 확인해주세요.'}</p>`;
-  }
-
-  return `
-    <section class="info-panel info-panel--wide">
-      <h3>⑦ 비자·서류 안내</h3>
-      ${body}
     </section>`;
 }
 
@@ -335,11 +282,8 @@ function schoolModalTemplate(school, opts = {}) {
           <p class="info-panel__text">1~3지망 합계 <strong class="tnum">${school.wishlistCount.total}명</strong>이 선택했어요</p>
         </section>
 
-        ${visaDocsPanelHtml(school)}
-        ${applicationDocsPanelHtml(school)}
-
         <section class="info-panel info-panel--wide">
-          <h3>⑨ 공식 링크</h3>
+          <h3>⑦ 공식 링크</h3>
           <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
         </section>
       </div>

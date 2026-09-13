@@ -1259,3 +1259,38 @@ a.appbar__lead:active { opacity: 0.6; }
   line-height: 1.6;
 }
 .score-detail__factors li:last-child { margin-bottom: 0; }
+
+/* ------------------------------------------------------------ 신청 전공 카드
+   홈(교환 준비하기)에서만 고른다. 학점 인정 탭은 이 값을 읽기만 한다. */
+.target-major {
+  background: #fff;
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+.target-major__head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+}
+.target-major__eyebrow {
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: 0.06em; color: var(--amber-700);
+}
+.target-major__desc {
+  margin: 6px 0 var(--space-3);
+  font-size: var(--fs-small); line-height: 1.6; color: var(--ink-600);
+}
+.target-major--empty .target-major__desc { margin-bottom: 0; }
+.target-major__value {
+  margin: 4px 0 var(--space-2);
+  font-size: var(--fs-body); font-weight: 800; color: var(--ink-900);
+  word-break: keep-all;
+}
+.target-major__cta {
+  display: inline-block; font-size: var(--fs-small); font-weight: 700;
+  color: var(--ink-900); text-decoration: none;
+}
+.target-major__cta:hover { text-decoration: underline; }
+.target-major__clear {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-micro); color: var(--ink-400);
+}
+.target-major__clear:hover { color: var(--ink-700); text-decoration: underline; }
