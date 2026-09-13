@@ -15,8 +15,18 @@
     { key: 'abroad', label: '교환 중' }
   ];
 
-  const composeMount = document.getElementById('journalCompose');
-  const listMount = document.getElementById('journalList');
+  const rootMount = document.getElementById('journalRoot');
+  const ledeMount = document.getElementById('journalLede');
+  let composeMount = document.getElementById('journalCompose');
+  let listMount = document.getElementById('journalList');
+
+  /**
+   * 학교를 확정하면 이 탭은 사진 다이어리로 바뀐다(js/diary-view.js).
+   * 확정 전에는 아래의 글 기록 화면 그대로다 — 아직 파견 기간도, 찍을 사진도 없고
+   * 준비하면서 적어두는 메모가 필요한 시기라서다.
+   * 기록은 둘 다 같은 user_journal에 쌓이므로 출국 후에도 준비 때 쓴 글이 남는다.
+   */
+  function wantsDiary() { return AppState.isAuthed && !!AppState.getConfirmedSchool(); }
 
   // 마지막으로 고른 단계를 이어 쓴다 — 교환을 떠난 뒤 매번 '교환 중'으로
   // 바꿔야 하면 번거롭다. 이 기기에만 남는 값이라 서버에는 올리지 않는다.
@@ -186,6 +196,21 @@
   }
 
   function renderAll() {
+    if (wantsDiary()) {
+      ledeMount.hidden = true;
+      if (!diaryViewIsMounted()) mountDiaryView(rootMount);
+      return;
+    }
+
+    // 다이어리에서 글 기록으로 돌아온 경우(학교 확정 취소) 뼈대를 되살린다
+    if (diaryViewIsMounted()) {
+      unmountDiaryView();
+      rootMount.classList.remove('diary-view');
+      rootMount.innerHTML = '<div id="journalCompose"></div><div id="journalList"></div>';
+      composeMount = document.getElementById('journalCompose');
+      listMount = document.getElementById('journalList');
+    }
+    ledeMount.hidden = false;
     renderCompose();
     renderList();
   }
@@ -204,6 +229,12 @@
   }
 
   document.addEventListener('MOCK:updated', () => {
+    if (wantsDiary()) {
+      // 하이드레이션으로 기록이 늘었을 수 있다. 이미 떠 있으면 사진만 다시 채운다.
+      if (diaryViewIsMounted()) { diaryRefreshPhotos(); return; }
+      renderAll();
+      return;
+    }
     if (composeHasInput()) { renderList(); return; }
     renderAll();
   });

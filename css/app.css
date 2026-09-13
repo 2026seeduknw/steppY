@@ -1152,3 +1152,71 @@ a.appbar__lead:active { opacity: 0.6; }
   display: flex; align-items: center; justify-content: center;
   font-size: 1rem;
 }
+
+/* ---------------------------------------------------------------- 출국 카운트다운
+   홈(교환 준비하기)에 놓이는 D-day 카드. 기록 탭의 MY JOURNEY와 같은 값을 본다. */
+#departureCard { display: flex; flex-direction: column; }
+
+.departure-card {
+  display: block;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  background: var(--ink-900);
+  color: #fff;
+  text-decoration: none;
+}
+.departure-card--abroad { background: linear-gradient(135deg, #2C3E5C 0%, #4A5E86 100%); }
+.departure-card--after { background: var(--ink-700); }
+
+.departure-card__head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);
+}
+.departure-card__eyebrow {
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.7);
+}
+.departure-card__dday {
+  font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.departure-card__desc {
+  margin: var(--space-2) 0 0;
+  font-size: var(--fs-small); line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+.departure-card__cta {
+  display: inline-block; margin-top: var(--space-3);
+  font-size: var(--fs-small); font-weight: 700; color: #fff;
+}
+.departure-card__bar {
+  height: 4px; border-radius: 999px; margin-top: var(--space-3);
+  background: rgba(255, 255, 255, 0.22); overflow: hidden;
+}
+.departure-card__bar > div { height: 100%; border-radius: 999px; background: #fff; }
+
+/* 입력 상태는 카드가 아니라 폼이라 어두운 배경을 쓰지 않는다 */
+.departure-card--setup {
+  background: #fff;
+  color: var(--ink-900);
+  border: 1px solid var(--line-200);
+}
+.departure-card--setup .departure-card__eyebrow { color: var(--amber-700); }
+.departure-card--setup .departure-card__desc { color: var(--ink-600); }
+.departure-card__title { margin: 4px 0 0; font-size: var(--fs-body); font-weight: 800; }
+.departure-card__row { display: flex; gap: var(--space-3); margin: var(--space-3) 0; }
+.departure-card__row label {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+  font-size: var(--fs-micro); color: var(--ink-400);
+}
+.departure-card__row input[type="date"] {
+  width: 100%; min-width: 0;
+  border: 1px solid var(--line-200); border-radius: var(--radius-sm);
+  padding: 7px 9px; font-family: inherit; font-size: var(--fs-small);
+  color: var(--ink-900); background: #fff;
+}
+.departure-card__edit {
+  align-self: flex-end; margin-top: 6px;
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: var(--fs-micro); color: var(--ink-400);
+}
+.departure-card__edit:hover { color: var(--ink-700); text-decoration: underline; }

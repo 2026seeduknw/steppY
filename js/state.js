@@ -51,6 +51,7 @@ function guestState() {
     todos: [],
     customTodos: [],
     journal: [],
+    programRange: null,
     targetScores: null,
     // 게스트에게는 온보딩을 묻지 않는다 — 답을 저장할 계정이 없다
     onboardedAt: 'guest'
@@ -86,6 +87,7 @@ function emptyState(displayName) {
     todos: [],
     customTodos: [],
     journal: [],
+    programRange: null,
     targetScores: null,
     onboardedAt: null
   };
@@ -276,9 +278,56 @@ const AppState = {
     return tempId;
   },
 
+  /* ------------------------------------------------- 파견 기간 / 사진 */
+
+  /** 파견 기간이 없으면 null. Day N·진행 바는 이 값이 있어야 그린다. */
+  getProgramRange() { return this.load().programRange; },
+
+  setProgramRange(start, end) {
+    this.load().programRange = (start && end) ? { start, end } : null;
+    this.save();
+    this._push(() => supabaseClient.from('profiles')
+      .upsert({ id: Auth.userId, program_start: start || null, program_end: end || null }), '파견 기간');
+  },
+
+  isDateInProgram(iso) {
+    const r = this.load().programRange;
+    // 기간을 아직 안 정했으면 막지 않는다 — 기록부터 하게 두고 기간은 나중에 받는다
+    if (!r) return true;
+    return iso >= r.start && iso <= r.end;
+  },
+
+  /**
+   * 사진은 Postgres가 아니라 Storage(diary-photos, 비공개)에 올리고 경로만 행에 남긴다.
+   * base64로 들고 있으면 행이 수 MB씩 불어나 목록 조회가 통째로 느려지고,
+   * localStorage(5MB)에는 몇 장 만에 들어가지 않는다.
+   * 경로 첫 칸이 user_id라 Storage 정책이 남의 폴더를 막는다.
+   */
+  async uploadDiaryPhoto(blob) {
+    const name = `${Auth.userId}/${crypto.randomUUID()}.jpg`;
+    const res = await supabaseClient.storage.from('diary-photos')
+      .upload(name, blob, { contentType: 'image/jpeg', upsert: false });
+    if (res.error) throw res.error;
+    return name;
+  },
+
+  /**
+   * 비공개 버킷이라 <img src>에 바로 못 쓴다. 한 시간짜리 서명 URL로 바꿔 준다.
+   * 경로 하나씩 요청하면 화면에 사진 수만큼 왕복이 생기므로 한 번에 묶어 받는다.
+   */
+  async signPhotoPaths(paths) {
+    const unique = [...new Set(paths.filter(Boolean))];
+    if (!unique.length) return {};
+    const res = await supabaseClient.storage.from('diary-photos').createSignedUrls(unique, 3600);
+    if (res.error) return {};
+    const map = {};
+    res.data.forEach(r => { if (r.signedUrl) map[r.path] = r.signedUrl; });
+    return map;
+  },
+
   /* -------------------------------------------------------- 기록하기 */
 
-  addJournalEntry({ date, phase, title, body }) {
+  addJournalEntry({ date, phase, title, body, photos, tags, location }) {
     const s = this.load();
     // addTodo와 같은 방식 — 서버 uuid가 오기 전까지 쓸 임시 id
     const tempId = 'j' + Date.now();
@@ -288,6 +337,9 @@ const AppState = {
       phase: phase === 'abroad' ? 'abroad' : 'prepare',
       title: title || '',
       body: body || '',
+      photos: photos || [],
+      tags: tags || [],
+      location: location || null,
       createdAt: new Date().toISOString()
     };
     s.journal.push(entry);
@@ -301,7 +353,10 @@ const AppState = {
             entry_date: entry.date,
             phase: entry.phase,
             title: entry.title || null,
-            body: entry.body
+            body: entry.body,
+            photos: entry.photos,
+            tags: entry.tags,
+            location: entry.location
           })
           .select('id, created_at')
           .single();
@@ -355,8 +410,17 @@ const AppState = {
     s.journal.splice(i, 1);
     this.save();
     if (!this.isAuthed) return;
-    this._push(() => supabaseClient.from('user_journal')
-      .delete().eq('id', entry.id).eq('user_id', Auth.userId), '기록 삭제');
+    this._push(async () => {
+      const res = await supabaseClient.from('user_journal')
+        .delete().eq('id', entry.id).eq('user_id', Auth.userId);
+      // 행만 지우면 Storage에 사진이 그대로 남는다. 아무도 참조하지 않는 파일이라
+      // 용량만 먹고 영영 지워지지 않으므로 같이 치운다. 행 삭제가 실패했으면
+      // 사진은 아직 쓰이고 있으니 건드리지 않는다.
+      if (!res.error && entry.photos && entry.photos.length) {
+        await supabaseClient.storage.from('diary-photos').remove(entry.photos);
+      }
+      return res;
+    }, '기록 삭제');
   },
 
   reset() {
@@ -396,7 +460,7 @@ const AppState = {
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, created_at').eq('user_id', uid)
+      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, created_at').eq('user_id', uid)
     ]);
 
     const next = emptyState(this._displayName());
@@ -414,6 +478,10 @@ const AppState = {
       next.confirmedSchoolId = p.confirmed_school_id || null;
       next.targetScores = p.target_scores || null;
       next.onboardedAt = p.onboarded_at || null;
+      // 둘 다 있어야 Day N을 셀 수 있다. 하나만 있으면 없는 것으로 친다.
+      next.programRange = (p.program_start && p.program_end)
+        ? { start: p.program_start, end: p.program_end }
+        : null;
     }
     if (favs.data) next.favorites = favs.data.map(r => r.school_id);
     if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
@@ -431,6 +499,9 @@ const AppState = {
         phase: r.phase,
         title: r.title || '',
         body: r.body || '',
+        photos: r.photos || [],
+        tags: r.tags || [],
+        location: r.location || null,
         createdAt: r.created_at
       }));
     }
