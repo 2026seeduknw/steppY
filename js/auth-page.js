@@ -16,6 +16,11 @@
   let mode = 'signin';
 
   Auth.init().then(session => {
+    // OAuth로 갔다가 실패해서 돌아온 경우 먼저 알린다
+    if (Auth.redirectError) {
+      showError(Auth.message({ message: Auth.redirectError }));
+      return;
+    }
     if (session) location.replace('home.html');
   });
 
@@ -64,6 +69,19 @@
     noticeEl.hidden = false;
     errorEl.hidden = true;
   }
+
+  document.getElementById('kakaoBtn').addEventListener('click', async () => {
+    clearMessages();
+    const btn = document.getElementById('kakaoBtn');
+    btn.disabled = true;
+    try {
+      // 성공하면 카카오 인가 페이지로 이동하므로 이 아래는 실행되지 않는다.
+      await Auth.signInWithKakao();
+    } catch (err) {
+      showError(Auth.message(err));
+      btn.disabled = false;
+    }
+  });
 
   modes.addEventListener('click', e => {
     const btn = e.target.closest('.mode-toggle__btn');

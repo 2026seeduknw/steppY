@@ -17,9 +17,39 @@ const Auth = {
   session: null,
   _ready: null,
 
+  /**
+   * OAuth 실패는 예외로 오지 않는다.
+   *
+   * signInWithOAuth()는 authorize URL만 만들어 돌려주므로, provider 미설정이나
+   * 사용자의 동의 거부 같은 실패는 리다이렉트로 "돌아온 뒤" URL에 실려 온다.
+   * PKCE 흐름이면 쿼리스트링(?error=...), implicit 흐름이면 해시(#error=...)다.
+   * 여기서 한 번 꺼내 보관하고 주소창은 깨끗하게 지운다 — 남겨두면 새로고침할
+   * 때마다 같은 오류가 다시 뜬다.
+   */
+  redirectError: null,
+
+  _consumeRedirectError() {
+    const sources = [
+      new URLSearchParams(location.search),
+      new URLSearchParams(location.hash.replace(/^#/, ''))
+    ];
+    let found = null;
+    sources.forEach(params => {
+      if (!found && params.get('error')) {
+        found = params.get('error_description') || params.get('error');
+      }
+    });
+    if (found) {
+      this.redirectError = decodeURIComponent(found.replace(/\+/g, ' '));
+      history.replaceState(null, '', location.pathname);
+    }
+    return this.redirectError;
+  },
+
   /** 저장된 세션을 복구하고 이후 변화를 구독한다. 여러 번 불러도 한 번만 실행된다. */
   init() {
     if (this._ready) return this._ready;
+    this._consumeRedirectError();
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
       this._ready = Promise.resolve(null);
       return this._ready;
@@ -67,6 +97,24 @@ const Auth = {
     return data.session;
   },
 
+  /**
+   * 카카오 OAuth. Supabase가 카카오 인가 페이지로 리다이렉트했다가 콜백으로
+   * 돌아오면, supabase-js가 URL의 인가 코드를 세션으로 교환한다(detectSessionInUrl).
+   * 그래서 돌아온 페이지에서는 Auth.init()만 돌면 로그인 상태가 잡힌다.
+   *
+   * Capacitor로 감싼 뒤에는 redirectTo가 http(s)가 아니라 앱의 커스텀 스킴
+   * (예: kr.steppy.app://auth-callback)이 되어야 하고, Supabase의 Redirect URLs
+   * 허용 목록에도 그 값을 등록해야 한다.
+   */
+  async signInWithKakao() {
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: new URL('home.html', location.href).href }
+    });
+    if (error) throw error;
+    return data;
+  },
+
   async signOut() {
     await supabaseClient.auth.signOut();
     this.session = null;
@@ -81,6 +129,13 @@ const Auth = {
     if (/Email not confirmed/i.test(code)) return '메일함에서 인증 링크를 먼저 확인해 주세요.';
     if (/over_email_send_rate_limit|rate limit/i.test(code)) return '요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.';
     // Supabase는 형식뿐 아니라 일부 도메인(example.com 등)도 거절한다
+    // Supabase 대시보드에서 카카오 provider를 켜지 않았을 때
+    if (/provider is not enabled|Unsupported provider/i.test(code)) {
+      return '카카오 로그인이 아직 연결되지 않았어요. 잠시 후 다시 시도해 주세요.';
+    }
+    if (/access_denied|user cancelled|consent/i.test(code)) {
+      return '카카오 로그인이 취소됐어요.';
+    }
     if (/validation_failed|invalid format|is invalid|email_address_invalid/i.test(code)) {
       return '사용할 수 없는 이메일 주소예요. 실제로 받을 수 있는 주소를 입력해 주세요.';
     }

@@ -181,6 +181,14 @@ function mountFilterSheet() {
 document.addEventListener('DOMContentLoaded', () => {
   const page = document.body.dataset.page;
   if (!page) return;
+  // OAuth 실패는 redirectTo로 지정한 화면(home.html)으로 돌아온다. 그냥 두면
+  // 아무 안내 없이 비로그인 상태의 홈이 떠서 사용자가 이유를 알 수 없다.
+  Auth.init().then(() => {
+    if (Auth.redirectError) {
+      if (typeof showToast === 'function') showToast(Auth.message({ message: Auth.redirectError }));
+      Auth.redirectError = null;
+    }
+  });
   renderAppBar(page);
   renderTabBar(page);
   if (page === 'search') mountFilterSheet();
