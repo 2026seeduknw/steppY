@@ -51,7 +51,6 @@ body {
    본문 대비가 떨어진다 → 크게 낮춰 질감만 남긴다. */
 body[data-page]::before { opacity: 0.12; }
 body[data-page="credits"]::before { opacity: 0.14; }
-body[data-page="calendar"]::before { opacity: 0.16; }
 
 .page-shell { max-width: 100%; padding: 0 var(--space-4); }
 
@@ -123,7 +122,7 @@ body[data-page="calendar"]::before { opacity: 0.16; }
   left: 0; right: 0; bottom: 0;
   z-index: 70;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   height: calc(var(--tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   background: rgba(255, 255, 255, 0.94);
@@ -277,7 +276,6 @@ body.is-sheet-open { overflow: hidden; }
 }
 body[data-page="home"] .home-hero,
 body[data-page="credits"] .home-hero,
-body[data-page="calendar"] .home-hero,
 body[data-page="consult"] .home-hero,
 body[data-page="major-matching"] .home-hero {
   padding-left: var(--space-4);
@@ -289,12 +287,10 @@ body[data-page="major-matching"] .home-hero {
    제목이 두 번 나오고 첫 화면의 세로 공간만 먹는다 → 히어로 제목은 지운다.
    (major-matching의 설명 <p>처럼 제목이 아닌 요소는 그대로 남긴다) */
 body[data-page="credits"] .home-hero h1,
-body[data-page="major-matching"] .home-hero h1,
-body[data-page="calendar"] .home-hero h1 { display: none; }
+body[data-page="major-matching"] .home-hero h1 { display: none; }
 
 /* h1만 있던 화면은 히어로가 통째로 비므로 여백도 걷어낸다 */
-body[data-page="credits"] .home-hero,
-body[data-page="calendar"] .home-hero { padding-top: var(--space-3); padding-bottom: 0; min-height: 0; }
+body[data-page="credits"] .home-hero { padding-top: var(--space-3); padding-bottom: 0; min-height: 0; }
 
 /* 툴팁 대신 본문으로 내려온 설명문 */
 .page-lede {
@@ -443,17 +439,7 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .match-card { padding: var(--space-4); border-radius: var(--radius-row); margin-bottom: var(--space-3); }
 .match-card__field { flex-wrap: wrap; gap: 6px; }
 .match-card__target-course, .match-card__school-name { font-size: 1rem; }
-.similarity-ring { width: 50px; height: 50px; font-size: var(--fs-micro); }
 .summary-banner { flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-row); }
-
-/* ---- 캘린더 ---- */
-.cal-grid { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-4); padding: 0 0 var(--space-6); }
-.cal-side { position: static; }
-.cal-nav__title { font-size: 1.125rem; }
-.cal-month { gap: 4px; }
-.cal-day { min-height: 52px; padding: 5px; gap: 3px; border-radius: 8px; }
-.cal-day__num { font-size: var(--fs-micro); }
-.cal-add-form input, .cal-add-form select { height: 44px; border-radius: 10px; }
 
 /* ---- Mentor's Step ---- */
 .consult-layout { padding: 0 0 var(--space-6); gap: var(--space-3); max-width: 100%; }
@@ -708,3 +694,28 @@ body[data-page="auth"] {
   height: 1px;
   background: rgba(240, 236, 221, 0.18);
 }
+
+
+/* ---- 할 일 추가 폼 (캘린더에서 옮겨온 입력) ---- */
+.todo-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-radius: 12px;
+  background: var(--sky-50);
+}
+.todo-add-form__row { display: flex; gap: var(--space-2); }
+.todo-add-form__row > * { flex: 1; min-width: 0; }
+.todo-add-form input,
+.todo-add-form select {
+  height: 44px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--line-200);
+  border-radius: 10px;
+  background: var(--cloud-0);
+  font-size: 16px;
+}
+.todo-add-form input:focus,
+.todo-add-form select:focus { border-color: var(--sky-500); outline: none; }

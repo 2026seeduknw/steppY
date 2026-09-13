@@ -15,17 +15,15 @@ const TAB_ICONS = {
   home: '<path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-4.6v-5.8H8.6V21H4a1 1 0 0 1-1-1z"/>',
   search: '<circle cx="11" cy="11" r="6.6"/><path d="m20.4 20.4-4.1-4.1"/>',
   credits: '<path d="M6.2 2.8h8l4 4v14.4h-12z"/><path d="m9.3 13.2 1.9 1.9 3.8-3.8"/>',
-  calendar: '<rect x="3.6" y="5.4" width="16.8" height="15.2" rx="1.6"/><path d="M3.6 10.2h16.8M8.2 3v4M15.8 3v4"/>',
   consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>'
 };
 
-// 웹 버전은 상단 4개 + 플로팅 멘토였다. 앱에서는 멘토까지 5개 탭으로 합친다.
-// (탭바는 5개가 상한선 — 그 이상은 터치 타깃이 44px 아래로 떨어진다)
+// 웹 버전은 상단 4개 + 플로팅 멘토였다. 앱에서는 멘토를 탭으로 끌어올렸다.
+// (캘린더는 제거 — 할 일 추가는 홈/준비하기의 "오늘의 할 일" 카드로 옮겼다)
 const APP_TABS = [
   { key: 'home', label: '홈', href: 'home.html' },
   { key: 'search', label: '학교 찾기', href: 'search.html' },
   { key: 'credits', label: '학점 인정', href: 'credits.html' },
-  { key: 'calendar', label: '캘린더', href: 'calendar.html' },
   { key: 'consult', label: '멘토', href: 'consult.html' }
 ];
 
@@ -35,7 +33,6 @@ const PAGE_TITLES = {
   prepare: '교환 준비하기',
   credits: '학점 인정',
   'major-matching': '전공 매칭',
-  calendar: '캘린더',
   consult: "Mentor's Step"
 };
 

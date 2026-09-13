@@ -38,18 +38,6 @@
       .join(' · ');
   }
 
-  function similarityColor(pct) {
-    if (pct >= 80) return 'var(--mint-500)';
-    if (pct >= 60) return 'var(--amber-500)';
-    return 'var(--coral-500)';
-  }
-
-  // tokens.css가 명시하듯 --amber-500(moonlight)은 "배경 전용"이라 흰 글자와 짝지으면
-  // 대비가 1.2:1까지 떨어져 사실상 읽히지 않는다. 배경색에 맞춰 글자색도 함께 고른다.
-  function similarityInk(pct) {
-    return pct >= 80 || pct < 60 ? '#fff' : 'var(--amber-700)';
-  }
-
   function schoolDisplay(schoolId) {
     const school = MOCK.schools.find(s => s.id === schoolId);
     return {
@@ -93,7 +81,6 @@
               </div>
             </div>
           </div>
-          <div class="similarity-ring" style="background:${similarityColor(m.similarity)};color:${similarityInk(m.similarity)}">${m.similarity}%</div>
         </div>
         ${m.matchedTopics.length ? `
         <div class="match-card__topics-label">관련 키워드</div>
@@ -147,7 +134,6 @@
               </div>
             </div>
           </div>
-          <div class="similarity-ring" style="background:${similarityColor(m.similarity)};color:${similarityInk(m.similarity)}">${m.similarity}%</div>
         </div>
         ${m.matchedTopics.length ? `
         <div class="match-card__topics-label">관련 키워드</div>
