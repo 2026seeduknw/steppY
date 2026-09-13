@@ -11,6 +11,15 @@ const PREPARE_MARKUP = `
       <div id="prepareMap"></div>
       <div id="prepareScore"></div>
 
+      <a class="credits-cta" href="credits.html">
+        <div class="credits-cta__body">
+          <span class="credits-cta__eyebrow">학점 인정</span>
+          <h2>확정한 학교 과목, 학점으로 인정될까요?</h2>
+          <p>내 전공과 이 학교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
+        </div>
+        <span class="credits-cta__arrow" aria-hidden="true">→</span>
+      </a>
+
       <section class="card card-pad" id="checklistSection">
         <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
         <div class="checklist" id="checklistList"></div>
@@ -233,7 +242,11 @@ function morphToPreparePage() {
   document.getElementById('mentor-float').insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
   document.body.dataset.page = 'prepare';
   document.title = '교환 준비하기 — steppY';
-  renderAppNav('prepare');
+  // 앱 셸로 바꾸면서 renderAppNav()가 renderAppBar()/renderTabBar() 둘로 갈렸는데
+  // 이 호출부를 놓쳤다. 정의가 없는 함수라 여기서 ReferenceError가 나면서 바로
+  // 아래 renderPrepareView()가 실행되지 않았고, 마크업만 꽂힌 빈 카드들이 남았다.
+  renderAppBar('prepare');
+  renderTabBar('prepare');
   renderPrepareView();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
