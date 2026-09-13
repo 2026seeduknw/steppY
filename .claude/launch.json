@@ -4,8 +4,22 @@
     {
       "name": "steppY-static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/no-cache-server.py", "8123"],
+      "runtimeArgs": [
+        "tools/no-cache-server.py",
+        "8123"
+      ],
       "port": 8123,
+      "autoPort": true
+    },
+    {
+      "name": "steppY-app-www",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "tools/no-cache-server.py",
+        "8124",
+        "www"
+      ],
+      "port": 8124,
       "autoPort": true
     }
   ]
