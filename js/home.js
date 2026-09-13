@@ -110,6 +110,8 @@
     mount.querySelectorAll('[data-school]').forEach(el => {
       el.addEventListener('click', () => openSchoolModal(el.dataset.school, { onChange: renderWishlistRow }));
     });
+
+    attachCarouselDots(mount);
   }
 
   function renderJourney() {
@@ -145,5 +147,7 @@
       focusStep(idx);
     });
     track.addEventListener('mouseleave', () => focusStep(currentIdx >= 0 ? currentIdx : steps.length - 1));
+
+    attachCarouselDots(track);
   }
 })();
