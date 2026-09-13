@@ -341,6 +341,7 @@ function schoolModalTemplate(school, opts = {}) {
         ${livingCostPanelHtml(school)}
       </div>
 
+      ${AppState.isAuthed ? `
       <footer class="school-modal__footer" id="modalFooter">
         <div class="school-modal__rank">
           <span class="school-modal__rank-label">지망 순위</span>
@@ -351,7 +352,8 @@ function schoolModalTemplate(school, opts = {}) {
         <button class="btn btn--primary" id="confirmSchoolBtn">
           ${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}
         </button>
-      </footer>
+      </footer>` : `
+      ${GUEST_MODAL_FOOTER}`}
     </div>
     </div>
   `;
@@ -376,12 +378,20 @@ function confirmWarningTemplate(school, overwriting) {
 
 function wireSchoolModalActions(scrim, school, opts) {
   scrim.querySelector('[data-fav-toggle]').addEventListener('click', (e) => {
+    if (!AppState.isAuthed) {
+      e.stopPropagation();
+      if (typeof showToast === 'function') showToast('로그인하면 즐겨찾기를 저장할 수 있어요');
+      return;
+    }
     const active = AppState.toggleFavorite(school.id);
     e.currentTarget.classList.toggle('is-active', active);
     showToast(active ? '즐겨찾기에 추가했어요' : '즐겨찾기를 해제했어요');
     trackEvent('wishlist_toggle', { schoolId: school.id, active });
     if (opts.onChange) opts.onChange();
   });
+
+  // 게스트 푸터에는 지망 칩도 확정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
+  if (!AppState.isAuthed) return;
 
   scrim.querySelectorAll('.rank-chip').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -415,7 +425,16 @@ function wireSchoolModalActions(scrim, school, opts) {
   });
 }
 
+/** 로그인 전에는 저장할 계정이 없다. 지망·확정 대신 로그인 안내를 둔다. */
+const GUEST_MODAL_FOOTER = `<footer class="school-modal__footer school-modal__footer--guest" id="modalFooter">
+    <div class="guest-cta">
+      <p class="guest-cta__text">로그인하면 이 학교를 <strong>1~3지망으로 담고 확정</strong>할 수 있어요</p>
+      <a class="btn btn--primary btn--block" href="auth.html">로그인하고 담기</a>
+    </div>
+  </footer>`;
+
 function schoolModalFooterOnly(school) {
+  if (!AppState.isAuthed) return GUEST_MODAL_FOOTER;
   const wishlist = AppState.getWishlist();
   const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
   const confirmed = AppState.getConfirmedSchool();

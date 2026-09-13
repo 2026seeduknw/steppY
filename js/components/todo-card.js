@@ -18,10 +18,13 @@ function renderTodoCard(mount, options) {
     rerender({ expanded: !expanded, adding: false });
   });
 
-  mount.querySelector('[data-todo-add-toggle]').addEventListener('click', (e) => {
-    e.stopPropagation();
-    rerender({ adding: !adding, expanded: true });
-  });
+  const addToggle = mount.querySelector('[data-todo-add-toggle]');
+  if (addToggle) {
+    addToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      rerender({ adding: !adding, expanded: true });
+    });
+  }
 
   mount.querySelectorAll('[data-todo-check]').forEach(cb => {
     cb.addEventListener('click', (e) => {
@@ -66,12 +69,17 @@ function todoCardTemplate(adding, expanded) {
         </span>
         <span class="todo-pill__caret" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
       </button>
+      ${AppState.isAuthed ? `
       <button type="button" class="todo-pill__add" data-todo-add-toggle
-              aria-label="${adding ? '할 일 추가 취소' : '할 일 추가'}">${adding ? '×' : '+'}</button>
+              aria-label="${adding ? '할 일 추가 취소' : '할 일 추가'}">${adding ? '×' : '+'}</button>` : `
+      <a class="todo-pill__add" href="auth.html" aria-label="로그인하고 할 일 추가">+</a>`}
     </div>
 
     ${expanded ? `
     <div class="todo-panel">
+      ${AppState.isAuthed ? '' : `
+      <p class="todo-panel__guest">로그인하면 준비 일정을 저장하고 어느 기기에서든 이어서 볼 수 있어요.
+        <a href="auth.html">로그인하기 →</a></p>`}
       ${adding ? todoAddFormHtml() : ''}
       <ul class="todo-list">
         ${todos.map(t => `

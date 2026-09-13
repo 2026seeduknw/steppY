@@ -20,10 +20,21 @@
   // 최초 1회는 게스트 기본값으로 그려진다. 하이드레이션이 끝나면 'MOCK:updated'가
   // 오므로 그때 아래 네 가지를 통째로 다시 그린다(renderAll).
   function renderGreeting() {
+    const greeting = document.getElementById('greeting');
+    const sub = document.getElementById('greetingSub');
+
+    // 로그인 전에는 인사할 이름도, 보여줄 파견 시기도 없다. 데모 프로필을 그대로
+    // 띄우면 남의 정보를 자기 것처럼 보게 되므로 행동을 안내하는 문구로 바꾼다.
+    if (!AppState.isAuthed) {
+      greeting.textContent = '로그인하고 정보를 입력해보세요!';
+      sub.textContent = '내 성적으로 지원 가능한 학교와 준비 일정을 확인할 수 있어요';
+      return;
+    }
+
     const p = AppState.profile;
     const term = p.exchangeTerm || {};
-    document.getElementById('greeting').textContent = `안녕하세요, ${p.name || '회원'}님`;
-    document.getElementById('greetingSub').textContent = term.year
+    greeting.textContent = `안녕하세요, ${p.name || '회원'}님`;
+    sub.textContent = term.year
       ? `${term.year} ${term.season} 파견을 준비하고 있어요`
       : '교환 시기를 등록하면 준비 일정을 정리해 드려요';
   }
@@ -52,9 +63,26 @@
   });
 
   function renderWishlistRow() {
+    const mount = document.getElementById('wishlistRow');
+    const headerCta = document.querySelector('#wishlistRow')
+      .closest('.card').querySelector('.section-title .btn');
+
+    // 로그인 전에는 저장할 지망이 없다. 빈 1~3지망 칸 세 개를 보여주는 대신
+    // 다음 행동(학교 찾기) 하나만 크게 둔다.
+    if (!AppState.isAuthed) {
+      if (headerCta) headerCta.hidden = true;
+      mount.innerHTML = `
+        <a class="wishlist-cta" href="search.html">
+          <span class="wishlist-cta__title">지원 가능한 학교부터 찾아보세요</span>
+          <span class="wishlist-cta__sub">271개 파견교를 성적·국가·전공으로 골라볼 수 있어요</span>
+          <span class="btn btn--accent wishlist-cta__btn">학교 찾기</span>
+        </a>`;
+      return;
+    }
+    if (headerCta) headerCta.hidden = false;
+
     const wishlist = AppState.getWishlist();
     const confirmed = AppState.getConfirmedSchool();
-    const mount = document.getElementById('wishlistRow');
     mount.innerHTML = [1, 2, 3].map(rank => {
       const schoolId = wishlist[rank];
       const school = schoolId ? MOCK.schools.find(s => s.id === schoolId) : null;

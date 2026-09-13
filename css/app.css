@@ -971,3 +971,40 @@ body[data-page="onboarding"] {
 .chat-input-row input::placeholder {
   font-size: var(--fs-small);
 }
+
+
+/* ---- 로그인 전(게스트) 안내 ---- */
+.wishlist-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-5) var(--space-4);
+  border: 1.5px dashed var(--sky-300);
+  border-radius: var(--radius-row);
+  background: var(--sky-50);
+  text-align: center;
+}
+.wishlist-cta__title { font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.wishlist-cta__sub { font-size: var(--fs-small); color: var(--ink-600); word-break: keep-all; }
+.wishlist-cta__btn { width: 100%; margin-top: var(--space-3); height: 48px; }
+
+.school-modal__footer--guest { flex-direction: column; align-items: stretch; }
+.guest-cta { display: flex; flex-direction: column; gap: var(--space-3); width: 100%; }
+.guest-cta__text {
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  text-align: center;
+  word-break: keep-all;
+}
+.guest-cta__text strong { color: var(--ink-900); font-weight: 700; }
+.todo-panel__guest {
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--ink-600);
+  word-break: keep-all;
+}
+.todo-panel__guest a { color: var(--sky-700); font-weight: 700; white-space: nowrap; }
+a.todo-pill__add { text-decoration: none; }
+
+/* .btn은 display:inline-flex라 hidden 속성만으로는 안 사라진다 */
+.btn[hidden] { display: none; }

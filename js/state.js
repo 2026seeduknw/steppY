@@ -35,7 +35,7 @@ function guestState() {
     favorites: [],
     wishlist: {},
     confirmedSchoolId: null,
-    todos: MOCK.todos.map(t => ({ id: t.id, done: t.done })),
+    todos: [],
     customTodos: [],
     targetScores: null,
     // 게스트에게는 온보딩을 묻지 않는다 — 답을 저장할 계정이 없다
@@ -121,6 +121,9 @@ const AppState = {
   },
 
   getTodos() {
+    // 로그인 전에는 보여줄 개인 데이터가 없다. MOCK.todos는 계정에 붙는 기본
+    // 체크리스트라, 게스트에게 띄우면 남의 일정처럼 보이고 체크해도 남지 않는다.
+    if (!this.isAuthed) return [];
     const s = this.load();
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
     const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
