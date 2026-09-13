@@ -8,8 +8,7 @@ const PREPARE_MARKUP = `
 
   <div class="page-shell prepare-grid">
     <div class="prepare-main">
-      <div id="prepareMap"></div>
-      <div id="prepareScore"></div>
+      <section class="card card-pad" id="todoCard"></section>
 
       <a class="credits-cta" href="credits.html">
         <div class="credits-cta__body">
@@ -37,20 +36,12 @@ const PREPARE_MARKUP = `
         <div class="tip-row" id="spotsList"></div>
       </section>
     </div>
-
-    <aside class="prepare-aside">
-      <section class="card card-pad" id="profileCard"></section>
-      <section class="card card-pad" id="todoCard"></section>
-    </aside>
   </div>
 `;
 
 function renderPrepareView() {
-  renderProfileCard(document.getElementById('profileCard'));
   renderTodoCard(document.getElementById('todoCard'));
   renderPrepareHero();
-  renderPrepareMap();
-  renderPrepareScore();
   renderPrepareChecklist();
   renderPrepareLiving();
   renderPrepareTips();
@@ -104,24 +95,7 @@ function renderPrepareHero() {
   });
 }
 
-function renderPrepareMap() {
-  const confirmed = AppState.getConfirmedSchool();
-  const mount = document.getElementById('prepareMap');
-  if (!confirmed) { mount.innerHTML = ''; return; }
-  mount.innerHTML = `
-    <section class="card card-pad">
-      <div class="section-title"><div><h2>학교 위치</h2></div></div>
-      <div class="map-embed">
-        <iframe src="${mapEmbedUrl(confirmed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${confirmed.name} 지도"></iframe>
-      </div>
-      <p class="map-caption">${confirmed.mapNote}</p>
-    </section>`;
-}
 
-function renderPrepareScore() {
-  const confirmed = AppState.getConfirmedSchool();
-  document.getElementById('prepareScore').innerHTML = confirmed ? scoreCardHtml(confirmed, { numbered: false }) : '';
-}
 
 function renderPrepareChecklist() {
   const mount = document.getElementById('checklistList');
