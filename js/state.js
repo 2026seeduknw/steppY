@@ -17,7 +17,17 @@
  * 올리면 남의 데이터처럼 보이는 값이 계정에 박힌다.
  */
 
-const STORAGE_KEY = 'xchg_demo_state_v1';
+/**
+ * 게스트 상태 저장 키.
+ *
+ * v1에는 데모 프로필(이서연 · GPA 3.62 · TOEFL 96)이 통째로 들어 있었다.
+ * 게스트 기본값을 빈 프로필로 바꾼 뒤에도, 이전에 앱을 열어본 브라우저에서는
+ * load()의 Object.assign(guestState(), 저장값)이 그 값을 되살려서 — 점수를 한 번도
+ * 입력하지 않았는데 "지원 가능" 배지가 뜨는 상태가 됐다.
+ * 키에 버전을 붙여 옛 상태를 읽지 않고, 남아 있던 키는 지운다.
+ */
+const STORAGE_KEY = 'steppy_guest_state_v2';
+const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 
 /**
  * 로그인하지 않은 방문자의 초기 상태.
@@ -78,6 +88,7 @@ const AppState = {
     // hydrate() 이전에 동기로 불리면 일단 게스트 상태로 시작한다.
     // 로그인 상태라면 hydrate()가 곧 서버 값으로 통째로 갈아끼운다.
     try {
+      LEGACY_STORAGE_KEYS.forEach(k => localStorage.removeItem(k));
       const raw = localStorage.getItem(STORAGE_KEY);
       this._cache = raw ? Object.assign(guestState(), JSON.parse(raw)) : guestState();
     } catch (e) {

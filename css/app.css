@@ -1036,7 +1036,14 @@ a.todo-pill__add { text-decoration: none; }
   border: 1.5px solid var(--line-200);
   border-radius: 9px;
   background: var(--cloud-0);
-  font-size: 16px;
+  /* 옆의 '기본순' 셀렉트와 같은 크기로 맞춘다.
+     16px 미만이면 iOS가 포커스할 때 화면을 확대하므로, Capacitor로 감쌀 때
+     WKWebView 쪽에서 자동 확대를 꺼야 한다. 웹에서만 보는 동안에는 영향이 작다. */
+  font-size: var(--fs-small);
 }
 .score-prompt__field input::placeholder { font-size: var(--fs-small); }
 .score-prompt__form .btn { flex: 0 0 auto; height: 38px; padding: 0 var(--space-3); white-space: nowrap; }
+
+/* 목표 시뮬레이션(로그인 상태)의 입력도 같은 크기로 */
+.sim-banner__field input,
+.sim-banner__field select { font-size: var(--fs-small); }
