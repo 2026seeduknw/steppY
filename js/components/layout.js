@@ -127,9 +127,13 @@ function renderTabBar(activeKey) {
   // 출국하면 학점 인정도 뺀다 — 수강신청까지 끝난 뒤라 더 고를 것이 없다.
   // (departure.js가 layout.js보다 먼저 실려 있다. 혹시 없더라도 탭은 그대로 둔다)
   const departed = typeof hasDeparted === 'function' && hasDeparted();
+  const confirmed = !!AppState.getConfirmedSchool();
   const tabs = APP_TABS.filter(tab => {
-    if (tab.key === 'search' && AppState.getConfirmedSchool()) return false;
+    if (tab.key === 'search' && confirmed) return false;
     if (tab.key === 'credits' && departed) return false;
+    // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
+    // Day 수도 못 세고 남길 것도 마땅치 않다.
+    if (tab.key === 'journal' && !confirmed) return false;
     return true;
   });
   mount.innerHTML = `
