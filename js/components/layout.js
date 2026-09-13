@@ -77,15 +77,25 @@ function openAccountSheet() {
     <div class="app-sheet__scrim" data-close></div>
     <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="계정">
       <div class="app-sheet__grip" data-close></div>
-      <div class="account-sheet">
-        <p class="account-sheet__label">로그인 계정</p>
-        <p class="account-sheet__email">${Auth.email || ''}</p>
-        <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
-        <button type="button" class="btn btn--text account-sheet__cancel" data-close>닫기</button>
+      <div class="app-sheet__body">
+        <div class="account-sheet">
+          <p class="account-sheet__label">로그인 계정</p>
+          <p class="account-sheet__email">${Auth.email || ''}</p>
+          <section class="card card-pad account-sheet__profile" id="accountProfileCard"></section>
+          <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
+        </div>
       </div>
     </div>
   `;
   document.body.appendChild(sheet);
+
+  // 기본 정보(GPA·어학·교환시기·학과) 수정은 여기서 한다. 홈 화면에서 뺐다.
+  // 프로필 카드 컴포넌트를 안 불러온 화면에서는 조용히 건너뛴다.
+  if (typeof renderProfileCard === 'function') {
+    renderProfileCard(sheet.querySelector('#accountProfileCard'));
+  } else {
+    sheet.querySelector('#accountProfileCard').remove();
+  }
   // 삽입 직후 바로 is-open을 주면 transition 시작 상태가 없어 슬라이드가 생략된다
   requestAnimationFrame(() => sheet.classList.add('is-open'));
   document.body.classList.add('is-sheet-open');
@@ -117,13 +127,15 @@ function renderTabBar(activeKey) {
         const isActive = activeKey === tab.key
           || (isHomeSlot && activeKey === 'prepare')
           || (tab.key === 'credits' && activeKey === 'major-matching');
+        // 라벨은 화면에 쓰지 않는다(아이콘만). 이름은 aria-label로만 남겨
+        // 스크린리더와 접근성 검사에서는 계속 읽히게 한다.
         return `
-          <a class="tabbar__item${isActive ? ' is-active' : ''}" href="${href}"${isActive ? ' aria-current="page"' : ''}>
+          <a class="tabbar__item${isActive ? ' is-active' : ''}" href="${href}"
+             aria-label="${label}"${isActive ? ' aria-current="page"' : ''}>
             <svg class="tabbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               ${TAB_ICONS[tab.key]}
             </svg>
-            <span class="tabbar__label">${label}</span>
           </a>`;
       }).join('')}
     </nav>

@@ -1,31 +1,39 @@
 /**
- * 오늘의 할 일 (§4.2) — F2/F4 공통, 최대 4개 노출.
+ * 오늘의 할 일 — 가로로 긴 알약(pill) 요약 + 펼치면 목록.
  *
- * 할 일 추가는 원래 캘린더 화면의 폼이 담당했는데, 캘린더를 없애면서 유일한
- * 추가 경로가 사라졌다. 그래서 이 카드 안으로 폼을 옮겼다 — 카드 헤더의
- * "+ 추가"를 누르면 인라인 폼이 열린다.
+ * 홈 첫 화면에서는 "몇 개 중 몇 개 했는지"만 알면 된다. 목록까지 항상 펼쳐두면
+ * 정작 아래의 지망 학교가 화면 밖으로 밀린다. 그래서 기본은 접어두고, 알약을
+ * 누르면 목록이 열린다. 오른쪽 + 는 추가 폼을 연다(캘린더를 없애면서 유일한
+ * 추가 경로가 이 카드로 들어왔다).
  */
 function renderTodoCard(mount, options) {
-  const adding = !!(options && options.adding);
-  mount.innerHTML = todoCardTemplate(adding);
+  const opts = options || {};
+  const adding = !!opts.adding;
+  const expanded = !!opts.expanded;
+
+  mount.innerHTML = todoCardTemplate(adding, expanded);
+  const rerender = (next) => renderTodoCard(mount, Object.assign({ adding, expanded }, next));
+
+  mount.querySelector('[data-todo-expand]').addEventListener('click', () => {
+    rerender({ expanded: !expanded, adding: false });
+  });
+
+  mount.querySelector('[data-todo-add-toggle]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    rerender({ adding: !adding, expanded: true });
+  });
 
   mount.querySelectorAll('[data-todo-check]').forEach(cb => {
     cb.addEventListener('click', (e) => {
       e.stopPropagation();
       AppState.toggleTodo(cb.dataset.todoCheck);
-      renderTodoCard(mount, { adding });
+      rerender({});
     });
   });
 
-  const toggle = mount.querySelector('[data-todo-add-toggle]');
-  toggle.addEventListener('click', () => renderTodoCard(mount, { adding: !adding }));
-
   const form = mount.querySelector('[data-todo-add-form]');
   if (!form) return;
-
-  // 폼이 열리면 바로 입력할 수 있게 커서를 둔다
   form.elements.title.focus();
-
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(form);
@@ -33,41 +41,49 @@ function renderTodoCard(mount, options) {
     const date = fd.get('date');
     if (!title || !date) return;
     AppState.addTodo({ title, date, tag: fd.get('tag') });
-    renderTodoCard(mount, { adding: false });
+    rerender({ adding: false, expanded: true });
     if (typeof showToast === 'function') showToast('할 일을 추가했어요');
   });
 }
 
-function todoCardTemplate(adding) {
+function todoCardTemplate(adding, expanded) {
   const todos = AppState.getTodos().slice(0, 4);
   const total = todos.length;
   const remaining = todos.filter(t => !t.done).length;
   const done = total - remaining;
   const percent = total ? Math.round((done / total) * 100) : 0;
+
   return `
-    <div class="section-title">
-      <div><h2>오늘의 할 일</h2></div>
-      <button type="button" class="btn--text" data-todo-add-toggle>${adding ? '취소' : '+ 추가'}</button>
+    <div class="todo-pill${expanded ? ' is-expanded' : ''}">
+      <button type="button" class="todo-pill__summary" data-todo-expand
+              aria-expanded="${expanded}" aria-label="오늘의 할 일 ${done}/${total} 완료">
+        <span class="todo-pill__ring">
+          ${progressRingHtml(percent, { size: 46, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
+        </span>
+        <span class="todo-pill__text">
+          <span class="todo-pill__count"><strong>${done}</strong><span>/${total}</span></span>
+          <span class="todo-pill__label">오늘의 할 일</span>
+        </span>
+        <span class="todo-pill__caret" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
+      </button>
+      <button type="button" class="todo-pill__add" data-todo-add-toggle
+              aria-label="${adding ? '할 일 추가 취소' : '할 일 추가'}">${adding ? '×' : '+'}</button>
     </div>
-    <div class="todo-card__progress">
-      ${progressRingHtml(percent, { size: 56, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
-      <div class="todo-card__progress-text">
-        <span class="todo-card__progress-count"><strong>${done}/${total}</strong> 완료</span>
-        <span class="todo-card__progress-sub">오늘 남은 일 ${remaining}개</span>
-      </div>
-    </div>
-    ${adding ? todoAddFormHtml() : ''}
-    <ul class="todo-list">
-      ${todos.map(t => `
-        <li class="todo-item ${t.done ? 'is-done' : ''}">
-          <button class="todo-item__check" data-todo-check="${t.id}" aria-label="완료 처리">${t.done ? '✓' : ''}</button>
-          <div class="todo-item__body">
-            <span class="todo-item__title">${t.title}</span>
-            <span class="todo-item__meta">${t.date} · ${t.tag}</span>
-          </div>
-        </li>
-      `).join('')}
-    </ul>
+
+    ${expanded ? `
+    <div class="todo-panel">
+      ${adding ? todoAddFormHtml() : ''}
+      <ul class="todo-list">
+        ${todos.map(t => `
+          <li class="todo-item ${t.done ? 'is-done' : ''}">
+            <button class="todo-item__check" data-todo-check="${t.id}" aria-label="완료 처리">${t.done ? '✓' : ''}</button>
+            <div class="todo-item__body">
+              <span class="todo-item__title">${t.title}</span>
+              <span class="todo-item__meta">${t.date} · ${t.tag}</span>
+            </div>
+          </li>`).join('')}
+      </ul>
+    </div>` : ''}
   `;
 }
 
@@ -81,6 +97,5 @@ function todoAddFormHtml() {
         <select name="tag">${tags.map(t => `<option>${t}</option>`).join('')}</select>
       </div>
       <button type="submit" class="btn btn--primary btn--sm">추가하기</button>
-    </form>
-  `;
+    </form>`;
 }

@@ -24,7 +24,8 @@
 
 :root {
   --appbar-h: 52px;
-  --tabbar-h: 58px;
+  --tabbar-h: 52px;
+  --tabbar-gap: 12px;
   /* 노치/홈 인디케이터 — Capacitor로 감쌌을 때 실제 값이 들어온다.
      브라우저에서는 0이라 레이아웃이 그대로다. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -43,7 +44,7 @@ body {
      뷰포트보다 작아지면, 데스크탑 기기 컬럼용으로 html에 깔아둔 oxford 배경이
      아래쪽에 그대로 드러난다. 최소 한 화면은 채우게 한다. */
   min-height: 100dvh;
-  padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+  padding-bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom));
   overscroll-behavior-y: none;
 }
 
@@ -117,49 +118,45 @@ body[data-page="credits"]::before { opacity: 0.14; }
    2. 하단 탭바 (#mentor-float)
    ========================================================================== */
 
+/* 화면 폭을 꽉 채운 바 대신 아래에 떠 있는 알약. 활성 탭만 어두운 알약으로
+   채우고 라벨을 보여준다 — 비활성은 아이콘만 둬서 폭을 아낀다.
+   (레퍼런스는 아이콘만 쓰지만 "학점 인정"처럼 아이콘만으로 뜻이 안 잡히는 탭이
+    있어, 활성 탭에는 라벨을 남겼다. 비활성 탭은 aria-label로 읽힌다) */
 .tabbar {
   position: fixed;
-  left: 0; right: 0; bottom: 0;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + var(--tabbar-gap));
+  transform: translateX(-50%);
   z-index: 70;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  height: calc(var(--tabbar-h) + var(--safe-bottom));
-  padding-bottom: var(--safe-bottom);
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: saturate(160%) blur(16px);
-  border-top: 1px solid var(--line-200);
-}
-@media (min-width: 900px) {
-  .tabbar { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
-}
-
-.tabbar__item {
-  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: var(--space-3);
+  width: auto;
+  max-width: calc(100% - var(--space-4) * 2);
+  height: var(--tabbar-h);
+  padding: 6px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 12px 32px rgba(35, 53, 77, 0.18), 0 0 0 1px rgba(35, 53, 77, 0.05);
+}
+
+/* 아이콘만 쓴다. 활성 탭은 어두운 원으로 채워 표시한다. */
+.tabbar__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   color: var(--ink-400);
-  /* 아이콘+라벨을 합쳐 최소 44px 터치 타깃을 확보 */
-  min-height: 44px;
-  transition: color var(--dur-fast) var(--ease-out);
+  transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
 }
-.tabbar__icon { width: 23px; height: 23px; }
-.tabbar__label { font-size: 0.625rem; font-weight: 600; letter-spacing: -0.01em; }
-.tabbar__item.is-active { color: var(--sky-700); }
-.tabbar__item.is-active .tabbar__label { font-weight: 700; }
-/* 활성 탭 위의 짧은 인디케이터 — 색만으로는 구분이 약하다 */
-.tabbar__item.is-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px; height: 3px;
-  border-radius: 0 0 var(--radius-pill) var(--radius-pill);
-  background: var(--sky-700);
-}
+.tabbar__icon { width: 21px; height: 21px; flex: 0 0 auto; }
+.tabbar__item.is-active { background: var(--ink-900); color: #fff; }
+.tabbar__item:not(.is-active):active { background: rgba(35, 53, 77, 0.07); }
 
 
 /* ==========================================================================
@@ -326,20 +323,27 @@ body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
 .home-main > *, .home-aside > *,
 .prepare-main > *, .prepare-aside > * { min-width: 0; }
 
-/* 3개 슬롯을 세로로 쌓으면 첫 화면이 빈 카드로 채워진다 → 스냅되는 가로 캐러셀.
-   트랙 폭에 %를 쓰면 컨테이너 폭이 콘텐츠로 정해지는 상황에서 순환이 생겨
-   max-content로 풀린다 → vw 기준으로 끊되, 데스크탑 기기 컬럼(430px)에서
-   과도해지지 않도록 상한을 둔다. */
+/* 1~3지망을 세로로 나란히 둔다. 가로 캐러셀은 세 칸뿐인데도 옆으로 밀어야
+   나머지가 보여서, 한눈에 비교가 안 됐다. */
 .wishlist-row {
-  grid-template-columns: repeat(3, min(66vw, 280px));
-  gap: var(--space-3);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  padding-bottom: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
-.wishlist-row::-webkit-scrollbar { display: none; }
-.wishlist-slot { scroll-snap-align: start; min-height: 112px; border-radius: 12px; }
+.wishlist-slot {
+  min-height: 0;
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  justify-content: flex-start;
+  gap: 2px;
+}
+.wishlist-slot__head { display: flex; align-items: center; gap: var(--space-2); }
+.wishlist-slot__head .badge { height: 20px; padding: 0 8px; font-size: var(--fs-micro); }
+.wishlist-slot__rank { margin: 0; }
+.wishlist-slot__name { margin: 2px 0 0; font-size: var(--fs-body); display: flex; align-items: center; gap: 6px; }
+.wishlist-slot__flag { font-size: 1rem; line-height: 1; flex: 0 0 auto; }
+.wishlist-slot__meta { margin: 0; font-size: var(--fs-micro); }
+.wishlist-slot__empty { text-align: left; font-size: var(--fs-small); }
 
 .journey-track { overflow-x: auto; scrollbar-width: none; padding-bottom: var(--space-1); }
 .journey-track::-webkit-scrollbar { display: none; }
@@ -462,7 +466,7 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .chat-input-row {
   position: sticky;
   /* bottom:0 이면 고정 탭바(높이 --tabbar-h) 뒤로 숨는다 — 탭바 위에 얹는다 */
-  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+  bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom));
   margin: 0 calc(var(--space-4) * -1);
   padding: var(--space-3) var(--space-4);
   background: var(--cloud-0);
@@ -482,7 +486,7 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .toast {
   z-index: 110;
   /* 토스트가 탭바에 가리지 않도록 탭바 높이만큼 띄운다 */
-  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--space-4));
+  bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom));
 }
 .modal-panel {
   width: 100%;
@@ -705,6 +709,59 @@ body[data-page="auth"] {
 }
 
 
+/* ---- 오늘의 할 일: 알약 요약 + 펼치면 목록 ---- */
+.todo-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 7px 7px var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--sky-100);
+}
+.todo-pill__summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.todo-pill__ring { flex: 0 0 auto; display: flex; }
+.todo-pill__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.todo-pill__count { font-family: var(--font-mono); line-height: 1.1; color: var(--ink-900); }
+.todo-pill__count strong { font-size: 1.5rem; font-weight: 800; }
+.todo-pill__count span { font-size: var(--fs-body); color: var(--ink-400); }
+.todo-pill__label { font-size: var(--fs-small); color: var(--ink-600); }
+.todo-pill__caret { flex: 0 0 auto; color: var(--ink-400); font-size: 0.9rem; padding-right: var(--space-2); }
+
+/* 레퍼런스의 노란 원형 + 버튼 */
+.todo-pill__add {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: var(--moonlight, #F0ECDD);
+  color: var(--ink-900);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.todo-pill__add:active { transform: scale(0.94); }
+
+.todo-panel {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-row);
+  background: var(--cloud-0);
+  border: 1px solid var(--line-100);
+}
+
 /* ---- 할 일 추가 폼 (캘린더에서 옮겨온 입력) ---- */
 .todo-add-form {
   display: flex;
@@ -858,3 +915,28 @@ body[data-page="onboarding"] {
   transition: background var(--dur-fast) var(--ease-out), width var(--dur-fast) var(--ease-out);
 }
 .carousel-dots__dot.is-active { width: 18px; border-radius: var(--radius-pill); background: var(--sky-500); }
+
+
+/* 계정 시트 안의 기본 정보 카드 — 시트 배경 위에서 한 겹 더 들어가지 않도록 납작하게 */
+.account-sheet__profile {
+  margin-bottom: var(--space-4);
+  border-radius: 12px;
+  box-shadow: none;
+  background: var(--cloud-50);
+}
+.account-sheet { padding-bottom: var(--space-6); }
+
+
+/* ---- 학교 카드: 순위 · 지원 가능 · 모집 인원을 한 줄로 ---- */
+/* 배지가 이름 아래 따로 한 줄을 차지하던 걸 상단 메타 줄로 합쳤다.
+   카드 높이가 줄고, 판정 결과를 제목보다 먼저 보게 된다. */
+.school-card__top { align-items: flex-start; gap: var(--space-2); }
+.school-card__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.school-card__meta .badge { height: 22px; padding: 0 8px; font-size: var(--fs-micro); }
+.school-card__name { margin-top: var(--space-1); }

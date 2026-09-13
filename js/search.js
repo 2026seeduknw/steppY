@@ -186,14 +186,17 @@
     return `
       <button type="button" class="card card--interactive school-card" data-open-school="${school.id}">
         <div class="school-card__top">
-          <span class="school-card__qs">${school.qsRank ? `QS ${school.qsRank}` : '순위 미정'}</span>
+          <div class="school-card__meta">
+            <span class="school-card__qs">${school.qsRank ? `QS ${school.qsRank}` : '순위 미정'}</span>
+            ${eligibilityBadgeHtml(elig)}
+            <span class="badge badge--neutral">모집 ${school.slot}명</span>
+          </div>
           <span class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}">
             <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
           </span>
         </div>
         <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
-        <div class="school-card__badges">${eligibilityBadgeHtml(elig)}<span class="badge badge--neutral">모집 ${school.slot}명</span></div>
         <div class="school-card__stats">
           <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${school.gpaCut}</div></div>
           <div><div class="school-card__stat-label">${school.langTest.type}</div><div class="school-card__stat-value">${school.langTest.cut}</div></div>

@@ -30,7 +30,7 @@
 
   function renderAll() {
     renderGreeting();
-    renderProfileCard(document.getElementById('profileCard'));
+    // 기본 정보(프로필)는 앱바 계정 시트로 옮겼다 — 홈에서는 보여주지 않는다
     renderTodoCard(document.getElementById('todoCard'));
     renderWishlistRow();
     renderJourney();
@@ -51,33 +51,6 @@
     renderAll();
   });
 
-  // 본문(위시리스트+여정+CTA배너)과 아사이드(프로필+할일)는 각자 콘텐츠양에 따라
-  // 높이가 유동적임. 아사이드가 본문보다 길어지면 그 차이만큼 할일 목록에
-  // max-height를 씌워 "내 스펙에 맞는 학교를 더 찾아볼까요" 배너 하단과
-  // 정확히 같은 지점에서 끝나도록 맞춤(넘치는 항목은 목록 내부 스크롤로 처리).
-  function syncAsideHeight() {
-    const main = document.querySelector('.home-main');
-    const aside = document.querySelector('.home-aside');
-    const todoList = document.querySelector('#todoCard .todo-list');
-    if (!main || !aside || !todoList) return;
-    todoList.style.maxHeight = '';
-    todoList.style.overflowY = '';
-    const overflow = aside.getBoundingClientRect().height - main.getBoundingClientRect().height;
-    if (overflow > 1) {
-      const listHeight = todoList.getBoundingClientRect().height;
-      todoList.style.maxHeight = `${Math.max(0, listHeight - overflow)}px`;
-      todoList.style.overflowY = 'auto';
-    }
-  }
-
-  requestAnimationFrame(syncAsideHeight);
-  window.addEventListener('resize', () => requestAnimationFrame(syncAsideHeight));
-  if (window.ResizeObserver) {
-    const resizeSync = new ResizeObserver(() => requestAnimationFrame(syncAsideHeight));
-    resizeSync.observe(document.querySelector('.home-main'));
-    resizeSync.observe(document.getElementById('profileCard'));
-  }
-
   function renderWishlistRow() {
     const wishlist = AppState.getWishlist();
     const confirmed = AppState.getConfirmedSchool();
@@ -88,30 +61,30 @@
       if (!school) {
         return `
           <div class="wishlist-slot">
+            <div class="wishlist-slot__head">
+              <span class="wishlist-slot__rank">${rank}지망</span>
+            </div>
             <div class="wishlist-slot__empty">
-              <div class="wishlist-slot__rank">${rank}지망</div>
-              아직 선택하지 않았어요<br>
-              <a href="search.html">학교 찾기 →</a>
+              아직 선택하지 않았어요 <a href="search.html">학교 찾기 →</a>
             </div>
           </div>`;
       }
       const elig = computeEligibility(AppState.profile, school);
+      const flag = countryFlag(school.countryEn);
       return `
         <button type="button" class="wishlist-slot is-filled" data-school="${school.id}">
-          <div class="wishlist-slot__rank">${rank}지망 ${confirmed && confirmed.id === school.id ? '· 확정됨' : ''}</div>
-          <div>
-            <div class="wishlist-slot__name">${school.name}</div>
-            <div class="wishlist-slot__meta">${school.country}${school.qsRank ? ` · QS ${school.qsRank}` : ''}</div>
+          <div class="wishlist-slot__head">
+            <span class="wishlist-slot__rank">${rank}지망${confirmed && confirmed.id === school.id ? ' · 확정됨' : ''}</span>
+            ${eligibilityBadgeHtml(elig)}
           </div>
-          ${eligibilityBadgeHtml(elig)}
+          <div class="wishlist-slot__name">${flag ? `<span class="wishlist-slot__flag">${flag}</span>` : ''}${school.name}</div>
+          <div class="wishlist-slot__meta">${school.country}${school.qsRank ? ` · QS ${school.qsRank}` : ''}</div>
         </button>`;
     }).join('');
 
     mount.querySelectorAll('[data-school]').forEach(el => {
       el.addEventListener('click', () => openSchoolModal(el.dataset.school, { onChange: renderWishlistRow }));
     });
-
-    attachCarouselDots(mount);
   }
 
   function renderJourney() {
