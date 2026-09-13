@@ -103,17 +103,29 @@ body[data-page="intro"] {
   top: var(--sy);
   width: 22px;
   height: auto;
-  transform: translate(-50%, -50%);
+  /* 이미지는 위를 향해 서 있다. --sr 만큼 돌려 진행 방향(좌하 → 우상)을 보게 한다. */
+  transform: translate(-50%, -50%) rotate(var(--sr, 0deg));
   opacity: 0;
-  animation: step-appear 2s ease-in-out infinite;
+  animation: step-appear 6s ease-in-out infinite;
   animation-delay: var(--sd);
 }
-/* 발자국은 브랜드 모티프지만 히어로 제목과 겹치는 자리라, 또렷하면 글자를
-   방해한다. 최고 불투명도를 0.9 → 0.45로 낮춰 배경 질감처럼 깔리게 한다. */
+/* 한 걸음씩 찍히고 → 자국이 남았다가 → 함께 옅어지며 다시 시작한다.
+   걸음마다 animation-delay가 달라서, 같은 키프레임이어도 순서대로 찍힌다.
+   6초 주기에 마지막 걸음의 지연이 2.2초라, 다 찍힌 자국이 한동안 머문다.
+
+   불투명도 최고값은 0.45 — 브랜드 모티프지만 히어로 제목과 겹치는 자리라
+   또렷하면 글자를 방해한다. */
 @keyframes step-appear {
-  0%, 8% { opacity: 0; }
-  20%, 85% { opacity: 0.45; }
-  100% { opacity: 0.45; }
+  0%   { opacity: 0; }
+  4%   { opacity: 0.45; }
+  70%  { opacity: 0.45; }
+  88%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 움직임을 줄여달라고 한 사용자에게는 완성된 자취만 보여준다 */
+  .intro__step { animation: none; opacity: 0.45; }
 }
 
 .intro__content {
