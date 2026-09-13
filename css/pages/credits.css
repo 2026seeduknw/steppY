@@ -63,3 +63,29 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
 @media print {
   .app-nav, #mentor-float, #downloadReportBtn { display: none !important; }
 }
+
+/* ---- 국가 필터 / 국가 태그 ---- */
+/* 후보 국가가 많아 세로로 쌓이면 결과가 한참 밀린다 → 한 줄 가로 스크롤 */
+.country-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.country-filter::-webkit-scrollbar { display: none; }
+.country-filter .chip { flex: 0 0 auto; }
+
+.match-card__country {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--sky-50);
+  color: var(--sky-700);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  white-space: nowrap;
+}

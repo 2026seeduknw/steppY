@@ -7,6 +7,7 @@
 (function () {
   AppState.load();
   let selectedMajor = AppState.profile.major;
+  let selectedCountry = '';   // '' = 전체
   let mode = 'course'; // 'course' | 'major'
 
   function renderMajorFilter() {
@@ -43,8 +44,68 @@
     return {
       name: school ? (school.nameKo || school.name) : schoolId,
       country: school ? school.country : '',
+      countryEn: school ? school.countryEn : '',
       logo: SCHOOL_LOGOS[schoolId]
     };
+  }
+
+  /** 카드에 붙는 국가 태그(국기 + 한글 국가명). 국가를 모르면 아무것도 안 만든다. */
+  function countryTag(school) {
+    if (!school.country) return '';
+    const flag = countryFlag(school.countryEn);
+    return `<span class="match-card__country">${flag ? flag + ' ' : ''}${school.country}</span>`;
+  }
+
+  /**
+   * 국가 필터.
+   *
+   * 후보는 고정 목록이 아니라 "지금 이 모드·전공에서 실제로 결과가 있는 국가"로
+   * 만든다. 271개교 전체 국가를 늘어놓으면 골라도 결과가 0건인 선택지가 대부분이
+   * 되기 때문이다. 그래서 국가 필터를 적용하기 "전"의 목록에서 국가를 뽑는다.
+   */
+  function countryOptions(matches) {
+    const seen = new Map();
+    matches.forEach(m => {
+      const school = schoolDisplay(m.school);
+      if (school.country && !seen.has(school.country)) seen.set(school.country, school.countryEn);
+    });
+    return [...seen.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'ko'))
+      .map(([country, en]) => ({ country, flag: countryFlag(en) }));
+  }
+
+  function renderCountryFilter(matches) {
+    const mount = document.getElementById('countryFilterMount');
+    if (!mount) return;
+    const options = countryOptions(matches);
+
+    // 고를 수 있는 국가가 하나뿐이면 필터가 하는 일이 없다
+    if (options.length < 2) { mount.innerHTML = ''; return; }
+
+    // 전공을 바꿔서 지금 고른 국가에 결과가 없어지면 선택을 푼다
+    if (selectedCountry && !options.some(o => o.country === selectedCountry)) selectedCountry = '';
+
+    mount.innerHTML = `
+      <div class="country-filter" role="group" aria-label="국가 필터">
+        <button type="button" class="chip${selectedCountry === '' ? ' is-selected' : ''}" data-country="">전체</button>
+        ${options.map(o => `
+          <button type="button" class="chip${selectedCountry === o.country ? ' is-selected' : ''}" data-country="${o.country}">
+            ${o.flag ? o.flag + ' ' : ''}${o.country}
+          </button>`).join('')}
+      </div>`;
+
+    mount.querySelectorAll('[data-country]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedCountry = btn.dataset.country;
+        trackEvent('credits_country_filter', { country: selectedCountry || 'all', mode });
+        renderMatches();
+      });
+    });
+  }
+
+  function byCountry(matches) {
+    if (!selectedCountry) return matches;
+    return matches.filter(m => schoolDisplay(m.school).country === selectedCountry);
   }
 
   /** targetCourse 원본 문자열 끝에 "(대학명)"이 그대로 붙어 있고, 이게 실제 캠퍼스명과
@@ -63,6 +124,9 @@
       matches = matches.filter(m => m.homeMajor === selectedMajor);
     }
 
+    renderCountryFilter(matches);
+    matches = byCountry(matches);
+
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
       const school = schoolDisplay(m.school);
       return `
@@ -71,13 +135,14 @@
         <div class="match-card__school">
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
           <span class="match-card__school-name">${school.name}</span>
+          ${countryTag(school)}
         </div>
         ${m.matchedTopics.length ? `
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
         <div class="match-card__note">${formatNote(m.note)}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
+    }).join('') : `<p class="info-panel__text">${selectedCountry ? `${selectedCountry}에는 해당하는 과목이 없어요. 다른 국가를 골라보세요.` : '서비스 준비 중이에요.'}</p>`;
   }
 
   function renderMajorMatches() {
@@ -90,7 +155,9 @@
       return;
     }
 
-    const matches = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
+    const all = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
+    renderCountryFilter(all);
+    const matches = byCountry(all);
 
     if (confirmed && matches.some(m => m.school === confirmed.id)) {
       note.hidden = false;
@@ -107,7 +174,8 @@
         <h3 class="match-card__headline">${m.targetMajor}</h3>
         <div class="match-card__school">
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
-          <span class="match-card__school-name">${school.name}${school.country ? ` · ${school.country}` : ''}</span>
+          <span class="match-card__school-name">${school.name}</span>
+          ${countryTag(school)}
           ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
         </div>
         ${m.matchedTopics.length ? `
@@ -115,7 +183,7 @@
         <div class="match-card__note">${m.note || ''}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">이 전공은 아직 뚜렷한 매칭 결과가 없어요.</p>`;
+    }).join('') : `<p class="info-panel__text">${selectedCountry ? `${selectedCountry}에는 해당하는 전공이 없어요. 다른 국가를 골라보세요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
   }
 
   function renderMatches() {
