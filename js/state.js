@@ -37,7 +37,9 @@ function guestState() {
     confirmedSchoolId: null,
     todos: MOCK.todos.map(t => ({ id: t.id, done: t.done })),
     customTodos: [],
-    targetScores: null
+    targetScores: null,
+    // 게스트에게는 온보딩을 묻지 않는다 — 답을 저장할 계정이 없다
+    onboardedAt: 'guest'
   };
 }
 
@@ -59,7 +61,8 @@ function emptyState(displayName) {
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
-    targetScores: null
+    targetScores: null,
+    onboardedAt: null
   };
 }
 
@@ -81,6 +84,24 @@ const AppState = {
   },
 
   get isAuthed() { return typeof Auth !== 'undefined' && Auth.isAuthed; },
+
+  /**
+   * 아직 온보딩을 안내한 적 없는 로그인 계정인지.
+   * 프로필이 비어 있다는 사실과 "물어봤다"는 사실은 다르다 — 건너뛴 사용자에게
+   * 매번 다시 묻지 않으려면 후자를 따로 기록해야 한다.
+   */
+  get needsOnboarding() {
+    return this.isAuthed && this._hydrated && !this.load().onboardedAt;
+  },
+
+  /** 온보딩을 마쳤거나 건너뛴 시점을 남긴다. */
+  markOnboarded() {
+    const now = new Date().toISOString();
+    this.load().onboardedAt = now;
+    this.save();
+    this._push(() => supabaseClient.from('profiles')
+      .upsert({ id: Auth.userId, onboarded_at: now }), '온보딩 상태');
+  },
 
   save() {
     // 로그인 상태에서는 서버가 정본이라 로컬에 남기지 않는다.
@@ -267,6 +288,7 @@ const AppState = {
       };
       next.confirmedSchoolId = p.confirmed_school_id || null;
       next.targetScores = p.target_scores || null;
+      next.onboardedAt = p.onboarded_at || null;
     }
     if (favs.data) next.favorites = favs.data.map(r => r.school_id);
     if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
@@ -289,6 +311,19 @@ const AppState = {
   // 순서대로 흘려보내면 된다.
   _queue: Promise.resolve(),
 
+  /** 마지막 서버 쓰기에서 난 오류. 호출부가 이동 여부를 정할 때 본다. */
+  lastWriteError: null,
+
+  /**
+   * 대기 중인 서버 쓰기가 모두 끝날 때까지 기다린다.
+   *
+   * 쓰기는 낙관적이라 보통은 기다릴 필요가 없지만, 쓰기 직후 페이지를 옮기는
+   * 경우에는 얘기가 다르다. 온보딩이 그랬다 — markOnboarded() 직후 홈으로
+   * 이동했더니, 홈에서 새로 읽은 onboarded_at이 아직 null이라 온보딩으로
+   * 다시 튕겨 무한 왕복이 됐다.
+   */
+  flush() { return this._queue; },
+
   /** 로그인 상태에서만 서버로 쓴다. 실패는 조용히 삼키지 않고 토스트로 알린다. */
   _push(run, label) {
     if (!this.isAuthed) return;
@@ -298,6 +333,7 @@ const AppState = {
         if (res && res.error) throw res.error;
       })
       .catch(err => {
+        this.lastWriteError = err;
         console.error(`[AppState] ${label} 저장 실패`, err);
         if (typeof showToast === 'function') showToast(`${label} 저장에 실패했어요. 잠시 후 다시 시도해 주세요.`);
         // 체인을 끊지 않아야 이후 쓰기가 계속 흐른다

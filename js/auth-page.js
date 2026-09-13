@@ -110,6 +110,8 @@
         return;
       }
       const { needsConfirmation } = await Auth.signUp(email, password, name);
+      // 세션이 바로 생기면(이메일 확인 꺼진 프로젝트) 온보딩부터 보여준다.
+      // 확인 메일이 필요한 경우는 첫 로그인 때 layout.js의 가드가 잡는다.
       if (needsConfirmation) {
         // 프로젝트에서 "Confirm email"이 켜져 있는 경우 — 세션이 없으므로
         // 바로 진입시킬 수 없다. 확인 메일을 안내한다.
@@ -117,7 +119,7 @@
         setModeAfterSignup();
         return;
       }
-      location.replace('home.html');
+      location.replace('onboarding.html');
     } catch (err) {
       showError(Auth.message(err));
     } finally {

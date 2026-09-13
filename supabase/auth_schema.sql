@@ -37,6 +37,10 @@ create table if not exists public.profiles (
   exchange_term jsonb,
   confirmed_school_id text references public.schools(id) on delete set null,
   target_scores jsonb,
+  -- 온보딩을 완료했거나 건너뛴 시각. null이면 아직 한 번도 안내하지 않은 계정.
+  -- "프로필이 비어 있다"와 "물어봤다"는 다른 정보다 — 건너뛴 사용자에게 매번
+  -- 다시 묻지 않으려면 후자를 따로 기록해야 한다.
+  onboarded_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

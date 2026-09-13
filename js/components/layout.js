@@ -196,6 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('MOCK:updated', () => {
   const page = document.body.dataset.page;
   if (!page) return;
+
+  // 아직 온보딩을 안내한 적 없는 계정이면 프로필부터 받는다.
+  // needsOnboarding은 하이드레이션이 끝나야 true가 되므로, data-source.js가
+  // 먼저 쏘는 MOCK:updated에는 걸리지 않는다. onboarding.html은 layout.js를
+  // 불러오지 않아 순환 리다이렉트도 생기지 않는다.
+  if (AppState.needsOnboarding) {
+    location.replace('onboarding.html');
+    return;
+  }
+
   // 프로필 이름(아바타 이니셜)과 확정 여부(홈 탭 목적지)가 하이드레이션 후에
   // 확정되므로 앱바와 탭바를 함께 다시 그린다.
   renderAppBar(page);

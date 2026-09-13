@@ -730,3 +730,116 @@ body[data-page="auth"] {
 }
 .todo-add-form input:focus,
 .todo-add-form select:focus { border-color: var(--sky-500); outline: none; }
+
+
+/* ==========================================================================
+   10. 온보딩 (onboarding.html)
+   ========================================================================== */
+
+body[data-page="onboarding"] {
+  background: var(--cloud-50);
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ob__bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  height: calc(var(--appbar-h) + var(--safe-top));
+  padding: var(--safe-top) var(--space-3) 0;
+  background: var(--cloud-50);
+}
+.ob__back {
+  width: 40px; height: 40px;
+  border: none; background: none;
+  font-size: 1.6rem; line-height: 1;
+  color: var(--ink-600);
+  cursor: pointer;
+}
+.ob__back[hidden] { visibility: hidden; display: block; }
+.ob__skip {
+  border: none; background: none;
+  padding: var(--space-2);
+  font-size: var(--fs-small);
+  color: var(--ink-400);
+  cursor: pointer;
+}
+
+/* 진행 표시는 점이 아니라 채워지는 막대 — 남은 단계 수가 한눈에 보인다 */
+.ob__progress { display: flex; gap: 4px; }
+.ob__dot {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--line-200);
+  transition: background var(--dur-base) var(--ease-out);
+}
+.ob__dot.is-done { background: var(--sky-500); }
+
+.ob {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+}
+.ob__step {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--sky-500);
+  margin-bottom: var(--space-2);
+}
+.ob__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+  line-height: 1.35;
+  word-break: keep-all;
+  margin-bottom: var(--space-2);
+}
+.ob__desc {
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  color: var(--ink-600);
+  word-break: keep-all;
+  margin-bottom: var(--space-6);
+}
+
+.ob__body { display: flex; flex-direction: column; gap: var(--space-4); }
+.ob__field { gap: 8px; }
+.ob__field input,
+.ob__field select { height: 50px; border-radius: 12px; font-size: 16px; }
+.ob__body .ss { width: 100%; }
+.ob__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ob__chips .chip { height: 40px; padding: 0 var(--space-4); font-size: var(--fs-small); }
+.ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
+
+.ob__error {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  background: rgba(225, 93, 70, 0.1);
+  color: var(--coral-600);
+  font-size: var(--fs-small);
+}
+.ob__error[hidden] { display: none; }
+
+.ob__footer {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-3) var(--space-4) calc(var(--safe-bottom) + var(--space-4));
+  background: linear-gradient(to top, var(--cloud-50) 70%, transparent);
+}
+.ob__footer .btn { height: 52px; }
+
+@media (min-width: 900px) {
+  body[data-page="onboarding"] { max-width: var(--app-width); margin: 0 auto; min-height: 100vh; }
+}
