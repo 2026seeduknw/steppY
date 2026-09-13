@@ -386,18 +386,29 @@ body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
 }
 .filter-trigger:active { background: var(--sky-50); }
 
+/* 목표 점수 시뮬레이션 — 원래는 입력 2개 / 버튼 / 결과문이 각각 줄을 차지해
+   결과 목록을 한참 아래로 밀었다. 입력 2개와 버튼을 한 줄로 합치고 결과문은
+   보조 문구 크기로 낮춘다. */
 .sim-banner {
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  margin: var(--space-4) 0;
-  border-radius: var(--radius-row);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin: var(--space-3) 0;
+  border-radius: 12px;
 }
-.sim-banner__form { gap: var(--space-2); }
-.sim-banner__field { flex: 1 1 110px; }
-.sim-banner__field input { width: 100%; height: 42px; border-radius: 10px; }
-.sim-banner__field--result { flex: 1 1 100%; min-width: 0; }
+.sim-banner__form { flex-wrap: nowrap; gap: var(--space-2); align-items: flex-end; }
+.sim-banner__form > .sim-banner__field { flex: 1 1 0; min-width: 0; gap: 3px; }
+.sim-banner__form > .sim-banner__field:last-child { flex: 0 0 auto; }
+/* 버튼·결과문 칸의 빈 라벨(&nbsp;)은 자리만 먹는다 — align-items:flex-end가
+   정렬을 대신하므로 숨긴다 */
+.sim-banner__form > .sim-banner__field:last-child > span,
+.sim-banner__field--result > span { display: none; }
+.sim-banner__field input { width: 100%; height: 38px; padding: 0 var(--space-2); border-radius: 9px; }
+.sim-banner .btn--sm { height: 38px; padding: 0 var(--space-3); white-space: nowrap; }
+.sim-banner__field--result { flex: 0 0 auto; min-width: 0; }
+.sim-banner__result { font-size: var(--fs-micro); line-height: 1.45; }
+.sim-banner__result strong { font-size: var(--fs-body); }
 
 .search-layout { display: block; padding-bottom: var(--space-6); }
 .school-grid { grid-template-columns: 1fr; gap: var(--space-3); }
