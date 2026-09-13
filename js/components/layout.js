@@ -117,9 +117,16 @@ function renderTabBar(activeKey) {
   const mount = document.getElementById('mentor-float');
   if (!mount) return;
   const slot = homeSlot();
+  // 학교를 확정하면 '학교 찾기'를 뺀다. 이미 갈 곳을 정한 사람에게 계속 학교를
+  // 고르라고 권하는 자리가 되기 때문이다. 다시 고르고 싶으면 '학교 확정 취소'를
+  // 누르면 되고, 그러면 이 탭도 같이 돌아온다(search.html 자체는 계속 열린다 —
+  // 위시리스트·홈의 '학교 찾기' 링크는 그대로 동작).
+  const tabs = AppState.getConfirmedSchool()
+    ? APP_TABS.filter(tab => tab.key !== 'search')
+    : APP_TABS;
   mount.innerHTML = `
     <nav class="tabbar" role="navigation" aria-label="주요 화면">
-      ${APP_TABS.map(tab => {
+      ${tabs.map(tab => {
         const isHomeSlot = tab.key === 'home';
         const href = isHomeSlot ? slot.href : tab.href;
         const label = isHomeSlot ? slot.label : tab.label;
