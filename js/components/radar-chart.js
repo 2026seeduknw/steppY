@@ -22,18 +22,64 @@ function escapeAttr(str) {
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
-/** 라벨 호버 시 보여줄 설명. 전문 용어(GPI·Foursquare·정규화 등) 대신
- * 학생이 바로 이해할 수 있는 일상적인 말로 풀어씀. */
-const AXIS_TOOLTIPS = {
-  security: '이 지역이 얼마나 안전한지 보여주는 점수예요. 외교부 여행경보, 실제 범죄 통계, 세계 평화지수를 참고해서 계산했어요.',
-  costOfLiving: '이 도시 물가가 전 세계 기준으로 비싼 편인지 저렴한 편인지 보여주는 점수예요. 점수가 높을수록 물가가 저렴한 도시예요.',
-  commerce: '학교 근처에 밥 먹을 곳, 카페, 편의점·마트, 놀거리 같은 게 얼마나 다양하고 많은지 보여주는 점수예요. 점수가 높을수록 학교 주변에서 생활하기 편해요.',
-  transitMobility: '학교에서 시내(도심)로 이동하거나 버스·지하철 같은 대중교통을 이용하기 얼마나 편한지 보여주는 점수예요.',
-  travelMobility: '교환학생 기간에 다른 나라로 여행 가기 얼마나 쉬운지 보여주는 점수예요. 공항이 가까운지, 기차나 버스로 옆 나라까지 갈 수 있는지를 반영해요.'
+/**
+ * 각 지표를 "어떻게 계산했는지".
+ *
+ * 문구를 지어내지 않았다 — supabase의 livability_column_definitions /
+ * livability_methodology_notes에 적힌 산식·출처를 그대로 옮긴 것이다.
+ * (그 테이블들은 클라이언트가 읽지 않아 RLS로 잠가 뒀다. 산식이 바뀌면 여기도
+ *  같이 고쳐야 한다.)
+ *
+ * 치안만 예외다. 위 두 테이블에 치안 항목이 없어서, js/data-source.js가 명시한
+ * 출처(외교부 여행경보 · Numbeo · GPI)까지만 적고 세부 가중치는 "기록 없음"으로
+ * 밝힌다. 모르는 걸 아는 척하지 않는 편이 낫다.
+ */
+const AXIS_HELP = {
+  security: {
+    what: '이 지역이 얼마나 안전한지 보는 0~100 점수예요.',
+    how: '외교부 여행경보 단계, Numbeo 범죄 지수, 세계평화지수(GPI)를 함께 반영했어요.',
+    source: '외교부 · Numbeo · GPI',
+    caveat: '세 자료를 어떤 비중으로 합쳤는지는 원본 데이터에 기록돼 있지 않아요.'
+  },
+  costOfLiving: {
+    what: '이 도시가 전 세계 도시 중 저렴한 편인지 보는 점수예요.',
+    how: 'LivingCost의 도시 생활비 글로벌 랭킹을 (랭킹−1)÷(전체−1)×100으로 환산했어요. 랭킹 숫자가 작을수록 비싼 도시라, 점수가 높을수록 저렴한 도시예요.',
+    source: 'LivingCost.org'
+  },
+  commerce: {
+    what: '학교 주변에서 먹고 사고 노는 게 얼마나 편한지 보는 점수예요.',
+    how: '학교 좌표 기준 1km(핵심 생활권)과 3km(보조 생활권)의 장소 수와 카테고리 다양성을 합칩니다. 1km×0.65 + 3km×0.35로 가중하고, 종류별로 생활필수 1.5 · 음식/카페 1.2 · 쇼핑서비스 0.9 · 여가시설 0.5의 비중을 줍니다. 마지막에 전체 학교 기준으로 0~100 정규화해요.',
+    source: 'Foursquare Places API',
+    caveat: '검색 결과가 50개로 제한돼서, 아주 번화한 지역은 실제보다 낮게 나올 수 있어요.'
+  },
+  transitMobility: {
+    what: '학교에서 일상적으로 이동하기 얼마나 편한지 보는 점수예요.',
+    how: '도심 접근성(대중교통으로 시내까지 걸리는 시간이 짧을수록 높음)과 대중교통 거점(학교 1km 안 정류장이 많을수록 높음), 두 점수의 평균이에요.',
+    source: 'TravelTime · Transitland'
+  },
+  travelMobility: {
+    what: '교환학생 기간에 다른 나라로 여행 가기 얼마나 쉬운지 보는 점수예요.',
+    how: '공항 접근성(가까운 공항까지 거리가 짧을수록 높음)과 인접국 접근성(가장 가까운 다른 나라까지 25km 이하면 100점, 800km 이상이면 0점, 사이는 비례)의 평균이에요.',
+    source: 'LivingCost · Natural Earth'
+  }
 };
 
+/** 차트 위 라벨에 붙는 짧은 설명(SVG <title>). 자세한 산식은 ? 를 누르면 펼쳐진다. */
 function axisTooltip(ax) {
-  return AXIS_TOOLTIPS[ax.key] || ax.label;
+  const h = AXIS_HELP[ax.key];
+  return h ? h.what : ax.label;
+}
+
+function axisHelpHtml(ax) {
+  const h = AXIS_HELP[ax.key];
+  if (!h) return '';
+  return `
+    <div class="score-detail" id="scoreHelp-${ax.key}" hidden>
+      <p class="score-detail__what">${h.what}</p>
+      <p class="score-detail__how"><strong>계산 방법</strong> ${h.how}</p>
+      ${h.caveat ? `<p class="score-detail__caveat">${h.caveat}</p>` : ''}
+      <p class="score-detail__source">출처 · ${h.source}</p>
+    </div>`;
 }
 
 function pentPoint(i, frac, cx, cy, R) {
@@ -86,11 +132,14 @@ function scoreRowsHtml(scores) {
     const band = scoreBand(v);
     return `
       <div class="score-row">
-        <span class="score-row__label">${ax.icon} ${ax.label}<span class="score-row__help" title="${escapeAttr(axisTooltip(ax))}">?</span></span>
+        <span class="score-row__label">${ax.icon} ${ax.label}<button type="button" class="score-row__help"
+              data-score-help="${ax.key}" aria-expanded="false" aria-controls="scoreHelp-${ax.key}"
+              aria-label="${escapeAttr(ax.label)} 점수 계산 방법">?</button></span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
         <span class="score-row__value tnum">${hasData ? v : '준비중'}</span>
         <span class="score-row__band" style="color:${band.color};">${hasData ? band.label : ''}</span>
-      </div>`;
+      </div>
+      ${axisHelpHtml(ax)}`;
   }).join('');
 }
 
@@ -109,3 +158,26 @@ function scoreCardHtml(school, opts) {
       </div>
     </div>`;
 }
+
+
+/**
+ * ? 를 누르면 그 지표의 계산 방법을 펼친다.
+ *
+ * 예전에는 title 속성 툴팁이었는데, 터치 기기에서는 title이 아예 뜨지 않아
+ * 모바일에서 물음표가 눌러도 아무 일이 없는 장식이었다.
+ *
+ * 카드가 학교 상세 모달과 교환 준비 화면 양쪽에서 다시 그려지므로, 각 호출부에
+ * 배선하지 않고 document에 한 번만 위임한다.
+ */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-score-help]');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const panel = document.getElementById(`scoreHelp-${btn.dataset.scoreHelp}`);
+  if (!panel) return;
+  const open = panel.hidden;
+  panel.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  btn.classList.toggle('is-open', open);
+});

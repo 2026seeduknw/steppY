@@ -1047,3 +1047,52 @@ a.todo-pill__add { text-decoration: none; }
 /* 목표 시뮬레이션(로그인 상태)의 입력도 같은 크기로 */
 .sim-banner__field input,
 .sim-banner__field select { font-size: var(--fs-small); }
+
+/* ---- 학교 상세: 하트를 학교명 줄 우측으로 ---- */
+.school-modal__titlerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.school-modal__titlerow .school-modal__title { flex: 1; min-width: 0; }
+.school-modal__titlerow .fav-btn { flex: 0 0 auto; margin-top: 2px; }
+
+/* ---- 생활 점수: ? 를 눌러 펼치는 계산 방법 ---- */
+.score-row__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  margin-left: 5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--line-100);
+  color: var(--ink-600);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.score-row__help.is-open { background: var(--sky-500); color: #fff; }
+
+.score-detail {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 var(--space-3);
+  padding: var(--space-3);
+  border-radius: 10px;
+  background: var(--sky-50);
+  font-size: var(--fs-micro);
+  line-height: 1.65;
+  color: var(--ink-700);
+  word-break: keep-all;
+}
+.score-detail[hidden] { display: none; }
+.score-detail__what { font-weight: 700; color: var(--ink-900); }
+.score-detail__how strong { color: var(--ink-900); }
+.score-detail__caveat { color: var(--amber-700); }
+.score-detail__source { font-family: var(--font-mono); color: var(--ink-400); }

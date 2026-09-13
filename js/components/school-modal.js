@@ -130,7 +130,8 @@ function lifeOrbitCard(school, initials) {
     label: season.replace('학기', ''),
     value: text.split(/[,.]/)[0]
   }));
-  chipDefs.push({ icon: '🚉', label: '상권', value: COMMERCE_LABEL[school.commerceLevel] || '보통' });
+  // 상권은 ③ 생활 점수 인포그래픽에서 지표로 따로 다룬다 — 여기서는 빼서
+  // 날씨에 집중시킨다(같은 항목이 두 카드에 중복으로 나오던 상태였다).
   const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
 
   const weatherLines = seasonEntries.length
@@ -217,7 +218,7 @@ function mentalRateShortTipHtml(currency) {
   return `<p class="orbit-card__line" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 이 학교 통화(${currency})는 ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이에요.</p>`;
 }
 
-/** 기숙사비·월 생활비 안내 (⑨). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
+/** 기숙사비·월 생활비 안내 (⑤). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
  *  둘 다 원본 없는 학교가 있어(기숙사비 187/271, 생활비 268/271) 있는 값만 보여준다. */
 function mentalRateTipHtml(local, currency) {
   const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
@@ -234,7 +235,7 @@ function livingCostPanelHtml(school) {
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   return `
     <section class="info-panel info-panel--wide">
-      <h3>⑨ 생활비 안내</h3>
+      <h3>⑤ 생활비 안내</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
@@ -292,8 +293,12 @@ function schoolModalTemplate(school, opts = {}) {
     <div class="school-modal">
       <header class="school-modal__header">
         <div>
-          
-          <h2 class="school-modal__title">${school.name}</h2>
+          <div class="school-modal__titlerow">
+            <h2 class="school-modal__title">${school.name}</h2>
+            <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
+              <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
+            </button>
+          </div>
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
             <span class="badge badge--neutral">모집 ${school.slot}명</span>
@@ -302,9 +307,6 @@ function schoolModalTemplate(school, opts = {}) {
           </div>
           ${extraInfoBadgesHtml(school)}
         </div>
-        <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
-          <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
-        </button>
       </header>
 
       <section class="info-panel info-panel--map">
@@ -325,20 +327,21 @@ function schoolModalTemplate(school, opts = {}) {
           ${similarMajorsHtml(school, similarMajorsFor)}
         </section>
 
+        ${livingCostPanelHtml(school)}
+
         <section class="info-panel">
-          <h3>⑤ 지망 통계</h3>
+          <h3>⑥ 지망 통계</h3>
           <p class="info-panel__text">1지망으로 <strong class="tnum">${school.wishlistCount.rank1}명</strong>이 선택했어요</p>
           <p class="info-panel__text">1~3지망 합계 <strong class="tnum">${school.wishlistCount.total}명</strong>이 선택했어요</p>
         </section>
 
-        <section class="info-panel">
-          <h3>⑥ 공식 링크</h3>
-          <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
-        </section>
-
         ${visaDocsPanelHtml(school)}
         ${applicationDocsPanelHtml(school)}
-        ${livingCostPanelHtml(school)}
+
+        <section class="info-panel info-panel--wide">
+          <h3>⑨ 공식 링크</h3>
+          <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
+        </section>
       </div>
 
       ${AppState.isAuthed ? `
