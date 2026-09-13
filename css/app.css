@@ -1220,3 +1220,42 @@ a.appbar__lead:active { opacity: 0.6; }
   font-family: inherit; font-size: var(--fs-micro); color: var(--ink-400);
 }
 .departure-card__edit:hover { color: var(--ink-700); text-decoration: underline; }
+
+/* ------------------------------------------------- 학점 인정 카드 관련도 배지
+   예전에 퍼센티지가 있던 자리(제목 우측). 위쪽 필터 칩과 같은 기준을 쓴다. */
+.match-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.match-card__head .match-card__headline { flex: 1; min-width: 0; }
+
+.match-card__relevance {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: var(--fs-micro);
+  font-weight: 800;
+  line-height: 1;
+}
+/* 상이 눈에 먼저 들어와야 한다 — 하로 갈수록 대비를 낮춘다 */
+.match-card__relevance--high { background: var(--ink-900); color: #fff; }
+.match-card__relevance--mid  { background: var(--line-100); color: var(--ink-700); }
+.match-card__relevance--low  { background: var(--line-100); color: var(--ink-400); }
+
+/* 생활 점수 ? 설명의 요소 목록 — 산식 대신 "무엇이 어떤 기준으로 들어가는지" */
+.score-detail__factors {
+  margin: 4px 0 0;
+  padding-left: 1.1em;
+  list-style: disc;
+}
+.score-detail__factors li {
+  margin-bottom: 3px;
+  line-height: 1.6;
+}
+.score-detail__factors li:last-child { margin-bottom: 0; }

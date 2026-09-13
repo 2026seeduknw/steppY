@@ -74,6 +74,8 @@ function emptyState(displayName) {
     profile: {
       name: displayName || '회원',
       major: null,
+      // 확정 학교에서 신청한 전공(현지 학과명). 연세 전공(major)과는 다른 값이다.
+      targetMajor: null,
       gpa: null,
       gpaScale: 4.3,
       languageTests: [],
@@ -180,6 +182,7 @@ const AppState = {
       id: Auth.userId,
       name: p.name,
       major: p.major,
+      target_major: p.targetMajor || null,
       gpa: p.gpa,
       gpa_scale: p.gpaScale,
       language_tests: p.languageTests || [],
@@ -469,6 +472,7 @@ const AppState = {
       next.profile = {
         name: p.name || this._displayName(),
         major: p.major,
+        targetMajor: p.target_major || null,
         gpa: p.gpa === null ? null : Number(p.gpa),
         gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
         languageTests: p.language_tests || [],

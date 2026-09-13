@@ -34,37 +34,62 @@ function escapeAttr(str) {
  * 출처(외교부 여행경보 · Numbeo · GPI)까지만 적고 세부 가중치는 "기록 없음"으로
  * 밝힌다. 모르는 걸 아는 척하지 않는 편이 낫다.
  */
+/**
+ * ? 를 눌렀을 때 펼쳐지는 설명.
+ *
+ * 산식은 싣지 않는다. 가중치나 환산식을 적어두면 정확해 보이지만, 읽는 사람이
+ * 그걸로 검산할 것도 아니고 원본 데이터가 바뀌면 제일 먼저 틀리는 부분이다.
+ * 대신 "무엇이 들어갔는지"와 "어느 쪽이 높은 점수인지"만 적는다 — 점수를 읽고
+ * 학교를 비교하는 데 실제로 필요한 건 그 둘이다.
+ */
 const AXIS_HELP = {
   security: {
     what: '이 지역이 얼마나 안전한지 보는 0~100 점수예요.',
-    how: '외교부 여행경보 단계, Numbeo 범죄 지수, 세계평화지수(GPI)를 함께 반영했어요.',
+    factors: [
+      '외교부 여행경보 — 경보 단계가 낮을수록 높은 점수',
+      'Numbeo 범죄 지수 — 체감 범죄가 적을수록 높은 점수',
+      '세계평화지수(GPI) — 국가가 평화로울수록 높은 점수'
+    ],
     source: '외교부 · Numbeo · GPI',
     caveat: '세 자료를 어떤 비중으로 합쳤는지는 원본 데이터에 기록돼 있지 않아요.'
   },
   costOfLiving: {
     what: '이 도시가 전 세계 도시 중 저렴한 편인지 보는 점수예요.',
-    how: 'LivingCost의 도시 생활비 글로벌 랭킹을 (랭킹−1)÷(전체−1)×100으로 환산했어요. 랭킹 숫자가 작을수록 비싼 도시라, 점수가 높을수록 저렴한 도시예요.',
+    factors: [
+      'LivingCost의 도시 생활비 글로벌 랭킹 — 생활비가 저렴한 도시일수록 높은 점수'
+    ],
     source: 'LivingCost.org'
   },
   commerce: {
     what: '학교 주변에서 먹고 사고 노는 게 얼마나 편한지 보는 점수예요.',
-    how: '학교 좌표 기준 1km(핵심 생활권)과 3km(보조 생활권)의 장소 수와 카테고리 다양성을 합칩니다. 1km×0.65 + 3km×0.35로 가중하고, 종류별로 생활필수 1.5 · 음식/카페 1.2 · 쇼핑서비스 0.9 · 여가시설 0.5의 비중을 줍니다. 마지막에 전체 학교 기준으로 0~100 정규화해요.',
+    factors: [
+      '학교에서 가까운 생활권일수록 크게 반영 — 1km 안이 3km 안보다 중요',
+      '장소가 많을수록, 종류가 다양할수록 높은 점수',
+      '종류별 중요도는 생활필수 > 음식·카페 > 쇼핑·서비스 > 여가시설 순',
+      '점수는 전체 학교와 견줘 매겨요'
+    ],
     source: 'Foursquare Places API',
     caveat: '검색 결과가 50개로 제한돼서, 아주 번화한 지역은 실제보다 낮게 나올 수 있어요.'
   },
   transitMobility: {
     what: '학교에서 일상적으로 이동하기 얼마나 편한지 보는 점수예요.',
-    how: '도심 접근성(대중교통으로 시내까지 걸리는 시간이 짧을수록 높음)과 대중교통 거점(학교 1km 안 정류장이 많을수록 높음), 두 점수의 평균이에요.',
+    factors: [
+      '도심 접근성 — 대중교통으로 시내까지 걸리는 시간이 짧을수록 높은 점수',
+      '대중교통 거점 — 학교 1km 안에 정류장이 많을수록 높은 점수'
+    ],
     source: 'TravelTime · Transitland'
   },
   travelMobility: {
     what: '교환학생 기간에 다른 나라로 여행 가기 얼마나 쉬운지 보는 점수예요.',
-    how: '공항 접근성(가까운 공항까지 거리가 짧을수록 높음)과 인접국 접근성(가장 가까운 다른 나라까지 25km 이하면 100점, 800km 이상이면 0점, 사이는 비례)의 평균이에요.',
+    factors: [
+      '공항 접근성 — 가까운 공항까지 거리가 짧을수록 높은 점수',
+      '인접국 접근성 — 가장 가까운 다른 나라가 가까울수록 높은 점수'
+    ],
     source: 'LivingCost · Natural Earth'
   }
 };
 
-/** 차트 위 라벨에 붙는 짧은 설명(SVG <title>). 자세한 산식은 ? 를 누르면 펼쳐진다. */
+/** 차트 위 라벨에 붙는 짧은 설명(SVG <title>). 무엇이 반영됐는지는 ? 를 누르면 펼쳐진다. */
 function axisTooltip(ax) {
   const h = AXIS_HELP[ax.key];
   return h ? h.what : ax.label;
@@ -76,7 +101,10 @@ function axisHelpHtml(ax) {
   return `
     <div class="score-detail" id="scoreHelp-${ax.key}" hidden>
       <p class="score-detail__what">${h.what}</p>
-      <p class="score-detail__how"><strong>계산 방법</strong> ${h.how}</p>
+      <p class="score-detail__how"><strong>무엇을 보나요</strong></p>
+      <ul class="score-detail__factors">
+        ${h.factors.map(f => `<li>${f}</li>`).join('')}
+      </ul>
       ${h.caveat ? `<p class="score-detail__caveat">${h.caveat}</p>` : ''}
       <p class="score-detail__source">출처 · ${h.source}</p>
     </div>`;

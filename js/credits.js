@@ -7,6 +7,8 @@
 (function () {
   AppState.load();
   let selectedMajor = AppState.profile.major;
+  // 확정 학교에서 신청한 전공(현지 학과명). 연세 전공과는 다른 값이라 따로 둔다.
+  let selectedTargetMajor = AppState.profile.targetMajor || '';
   let selectedCountry = '';   // '' = 전체
   let selectedRelevance = '';  // '' = 전체 | 'high' | 'mid' | 'low'
   let mode = 'course'; // 'course' | 'major'
@@ -26,6 +28,54 @@
   }
 
   /**
+   * "신청 전공" 드롭다운 — 확정한 학교에서 어떤 전공으로 신청했는지.
+   *
+   * 후보는 그 학교 과목 매칭의 matched_topics(현지 학과명)에서 뽑는다. 목록에 없는
+   * 학과를 넣어봐야 걸리는 과목이 없어서다. 확정 전에는 고를 대상이 없으니 아예
+   * 띄우지 않는다.
+   *
+   * 고른 값은 프로필에 저장한다 — 매번 다시 고르게 하면 드롭다운이 아니라 필터다.
+   */
+  function renderTargetMajorFilter() {
+    const mount = document.getElementById('targetMajorMount');
+    if (!mount) return;
+    const confirmed = AppState.getConfirmedSchool();
+    if (!confirmed) { mount.innerHTML = ''; return; }
+
+    const topics = [...new Set(
+      MOCK.courseMatches
+        .filter(m => m.school === confirmed.id)
+        .flatMap(m => m.matchedTopics || [])
+    )].sort((a, b) => a.localeCompare(b));
+
+    if (!topics.length) { mount.innerHTML = ''; return; }
+
+    // 저장해둔 값이 이 학교에 없는 학과면(학교를 바꿨을 때) 선택을 푼다
+    if (selectedTargetMajor && !topics.includes(selectedTargetMajor)) selectedTargetMajor = '';
+
+    mount.innerHTML = '';
+    const select = createSearchableSelect({
+      items: topics.map(t => ({ value: t, label: t })),
+      selected: selectedTargetMajor,
+      multiple: false,
+      placeholder: '신청 전공 선택',
+      onChange: (value) => {
+        selectedTargetMajor = value || '';
+        AppState.updateProfile({ targetMajor: selectedTargetMajor || null });
+        trackEvent('credits_target_major', { major: selectedTargetMajor || 'all' });
+        renderMatches();
+      }
+    });
+    mount.appendChild(select.el);
+  }
+
+  /** 신청 전공을 골랐으면 그 학과 과목만 남긴다. */
+  function byTargetMajor(matches) {
+    if (!selectedTargetMajor) return matches;
+    return matches.filter(m => (m.matchedTopics || []).includes(selectedTargetMajor));
+  }
+
+  /**
    * course_matches.note는 DB에 완성된 문장으로 저장돼 있고, 원본 단위 표기가
    * 숫자에 붙어 있다("6.0credit points", "3.0units", "6.0ECTS").
    * 화면에서만 떼어 읽는다 — 원본 데이터는 건드리지 않는다.
@@ -36,6 +86,9 @@
   function formatNote(note) {
     if (!note) return '';
     return note.split(' · ')
+      // "관련도: 보통"은 이제 카드 우측 상단 배지가 말한다. 한 카드에서 두 번
+      // 말하면 둘이 어긋났을 때 어느 쪽이 맞는지 알 수 없다.
+      .filter(part => !part.startsWith('관련도:'))
       .map(part => part.startsWith('학점:') ? part.replace(/(\d)([A-Za-z])/g, '$1 $2') : part)
       .join(' · ');
   }
@@ -74,6 +127,18 @@
   function bandOf(similarity) {
     const band = RELEVANCE_BANDS.find(b => b.test(similarity));
     return band ? band.key : '';
+  }
+
+  /**
+   * 카드 우측 상단의 관련도 배지. 예전에 퍼센티지가 있던 자리다.
+   * 위쪽 필터 칩과 같은 bandOf()를 쓰므로 "상"으로 거른 목록에 "중" 카드가
+   * 섞이는 일이 생기지 않는다.
+   */
+  function relevanceBadge(similarity) {
+    const band = RELEVANCE_BANDS.find(b => b.test(similarity));
+    if (!band) return '';
+    return `<span class="match-card__relevance match-card__relevance--${band.key}"
+                  title="관련도 ${band.label}">${band.label}</span>`;
   }
 
   function renderRelevanceFilter(matches) {
@@ -173,12 +238,27 @@
 
   function renderCourseMatches() {
     const confirmed = AppState.getConfirmedSchool();
-    let matches = MOCK.courseMatches.filter(m => confirmed && m.school === confirmed.id);
-    const isExample = matches.length === 0;
-    if (isExample) matches = MOCK.courseMatches;
+    const note = document.getElementById('confirmedSchoolNote');
+
+    // 학교를 확정했으면 그 학교 과목만 본다. 갈 곳이 정해진 뒤에 다른 학교 과목은
+    // 고를 수 없는 선택지라 목록만 길어진다.
+    // 예전엔 확정 학교에 과목 데이터가 없으면 전체를 예시로 보여줬는데, 확정한
+    // 학교가 아닌 카드가 자기 결과인 것처럼 섞여 보였다 — 이제 비었다고 말한다.
+    let matches = MOCK.courseMatches;
+    if (confirmed) {
+      matches = matches.filter(m => m.school === confirmed.id);
+      note.hidden = false;
+      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}의 과목만 보여드려요.`;
+    } else {
+      note.hidden = true;
+    }
+
     if (selectedMajor) {
       matches = matches.filter(m => m.homeMajor === selectedMajor);
     }
+
+    renderTargetMajorFilter();
+    matches = byTargetMajor(matches);
 
     renderRelevanceFilter(matches);
     matches = byRelevance(matches);
@@ -190,7 +270,10 @@
       const school = schoolDisplay(m.school);
       return `
       <div class="card match-card">
-        <h3 class="match-card__headline">${stripSchoolSuffix(m.targetCourse)}</h3>
+        <div class="match-card__head">
+          <h3 class="match-card__headline">${stripSchoolSuffix(m.targetCourse)}</h3>
+          ${relevanceBadge(m.similarity)}
+        </div>
         <div class="match-card__school">
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
           <span class="match-card__school-name">${school.name}</span>
@@ -201,7 +284,13 @@
         <div class="match-card__note">${formatNote(m.note)}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 과목이 없어요. 관련도나 국가를 바꿔보세요.' : '서비스 준비 중이에요.'}</p>`;
+    }).join('') : `<p class="info-panel__text">${
+      selectedCountry || selectedRelevance || selectedTargetMajor
+        ? '조건에 맞는 과목이 없어요. 신청 전공이나 관련도를 바꿔보세요.'
+        : confirmed
+          ? `${confirmed.nameKo || confirmed.name}의 학점 인정 과목 자료가 아직 없어요.`
+          : '서비스 준비 중이에요.'
+    }</p>`;
   }
 
   function renderMajorMatches() {
@@ -214,37 +303,43 @@
       return;
     }
 
-    const all = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
+    const tm = document.getElementById('targetMajorMount');
+    if (tm) tm.innerHTML = '';   // 이 탭은 전공을 고르는 화면이라 신청 전공 필터가 겹친다
+    let all = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
+    // 과목 탭과 같은 이유로 확정 학교만 남긴다
+    if (confirmed) all = all.filter(m => m.school === confirmed.id);
     renderRelevanceFilter(all);
     const byBand = byRelevance(all);
     renderCountryFilter(byBand);
     const matches = byCountry(byBand);
 
-    if (confirmed && matches.some(m => m.school === confirmed.id)) {
+    if (confirmed) {
       note.hidden = false;
-      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}이(가) 포함된 결과예요 — 카드에 표시했어요.`;
+      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}의 전공만 보여드려요.`;
     } else {
       note.hidden = true;
     }
 
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
       const school = schoolDisplay(m.school);
-      const isConfirmed = confirmed && m.school === confirmed.id;
+      // 목록이 전부 확정 학교라 따로 표시할 것이 없다
       return `
-      <div class="card match-card${isConfirmed ? ' match-card--confirmed' : ''}">
-        <h3 class="match-card__headline">${m.targetMajor}</h3>
+      <div class="card match-card">
+        <div class="match-card__head">
+          <h3 class="match-card__headline">${m.targetMajor}</h3>
+          ${relevanceBadge(m.similarity)}
+        </div>
         <div class="match-card__school">
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
           <span class="match-card__school-name">${school.name}</span>
           ${countryTag(school)}
-          ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
         </div>
         ${m.matchedTopics.length ? `
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
         <div class="match-card__note">${m.note || ''}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도나 국가를 바꿔보세요.' : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
+    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
   }
 
   function renderMatches() {
@@ -283,6 +378,7 @@
     // 서버에서 도착하므로, 아직 고른 게 없으면 그 값으로 채워 자기 전공 결과부터
     // 보게 한다(사용자가 직접 고른 뒤에는 덮어쓰지 않는다).
     if (!selectedMajor && AppState.profile.major) selectedMajor = AppState.profile.major;
+    if (!selectedTargetMajor && AppState.profile.targetMajor) selectedTargetMajor = AppState.profile.targetMajor;
     renderMajorFilter();
     renderMatches();
   });
