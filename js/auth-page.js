@@ -27,13 +27,13 @@
   const COPY = {
     signin: {
       title: '다시 만나서 반가워요',
-      sub: '지망 학교와 준비 상황을 어느 기기에서든 이어서 볼 수 있어요',
+      sub: '연세대학교 메일로 로그인하면 지망 학교와 준비 상황을 어느 기기에서든 이어서 볼 수 있어요',
       submit: '로그인',
       autocomplete: 'current-password'
     },
     signup: {
       title: 'steppY 시작하기',
-      sub: '교환학생 준비 기록이 계정에 저장돼요',
+      sub: '재학생 확인을 위해 연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요',
       submit: '가입하고 시작하기',
       autocomplete: 'new-password'
     }
@@ -70,19 +70,6 @@
     errorEl.hidden = true;
   }
 
-  document.getElementById('kakaoBtn').addEventListener('click', async () => {
-    clearMessages();
-    const btn = document.getElementById('kakaoBtn');
-    btn.disabled = true;
-    try {
-      // 성공하면 카카오 인가 페이지로 이동하므로 이 아래는 실행되지 않는다.
-      await Auth.signInWithKakao();
-    } catch (err) {
-      showError(Auth.message(err));
-      btn.disabled = false;
-    }
-  });
-
   modes.addEventListener('click', e => {
     const btn = e.target.closest('.mode-toggle__btn');
     if (btn) setMode(btn.dataset.mode);
@@ -98,6 +85,10 @@
     const name = (fd.get('name') || '').trim();
 
     if (!email || !password) return showError('이메일과 비밀번호를 모두 입력해 주세요.');
+    // 서버에서도 막지만, 여기서 먼저 걸러야 왜 안 되는지 바로 알 수 있다
+    if (!Auth.isAllowedEmail(email)) {
+      return showError(`연세대학교 메일(${ALLOWED_EMAIL_DOMAIN})로만 이용할 수 있어요.`);
+    }
     if (mode === 'signup' && password.length < 6) return showError('비밀번호는 6자 이상이어야 해요.');
 
     submit.disabled = true;

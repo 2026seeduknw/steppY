@@ -677,45 +677,6 @@ body[data-page="auth"] {
 .auth__skip:active { color: var(--onnavy-100); }
 
 
-/* ---- 카카오 로그인 ---- */
-/* 카카오 디자인 가이드: 배경 #FEE500, 심볼·라벨은 불투명도 85%의 검정 */
-.kakao-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  width: 100%;
-  height: 52px;
-  border: none;
-  border-radius: 12px;
-  background: #FEE500;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: var(--fs-body);
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: var(--space-5);
-}
-.kakao-btn:active { transform: scale(0.98); }
-.kakao-btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
-.kakao-btn__icon { width: 20px; height: 20px; flex: 0 0 auto; }
-
-.auth__divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-  color: var(--onnavy-500);
-  font-size: var(--fs-micro);
-}
-.auth__divider::before,
-.auth__divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(240, 236, 221, 0.18);
-}
-
-
 /* ---- 오늘의 할 일: 알약 요약 + 펼치면 목록 ---- */
 .todo-pill {
   display: flex;

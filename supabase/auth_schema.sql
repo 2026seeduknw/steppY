@@ -158,7 +158,36 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 두 함수는 트리거 전용이다. 트리거는 테이블 소유자 컨텍스트로 실행되므로
+-- ------------------------------------------- 가입 도메인 제한 (연세 메일)
+-- 클라이언트에서만 검사하면 소용이 없다. anon 키는 js/supabase-client.js에 그대로
+-- 들어 있어 누구나 /auth/v1/signup 을 직접 호출할 수 있다. 실제 차단은 여기서 한다.
+-- auth.users의 BEFORE INSERT라 이메일 가입이든 소셜 로그인이든 모두 통과해야 한다.
+create or replace function public.enforce_yonsei_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  -- '%@yonsei.ac.kr' 는 정확히 그 도메인으로 끝나는 주소만 통과시킨다
+  -- (foo@sub.yonsei.ac.kr 같은 하위 도메인은 걸러진다 — 필요하면 조건을 넓힐 것)
+  if new.email is null or lower(new.email) not like '%@yonsei.ac.kr' then
+    raise exception 'yonsei_email_required'
+      using errcode = 'check_violation',
+            hint = '연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_yonsei_email_on_signup on auth.users;
+create trigger enforce_yonsei_email_on_signup
+  before insert on auth.users
+  for each row execute function public.enforce_yonsei_email();
+
+revoke execute on function public.enforce_yonsei_email() from anon, authenticated, public;
+
+-- 세 함수는 모두 트리거 전용이다. 트리거는 테이블 소유자 컨텍스트로 실행되므로
 -- EXECUTE 권한이 없어도 동작한다. 권한이 남아 있으면 SECURITY DEFINER 함수를
 -- /rest/v1/rpc/... 로 외부에서 직접 호출할 수 있게 되므로 회수한다.
 revoke execute on function public.handle_new_user() from anon, authenticated, public;
