@@ -50,6 +50,7 @@ function guestState() {
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
+    journal: [],
     targetScores: null,
     // 게스트에게는 온보딩을 묻지 않는다 — 답을 저장할 계정이 없다
     onboardedAt: 'guest'
@@ -57,6 +58,16 @@ function guestState() {
 }
 
 /** 가입 직후처럼 서버에 아무것도 없는 계정의 초기 형태. */
+/**
+ * 오늘 날짜를 YYYY-MM-DD로. toISOString()은 UTC로 바꿔버려서 한국 시간 자정~오전 9시
+ * 사이에 하루 전 날짜가 나온다. 기록은 "오늘 쓴 것"이 중요하므로 로컬 날짜를 쓴다.
+ */
+function todayISO() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function emptyState(displayName) {
   return {
     profile: {
@@ -74,6 +85,7 @@ function emptyState(displayName) {
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
+    journal: [],
     targetScores: null,
     onboardedAt: null
   };
@@ -142,6 +154,18 @@ const AppState = {
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
     const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
     return base.concat(s.customTodos).sort((a, b) => a.date.localeCompare(b.date));
+  },
+
+  /**
+   * 기록하기 — 최신 날짜가 위. 같은 날이면 나중에 쓴 것이 위.
+   * 할 일과 달리 기본 제공 항목이 없어서, 로그인 전에는 그냥 빈 목록이다.
+   */
+  getJournal() {
+    if (!this.isAuthed) return [];
+    return this.load().journal.slice().sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
   },
 
   /* ------------------------------------------------------------------ 쓰기 */
@@ -252,6 +276,89 @@ const AppState = {
     return tempId;
   },
 
+  /* -------------------------------------------------------- 기록하기 */
+
+  addJournalEntry({ date, phase, title, body }) {
+    const s = this.load();
+    // addTodo와 같은 방식 — 서버 uuid가 오기 전까지 쓸 임시 id
+    const tempId = 'j' + Date.now();
+    const entry = {
+      id: tempId,
+      date: date || todayISO(),
+      phase: phase === 'abroad' ? 'abroad' : 'prepare',
+      title: title || '',
+      body: body || '',
+      createdAt: new Date().toISOString()
+    };
+    s.journal.push(entry);
+    this.save();
+
+    if (this.isAuthed) {
+      this._push(async () => {
+        const res = await supabaseClient.from('user_journal')
+          .insert({
+            user_id: Auth.userId,
+            entry_date: entry.date,
+            phase: entry.phase,
+            title: entry.title || null,
+            body: entry.body
+          })
+          .select('id, created_at')
+          .single();
+        // 수정·삭제가 서버 행을 찾을 수 있도록 실제 id로 교체.
+        // 바꾼 뒤 반드시 다시 그려야 한다 — 목록 DOM에는 임시 id가 박혀 있어서,
+        // 그대로 두면 방금 쓴 기록의 수정/삭제 버튼이 없는 id를 가리킨다.
+        if (!res.error && res.data) {
+          // 화면이 임시 id로 잡아둔 것(예: 방금 만든 기록을 곧바로 수정 중)이
+          // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
+          entry.tempId = entry.id;
+          entry.id = res.data.id;
+          entry.createdAt = res.data.created_at;
+          this.save();
+          document.dispatchEvent(new CustomEvent('MOCK:updated'));
+        }
+        return res;
+      }, '기록 추가');
+    }
+    return entry;
+  },
+
+  /*
+   * 아래 둘은 .eq('id', id)가 아니라 .eq('id', entry.id)를 쓴다.
+   * 방금 만든 기록은 서버 uuid가 오기 전까지 임시 id('j…')를 달고 있는데,
+   * 그 사이에 수정/삭제를 누르면 uuid가 아닌 값이 Postgres로 날아가 22P02로 깨진다.
+   * 쓰기 큐가 순서를 지켜주므로(insert가 항상 먼저 끝난다) 실행 시점에 entry.id를
+   * 읽으면 언제나 진짜 uuid다.
+   */
+  updateJournalEntry(id, patch) {
+    const entry = this.load().journal.find(e => e.id === id);
+    if (!entry) return;
+    Object.assign(entry, patch);
+    this.save();
+    if (!this.isAuthed) return;
+    this._push(() => supabaseClient.from('user_journal')
+      .update({
+        entry_date: entry.date,
+        phase: entry.phase,
+        title: entry.title || null,
+        body: entry.body,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', entry.id).eq('user_id', Auth.userId), '기록 수정');
+  },
+
+  deleteJournalEntry(id) {
+    const s = this.load();
+    const i = s.journal.findIndex(e => e.id === id);
+    if (i === -1) return;
+    const entry = s.journal[i];
+    s.journal.splice(i, 1);
+    this.save();
+    if (!this.isAuthed) return;
+    this._push(() => supabaseClient.from('user_journal')
+      .delete().eq('id', entry.id).eq('user_id', Auth.userId), '기록 삭제');
+  },
+
   reset() {
     this._cache = this.isAuthed ? emptyState(this._displayName()) : guestState();
     this.save();
@@ -284,11 +391,12 @@ const AppState = {
 
     const uid = Auth.userId;
     // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
-    const [prof, favs, wish, todos] = await Promise.all([
+    const [prof, favs, wish, todos, journal] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
-      supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid)
+      supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
+      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, created_at').eq('user_id', uid)
     ]);
 
     const next = emptyState(this._displayName());
@@ -313,6 +421,17 @@ const AppState = {
       next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));
       next.customTodos = todos.data.filter(r => !r.base_id).map(r => ({
         id: r.id, title: r.title, date: r.due_date, tag: r.tag, done: r.done
+      }));
+    }
+
+    if (journal.data) {
+      next.journal = journal.data.map(r => ({
+        id: r.id,
+        date: r.entry_date,
+        phase: r.phase,
+        title: r.title || '',
+        body: r.body || '',
+        createdAt: r.created_at
       }));
     }
 
