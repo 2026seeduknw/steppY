@@ -206,6 +206,59 @@
   }
 
   // ---- Simulation ----
+  /**
+   * 로그인 전에는 비교할 "내 점수"가 없어서 목표 시뮬레이션이 성립하지 않는다
+   * (지금보다 몇 개 더 갈 수 있는지를 계산하는 기능이다).
+   * 대신 점수를 직접 받아 지원 가능 여부를 바로 보여준다. 이 값은 계정이 아니라
+   * 이 기기(localStorage)에만 남는다.
+   */
+  function renderGuestScorePanel() {
+    const banner = document.querySelector('.sim-banner');
+    const p = AppState.profile;
+    const lang = (p.languageTests || [])[0] || { type: 'TOEFL', score: '' };
+    const LANGS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
+    const filled = p.gpa !== null && p.gpa !== undefined;
+
+    banner.classList.add('sim-banner--guest');
+    banner.innerHTML = `
+      <div class="score-prompt__head">
+        <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장됩니다.' : '지원 가능 여부를 알려드려요'}</p>
+      </div>
+      <form class="score-prompt__form" id="guestScoreForm">
+        <label class="score-prompt__field">
+          <span>학점</span>
+          <input type="number" step="0.01" min="0" max="4.5" name="gpa"
+                 value="${filled ? p.gpa : ''}" placeholder="3.62">
+        </label>
+        <label class="score-prompt__field">
+          <span>어학</span>
+          <select name="langType">${LANGS.map(t => `<option ${t === lang.type ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        </label>
+        <label class="score-prompt__field">
+          <span>점수</span>
+          <input type="number" name="langScore" value="${lang.score}" placeholder="96">
+        </label>
+        <button type="submit" class="btn btn--accent btn--sm">적용</button>
+      </form>`;
+
+    document.getElementById('guestScoreForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const gpa = fd.get('gpa') === '' ? null : parseFloat(fd.get('gpa'));
+      const score = fd.get('langScore') === '' ? null : parseFloat(fd.get('langScore'));
+      AppState.updateProfile({
+        gpa,
+        gpaScale: 4.3,
+        languageTests: score === null ? [] : [{ type: fd.get('langType'), score }]
+      });
+      trackEvent('guest_score_entered', { hasGpa: gpa !== null, hasLang: score !== null });
+      renderGuestScorePanel();
+      renderGrid();
+      if (typeof showToast === 'function') showToast('입력한 점수로 지원 가능 여부를 다시 계산했어요');
+    });
+  }
+
   function wireSimulation() {
     document.getElementById('simForm').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -247,7 +300,13 @@
   rebuildMajorMatchMap();
   renderFilters();
   renderGrid();
-  wireSimulation();
+  if (AppState.isAuthed) wireSimulation(); else renderGuestScorePanel();
 
-  document.addEventListener('MOCK:updated', () => { rebuildMajorMatchMap(); renderFilters(); renderGrid(); });
+  document.addEventListener('MOCK:updated', () => {
+    rebuildMajorMatchMap();
+    renderFilters();
+    renderGrid();
+    // 로그인 여부는 하이드레이션 후에 확정된다 — 게스트 패널 노출도 그때 맞춘다
+    if (!AppState.isAuthed && !document.getElementById('guestScoreForm')) renderGuestScorePanel();
+  });
 })();

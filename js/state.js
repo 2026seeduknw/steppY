@@ -31,7 +31,10 @@ const STORAGE_KEY = 'xchg_demo_state_v1';
  */
 function guestState() {
   return {
-    profile: Object.assign({}, MOCK.defaultProfile),
+    // 예전엔 MOCK.defaultProfile(이서연 · GPA 3.62 · TOEFL 96)을 그대로 썼다.
+    // 그러면 게스트가 남의 성적으로 판정된 결과를 자기 것처럼 보게 된다.
+    // 비워두고, 학교 찾기 화면에서 직접 입력하도록 안내한다(이 기기에만 남는다).
+    profile: emptyState(null).profile,
     favorites: [],
     wishlist: {},
     confirmedSchoolId: null,
