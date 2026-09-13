@@ -233,3 +233,163 @@ body[data-page="intro"] {
   color: var(--ink-700);
   line-height: 1.5;
 }
+
+/* ==========================================================================
+   랜딩 하단 — 스크롤해서 읽는 섹션들
+   ========================================================================== */
+
+.intro__stats,
+.intro__steps,
+.intro__final {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-9) var(--space-7);
+  background: var(--cloud-0);
+}
+.intro__steps { background: var(--cloud-50); }
+
+.intro__section-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-h1);
+  color: var(--ink-900);
+  text-align: center;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+.intro__section-sub {
+  margin-top: var(--space-2);
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  word-break: keep-all;
+}
+
+.intro__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  max-width: var(--page-max);
+  margin: var(--space-7) auto 0;
+}
+.intro__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-5) var(--space-2);
+  border-radius: var(--radius-lg);
+  background: var(--sky-50);
+}
+.intro__stat strong {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--sky-700);
+  line-height: 1.1;
+}
+.intro__stat span { font-size: var(--fs-micro); color: var(--ink-600); text-align: center; word-break: keep-all; }
+
+.intro__step-list {
+  list-style: none;
+  margin: var(--space-7) auto 0;
+  padding: 0;
+  max-width: var(--page-max);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.intro__step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--cloud-0);
+}
+.intro__step-num {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--sky-500);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  display: flex; align-items: center; justify-content: center;
+}
+.intro__step-item h3 { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); margin-bottom: 4px; }
+.intro__step-item p { font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); word-break: keep-all; }
+
+.intro__final { background: var(--oxford); text-align: center; }
+.intro__final-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-h1);
+  color: var(--onnavy-100);
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+.intro__final-sub {
+  margin-top: var(--space-3);
+  font-size: var(--fs-small);
+  color: var(--onnavy-300);
+  word-break: keep-all;
+}
+.intro__cta--final { margin-top: var(--space-6); }
+.intro__final-skip {
+  display: block;
+  margin-top: var(--space-5);
+  font-size: var(--fs-small);
+  color: var(--onnavy-300);
+}
+
+/* ---- 서비스 카드 상세화 ---- */
+/* h2가 margin-bottom: --space-7 을 갖고 있다. 부제를 음수 마진으로 끌어올리면
+   제목과 겹치므로, 제목 여백 자체를 줄이고 부제가 아래 간격을 맡는다. */
+.intro__services h2 { margin-bottom: var(--space-2); }
+.intro__services-sub {
+  margin: 0 0 var(--space-7);
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  word-break: keep-all;
+}
+.intro__service-points {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.intro__service-points li {
+  position: relative;
+  padding-left: 14px;
+  font-size: var(--fs-micro);
+  line-height: 1.55;
+  color: var(--ink-700);
+  word-break: keep-all;
+}
+.intro__service-points li::before {
+  content: '';
+  position: absolute;
+  left: 2px; top: 7px;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--ink-400);
+}
+/* 아직 데이터를 채우지 못한 기능 — 링크로 두지 않는다 */
+.intro__service-card--soon { background: var(--cloud-100, #E6E9F0); cursor: default; }
+.intro__service-card--soon:hover { transform: none; box-shadow: none; }
+.intro__soon-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(35, 53, 77, 0.12);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  vertical-align: middle;
+}
