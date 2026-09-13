@@ -449,7 +449,10 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .checklist-item { border-radius: 12px; }
 
 /* ---- F5 학점 인정 / 전공 매칭 ---- */
-.credits-grid { padding: 0 0 var(--space-6); }
+/* .credits-grid 는 .page-shell 과 같이 걸려 있고 이 파일 안에서 더 뒤에 오므로,
+   가로 패딩을 생략하면 위쪽 .page-shell 의 좌우 여백까지 0으로 덮어써서
+   모드 토글·전공 검색·리포트 버튼이 화면 가장자리에 붙는다. 같은 여백을 다시 쓴다. */
+.credits-grid { padding: 0 var(--space-4) var(--space-6); }
 /* 두 모드 전환은 앱의 세그먼티드 컨트롤 관습대로 폭을 꽉 채운다 */
 .mode-toggle { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: var(--space-4); }
 .mode-toggle__btn { padding: var(--space-2) var(--space-2); }
@@ -1100,3 +1103,52 @@ a.todo-pill__add { text-decoration: none; }
 /* 앱바 좌측은 랜딩(소개) 화면으로 돌아가는 링크다 */
 a.appbar__lead { text-decoration: none; color: inherit; }
 a.appbar__lead:active { opacity: 0.6; }
+
+/* ---- 홈: 학점 인정으로 보내는 카드 ---- */
+/* 바로 아래 제휴 배너가 짙은 남색이라, 같은 톤으로 두면 무거운 카드 두 장이
+   연달아 오게 된다. 이쪽은 밝은 톤으로 나눠 서로 경쟁하지 않게 했다. */
+.credits-cta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-row);
+  background: var(--beige, #F5F1E4);
+  border: 1px solid var(--amber-200, #E8E0C8);
+  text-decoration: none;
+}
+.credits-cta:active { transform: scale(0.99); }
+.credits-cta__body { flex: 1; min-width: 0; }
+.credits-cta__eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--amber-700);
+  color: var(--moonlight, #F0ECDD);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+}
+.credits-cta h2 {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--ink-900);
+  word-break: keep-all;
+  margin-bottom: 4px;
+}
+.credits-cta p {
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--ink-700);
+  word-break: keep-all;
+}
+.credits-cta__arrow {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--amber-700);
+  color: var(--moonlight, #F0ECDD);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+}

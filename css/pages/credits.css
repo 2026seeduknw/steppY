@@ -89,3 +89,24 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* ---- 관련도 상/중/하 ---- */
+.relevance-filter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;   /* 우측 상단에 붙인다 */
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-2);
+}
+.relevance-filter__label {
+  margin-right: 2px;
+  font-size: var(--fs-micro);
+  color: var(--ink-600);
+}
+.relevance-filter .chip { height: 28px; padding: 0 var(--space-3); font-size: var(--fs-micro); }
+.relevance-filter .chip[disabled] {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}

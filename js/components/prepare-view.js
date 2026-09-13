@@ -214,7 +214,15 @@ function ensurePrepareStylesLoaded() {
   link.rel = 'stylesheet';
   link.href = 'css/pages/prepare.css';
   link.dataset.prepareCss = 'true';
-  document.head.appendChild(link);
+
+  // head 끝에 붙이면 앱 스킨(css/app.css)보다 뒤에 와서 이긴다. prepare.css의
+  // .prepare-grid{display:grid; 1fr 336px}가 app.css의 세로 1단 규칙을 덮어써
+  // 본문이 32px 폭으로 눌리고 글자가 세로로 쌓였다(prepare.html은 링크 순서가
+  // 맞아 멀쩡하고, 홈에서 확정 후 변신했을 때만 깨졌다).
+  // 페이지 CSS → 앱 스킨 순서를 지키도록 app.css 앞에 끼워 넣는다.
+  const appSkin = document.querySelector('link[rel="stylesheet"][href$="css/app.css"]');
+  if (appSkin) appSkin.parentNode.insertBefore(link, appSkin);
+  else document.head.appendChild(link);
 }
 
 /** 다른 화면에서 학교를 확정한 순간, 페이지 이동 없이 그 자리에서 F4 레이아웃으로 전환 */

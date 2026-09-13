@@ -8,6 +8,7 @@
   AppState.load();
   let selectedMajor = AppState.profile.major;
   let selectedCountry = '';   // '' = 전체
+  let selectedRelevance = '';  // '' = 전체 | 'high' | 'mid' | 'low'
   let mode = 'course'; // 'course' | 'major'
 
   function renderMajorFilter() {
@@ -54,6 +55,61 @@
     if (!school.country) return '';
     const flag = countryFlag(school.countryEn);
     return `<span class="match-card__country">${flag ? flag + ' ' : ''}${school.country}</span>`;
+  }
+
+  /**
+   * 관련도 상/중/하.
+   *
+   * course_matches.note에 "관련도: 높음/보통/낮음"이 문장으로 들어 있는데, 그 구간이
+   * similarity와 정확히 맞물린다(높음 80~84 · 보통 75~80 · 낮음 71~75).
+   * 문장을 파싱하는 대신 similarity로 나눈다 — major_matches에는 그 문장이 아예
+   * 없어서(전부 null), 같은 기준을 쓰려면 숫자로 가는 수밖에 없다.
+   */
+  const RELEVANCE_BANDS = [
+    { key: 'high', label: '상', test: v => v >= 80 },
+    { key: 'mid', label: '중', test: v => v >= 75 && v < 80 },
+    { key: 'low', label: '하', test: v => v < 75 }
+  ];
+
+  function bandOf(similarity) {
+    const band = RELEVANCE_BANDS.find(b => b.test(similarity));
+    return band ? band.key : '';
+  }
+
+  function renderRelevanceFilter(matches) {
+    const mount = document.getElementById('relevanceFilterMount');
+    if (!mount) return;
+
+    // 상/중/하는 익숙한 고정 척도라 항상 같은 자리에 둔다. 결과가 없는 구간은
+    // 숨기지 않고 흐리게 잠근다 — 칩이 사라졌다 나타나면 어디 갔나 찾게 된다.
+    const counts = RELEVANCE_BANDS.map(b => matches.filter(m => b.test(m.similarity)).length);
+    if (selectedRelevance) {
+      const idx = RELEVANCE_BANDS.findIndex(b => b.key === selectedRelevance);
+      if (idx >= 0 && counts[idx] === 0) selectedRelevance = '';
+    }
+
+    mount.innerHTML = `
+      <div class="relevance-filter" role="group" aria-label="관련도 필터">
+        <span class="relevance-filter__label">관련도</span>
+        <button type="button" class="chip${selectedRelevance === '' ? ' is-selected' : ''}" data-relevance="">전체</button>
+        ${RELEVANCE_BANDS.map((b, i) => `
+          <button type="button" class="chip${selectedRelevance === b.key ? ' is-selected' : ''}"
+                  data-relevance="${b.key}" ${counts[i] ? '' : 'disabled'}
+                  title="${counts[i]}건">${b.label}</button>`).join('')}
+      </div>`;
+
+    mount.querySelectorAll('[data-relevance]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedRelevance = btn.dataset.relevance;
+        trackEvent('credits_relevance_filter', { band: selectedRelevance || 'all', mode });
+        renderMatches();
+      });
+    });
+  }
+
+  function byRelevance(matches) {
+    if (!selectedRelevance) return matches;
+    return matches.filter(m => bandOf(m.similarity) === selectedRelevance);
   }
 
   /**
@@ -124,6 +180,9 @@
       matches = matches.filter(m => m.homeMajor === selectedMajor);
     }
 
+    renderRelevanceFilter(matches);
+    matches = byRelevance(matches);
+    // 국가 후보는 관련도까지 적용한 뒤 뽑는다 — 그래야 골라도 0건인 국가가 안 뜬다
     renderCountryFilter(matches);
     matches = byCountry(matches);
 
@@ -142,7 +201,7 @@
         <div class="match-card__note">${formatNote(m.note)}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${selectedCountry ? `${selectedCountry}에는 해당하는 과목이 없어요. 다른 국가를 골라보세요.` : '서비스 준비 중이에요.'}</p>`;
+    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 과목이 없어요. 관련도나 국가를 바꿔보세요.' : '서비스 준비 중이에요.'}</p>`;
   }
 
   function renderMajorMatches() {
@@ -156,8 +215,10 @@
     }
 
     const all = MOCK.majorMatches.filter(m => m.homeMajor === selectedMajor);
-    renderCountryFilter(all);
-    const matches = byCountry(all);
+    renderRelevanceFilter(all);
+    const byBand = byRelevance(all);
+    renderCountryFilter(byBand);
+    const matches = byCountry(byBand);
 
     if (confirmed && matches.some(m => m.school === confirmed.id)) {
       note.hidden = false;
@@ -183,7 +244,7 @@
         <div class="match-card__note">${m.note || ''}</div>
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${selectedCountry ? `${selectedCountry}에는 해당하는 전공이 없어요. 다른 국가를 골라보세요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
+    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도나 국가를 바꿔보세요.' : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
   }
 
   function renderMatches() {
@@ -217,5 +278,12 @@
   renderMajorFilter();
   renderMatches();
 
-  document.addEventListener('MOCK:updated', () => { renderMajorFilter(); renderMatches(); });
+  document.addEventListener('MOCK:updated', () => {
+    // 이 IIFE는 AppState 하이드레이션보다 먼저 돈다. 로그인 사용자의 전공은 그때
+    // 서버에서 도착하므로, 아직 고른 게 없으면 그 값으로 채워 자기 전공 결과부터
+    // 보게 한다(사용자가 직접 고른 뒤에는 덮어쓰지 않는다).
+    if (!selectedMajor && AppState.profile.major) selectedMajor = AppState.profile.major;
+    renderMajorFilter();
+    renderMatches();
+  });
 })();

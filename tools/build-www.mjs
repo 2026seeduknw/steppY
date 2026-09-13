@@ -20,8 +20,14 @@ const OUT = join(ROOT, 'www');
 /* 디렉터리는 통째로, HTML은 루트에 있는 것만 자동으로 집는다. */
 const DIRS = ['css', 'js', 'assets'];
 
-await rm(OUT, { recursive: true, force: true });
+/* www/ 자체는 지우지 않고 안의 내용만 비운다.
+   개발 서버(tools/no-cache-server.py 8124 www)가 이 폴더를 작업 디렉터리로 잡고
+   있어서, 폴더를 통째로 지우면 빌드할 때마다 서버가 죽은 디렉터리를 붙들고
+   모든 요청이 실패한다. */
 await mkdir(OUT, { recursive: true });
+for (const entry of await readdir(OUT)) {
+  await rm(join(OUT, entry), { recursive: true, force: true });
+}
 
 const htmls = (await readdir(ROOT)).filter(f => f.endsWith('.html'));
 for (const f of htmls) await cp(join(ROOT, f), join(OUT, f));
