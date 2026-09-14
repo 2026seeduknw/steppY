@@ -13,6 +13,7 @@
 
   const track = root.querySelector('.swipe-start__track');
   const knob = document.getElementById('swipeKnob');
+  const trail = document.getElementById('swipeTrail');
   const DEST = 'auth.html';
 
   let dragging = false;
@@ -29,6 +30,9 @@
   function setOffset(px) {
     offset = Math.min(maxOffset, Math.max(0, px));
     knob.style.transform = `translateX(${offset}px)`;
+    // 지나온 자리에 발자국을 남긴다. 손잡이 한가운데까지 채워야 발자국이
+    // 손잡이 뒤에서 나오는 것처럼 보인다.
+    if (trail) trail.style.width = `${offset + knob.offsetWidth / 2}px`;
     // 끝에 가까울수록 안내 문구가 옅어진다 — 진행 중이라는 신호
     root.style.setProperty('--swipe-progress', maxOffset ? String(offset / maxOffset) : '0');
   }
@@ -48,8 +52,12 @@
     // 끝까지 못 갔으면 제자리로. transition은 여기서만 켠다 —
     // 드래그 중에 켜두면 손가락을 따라오지 못하고 늦게 따라온다.
     knob.classList.add('is-returning');
+    if (trail) trail.classList.add('is-returning');
     setOffset(0);
-    setTimeout(() => knob.classList.remove('is-returning'), 220);
+    setTimeout(() => {
+      knob.classList.remove('is-returning');
+      if (trail) trail.classList.remove('is-returning');
+    }, 220);
   }
 
   knob.addEventListener('pointerdown', (e) => {
