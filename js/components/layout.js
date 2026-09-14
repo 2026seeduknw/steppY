@@ -57,15 +57,28 @@ function renderAppBar(activeKey) {
   const authed = typeof Auth !== 'undefined' && Auth.isAuthed;
   const profile = AppState.profile;
   const initial = profile.name ? profile.name.slice(-2) : '학생';
+
+  // 좌 · 중앙 · 우 세 칸. 좌우 칸의 폭이 같아야 가운데 제목이 실제로 가운데 온다.
+  // 오른쪽은 비어 있지만 자리를 남겨둔다 — 없애면 제목이 오른쪽으로 밀린다.
   mount.innerHTML = `
-    <a class="appbar__lead" href="index.html" aria-label="steppY 소개 화면으로">
-      <img class="appbar__mark" src="assets/logo-mark-circle.png" width="26" height="26" alt="">
+    <div class="appbar__slot">
+      ${authed
+        ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${initial}</button>`
+        : `<a class="appbar__avatar appbar__avatar--guest" href="auth.html" aria-label="로그인">
+             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+               <circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0"/>
+             </svg>
+           </a>`}
+    </div>
+
+    <div class="appbar__center">
       <h1 class="appbar__title">${PAGE_TITLES[activeKey] || 'steppY'}</h1>
-    </a>
-    ${authed
-      ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${initial}</button>`
-      : `<a class="appbar__login" href="auth.html">로그인</a>`}
+      <a class="appbar__brand" href="index.html" aria-label="steppY 소개 화면으로">steppY</a>
+    </div>
+
+    <div class="appbar__slot" aria-hidden="true"></div>
   `;
+
   const account = document.getElementById('appbarAccount');
   if (account) account.addEventListener('click', openAccountSheet);
 }

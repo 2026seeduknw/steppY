@@ -23,7 +23,8 @@
    ========================================================================== */
 
 :root {
-  --appbar-h: 52px;
+  /* 제목 아래 steppY 한 줄이 더 들어가 두 줄이 됐다 */
+  --appbar-h: 60px;
   --tabbar-h: 52px;
   --tabbar-gap: 12px;
   /* 노치/홈 인디케이터 — Capacitor로 감쌌을 때 실제 값이 들어온다.
@@ -101,21 +102,41 @@ body[data-page="credits"]::before { opacity: 0.14; }
   backdrop-filter: saturate(160%) blur(14px);
   border-bottom: 1px solid var(--line-100);
 }
-.appbar__lead { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
-.appbar__mark { width: 24px; height: 24px; border-radius: 50%; flex: 0 0 auto; }
+/* 좌·중앙·우 세 칸. 좌우 칸이 같은 폭이라야 제목이 진짜 가운데 온다.
+   오른쪽 칸은 비어 있지만 자리를 지킨다 — 빼면 제목이 오른쪽으로 밀린다. */
+.appbar__slot { flex: 0 0 34px; display: flex; align-items: center; }
+.appbar__slot:last-child { justify-content: flex-end; }
+
+.appbar__center {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
 .appbar__title {
   font-family: var(--font-display);
   font-size: 1.0625rem;
   font-weight: 800;
   color: var(--ink-900);
   letter-spacing: -0.01em;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
+/* 로고는 제목 아래 작게. 누르면 소개(랜딩) 화면으로 간다. */
+.appbar__brand {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink-400);
+  text-decoration: none;
+  line-height: 1;
+}
+.appbar__brand:active { opacity: 0.55; }
 .appbar__avatar {
   flex: 0 0 auto;
-  width: 30px; height: 30px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   background: var(--sky-500);
   color: #fff;
@@ -569,21 +590,16 @@ body[data-page="intro"] { padding-bottom: 0; }
    9. 인증 — 로그인 화면 · 앱바 계정 영역 · 계정 시트
    ========================================================================== */
 
-.appbar__login {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-pill);
-  background: var(--sky-500);
-  color: #fff;
-  font-size: var(--fs-small);
-  font-weight: 700;
-}
-.appbar__login:active { transform: scale(0.97); }
+/* .appbar__login — 로그인 버튼은 좌측 아바타 자리로 합쳐져 더 이상 쓰지 않는다 */
 /* button으로 바뀌어도 원래 div일 때와 같은 원형을 유지 */
 button.appbar__avatar { border: none; cursor: pointer; }
+/* 로그인 전에도 같은 자리·같은 원형을 유지한다. 상태에 따라 칸이 비거나
+   버튼 모양이 달라지면 화면을 옮길 때마다 상단이 들썩인다. */
+.appbar__avatar--guest {
+  background: var(--line-100);
+  color: var(--ink-600);
+  text-decoration: none;
+}
 
 .account-sheet { padding: var(--space-4) var(--space-5) var(--space-6); }
 .account-sheet__label {
@@ -1103,9 +1119,6 @@ a.todo-pill__add { text-decoration: none; }
 .score-detail__caveat { color: var(--amber-700); }
 .score-detail__source { font-family: var(--font-mono); color: var(--ink-400); }
 
-/* 앱바 좌측은 랜딩(소개) 화면으로 돌아가는 링크다 */
-a.appbar__lead { text-decoration: none; color: inherit; }
-a.appbar__lead:active { opacity: 0.6; }
 
 /* ---- 홈: 학점 인정으로 보내는 카드 ---- */
 /* 바로 아래 제휴 배너가 짙은 남색이라, 같은 톤으로 두면 무거운 카드 두 장이
