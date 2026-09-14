@@ -526,6 +526,9 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 
 .orbit-card--wide { flex-direction: column; gap: var(--space-4); }
 .orbit-card--wide .orbit-stage { flex: 0 0 auto; width: 100%; max-width: 240px; height: 240px; margin: 0 auto; }
+/* ② 날씨·생활 정보와 ③ 생활 점수 인포그래픽 사이를 절반으로(24px → 12px).
+   좁은 화면에서는 카드가 세로로 길게 이어지는데, 24px이면 둘이 따로 노는 것처럼 벌어진다. */
+.orbit-card { margin-bottom: var(--space-3); }
 .score-card__body { flex-direction: column; gap: var(--space-4); }
 .radar-chart { flex: 0 0 auto; width: 100%; max-width: 260px; height: auto; margin: 0 auto; }
 .score-rows { width: 100%; }
