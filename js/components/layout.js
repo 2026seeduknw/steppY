@@ -55,20 +55,19 @@ function renderAppBar(activeKey) {
   const mount = document.getElementById('app-nav');
   if (!mount) return;
   const authed = typeof Auth !== 'undefined' && Auth.isAuthed;
-  const profile = AppState.profile;
-  const initial = profile.name ? profile.name.slice(-2) : '학생';
+  // 로그인 전후 같은 사람 아이콘을 쓴다. 이니셜은 이름이 두 글자를 넘거나 영문이면
+  // 원 안에서 깨지고, 어차피 자기 계정이라 누구인지 글자로 알려줄 필요가 없다.
+  const personIcon = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0"/>
+    </svg>`;
 
   // 좌 · 중앙 · 우 세 칸. 좌우 칸의 폭이 같아야 가운데 제목이 실제로 가운데 온다.
   // 오른쪽은 비어 있지만 자리를 남겨둔다 — 없애면 제목이 오른쪽으로 밀린다.
   mount.innerHTML = `
     <div class="appbar__slot">
       ${authed
-        ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${initial}</button>`
-        : `<a class="appbar__avatar appbar__avatar--guest" href="auth.html" aria-label="로그인">
-             <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-               <circle cx="12" cy="8.4" r="3.6"/><path d="M4.8 20.2a7.2 7.2 0 0 1 14.4 0"/>
-             </svg>
-           </a>`}
+        ? `<button type="button" class="appbar__avatar" id="appbarAccount" aria-haspopup="dialog" aria-label="계정">${personIcon}</button>`
+        : `<a class="appbar__avatar appbar__avatar--guest" href="auth.html" aria-label="로그인">${personIcon}</a>`}
     </div>
 
     <div class="appbar__center">
