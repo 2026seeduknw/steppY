@@ -1426,3 +1426,71 @@ body[data-page="prepare"] .tip-card {
   background: rgba(255, 255, 255, 0.5);
   border-color: rgba(255, 255, 255, 0.7);
 }
+
+/* ------------------------------------------------------------- 비행 경로 카드
+   출발지·도착지를 양 끝에 두고 그 사이를 비행기가 지나간다. 지난 구간은 밝은
+   실선, 남은 구간은 옅은 선. 항공사 위젯이 쓰는 형태 그대로다. */
+.leg-card {
+  display: block;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5) var(--space-4);
+  background: linear-gradient(135deg, #2B3B57 0%, #46597F 100%);
+  color: #fff;
+  text-decoration: none;
+}
+.leg-card--after { background: var(--ink-700); }
+
+.leg-card__ends { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.leg-card__end { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.leg-card__end--to { align-items: flex-end; text-align: right; }
+.leg-card__place {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42vw;
+}
+.leg-card__date { font-size: var(--fs-micro); color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; }
+
+/* ---- 경로 ---- */
+.leg-card__track { position: relative; height: 18px; margin: var(--space-4) 0 var(--space-3); }
+.leg-card__line {
+  position: absolute; left: 0; right: 0; top: 50%;
+  height: 2px; margin-top: -1px; border-radius: 2px;
+  background: rgba(255, 255, 255, 0.24);
+}
+.leg-card__line--done { right: auto; background: #fff; }
+.leg-card__plane {
+  position: absolute; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  /* 비행기 뒤로 선이 비치면 지저분하다 — 카드 배경색으로 살짝 가린다 */
+  padding: 0 5px;
+  background: linear-gradient(90deg, transparent, #38496B 22%, #38496B 78%, transparent);
+}
+.leg-card--after .leg-card__plane { background: linear-gradient(90deg, transparent, var(--ink-700) 22%, var(--ink-700) 78%, transparent); }
+
+/* ---- 아래 알약 ---- */
+.leg-card__foot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.leg-card__pill {
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  font-size: var(--fs-small); font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.leg-card__note { font-size: var(--fs-micro); color: rgba(255, 255, 255, 0.72); }
+
+/* 글라스 화면에서는 카드가 배경 위에 뜬다 */
+body[data-page="prepare"] .leg-card {
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  box-shadow: 0 10px 28px rgba(12, 26, 52, 0.22);
+}
+
+/* 확정 학교 카드의 '학교 정보 보기' — 카드 안의 보조 동작이라 크게 둘 이유가 없다.
+   글씨는 옆의 학기 배지와 같은 크기로, 좌우 여백은 절반(24 → 12px)으로 줄인다. */
+.confirmed-card .btn--ghost {
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-micro);
+  border-radius: var(--radius-pill);
+}

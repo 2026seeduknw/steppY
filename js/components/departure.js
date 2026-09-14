@@ -108,43 +108,91 @@ function renderDepartureCard(mount) {
     return;
   }
 
+  const school = AppState.getConfirmedSchool();
+  const city = school ? (school.city || school.country || '파견교') : '파견교';
+  const fmt = (iso) => { const [, m, d] = iso.split('-'); return `${Number(m)}월 ${Number(d)}일`; };
+
+  /**
+   * 비행 경로 카드. 출발지·도착지를 양 끝에 두고 그 사이를 비행기가 지나간다.
+   *
+   *   출국 전 — 서울 → 파견 도시. 준비 기간을 한 구간으로 본다.
+   *   파견 중 — 파견 도시 → 서울. 이제 돌아올 일이 남았다.
+   *
+   * 출국 전 진행률의 기준점이 문제였다. "준비를 언제 시작했는지"가 있어야 하는데,
+   * 온보딩을 마친 시각(onboardedAt)이 그 사람이 실제로 준비를 시작한 날이라
+   * 그걸 출발점으로 쓴다. 없거나 출국일보다 뒤면 6개월 전으로 잡는다 —
+   * 교환 준비는 대개 그쯤 시작한다.
+   */
+  function legCard({ fromLabel, fromSub, toLabel, toSub, pct, pill, pillNote, tone }) {
+    return `
+      <a class="leg-card leg-card--${tone}" href="journal.html">
+        <div class="leg-card__ends">
+          <div class="leg-card__end">
+            <span class="leg-card__place">${fromLabel}</span>
+            <span class="leg-card__date">${fromSub}</span>
+          </div>
+          <div class="leg-card__end leg-card__end--to">
+            <span class="leg-card__place">${toLabel}</span>
+            <span class="leg-card__date">${toSub}</span>
+          </div>
+        </div>
+
+        <div class="leg-card__track" aria-hidden="true">
+          <span class="leg-card__line"></span>
+          <span class="leg-card__line leg-card__line--done" style="width:${pct}%"></span>
+          <span class="leg-card__plane" style="left:${pct}%">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
+          </span>
+        </div>
+
+        <div class="leg-card__foot">
+          <span class="leg-card__pill">${pill}</span>
+          <span class="leg-card__note">${pillNote}</span>
+        </div>
+      </a>`;
+  }
+
   if (info.phase === DEPARTURE_PHASES.BEFORE) {
-    mount.innerHTML = `
-      <a class="departure-card departure-card--before" href="journal.html">
-        <div class="departure-card__head">
-          <span class="departure-card__eyebrow">출국까지</span>
-          <span class="departure-card__dday">D-${info.daysUntil}</span>
-        </div>
-        <p class="departure-card__desc">
-          배웅 나온 친구들, 짐 싸던 밤 — 떠나기 전 오늘도 나중에 꺼내 볼 기억이 돼요.
-          기록 탭에 남겨두면 교환 가서 생각날 때 볼 수 있어요.
-        </p>
-        <span class="departure-card__cta">출국 전 기록 남기기 →</span>
-      </a>
-      <button type="button" class="departure-card__edit" id="depEdit">출국일 수정</button>`;
+    // 준비 구간의 출발점 — 온보딩한 날, 없으면 출국 6개월 전
+    const onboarded = AppState.load().onboardedAt;
+    const DAY = 86400000;
+    const startMs = (() => {
+      const s = onboarded ? Date.parse(onboarded) : NaN;
+      const dep = new Date(`${info.start}T00:00:00`).getTime();
+      return (!Number.isNaN(s) && s < dep) ? s : dep - 180 * DAY;
+    })();
+    const depMs = new Date(`${info.start}T00:00:00`).getTime();
+    const nowMs = new Date(`${todayISO()}T00:00:00`).getTime();
+    const pct = Math.min(96, Math.max(3, ((nowMs - startMs) / (depMs - startMs)) * 100));
+
+    mount.innerHTML = legCard({
+      fromLabel: '서울', fromSub: '준비 중',
+      toLabel: city, toSub: fmt(info.start),
+      pct: Math.round(pct),
+      pill: `D-${info.daysUntil}`,
+      pillNote: '출국까지',
+      tone: 'before'
+    }) + `<button type="button" class="departure-card__edit" id="depEdit">출국일 수정</button>`;
+
   } else if (info.phase === DEPARTURE_PHASES.ABROAD) {
-    mount.innerHTML = `
-      <a class="departure-card departure-card--abroad" href="journal.html">
-        <div class="departure-card__head">
-          <span class="departure-card__eyebrow">파견 ${info.dayNum}일째</span>
-          <span class="departure-card__dday">D+${info.dayNum - 1}</span>
-        </div>
-        <div class="departure-card__bar"><div style="width:${info.pct}%"></div></div>
-        <p class="departure-card__desc">귀국까지 ${info.daysLeft}일 남았어요. 오늘의 순간을 기록해두세요.</p>
-        <span class="departure-card__cta">오늘 기록하기 →</span>
-      </a>
-      <button type="button" class="departure-card__edit" id="depEdit">파견 기간 수정</button>`;
+    mount.innerHTML = legCard({
+      fromLabel: city, fromSub: fmt(info.start),
+      toLabel: '서울', toSub: fmt(info.end),
+      pct: Math.round(Math.min(97, Math.max(3, info.pct))),
+      pill: `D+${info.dayNum - 1}`,
+      pillNote: `귀국까지 ${info.daysLeft}일`,
+      tone: 'abroad'
+    }) + `<button type="button" class="departure-card__edit" id="depEdit">파견 기간 수정</button>`;
+
   } else {
-    mount.innerHTML = `
-      <a class="departure-card departure-card--after" href="journal.html">
-        <div class="departure-card__head">
-          <span class="departure-card__eyebrow">교환 종료</span>
-          <span class="departure-card__dday">${info.totalDays}일</span>
-        </div>
-        <p class="departure-card__desc">${info.start} ~ ${info.end} 동안의 기록이 모두 남아 있어요.</p>
-        <span class="departure-card__cta">기록 돌아보기 →</span>
-      </a>
-      <button type="button" class="departure-card__edit" id="depEdit">파견 기간 수정</button>`;
+    mount.innerHTML = legCard({
+      fromLabel: city, fromSub: fmt(info.start),
+      toLabel: '서울', toSub: fmt(info.end),
+      pct: 100,
+      pill: `${info.totalDays}일`,
+      pillNote: '교환 종료 · 기록 돌아보기',
+      tone: 'after'
+    }) + `<button type="button" class="departure-card__edit" id="depEdit">파견 기간 수정</button>`;
   }
 
   const edit = mount.querySelector('#depEdit');

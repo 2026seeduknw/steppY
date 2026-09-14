@@ -85,7 +85,8 @@
 
   function renderScale() {
     el.scale.innerHTML = GPA_SCALES
-      .map(v => `<option value="${v}" ${v === draft.gpaScale ? 'selected' : ''}>${v} 만점</option>`).join('');
+      // 4.0은 그냥 찍으면 "4 만점"이 된다 — 만점 표기는 소수점 한 자리로 고정한다
+      .map(v => `<option value="${v}" ${v === draft.gpaScale ? 'selected' : ''}>${v.toFixed(1)} 만점</option>`).join('');
   }
 
   function renderYear() {
