@@ -1349,11 +1349,14 @@ a.todo-pill__add { text-decoration: none; }
 }
 
 /* ==========================================================================
-   교환 준비하기 — 배경 사진 위의 글라스 위젯
+   홈 — 배경 사진 위의 글라스 위젯
 
-   왜 이 화면만인가: 학교를 확정한 뒤 매일 여는 화면이라 "지금 떠날 준비를 하고
-   있다"는 기분이 붙어도 되는 자리다. 학교 찾기·학점 인정처럼 표와 숫자를 읽는
-   화면에 같은 걸 깔면 대비만 떨어진다.
+   확정 전(home)과 확정 후(prepare) 모두 같은 처리를 받는다. 둘은 사용자에게
+   "홈"이라는 한 화면이고, 학교를 확정했다고 배경이 통째로 달라지면 다른 앱에
+   들어온 것처럼 보인다.
+
+   학교 찾기·학점 인정처럼 표와 숫자를 읽는 화면에는 깔지 않는다. 거기서는
+   대비만 떨어진다.
 
    가독성 장치 두 개:
    1) 사진 위에 밝은 막(--glass-veil)을 한 겹 깐다. 사진 밝기가 자리마다 달라서
@@ -1361,7 +1364,8 @@ a.todo-pill__add { text-decoration: none; }
    2) 카드는 반투명 + backdrop-filter. 뒤가 비치되 글자 뒤는 항상 밝다.
    ========================================================================== */
 
-body[data-page="prepare"] {
+body[data-page="prepare"],
+body[data-page="home"] {
   --page-bg: url('../assets/bg/sky-A.jpg');
   --glass-veil: rgba(244, 247, 251, 0.44);
   --glass-card: rgba(255, 255, 255, 0.66);
@@ -1373,26 +1377,36 @@ body[data-page="prepare"] {
 }
 
 /* 배경은 고정해서 스크롤해도 하늘이 따라 흐르지 않게 한다 */
-body[data-page="prepare"]::after {
+body[data-page="prepare"]::after,
+body[data-page="home"]::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
-  background-image: linear-gradient(180deg, rgba(244,247,251,.20) 0%, var(--glass-veil) 44%, rgba(244,247,251,.86) 100%), var(--page-bg);
+  /* 맨 위를 두껍게 덮는다. 홈 상단의 인사말은 카드 밖에 맨글자로 놓여서,
+     사진의 어두운 구간과 겹치면 읽히지 않는다. 사진이 가장 잘 보이는 구간은
+     어차피 카드에 가려지는 가운데다. */
+  background-image: linear-gradient(180deg, rgba(244,247,251,.62) 0%, rgba(244,247,251,.40) 38%, var(--glass-veil) 62%, rgba(244,247,251,.88) 100%), var(--page-bg);
   background-size: cover, cover;
   background-position: center top, center top;
 }
 @media (min-width: 900px) {
-  body[data-page="prepare"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
+  body[data-page="prepare"]::after,
+  body[data-page="home"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
 }
 /* 픽셀 구름 텍스처와 겹치면 배경이 지저분해진다 */
-body[data-page="prepare"]::before { display: none; }
+body[data-page="prepare"]::before,
+body[data-page="home"]::before { display: none; }
 
 /* ---- 카드들을 유리로 ---- */
 body[data-page="prepare"] .card,
 body[data-page="prepare"] .target-major,
 body[data-page="prepare"] .credits-cta,
-body[data-page="prepare"] .departure-card--setup {
+body[data-page="prepare"] .departure-card--setup,
+body[data-page="home"] .card,
+body[data-page="home"] .credits-cta,
+body[data-page="home"] .wishlist-slot,
+body[data-page="home"] .search-cta {
   background: var(--glass-card);
   backdrop-filter: saturate(150%) blur(16px);
   -webkit-backdrop-filter: saturate(150%) blur(16px);
@@ -1412,17 +1426,20 @@ body[data-page="prepare"] .departure-card--after {
 }
 
 /* 앱바·탭바도 같은 유리로 맞춘다 — 카드만 유리면 따로 논다 */
-body[data-page="prepare"] .app-nav {
+body[data-page="prepare"] .app-nav,
+body[data-page="home"] .app-nav {
   background: rgba(255, 255, 255, 0.62);
   border-bottom-color: rgba(255, 255, 255, 0.6);
 }
-body[data-page="prepare"] .tabbar { background: rgba(255, 255, 255, 0.72); }
+body[data-page="prepare"] .tabbar,
+body[data-page="home"] .tabbar { background: rgba(255, 255, 255, 0.72); }
 
-/* 체크리스트 행처럼 카드 안에 또 얹히는 면은 더 옅게 — 유리 위에 유리를 겹치면
-   탁해진다 */
+/* 카드 안에 또 얹히는 면은 더 옅게 — 유리 위에 유리를 겹치면 탁해진다 */
 body[data-page="prepare"] .checklist-item,
 body[data-page="prepare"] .living-item,
-body[data-page="prepare"] .tip-card {
+body[data-page="prepare"] .tip-card,
+body[data-page="home"] .todo-pill,
+body[data-page="home"] .wishlist-slot__empty {
   background: rgba(255, 255, 255, 0.5);
   border-color: rgba(255, 255, 255, 0.7);
 }
