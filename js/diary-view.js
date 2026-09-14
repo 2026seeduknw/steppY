@@ -11,18 +11,7 @@
  */
 (function (global) {
 
-  const REPORT_CATEGORIES = [
-    { id: 'overview',     ko: '교환대학 개요',     color: '#4E6B93' },
-    { id: 'surroundings', ko: '대학 주변 환경',    color: '#5A5D96' },
-    { id: 'housing',      ko: '거주 및 식사',      color: '#3F6B52' },
-    { id: 'academics',    ko: '학업 환경',         color: '#454E86' },
-    { id: 'support',      ko: '국제학생 지원부서', color: '#A15A42' },
-    { id: 'facilities',   ko: '캠퍼스 시설',       color: '#9C7B2E' },
-    { id: 'culture',      ko: '문화 적응 경험',    color: '#6B4E85' },
-    { id: 'resources',    ko: '도움 받을 곳',      color: '#3F7A82' },
-    { id: 'tips',         ko: '기타 및 한마디',    color: '#8A4F42' }
-  ];
-  const CATEGORY_MAP = Object.fromEntries(REPORT_CATEGORIES.map(c => [c.id, c]));
+  // 항목 정의는 js/report-categories.js에 있다(보고서 페이지와 공유)
 
   const now = new Date();
   const todayIso = toIso(now);

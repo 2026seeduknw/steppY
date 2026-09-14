@@ -16,6 +16,7 @@ const TAB_ICONS = {
   search: '<circle cx="11" cy="11" r="6.6"/><path d="m20.4 20.4-4.1-4.1"/>',
   credits: '<path d="M6.2 2.8h8l4 4v14.4h-12z"/><path d="m9.3 13.2 1.9 1.9 3.8-3.8"/>',
   journal: '<path d="M5.4 3.4h9.2l4 4v13.2H5.4z"/><path d="M8.7 11.4h6.6M8.7 15.1h4.4"/>',
+  report: '<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8.2 10.4V7.7a3.8 3.8 0 0 1 7.6 0v2.7"/>',
   consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>'
 };
 
@@ -26,6 +27,7 @@ const APP_TABS = [
   { key: 'search', label: '학교 찾기', href: 'search.html' },
   { key: 'credits', label: '학점 인정', href: 'credits.html' },
   { key: 'journal', label: '기록하기', href: 'journal.html' },
+  { key: 'report', label: '교환보고서', href: 'report.html' },
   { key: 'consult', label: '멘토', href: 'consult.html' }
 ];
 
@@ -36,6 +38,7 @@ const PAGE_TITLES = {
   credits: '학점 인정',
   'major-matching': '전공 매칭',
   journal: '기록하기',
+  report: '교환보고서',
   consult: "Mentor's Step"
 };
 
@@ -134,6 +137,8 @@ function renderTabBar(activeKey) {
     // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
     // Day 수도 못 세고 남길 것도 마땅치 않다.
     if (tab.key === 'journal' && !confirmed) return false;
+    // 교환보고서는 출국 후에만. 출국 전에는 모을 기록 자체가 없다.
+    if (tab.key === 'report' && !departed) return false;
     return true;
   });
   mount.innerHTML = `
