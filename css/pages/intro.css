@@ -212,7 +212,7 @@ body[data-page="intro"] {
 .intro__services {
   position: relative;
   z-index: 1;
-  background: var(--cloud-0);
+  background: transparent;
   padding: var(--space-9) var(--space-7);
 }
 .intro__services h2 {
@@ -410,3 +410,154 @@ body[data-page="intro"] {
   font-weight: 700;
   vertical-align: middle;
 }
+
+
+/* ==========================================================================
+   밀어서 시작하기 — 화면 아래 고정
+   ========================================================================== */
+
+.swipe-start {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+  z-index: 80;
+  width: min(100% - var(--space-6) * 2, 360px);
+  --swipe-progress: 0;
+}
+
+.swipe-start__track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 58px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(240, 236, 221, 0.38);
+  background: rgba(10, 26, 54, 0.55);
+  backdrop-filter: saturate(160%) blur(18px);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+  box-shadow: 0 12px 34px rgba(2, 12, 30, 0.42);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.swipe-start__track:focus-visible { outline: 2px solid var(--amber-500); outline-offset: 3px; }
+
+.swipe-start__label {
+  font-family: var(--font-display);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--moonlight, #F0ECDD);
+  /* 밀수록 옅어진다 — 지금 뭔가 진행 중이라는 신호 */
+  opacity: calc(1 - var(--swipe-progress) * 0.85);
+}
+.swipe-start__chevrons {
+  position: absolute;
+  right: var(--space-5);
+  font-size: 1rem;
+  letter-spacing: -1px;
+  color: rgba(240, 236, 221, 0.5);
+  opacity: calc(1 - var(--swipe-progress));
+}
+
+.swipe-start__knob {
+  position: absolute;
+  left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--moonlight, #F0ECDD);
+  color: var(--oxford);
+  box-shadow: 0 3px 10px rgba(2, 12, 30, 0.35);
+  touch-action: none;   /* 손잡이를 끌 때 화면이 같이 스크롤되지 않게 */
+  cursor: grab;
+}
+.swipe-start__knob.is-dragging { cursor: grabbing; }
+/* transition은 놓았을 때만 켠다 — 드래그 중에 켜두면 손가락을 늦게 따라온다 */
+.swipe-start__knob.is-returning { transition: transform 200ms var(--ease-out); }
+
+.swipe-start.is-done .swipe-start__track { border-color: var(--amber-500); }
+
+/* 고정 버튼이 마지막 섹션 내용을 가린다 */
+.intro__final { padding-bottom: calc(var(--space-9) + 76px); }
+
+
+/* ==========================================================================
+   랜딩 전체를 한 장의 남색 그라데이션으로
+
+   예전에는 히어로만 남색이고 그 아래가 흰 섹션이라 경계가 뚝 끊겼다. 섹션마다
+   배경색을 따로 주는 대신, 페이지 전체에 위(짙은 남색) → 아래(옅은 남색)로
+   이어지는 그라데이션 한 장을 깔고 섹션은 전부 투명하게 둔다.
+
+   흰 바탕에 맞춰져 있던 글자·카드 색을 전부 어두운 배경 기준으로 뒤집는다.
+   ========================================================================== */
+
+body[data-page="intro"] {
+  /* 위에서 아래로 계속 밝아지되 끝까지 남색 계열에 머문다. 중간에 흰색이 끼면
+     거기서 다시 경계가 생긴다. */
+  background: linear-gradient(180deg,
+    #02122F 0%,
+    #0A1E42 22%,
+    #163258 45%,
+    #27486F 68%,
+    #3B5E85 86%,
+    #4A6E96 100%);
+  /* attachment: fixed를 쓰면 안 된다. 그라데이션이 뷰포트에 고정돼 스크롤해도
+     늘 같은 구간만 보이고, "내려갈수록 밝아진다"가 사라진다. 기본값(scroll)이라야
+     페이지 전체 높이에 펼쳐진다. */
+}
+
+/* 섹션은 각자 배경을 갖지 않는다 — 전부 위 그라데이션 위에 얹힌다 */
+.intro__services,
+.intro__stats,
+.intro__steps,
+.intro__final { background: transparent; }
+
+/* ---- 어두운 배경 기준으로 글자색 뒤집기 ---- */
+.intro__services h2,
+.intro__section-title,
+.intro__step-item h3 { color: var(--moonlight, #F0ECDD); }
+
+.intro__section-sub,
+.intro__service-card p,
+.intro__step-item p,
+.intro__stat span { color: rgba(240, 236, 221, 0.72); }
+
+/* 카드 안 목록은 원래 흰 바탕용 회색이라 남색 위에서는 거의 안 읽힌다 */
+.intro__service-points li { color: rgba(240, 236, 221, 0.66); }
+.intro__service-points li::before { background: var(--amber-500); opacity: 0.85; }
+.intro__service-card--soon .intro__service-points li { color: rgba(240, 236, 221, 0.4); }
+
+.intro__stat strong { color: #fff; }
+
+/* ---- 카드는 유리로 ---- */
+.intro__service-card,
+.intro__stat {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: saturate(150%) blur(14px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+  box-shadow: none;
+}
+.intro__service-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
+.intro__service-card h3 { color: #fff; }
+
+/* 준비 중 카드는 눌리지 않는다는 것이 계속 보여야 한다 */
+.intro__service-card--soon {
+  background: rgba(255, 255, 255, 0.05);
+  border-style: dashed;
+}
+.intro__service-card--soon h3 { color: rgba(240, 236, 221, 0.6); }
+
+/* 마지막 섹션은 이미 남색 전제라 글자색은 그대로 두고 배경만 뺐다 */
+
+/* 고정 버튼이 마지막 섹션 내용을 가린다 */
+.intro__final { padding-bottom: calc(var(--space-9) + 76px); }
