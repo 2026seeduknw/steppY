@@ -816,6 +816,11 @@ body[data-page="onboarding"] {
 }
 
 /* 진행 표시는 점이 아니라 채워지는 막대 — 남은 단계 수가 한눈에 보인다 */
+.ob__brand {
+  font-family: var(--font-display);
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--ink-400);
+}
 .ob__progress { display: flex; gap: 4px; }
 .ob__dot {
   flex: 1;
@@ -857,11 +862,34 @@ body[data-page="onboarding"] {
   margin-bottom: var(--space-6);
 }
 
-.ob__body { display: flex; flex-direction: column; gap: var(--space-4); }
-.ob__field { gap: 8px; }
-.ob__field input,
-.ob__field select { height: 50px; border-radius: 12px; font-size: 16px; }
-.ob__body .ss { width: 100%; }
+.ob__form { display: flex; flex-direction: column; gap: var(--space-5); }
+.ob__group { display: flex; flex-direction: column; gap: 10px; }
+.ob__label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--fs-small); font-weight: 800; color: var(--ink-900);
+}
+/* 필수 표시 — 넷 중 둘만 필수라, 무엇을 비워도 되는지 한눈에 보이게 한다 */
+.ob__req {
+  font-size: var(--fs-micro); font-weight: 700;
+  color: var(--amber-700); background: var(--amber-100);
+  padding: 2px 7px; border-radius: var(--radius-pill);
+}
+.ob__row { display: flex; gap: 10px; }
+.ob__row > input { flex: 1; min-width: 0; }
+.ob__row > select { flex: 0 0 116px; }
+.ob__row--score[hidden] { display: none; }
+.ob__form input,
+.ob__form select {
+  height: 50px; border-radius: 12px;
+  /* 16px 미만이면 iOS가 포커스 때 화면을 확대한다 */
+  font-size: 16px;
+  padding: 0 14px;
+  border: 1px solid var(--line-200);
+  background: #fff;
+  color: var(--ink-900);
+  font-family: inherit;
+}
+.ob__form .ss { width: 100%; }
 .ob__chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .ob__chips .chip { height: 40px; padding: 0 var(--space-4); font-size: var(--fs-small); }
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }

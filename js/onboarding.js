@@ -6,13 +6,17 @@
  * 서비스의 핵심 기능이 첫 화면부터 동작하지 않는 셈이라, 가입 직후 최소한의
  * 정보를 받는다.
  *
- * 한 화면에 하나씩 묻는다(앱 온보딩 관습). 어학 성적은 아직 안 본 사람이 많아
- * 건너뛸 수 있게 하고, 상단 "나중에"로 전체를 건너뛸 수도 있다. 어느 쪽이든
- * markOnboarded()로 "물어봤다"는 사실을 남겨 다시 묻지 않는다.
+ * 한 화면에서 네 가지를 다 받는다. 예전에는 한 단계씩 넘기는 방식이었는데,
+ * 물어보는 것이 넷뿐이고 전부 짧은 입력이라 넘기는 동작이 입력보다 오래 걸렸다.
+ * 한 화면이면 무엇을 묻는지 한눈에 보이고, 앞 답을 고치러 되돌아갈 필요도 없다.
+ *
+ * 상단 "나중에"로 전체를 건너뛸 수 있다. 어느 쪽이든 markOnboarded()로
+ * "물어봤다"는 사실을 남겨 다시 묻지 않는다.
  */
 (function () {
   const SEASONS = ['봄학기', '여름학기', '가을학기', '겨울학기'];
   const LANG_TESTS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
+  const LANG_NONE = '__none__';   // "아직 없어요"
   const GPA_SCALES = [4.3, 4.5, 4.0];
   const THIS_YEAR = new Date().getFullYear();
 
@@ -22,74 +26,37 @@
     major: null,
     gpa: null,
     gpaScale: 4.3,
-    langType: 'TOEFL',
+    // 어학은 기본이 "아직 없어요". 교환을 준비하기 시작한 시점에는 아직 시험을
+    // 안 본 사람이 더 많고, 그 사람들이 아무것도 건드리지 않아도 넘어가야 한다.
+    langType: LANG_NONE,
     langScore: null,
     season: '가을학기',
     year: THIS_YEAR + 1
   };
 
-  const STEPS = [
-    {
-      key: 'major',
-      title: '어떤 학과에 재학 중인가요?',
-      desc: '전공이 비슷한 해외 과목을 찾아드릴 때 씁니다.',
-      render: majorStep,
-      validate: () => draft.major ? null : '학과를 선택해 주세요.'
-    },
-    {
-      key: 'gpa',
-      title: '학점이 어떻게 되나요?',
-      desc: '지원 가능한 학교를 가려내는 데 쓰입니다. 나중에 언제든 고칠 수 있어요.',
-      render: gpaStep,
-      validate: () => {
-        if (draft.gpa === null || Number.isNaN(draft.gpa)) return '학점을 입력해 주세요.';
-        if (draft.gpa < 0 || draft.gpa > draft.gpaScale) return `0 ~ ${draft.gpaScale} 사이로 입력해 주세요.`;
-        return null;
-      }
-    },
-    {
-      key: 'lang',
-      title: '어학 성적이 있나요?',
-      desc: '아직 없다면 건너뛰어도 됩니다. 등록하면 어학 기준까지 함께 판정해요.',
-      render: langStep,
-      optional: true,
-      validate: () => {
-        if (draft.langScore === null || draft.langScore === '') return null;
-        return Number.isNaN(Number(draft.langScore)) ? '점수를 숫자로 입력해 주세요.' : null;
-      }
-    },
-    {
-      key: 'term',
-      title: '언제 교환학생을 가고 싶나요?',
-      desc: '준비 일정과 마감을 이 시기에 맞춰 안내합니다.',
-      render: termStep,
-      validate: () => null
-    }
-  ];
-
-  let current = 0;
-
   const el = {
-    back: document.getElementById('obBack'),
     skip: document.getElementById('obSkip'),
-    progress: document.getElementById('obProgress'),
-    stepLabel: document.getElementById('obStepLabel'),
-    title: document.getElementById('obTitle'),
-    desc: document.getElementById('obDesc'),
-    body: document.getElementById('obBody'),
     error: document.getElementById('obError'),
-    next: document.getElementById('obNext')
+    next: document.getElementById('obNext'),
+    majorMount: document.getElementById('obMajorMount'),
+    gpa: document.getElementById('obGpa'),
+    scale: document.getElementById('obScale'),
+    langChips: document.getElementById('obLangChips'),
+    scoreRow: document.getElementById('obScoreRow'),
+    langScore: document.getElementById('obLangScore'),
+    year: document.getElementById('obYear'),
+    seasons: document.getElementById('obSeasons')
   };
 
-  /* ------------------------------------------------------------ 단계 렌더 */
+  /* --------------------------------------------------------------- 렌더 */
 
-  function majorStep(mount) {
-    mount.innerHTML = '<div data-major-mount></div>';
+  function renderMajor() {
     // 학과 목록은 Supabase에서 비동기로 온다. 아직이면 도착 후 다시 그린다.
     if (!MOCK.yonseiMajors.length) {
-      mount.innerHTML = '<p class="ob__loading">학과 목록을 불러오는 중이에요…</p>';
+      el.majorMount.innerHTML = '<p class="ob__loading">학과 목록을 불러오는 중이에요…</p>';
       return;
     }
+    el.majorMount.innerHTML = '';
     const select = createSearchableSelect({
       items: MOCK.yonseiMajors.map(m => ({ value: m.majorName, label: m.majorName, group: m.college })),
       selected: draft.major,
@@ -97,107 +64,69 @@
       placeholder: '학과를 검색해서 선택하세요',
       onChange: (value) => { draft.major = value; clearError(); }
     });
-    mount.querySelector('[data-major-mount]').replaceWith(select.el);
+    el.majorMount.appendChild(select.el);
   }
 
-  function gpaStep(mount) {
-    mount.innerHTML = `
-      <label class="field ob__field">
-        <span>학점</span>
-        <input type="number" inputmode="decimal" step="0.01" min="0" id="obGpa"
-               value="${draft.gpa === null ? '' : draft.gpa}" placeholder="예: 3.62">
-      </label>
-      <label class="field ob__field">
-        <span>기준</span>
-        <select id="obScale">
-          ${GPA_SCALES.map(v => `<option value="${v}" ${v === draft.gpaScale ? 'selected' : ''}>${v} 만점</option>`).join('')}
-        </select>
-      </label>`;
-    const gpa = mount.querySelector('#obGpa');
-    gpa.addEventListener('input', () => { draft.gpa = gpa.value === '' ? null : parseFloat(gpa.value); clearError(); });
-    mount.querySelector('#obScale').addEventListener('change', e => { draft.gpaScale = parseFloat(e.target.value); });
-    gpa.focus();
+  function renderLangChips() {
+    const opts = [...LANG_TESTS, LANG_NONE];
+    el.langChips.innerHTML = opts.map(t => `
+      <button type="button" class="chip${t === draft.langType ? ' is-selected' : ''}" data-lang="${t}">
+        ${t === LANG_NONE ? '아직 없어요' : t}
+      </button>`).join('');
+    syncScoreRow();
   }
 
-  function langStep(mount) {
-    mount.innerHTML = `
-      <label class="field ob__field">
-        <span>시험</span>
-        <select id="obLangType">
-          ${LANG_TESTS.map(t => `<option ${t === draft.langType ? 'selected' : ''}>${t}</option>`).join('')}
-        </select>
-      </label>
-      <label class="field ob__field">
-        <span>점수</span>
-        <input type="number" inputmode="numeric" id="obLangScore"
-               value="${draft.langScore === null ? '' : draft.langScore}" placeholder="예: 96">
-      </label>`;
-    mount.querySelector('#obLangType').addEventListener('change', e => { draft.langType = e.target.value; });
-    mount.querySelector('#obLangScore').addEventListener('input', e => {
-      draft.langScore = e.target.value === '' ? null : e.target.value;
-      clearError();
-    });
+  /** "아직 없어요"를 고르면 점수 칸을 숨긴다 — 비워두라고 안내하는 것보다 확실하다. */
+  function syncScoreRow() {
+    const none = draft.langType === LANG_NONE;
+    el.scoreRow.hidden = none;
+    if (none) { draft.langScore = null; el.langScore.value = ''; }
   }
 
-  function termStep(mount) {
-    const years = [THIS_YEAR, THIS_YEAR + 1, THIS_YEAR + 2];
-    mount.innerHTML = `
-      <label class="field ob__field">
-        <span>연도</span>
-        <select id="obYear">
-          ${years.map(y => `<option value="${y}" ${y === draft.year ? 'selected' : ''}>${y}년</option>`).join('')}
-        </select>
-      </label>
-      <div class="field ob__field">
-        <span>학기</span>
-        <div class="ob__chips" id="obSeasons">
-          ${SEASONS.map(s => `<button type="button" class="chip ${s === draft.season ? 'is-selected' : ''}" data-season="${s}">${s}</button>`).join('')}
-        </div>
-      </div>`;
-    mount.querySelector('#obYear').addEventListener('change', e => { draft.year = parseInt(e.target.value, 10); });
-    mount.querySelector('#obSeasons').addEventListener('click', e => {
-      const btn = e.target.closest('[data-season]');
-      if (!btn) return;
-      draft.season = btn.dataset.season;
-      mount.querySelectorAll('[data-season]').forEach(b => b.classList.toggle('is-selected', b === btn));
-    });
+  function renderScale() {
+    el.scale.innerHTML = GPA_SCALES
+      .map(v => `<option value="${v}" ${v === draft.gpaScale ? 'selected' : ''}>${v} 만점</option>`).join('');
   }
 
-  /* ------------------------------------------------------------ 화면 제어 */
+  function renderYear() {
+    el.year.innerHTML = [THIS_YEAR, THIS_YEAR + 1, THIS_YEAR + 2]
+      .map(y => `<option value="${y}" ${y === draft.year ? 'selected' : ''}>${y}년</option>`).join('');
+  }
+
+  function renderSeasons() {
+    el.seasons.innerHTML = SEASONS
+      .map(s => `<button type="button" class="chip${s === draft.season ? ' is-selected' : ''}" data-season="${s}">${s}</button>`).join('');
+  }
+
+  /* --------------------------------------------------------------- 검증 */
 
   function clearError() { el.error.hidden = true; }
-
-  function showError(text) {
+  function showError(text, focus) {
     el.error.textContent = text;
     el.error.hidden = false;
+    el.error.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (focus) focus.focus();
   }
 
-  function render() {
-    const step = STEPS[current];
-    clearError();
-    el.stepLabel.textContent = `${current + 1} / ${STEPS.length}`;
-    el.title.textContent = step.title;
-    el.desc.textContent = step.desc;
-    el.back.hidden = current === 0;
-    el.next.textContent = current === STEPS.length - 1 ? '시작하기' : '다음';
-    el.progress.innerHTML = STEPS
-      .map((_, i) => `<span class="ob__dot ${i <= current ? 'is-done' : ''}"></span>`).join('');
-    el.progress.setAttribute('aria-valuenow', String(current + 1));
-    step.render(el.body);
-  }
-
-  function goNext() {
-    const step = STEPS[current];
-    const problem = step.validate();
-    if (problem) return showError(problem);
-    if (current < STEPS.length - 1) {
-      current += 1;
-      render();
-      window.scrollTo({ top: 0 });
-      return;
+  function validate() {
+    if (!draft.major) return { msg: '학과를 선택해 주세요.' };
+    if (draft.gpa === null || Number.isNaN(draft.gpa)) return { msg: '학점을 입력해 주세요.', focus: el.gpa };
+    if (draft.gpa < 0 || draft.gpa > draft.gpaScale) {
+      return { msg: `학점은 0 ~ ${draft.gpaScale} 사이로 입력해 주세요.`, focus: el.gpa };
     }
-    finish();
+    // 시험을 골랐으면 점수가 있어야 한다. 점수 없이 시험만 고르면 판정에 쓸 수 없다.
+    if (draft.langType !== LANG_NONE) {
+      if (draft.langScore === null || draft.langScore === '') {
+        return { msg: `${draft.langType} 점수를 입력하거나 "아직 없어요"를 선택해 주세요.`, focus: el.langScore };
+      }
+      if (Number.isNaN(Number(draft.langScore))) {
+        return { msg: '어학 점수를 숫자로 입력해 주세요.', focus: el.langScore };
+      }
+    }
+    return null;
   }
+
+  /* --------------------------------------------------------------- 저장 */
 
   /**
    * 저장이 서버에 반영된 뒤에 이동한다.
@@ -225,13 +154,18 @@
   }
 
   function finish() {
+    const problem = validate();
+    if (problem) return showError(problem.msg, problem.focus);
+
     const patch = {
       major: draft.major,
       gpa: draft.gpa,
       gpaScale: draft.gpaScale,
       exchangeTerm: { unit: 'semester', season: draft.season, year: draft.year }
     };
-    if (draft.langScore !== null && draft.langScore !== '') {
+    // "아직 없어요"면 languageTests를 건드리지 않는다. 빈 배열을 넣으면 나중에
+    // 성적을 추가했을 때와 구분이 안 된다.
+    if (draft.langType !== LANG_NONE && draft.langScore !== null && draft.langScore !== '') {
       patch.languageTests = [{ type: draft.langType, score: Number(draft.langScore) }];
     }
     saveAndLeave(() => {
@@ -240,22 +174,48 @@
     });
   }
 
-  function skip() {
-    // 답은 저장하지 않되 "물어봤다"는 사실은 남긴다
-    saveAndLeave(() => AppState.markOnboarded());
-  }
+  /* --------------------------------------------------------------- 연결 */
 
-  el.next.addEventListener('click', goNext);
-  el.back.addEventListener('click', () => { if (current > 0) { current -= 1; render(); } });
-  el.skip.addEventListener('click', skip);
-
-  // 학과 목록이 늦게 도착하면 그 단계만 다시 그린다
-  document.addEventListener('MOCK:updated', () => {
-    if (STEPS[current].key === 'major') render();
+  el.gpa.addEventListener('input', () => {
+    draft.gpa = el.gpa.value === '' ? null : parseFloat(el.gpa.value);
+    clearError();
   });
+  el.scale.addEventListener('change', e => { draft.gpaScale = parseFloat(e.target.value); });
+  el.langScore.addEventListener('input', e => {
+    draft.langScore = e.target.value === '' ? null : e.target.value;
+    clearError();
+  });
+  el.year.addEventListener('change', e => { draft.year = parseInt(e.target.value, 10); });
+
+  el.langChips.addEventListener('click', e => {
+    const btn = e.target.closest('[data-lang]');
+    if (!btn) return;
+    draft.langType = btn.dataset.lang;
+    renderLangChips();
+    clearError();
+    if (draft.langType !== LANG_NONE) el.langScore.focus();
+  });
+
+  el.seasons.addEventListener('click', e => {
+    const btn = e.target.closest('[data-season]');
+    if (!btn) return;
+    draft.season = btn.dataset.season;
+    el.seasons.querySelectorAll('[data-season]').forEach(b => b.classList.toggle('is-selected', b === btn));
+  });
+
+  el.next.addEventListener('click', finish);
+  // 답은 저장하지 않되 "물어봤다"는 사실은 남긴다
+  el.skip.addEventListener('click', () => saveAndLeave(() => AppState.markOnboarded()));
+
+  // 학과 목록이 늦게 도착하면 그 칸만 다시 그린다
+  document.addEventListener('MOCK:updated', renderMajor);
 
   Auth.init().then(() => {
     if (!Auth.isAuthed) { location.replace('auth.html'); return; }
-    render();
+    renderScale();
+    renderYear();
+    renderSeasons();
+    renderLangChips();
+    renderMajor();
   });
 })();

@@ -13,25 +13,52 @@
 <body data-page="onboarding">
 
 <header class="ob__bar">
-  <button type="button" class="ob__back" id="obBack" aria-label="이전 단계">‹</button>
-  <div class="ob__progress" id="obProgress" role="progressbar" aria-valuemin="1" aria-valuemax="4"></div>
+  <span class="ob__brand">steppY</span>
   <button type="button" class="ob__skip" id="obSkip">나중에</button>
 </header>
 
 <main class="ob">
   <div class="ob__head">
-    <p class="ob__step" id="obStepLabel"></p>
-    <h1 class="ob__title" id="obTitle"></h1>
-    <p class="ob__desc" id="obDesc"></p>
+    <h1 class="ob__title">시작 전에 몇 가지만 알려주세요</h1>
+    <p class="ob__desc">지원 가능한 학교와 준비 일정을 여기에 맞춰 보여드려요. 나중에 언제든 고칠 수 있어요.</p>
   </div>
 
-  <div class="ob__body" id="obBody"></div>
+  <div class="ob__form">
+    <section class="ob__group">
+      <h2 class="ob__label">학과 <span class="ob__req">필수</span></h2>
+      <div id="obMajorMount"></div>
+    </section>
+
+    <section class="ob__group">
+      <h2 class="ob__label">학점 <span class="ob__req">필수</span></h2>
+      <div class="ob__row">
+        <input type="number" inputmode="decimal" step="0.01" min="0" id="obGpa" placeholder="예: 3.62" aria-label="학점">
+        <select id="obScale" aria-label="학점 기준"></select>
+      </div>
+    </section>
+
+    <section class="ob__group">
+      <h2 class="ob__label">어학 성적</h2>
+      <div class="ob__chips" id="obLangChips"></div>
+      <div class="ob__row ob__row--score" id="obScoreRow">
+        <input type="number" inputmode="numeric" id="obLangScore" placeholder="점수 (예: 96)" aria-label="어학 점수">
+      </div>
+    </section>
+
+    <section class="ob__group">
+      <h2 class="ob__label">교환 시기</h2>
+      <div class="ob__row">
+        <select id="obYear" aria-label="연도"></select>
+      </div>
+      <div class="ob__chips" id="obSeasons"></div>
+    </section>
+  </div>
 
   <p class="ob__error" id="obError" role="alert" hidden></p>
 </main>
 
 <footer class="ob__footer">
-  <button type="button" class="btn btn--primary btn--block" id="obNext">다음</button>
+  <button type="button" class="btn btn--primary btn--block" id="obNext">시작하기</button>
 </footer>
 
 <script src="js/analytics.js"></script>
