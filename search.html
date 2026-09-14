@@ -25,13 +25,17 @@
     </select>
   </div>
 
-  <div class="sim-banner">
-    <form class="sim-banner__form" id="simForm">
-      <div class="sim-banner__field"><span>목표 GPA</span><input type="number" step="0.01" name="targetGpa" placeholder="예: 3.8"></div>
-      <div class="sim-banner__field"><span>목표 어학 점수</span><input type="number" name="targetLang" placeholder="예: 105"></div>
-      <div class="sim-banner__field"><span aria-hidden="true">&nbsp;</span><button type="submit" class="btn btn--accent btn--sm">시뮬레이션</button></div>
-    </form>
-    <div class="sim-banner__field sim-banner__field--result"><span aria-hidden="true">&nbsp;</span><p class="sim-banner__result" id="simResult">목표 점수를 입력하면 지금보다 몇 개 학교를 더 갈 수 있는지 알려드려요</p></div>
+  <!-- 로그인 상태에서는 학점 인정으로 보내고, 게스트에게는 js/search.js가
+       이 자리를 점수 입력 패널로 바꾼다(renderGuestScorePanel). -->
+  <div class="sim-banner sim-banner--cta">
+    <a class="credits-cta" href="credits.html">
+      <div class="credits-cta__body">
+        <span class="credits-cta__eyebrow">학점 인정</span>
+        <h2>고민 중인 학교, 학점은 인정될까요?</h2>
+        <p>내 전공과 파견교 과목을 비교해 인정 가능성을 미리 확인해요</p>
+      </div>
+      <span class="credits-cta__arrow" aria-hidden="true">→</span>
+    </a>
   </div>
 
   <div class="search-layout">

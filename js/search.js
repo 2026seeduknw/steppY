@@ -212,13 +212,38 @@
    * 대신 점수를 직접 받아 지원 가능 여부를 바로 보여준다. 이 값은 계정이 아니라
    * 이 기기(localStorage)에만 남는다.
    */
+  /**
+   * 배너 자리는 로그인 여부로 갈린다.
+   *   로그인 — 학점 인정으로 보내는 카드(search.html에 심어둔 마크업)
+   *   게스트 — 점수 입력 패널. 로그인 전에는 판정 기준이 될 내 점수가 없다.
+   *
+   * 부팅 시점의 isAuthed는 아직 false다(세션 복구가 비동기). 예전에는 그 한 번으로
+   * 결정하고 끝내서, 로그인한 사용자도 게스트 패널을 계속 보고 있었다.
+   * 이제 하이드레이션 후 MOCK:updated에서 다시 판단한다.
+   */
+  const simBanner = document.querySelector('.sim-banner');
+  const SIM_BANNER_CTA_HTML = simBanner ? simBanner.innerHTML : '';
+
+  function renderBanner() {
+    if (!simBanner) return;
+    if (AppState.isAuthed) {
+      if (simBanner.querySelector('.credits-cta')) return;
+      simBanner.className = 'sim-banner sim-banner--cta';
+      simBanner.innerHTML = SIM_BANNER_CTA_HTML;
+      return;
+    }
+    if (simBanner.querySelector('#guestScoreForm')) return;
+    renderGuestScorePanel();
+  }
+
   function renderGuestScorePanel() {
-    const banner = document.querySelector('.sim-banner');
+    const banner = simBanner;
     const p = AppState.profile;
     const lang = (p.languageTests || [])[0] || { type: 'TOEFL', score: '' };
     const LANGS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
     const filled = p.gpa !== null && p.gpa !== undefined;
 
+    banner.classList.remove('sim-banner--cta');
     banner.classList.add('sim-banner--guest');
     banner.innerHTML = `
       <div class="score-prompt__head">
@@ -259,26 +284,6 @@
     });
   }
 
-  function wireSimulation() {
-    document.getElementById('simForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const targetGpa = parseFloat(fd.get('targetGpa'));
-      const targetLang = parseFloat(fd.get('targetLang'));
-      const currentCount = MOCK.schools.filter(s => computeEligibility(AppState.profile, s).status === 'go').length;
-      const simulatedProfile = Object.assign({}, AppState.profile, {
-        gpa: Math.max(AppState.profile.gpa, targetGpa || 0),
-        languageTests: [{ type: AppState.profile.languageTests[0].type, score: Math.max(AppState.profile.languageTests[0].score, targetLang || 0) }]
-      });
-      const newCount = MOCK.schools.filter(s => computeEligibility(simulatedProfile, s).status === 'go').length;
-      const diff = Math.max(0, newCount - currentCount);
-      trackEvent('gpa_sim_run', { targetGpa: targetGpa || 0, targetLang: targetLang || 0, diff });
-      document.getElementById('simResult').innerHTML = diff > 0
-        ? `목표 점수를 달성하면 <strong>${diff}개</strong>의 학교를 더 갈 수 있어요`
-        : `입력하신 목표 점수로는 지원 가능 학교 수가 늘어나지 않아요. 더 높은 점수를 시도해보세요`;
-    });
-  }
-
   document.getElementById('searchInput').addEventListener('input', (e) => { state.query = e.target.value; renderGrid(); });
   document.getElementById('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; renderGrid(); });
   document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; renderGrid(); });
@@ -300,13 +305,12 @@
   rebuildMajorMatchMap();
   renderFilters();
   renderGrid();
-  if (AppState.isAuthed) wireSimulation(); else renderGuestScorePanel();
+  renderBanner();
 
   document.addEventListener('MOCK:updated', () => {
     rebuildMajorMatchMap();
     renderFilters();
     renderGrid();
-    // 로그인 여부는 하이드레이션 후에 확정된다 — 게스트 패널 노출도 그때 맞춘다
-    if (!AppState.isAuthed && !document.getElementById('guestScoreForm')) renderGuestScorePanel();
+    renderBanner();
   });
 })();

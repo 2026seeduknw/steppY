@@ -1297,3 +1297,13 @@ a.appbar__lead:active { opacity: 0.6; }
   font-family: inherit; font-size: var(--fs-micro); color: var(--ink-400);
 }
 .target-major__clear:hover { color: var(--ink-700); text-decoration: underline; }
+
+/* 학교 찾기의 목표 시뮬레이션 자리를 학점 인정 카드가 대신한다.
+   카드가 자기 배경·여백을 갖고 있어서, 배너 껍데기까지 겹치면 테두리가 두 겹이 된다.
+   게스트에게는 이 자리가 점수 입력으로 바뀌므로(search.js) 그때는 클래스를 뗀다. */
+.sim-banner--cta {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
