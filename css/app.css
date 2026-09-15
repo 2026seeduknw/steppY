@@ -1511,3 +1511,35 @@ body[data-page="prepare"] .leg-card {
   font-size: var(--fs-micro);
   border-radius: var(--radius-pill);
 }
+
+/* ------------------------------------------------- 학교 상세 시트의 카드들
+   ①지역 ②날씨 … 패널이 불투명한 회색이라 시트 안이 답답했다. 시트와 그 안의
+   카드를 모두 반투명으로 바꿔 뒤가 비치게 한다.
+
+   시트 자체를 먼저 반투명으로 만들어야 안쪽 카드의 "비침"이 의미가 생긴다.
+   불투명한 흰 시트 위에서는 무엇을 올려도 비칠 뒤가 없다. */
+.modal-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(170%) blur(24px);
+  -webkit-backdrop-filter: saturate(170%) blur(24px);
+}
+
+/* 회색 면을 없애지 않고 반투명 틴트로 바꾼다. 완전히 투명하게 두면 시트 배경과
+   구분이 사라져서 어디부터 어디까지가 한 항목인지 안 보인다. */
+.modal-panel .info-panel {
+  background: rgba(223, 231, 243, 0.5);
+  border-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+}
+.modal-panel .score-card,
+.modal-panel .orbit-card {
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: saturate(140%) blur(10px);
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  box-shadow: none;
+}
+
+/* 지도 iframe은 유리 뒤로 비치지 않는다 — 카드 안에서만 불투명하게 둔다 */
+.modal-panel .map-embed { background: var(--cloud-0); }
