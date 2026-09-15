@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>학점 인정 — steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/credits.css">
 <link rel="stylesheet" href="css/pages/major-matching.css">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body data-page="credits">
 
@@ -32,6 +33,8 @@
         <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
       </div>
     </div>
+    <div id="relevanceFilterMount"></div>
+    <div id="countryFilterMount"></div>
     <p id="confirmedSchoolNote" class="major-match-confirmed-note" hidden></p>
     <div id="matchList"></div>
   </main>
@@ -47,8 +50,10 @@
 <script src="js/school-logos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/searchable-select.js"></script>
@@ -59,6 +64,7 @@
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/prepare-view.js"></script>
+<script src="js/components/target-major.js"></script>
 <script src="js/credits.js"></script>
 </body>
 </html>

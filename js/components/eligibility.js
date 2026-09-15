@@ -6,6 +6,11 @@
  * 서비스가 다수 대학 규정을 데이터화한 뒤 §7.2 산식대로 별도 구현이 필요합니다.
  */
 function computeEligibility(profile, school) {
+  // 가입 직후 계정은 GPA가 비어 있다. null >= 2.8 은 false라서 그대로 두면
+  // "기준 미달"로 단정해버린다 — 아직 판정할 수 없다고 알려야 맞다.
+  if (profile.gpa === null || profile.gpa === undefined || Number.isNaN(profile.gpa)) {
+    return { status: 'unknown', label: 'GPA 정보 필요', detail: 'GPA를 등록하면 지원 가능 여부를 판정할 수 있어요' };
+  }
   const gpaOk = profile.gpa >= school.gpaCut;
   const langScore = (profile.languageTests || []).find(t => t.type === school.langTest.type);
 

@@ -1,0 +1,12 @@
+{
+  "appId": "kr.steppy.app",
+  "appName": "steppY",
+  "webDir": "www",
+  "ios": {
+    "backgroundColor": "#F3F6F9",
+    "contentInset": "never"
+  },
+  "android": {
+    "backgroundColor": "#F3F6F9"
+  }
+}

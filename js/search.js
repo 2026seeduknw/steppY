@@ -186,14 +186,17 @@
     return `
       <button type="button" class="card card--interactive school-card" data-open-school="${school.id}">
         <div class="school-card__top">
-          <span class="school-card__qs">${school.qsRank ? `QS ${school.qsRank}` : '순위 미정'}</span>
+          <div class="school-card__meta">
+            <span class="school-card__qs">${school.qsRank ? `QS ${school.qsRank}` : '순위 미정'}</span>
+            ${eligibilityBadgeHtml(elig)}
+            <span class="badge badge--neutral">모집 ${school.slot}명</span>
+          </div>
           <span class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}">
             <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
           </span>
         </div>
         <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
-        <div class="school-card__badges">${eligibilityBadgeHtml(elig)}<span class="badge badge--neutral">모집 ${school.slot}명</span></div>
         <div class="school-card__stats">
           <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${school.gpaCut}</div></div>
           <div><div class="school-card__stat-label">${school.langTest.type}</div><div class="school-card__stat-value">${school.langTest.cut}</div></div>
@@ -203,23 +206,81 @@
   }
 
   // ---- Simulation ----
-  function wireSimulation() {
-    document.getElementById('simForm').addEventListener('submit', (e) => {
+  /**
+   * 로그인 전에는 비교할 "내 점수"가 없어서 목표 시뮬레이션이 성립하지 않는다
+   * (지금보다 몇 개 더 갈 수 있는지를 계산하는 기능이다).
+   * 대신 점수를 직접 받아 지원 가능 여부를 바로 보여준다. 이 값은 계정이 아니라
+   * 이 기기(localStorage)에만 남는다.
+   */
+  /**
+   * 배너 자리는 로그인 여부로 갈린다.
+   *   로그인 — 학점 인정으로 보내는 카드(search.html에 심어둔 마크업)
+   *   게스트 — 점수 입력 패널. 로그인 전에는 판정 기준이 될 내 점수가 없다.
+   *
+   * 부팅 시점의 isAuthed는 아직 false다(세션 복구가 비동기). 예전에는 그 한 번으로
+   * 결정하고 끝내서, 로그인한 사용자도 게스트 패널을 계속 보고 있었다.
+   * 이제 하이드레이션 후 MOCK:updated에서 다시 판단한다.
+   */
+  const simBanner = document.querySelector('.sim-banner');
+  const SIM_BANNER_CTA_HTML = simBanner ? simBanner.innerHTML : '';
+
+  function renderBanner() {
+    if (!simBanner) return;
+    if (AppState.isAuthed) {
+      if (simBanner.querySelector('.credits-cta')) return;
+      simBanner.className = 'sim-banner sim-banner--cta';
+      simBanner.innerHTML = SIM_BANNER_CTA_HTML;
+      return;
+    }
+    if (simBanner.querySelector('#guestScoreForm')) return;
+    renderGuestScorePanel();
+  }
+
+  function renderGuestScorePanel() {
+    const banner = simBanner;
+    const p = AppState.profile;
+    const lang = (p.languageTests || [])[0] || { type: 'TOEFL', score: '' };
+    const LANGS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
+    const filled = p.gpa !== null && p.gpa !== undefined;
+
+    banner.classList.remove('sim-banner--cta');
+    banner.classList.add('sim-banner--guest');
+    banner.innerHTML = `
+      <div class="score-prompt__head">
+        <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장됩니다.' : '지원 가능 여부를 알려드려요'}</p>
+      </div>
+      <form class="score-prompt__form" id="guestScoreForm">
+        <label class="score-prompt__field">
+          <span>학점</span>
+          <input type="number" step="0.01" min="0" max="4.5" name="gpa"
+                 value="${filled ? p.gpa : ''}" placeholder="3.62">
+        </label>
+        <label class="score-prompt__field">
+          <span>어학</span>
+          <select name="langType">${LANGS.map(t => `<option ${t === lang.type ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        </label>
+        <label class="score-prompt__field">
+          <span>점수</span>
+          <input type="number" name="langScore" value="${lang.score}" placeholder="96">
+        </label>
+        <button type="submit" class="btn btn--accent btn--sm">적용</button>
+      </form>`;
+
+    document.getElementById('guestScoreForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const targetGpa = parseFloat(fd.get('targetGpa'));
-      const targetLang = parseFloat(fd.get('targetLang'));
-      const currentCount = MOCK.schools.filter(s => computeEligibility(AppState.profile, s).status === 'go').length;
-      const simulatedProfile = Object.assign({}, AppState.profile, {
-        gpa: Math.max(AppState.profile.gpa, targetGpa || 0),
-        languageTests: [{ type: AppState.profile.languageTests[0].type, score: Math.max(AppState.profile.languageTests[0].score, targetLang || 0) }]
+      const gpa = fd.get('gpa') === '' ? null : parseFloat(fd.get('gpa'));
+      const score = fd.get('langScore') === '' ? null : parseFloat(fd.get('langScore'));
+      AppState.updateProfile({
+        gpa,
+        gpaScale: 4.3,
+        languageTests: score === null ? [] : [{ type: fd.get('langType'), score }]
       });
-      const newCount = MOCK.schools.filter(s => computeEligibility(simulatedProfile, s).status === 'go').length;
-      const diff = Math.max(0, newCount - currentCount);
-      trackEvent('gpa_sim_run', { targetGpa: targetGpa || 0, targetLang: targetLang || 0, diff });
-      document.getElementById('simResult').innerHTML = diff > 0
-        ? `목표 점수를 달성하면 <strong>${diff}개</strong>의 학교를 더 갈 수 있어요`
-        : `입력하신 목표 점수로는 지원 가능 학교 수가 늘어나지 않아요. 더 높은 점수를 시도해보세요`;
+      trackEvent('guest_score_entered', { hasGpa: gpa !== null, hasLang: score !== null });
+      renderGuestScorePanel();
+      renderGrid();
+      if (typeof showToast === 'function') showToast('입력한 점수로 지원 가능 여부를 다시 계산했어요');
     });
   }
 
@@ -244,7 +305,12 @@
   rebuildMajorMatchMap();
   renderFilters();
   renderGrid();
-  wireSimulation();
+  renderBanner();
 
-  document.addEventListener('MOCK:updated', () => { rebuildMajorMatchMap(); renderFilters(); renderGrid(); });
+  document.addEventListener('MOCK:updated', () => {
+    rebuildMajorMatchMap();
+    renderFilters();
+    renderGrid();
+    renderBanner();
+  });
 })();
