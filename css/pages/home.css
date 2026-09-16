@@ -63,7 +63,7 @@ body[data-page="home"] #greeting {
   font: inherit;
   transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
-.wishlist-slot.is-filled:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+.wishlist-slot.is-filled:hover { box-shadow: none; transform: translateY(-2px); }
 .wishlist-slot__rank { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); font-weight: 700; letter-spacing: 0.06em; }
 .wishlist-slot__empty { text-align: center; color: var(--ink-400); font-size: var(--fs-small); }
 .wishlist-slot__empty a { color: var(--sky-500); font-weight: 600; }

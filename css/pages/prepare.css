@@ -47,7 +47,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   cursor: pointer;
   transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
-.confirmed-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.confirmed-card:hover { transform: translateY(-2px); box-shadow: none; }
 .confirmed-card__identity { display: flex; align-items: center; gap: var(--space-4); }
 .confirmed-card__logo {
   flex: 0 0 auto;
