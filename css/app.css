@@ -55,7 +55,10 @@ body {
      뷰포트보다 작아지면, 데스크탑 기기 컬럼용으로 html에 깔아둔 oxford 배경이
      아래쪽에 그대로 드러난다. 최소 한 화면은 채우게 한다. */
   min-height: 100dvh;
-  padding-bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom));
+  /* 탭바 높이 + 위아래 간격 + 안전영역 + 카드 한 칸. 마지막 항목은 탭바에
+     닿기 전에 끝나야 눌리기도 하고 읽히기도 한다. 여백 토큰을 키운 뒤
+     겹침이 더 드러나서 한 칸을 더 뒀다. */
+  padding-bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom) + var(--space-5));
   overscroll-behavior-y: none;
 }
 

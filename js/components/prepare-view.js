@@ -100,9 +100,24 @@ function renderPrepareHero() {
       </div>
     </div>`;
   document.getElementById('confirmedCardBtn').addEventListener('click', () => openSchoolModal(confirmed.id, { onChange: renderPrepareView }));
-  document.getElementById('cancelConfirmBtn').addEventListener('click', (e) => {
+  document.getElementById('cancelConfirmBtn').addEventListener('click', async (e) => {
     e.stopPropagation();
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '취소하는 중…';
+
     AppState.confirmSchool(null);
+    // 서버에 반영된 뒤에 이동한다. 낙관적 갱신이라 화면은 이미 풀렸지만, 여기서
+    // 바로 홈으로 넘어가면 홈이 새로 읽은 confirmed_school_id 가 아직 옛 값이라
+    // 곧바로 교환 준비하기로 도로 튕겨 "취소가 안 되는" 것처럼 보인다.
+    await AppState.flush();
+
+    if (AppState.lastWriteError) {
+      btn.disabled = false;
+      btn.textContent = '학교 확정 취소';
+      if (typeof showToast === 'function') showToast('취소하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     window.location.href = 'home.html';
   });
 }
