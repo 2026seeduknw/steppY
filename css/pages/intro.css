@@ -78,8 +78,19 @@ body[data-page="intro"] {
 
 .intro__earth-wrap {
   position: absolute;
-  top: 0; right: -80px;
-  width: 780px; height: 780px;
+  /* 예전에는 780px짜리를 right:-80px로 밀어놔서 402px 화면에서는 지구의 3분의 1이
+     잘려 나갔다. 화면 안에 통째로 들어오게 가운데 정렬하고 폭을 뷰포트에 맞춘다. */
+  top: var(--space-5);
+  /* 좌우를 0으로 물려 히어로 안쪽 폭에 딱 맞춘다.
+     vw는 스크롤바 때문에, 패딩 토큰 계산은 앱 스킨이 패딩을 덮어써서
+     둘 다 몇십 px씩 넘쳤다. 이 방식은 무엇으로 덮어써도 넘치지 않는다. */
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: auto;
+  max-width: 560px;
+  aspect-ratio: 1;
+  height: auto;
   pointer-events: none;
 }
 .intro__earth {
@@ -178,9 +189,10 @@ body[data-page="intro"] {
   position: relative;
   z-index: 2;
   overflow: hidden;
-  border-top: 1px solid rgba(240,236,221,0.15);
-  padding: var(--space-4) 0;
-  margin-top: var(--space-7);
+  /* 윗줄(border-top)을 두니 나라 이름이 별개의 띠처럼 보이고, 그 아래 섹션과
+     사이가 뚝 끊겼다. 선을 빼고 같은 배경 위를 흘러가게 둔다. */
+  padding: var(--space-3) 0;
+  margin-top: var(--space-6);
 }
 .intro__marquee-track {
   display: flex;
@@ -518,12 +530,13 @@ body[data-page="intro"] {
   /* 위에서 아래로 계속 밝아지되 끝까지 남색 계열에 머문다. 중간에 흰색이 끼면
      거기서 다시 경계가 생긴다. */
   background: linear-gradient(180deg,
-    #02122F 0%,
-    #0A1E42 22%,
-    #163258 45%,
-    #27486F 68%,
-    #3B5E85 86%,
-    #4A6E96 100%);
+    #01070F 0%,
+    #06142C 16%,
+    #12294C 34%,
+    #24456E 52%,
+    #3D6491 70%,
+    #5A83AE 85%,
+    #7CA2C6 100%);
   /* attachment: fixed를 쓰면 안 된다. 그라데이션이 뷰포트에 고정돼 스크롤해도
      늘 같은 구간만 보이고, "내려갈수록 밝아진다"가 사라진다. 기본값(scroll)이라야
      페이지 전체 높이에 펼쳐진다. */

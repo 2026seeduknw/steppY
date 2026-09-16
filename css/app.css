@@ -563,7 +563,16 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 body[data-page="intro"] { padding-bottom: 0; }
 .intro__nav { padding: calc(var(--safe-top) + var(--space-3)) var(--space-4) var(--space-3); }
 .intro__hero { padding: var(--space-4) var(--space-4) 0; }
-.intro__earth-wrap { top: 30px; right: -150px; width: 420px; height: 420px; }
+/* 지구는 화면 안에 통째로 보여야 한다. 예전에는 420px짜리를 right:-150px로 밀어
+   오른쪽 3분의 1을 잘라냈다. 좌우를 0으로 물려 히어로 안쪽 폭에 맞춘다. */
+.intro__earth-wrap {
+  top: 30px;
+  left: 0; right: 0;
+  width: auto; height: auto;
+  max-width: 560px;
+  margin-inline: auto;
+  aspect-ratio: 1;
+}
 .intro__earth { opacity: 0.16; }
 .intro__content { max-width: 100%; padding: var(--space-6) 0 var(--space-7); }
 .intro__logo-badge { width: 56px; height: 56px; }
