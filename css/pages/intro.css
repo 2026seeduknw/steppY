@@ -284,7 +284,11 @@ body[data-page="intro"] {
   padding: var(--space-9) var(--space-7);
   background: var(--cloud-0);
 }
-.intro__steps { background: var(--cloud-50); }
+.intro__steps {
+  background: var(--cloud-50);
+  /* 위 섹션(개국 통계)과 제목이 붙어 보여도 될 만큼 흐름이 이어져서 위 여백만 절반으로 줄인다 */
+  padding-top: calc(var(--space-9) / 2);
+}
 
 .intro__section-title {
   font-family: var(--font-display);
@@ -559,13 +563,16 @@ body[data-page="intro"] {
 
 /* ---- 어두운 배경 기준으로 글자색 뒤집기 ---- */
 .intro__services h2,
-.intro__section-title,
-.intro__step-item h3 { color: var(--moonlight, #F0ECDD); }
+.intro__section-title { color: var(--moonlight, #F0ECDD); }
 
 .intro__section-sub,
 .intro__service-card p,
-.intro__step-item p,
 .intro__stat span { color: rgba(240, 236, 221, 0.72); }
+
+/* 세 걸음 카드만 흰 바탕을 유지한다. 남색 배경용 크림색 글씨를 그대로 쓰면
+   흰 카드 위에 크림색이라 거의 안 보인다 — 여기는 어두운 잉크색으로 되돌린다. */
+.intro__step-item h3 { color: var(--ink-900); }
+.intro__step-item p { color: var(--ink-700); }
 
 /* 카드 안 목록은 원래 흰 바탕용 회색이라 남색 위에서는 거의 안 읽힌다 */
 .intro__service-points li { color: rgba(240, 236, 221, 0.66); }
