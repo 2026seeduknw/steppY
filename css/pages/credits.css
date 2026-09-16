@@ -22,7 +22,7 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill);
   font-size: var(--fs-small); font-weight: 600; color: var(--ink-600);
 }
-.mode-toggle__btn.is-active { background: #fff; color: var(--sky-700); box-shadow: none; }
+.mode-toggle__btn.is-active { background: #fff; color: var(--sky-700); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
 .section-title__actions { display: flex; flex-wrap: nowrap; flex: 0 0 auto; align-items: center; gap: var(--space-3); align-self: center; }
 .major-filter-mount { flex: 0 0 auto; }

@@ -42,7 +42,7 @@ body[data-page="intro"] {
   padding: var(--space-2);
   background: var(--cloud-0);
   border-radius: var(--radius-md);
-  box-shadow: none;
+  box-shadow: var(--shadow-modal);
 }
 .intro__navmenu.is-open { display: flex; }
 .intro__navmenu a {
@@ -188,7 +188,7 @@ body[data-page="intro"] {
   font-weight: 700;
   font-size: var(--fs-body);
   text-decoration: none;
-  box-shadow: none;
+  box-shadow: var(--shadow-float);
   transition: transform var(--dur-base) var(--ease-out);
 }
 .intro__cta:hover { transform: translateY(-2px); }
@@ -259,7 +259,7 @@ body[data-page="intro"] {
   text-decoration: none;
   transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
-.intro__service-card:hover { transform: translateY(-3px); box-shadow: none; }
+.intro__service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
 .intro__service-card h3 {
   font-size: var(--fs-h3);
   font-weight: 700;
@@ -456,8 +456,10 @@ body[data-page="intro"] {
   padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(240, 236, 221, 0.38);
-  background: #16294A;
-  box-shadow: none;
+  background: rgba(10, 26, 54, 0.55);
+  backdrop-filter: saturate(160%) blur(18px);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+  box-shadow: 0 12px 34px rgba(2, 12, 30, 0.42);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -509,7 +511,7 @@ body[data-page="intro"] {
   background: var(--moonlight, #F0ECDD);
   color: var(--oxford);
   overflow: hidden;
-  box-shadow: none;
+  box-shadow: 0 3px 10px rgba(2, 12, 30, 0.35);
   touch-action: none;   /* 손잡이를 끌 때 화면이 같이 스크롤되지 않게 */
   cursor: grab;
 }
@@ -534,9 +536,19 @@ body[data-page="intro"] {
    ========================================================================== */
 
 body[data-page="intro"] {
-  /* 플랫 — 그라데이션 대신 단색 남색 한 장. 섹션 구분은 배경색이 아니라
-     여백과 1px 선이 맡는다. */
-  background: var(--oxford);
+  /* 위에서 아래로 계속 밝아지되 끝까지 남색 계열에 머문다. 중간에 흰색이 끼면
+     거기서 다시 경계가 생긴다. */
+  background: linear-gradient(180deg,
+    #01070F 0%,
+    #06142C 16%,
+    #12294C 34%,
+    #24456E 52%,
+    #3D6491 70%,
+    #5A83AE 85%,
+    #7CA2C6 100%);
+  /* attachment: fixed를 쓰면 안 된다. 그라데이션이 뷰포트에 고정돼 스크롤해도
+     늘 같은 구간만 보이고, "내려갈수록 밝아진다"가 사라진다. 기본값(scroll)이라야
+     페이지 전체 높이에 펼쳐진다. */
 }
 
 /* 섹션은 각자 배경을 갖지 않는다 — 전부 위 그라데이션 위에 얹힌다 */
@@ -565,12 +577,15 @@ body[data-page="intro"] {
 /* ---- 카드는 유리로 ---- */
 .intro__service-card,
 .intro__stat {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(240, 236, 221, 0.18);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: saturate(150%) blur(14px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
   box-shadow: none;
 }
 .intro__service-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
 }
 .intro__service-card h3 { color: #fff; }
 

@@ -183,7 +183,7 @@
   background: var(--sky-500);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: none;
+  box-shadow: 0 6px 16px rgba(62, 102, 144, 0.28);
   transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .chat-send-btn:hover { background: var(--sky-700); transform: translateY(-1px); }
