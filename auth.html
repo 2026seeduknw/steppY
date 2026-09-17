@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>로그인 — steppY</title>
+<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-page="auth">
+
+<main class="auth">
+  <div class="auth__head">
+    <img class="auth__logo" src="assets/logo-mark-circle.png" width="56" height="56" alt="steppY">
+    <h1 class="auth__title" id="authTitle">다시 만나서 반가워요</h1>
+    <p class="auth__sub" id="authSub">지망 학교와 준비 상황을 어느 기기에서든 이어서 볼 수 있어요</p>
+  </div>
+
+  <div class="mode-toggle auth__modes" id="authModes">
+    <button type="button" class="mode-toggle__btn is-active" data-mode="signin">로그인</button>
+    <button type="button" class="mode-toggle__btn" data-mode="signup">회원가입</button>
+  </div>
+
+  <form class="auth__form" id="authForm" novalidate>
+    <label class="field auth__field auth__field--name" hidden>
+      <span>이름</span>
+      <input type="text" name="name" autocomplete="name" placeholder="김스텝">
+    </label>
+    <label class="field auth__field">
+      <span>연세대학교 메일</span>
+      <input type="email" name="email" autocomplete="email" inputmode="email" required placeholder="everystep.forexchange@yonsei.ac.kr">
+    </label>
+    <label class="field auth__field">
+      <span>비밀번호</span>
+      <input type="password" name="password" autocomplete="current-password" required minlength="6">
+    </label>
+
+    <p class="auth__error" id="authError" role="alert" hidden></p>
+    <p class="auth__notice" id="authNotice" role="status" hidden></p>
+
+    <button type="submit" class="btn btn--primary btn--block" id="authSubmit">로그인</button>
+  </form>
+
+  <a class="auth__skip" href="home.html">로그인 없이 둘러보기 →</a>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/auth-page.js"></script>
+</body>
+</html>

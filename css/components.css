@@ -9,7 +9,6 @@ body[data-page="home"],
 body[data-page="search"],
 body[data-page="prepare"],
 body[data-page="credits"],
-body[data-page="calendar"],
 body[data-page="consult"] {
   position: relative;
 }
@@ -17,7 +16,6 @@ body[data-page="home"]::before,
 body[data-page="search"]::before,
 body[data-page="prepare"]::before,
 body[data-page="credits"]::before,
-body[data-page="calendar"]::before,
 body[data-page="consult"]::before {
   content: '';
   position: fixed;
@@ -35,10 +33,6 @@ body[data-page="consult"]::before {
 /* 페이지별 시간대 연출 — 같은 구름 이미지를 필터로만 색을 바꿔 재사용 */
 body[data-page="credits"]::before {
   filter: hue-rotate(55deg) saturate(1.3) brightness(0.7);
-}
-body[data-page="calendar"]::before {
-  filter: hue-rotate(-15deg) saturate(1.3) brightness(0.32) contrast(1.1);
-  opacity: 0.55;
 }
 
 /* ---- Top nav (F2/F3/F4/F5 공통) ---- */
@@ -186,7 +180,12 @@ body[data-page="calendar"]::before {
   color: var(--ink-900);
 }
 .todo-card__progress-text { font-size: var(--fs-small); color: var(--ink-600); }
-.todo-card__progress-text strong { display: block; font-size: var(--fs-h2); color: var(--ink-900); font-family: var(--font-mono); }
+/* strong이 display:block이라 "3/4"와 "완료"가 서로 다른 줄로 찢어지고, 남은
+   "완료"가 아래 문장과 붙어 "완료 오늘 남은 일 1개"로 읽혔다. 줄 단위를
+   strong이 아니라 바깥 span이 잡도록 바꾼다. */
+.todo-card__progress-count,
+.todo-card__progress-sub { display: block; }
+.todo-card__progress-text strong { font-size: var(--fs-h2); color: var(--ink-900); font-family: var(--font-mono); }
 
 .section-title {
   display: flex;

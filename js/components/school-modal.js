@@ -130,7 +130,8 @@ function lifeOrbitCard(school, initials) {
     label: season.replace('학기', ''),
     value: text.split(/[,.]/)[0]
   }));
-  chipDefs.push({ icon: '🚉', label: '상권', value: COMMERCE_LABEL[school.commerceLevel] || '보통' });
+  // 상권은 ③ 생활 점수 인포그래픽에서 지표로 따로 다룬다 — 여기서는 빼서
+  // 날씨에 집중시킨다(같은 항목이 두 카드에 중복으로 나오던 상태였다).
   const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
 
   const weatherLines = seasonEntries.length
@@ -188,25 +189,6 @@ function similarMajorsHtml(school, major) {
   return `<div class="tag-row">${matches.map(m => `<span class="chip" title="유사도 ${m.similarity}%${m.note ? ` · ${m.note}` : ''}">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
-/** 지원 서류 안내 (⑧). school_documents가 없는 학교는 빈 문자열(섹션 렌더링 안 함).
- *  visa 서류(출입국)와 달리 여기는 지원/입학용 서류(성적증명서 등)를 다룬다. */
-function applicationDocsPanelHtml(school) {
-  const docs = MOCK.schoolDocuments[school.id] || [];
-  if (!docs.length) return '';
-  const baseline = docs.filter(d => d.type === 'baseline');
-  const hint = docs.filter(d => d.type !== 'baseline');
-  return `
-    <section class="info-panel info-panel--wide">
-      <h3>⑧ 지원 서류 안내</h3>
-      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
-      ${baseline.length ? `<div class="tag-row">${baseline.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>` : ''}
-      ${hint.length ? `
-        <p class="info-panel__text" style="margin-top:var(--space-3);">참고용 힌트 (미검증)</p>
-        <div class="tag-row">${hint.map(d => `<span class="chip">${d.name}</span>`).join('')}</div>
-      ` : ''}
-    </section>`;
-}
-
 /** 통화 환산 팁. MENTAL_FX_RATES(js/currency-rates.js, 암산용 반올림 환율)로
  *  "1 통화 ≈ 대략 얼마원"을 보여준다. 특정 금액이 있으면(예: 기숙사비) 그 금액에
  *  곱한 예시까지 함께 보여주고, 없으면(② 날씨·생활 정보처럼 일반 안내용) 짧게 한 줄만. */
@@ -217,7 +199,7 @@ function mentalRateShortTipHtml(currency) {
   return `<p class="orbit-card__line" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 이 학교 통화(${currency})는 ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이에요.</p>`;
 }
 
-/** 기숙사비·월 생활비 안내 (⑨). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
+/** 기숙사비·월 생활비 안내 (⑤). schools.dorm_semester_avg_krw/monthly_living_cost_krw —
  *  둘 다 원본 없는 학교가 있어(기숙사비 187/271, 생활비 268/271) 있는 값만 보여준다. */
 function mentalRateTipHtml(local, currency) {
   const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
@@ -234,45 +216,11 @@ function livingCostPanelHtml(school) {
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   return `
     <section class="info-panel info-panel--wide">
-      <h3>⑨ 생활비 안내</h3>
+      <h3>⑤ 생활비 안내</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
       <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
-    </section>`;
-}
-
-/** 국가별 비자·서류 안내 (⑦). 해당 국가 데이터가 없으면 빈 문자열(섹션 자체를 렌더링하지 않음). */
-function visaDocsPanelHtml(school) {
-  const info = MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
-  if (!info) return '';
-
-  const sourceLinks = (info.sources || []).map(s => `
-    <a class="btn--text" href="${s.url}" target="_blank" rel="noopener">${VISA_SOURCE_KIND_LABEL[s.kind] || '공식 출처'} ↗</a>
-  `).join('');
-
-  let body;
-  if (info.status === 'available') {
-    const docChips = info.documents.map(d => `<span class="chip">${d.rawName || d.standardType}</span>`).join('');
-    body = `
-      <p class="info-panel__text">자동 조사된 참고 서류 목록이에요 (미검증 — 공식 링크에서 꼭 재확인하세요)</p>
-      <div class="tag-row">${docChips}</div>
-      <div class="visa-source-list">${sourceLinks}</div>
-    `;
-  } else if (info.status === 'preparing') {
-    body = `
-      <p class="info-panel__text"><span class="badge badge--amber">${info.statusLabelKo || '서비스 준비중'}</span></p>
-      <p class="info-panel__text">아직 자동 조사가 완료되지 않았어요. 아래 공식 사이트에서 최신 요건을 직접 확인해주세요.</p>
-      <div class="visa-source-list">${sourceLinks}</div>
-    `;
-  } else {
-    body = `<p class="info-panel__text">${info.statusLabelKo || '다수 국가·대학 프로그램이라 파견 확정 국가에 따라 비자 요건이 달라요. 파견 국가가 정해지면 다시 확인해주세요.'}</p>`;
-  }
-
-  return `
-    <section class="info-panel info-panel--wide">
-      <h3>⑦ 비자·서류 안내</h3>
-      ${body}
     </section>`;
 }
 
@@ -292,8 +240,12 @@ function schoolModalTemplate(school, opts = {}) {
     <div class="school-modal">
       <header class="school-modal__header">
         <div>
-          
-          <h2 class="school-modal__title">${school.name}</h2>
+          <div class="school-modal__titlerow">
+            <h2 class="school-modal__title">${school.name}</h2>
+            <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
+              <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
+            </button>
+          </div>
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
             <span class="badge badge--neutral">모집 ${school.slot}명</span>
@@ -302,9 +254,6 @@ function schoolModalTemplate(school, opts = {}) {
           </div>
           ${extraInfoBadgesHtml(school)}
         </div>
-        <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
-          <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
-        </button>
       </header>
 
       <section class="info-panel info-panel--map">
@@ -325,22 +274,21 @@ function schoolModalTemplate(school, opts = {}) {
           ${similarMajorsHtml(school, similarMajorsFor)}
         </section>
 
+        ${livingCostPanelHtml(school)}
+
         <section class="info-panel">
-          <h3>⑤ 지망 통계</h3>
+          <h3>⑥ 지망 통계</h3>
           <p class="info-panel__text">1지망으로 <strong class="tnum">${school.wishlistCount.rank1}명</strong>이 선택했어요</p>
           <p class="info-panel__text">1~3지망 합계 <strong class="tnum">${school.wishlistCount.total}명</strong>이 선택했어요</p>
         </section>
 
-        <section class="info-panel">
-          <h3>⑥ 공식 링크</h3>
+        <section class="info-panel info-panel--wide">
+          <h3>⑦ 공식 링크</h3>
           <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
         </section>
-
-        ${visaDocsPanelHtml(school)}
-        ${applicationDocsPanelHtml(school)}
-        ${livingCostPanelHtml(school)}
       </div>
 
+      ${AppState.isAuthed ? `
       <footer class="school-modal__footer" id="modalFooter">
         <div class="school-modal__rank">
           <span class="school-modal__rank-label">지망 순위</span>
@@ -351,7 +299,8 @@ function schoolModalTemplate(school, opts = {}) {
         <button class="btn btn--primary" id="confirmSchoolBtn">
           ${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}
         </button>
-      </footer>
+      </footer>` : `
+      ${GUEST_MODAL_FOOTER}`}
     </div>
     </div>
   `;
@@ -376,12 +325,20 @@ function confirmWarningTemplate(school, overwriting) {
 
 function wireSchoolModalActions(scrim, school, opts) {
   scrim.querySelector('[data-fav-toggle]').addEventListener('click', (e) => {
+    if (!AppState.isAuthed) {
+      e.stopPropagation();
+      if (typeof showToast === 'function') showToast('로그인하면 즐겨찾기를 저장할 수 있어요');
+      return;
+    }
     const active = AppState.toggleFavorite(school.id);
     e.currentTarget.classList.toggle('is-active', active);
     showToast(active ? '즐겨찾기에 추가했어요' : '즐겨찾기를 해제했어요');
     trackEvent('wishlist_toggle', { schoolId: school.id, active });
     if (opts.onChange) opts.onChange();
   });
+
+  // 게스트 푸터에는 지망 칩도 확정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
+  if (!AppState.isAuthed) return;
 
   scrim.querySelectorAll('.rank-chip').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -415,7 +372,16 @@ function wireSchoolModalActions(scrim, school, opts) {
   });
 }
 
+/** 로그인 전에는 저장할 계정이 없다. 지망·확정 대신 로그인 안내를 둔다. */
+const GUEST_MODAL_FOOTER = `<footer class="school-modal__footer school-modal__footer--guest" id="modalFooter">
+    <div class="guest-cta">
+      <p class="guest-cta__text">로그인하면 이 학교를 <strong>1~3지망으로 담고 확정</strong>할 수 있어요</p>
+      <a class="btn btn--primary btn--block" href="auth.html">로그인하고 담기</a>
+    </div>
+  </footer>`;
+
 function schoolModalFooterOnly(school) {
+  if (!AppState.isAuthed) return GUEST_MODAL_FOOTER;
   const wishlist = AppState.getWishlist();
   const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
   const confirmed = AppState.getConfirmedSchool();

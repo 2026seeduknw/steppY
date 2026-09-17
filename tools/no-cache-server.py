@@ -4,9 +4,12 @@ python3 -m http.server의 문제: Last-Modified만 보내고 Cache-Control은 �
 이 스크립트는 동일한 정적 서버에 모든 응답에 no-store를 강제로 붙여서
 편집 중 새로고침하면 항상 최신 파일이 보이게 한다.
 
-사용법: python3 tools/no-cache-server.py <port>
+사용법: python3 tools/no-cache-server.py <port> [디렉터리]
+       디렉터리를 주면 그곳을 루트로 연다 — 앱에 실제로 들어가는 www/ 를
+       그대로 확인할 때 쓴다(생략하면 지금까지처럼 현재 디렉터리).
 """
 import http.server
+import os
 import sys
 
 
@@ -18,4 +21,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    root = sys.argv[2] if len(sys.argv) > 2 else None
+    if root:
+        os.chdir(root)
     http.server.test(HandlerClass=NoCacheHandler, port=port)

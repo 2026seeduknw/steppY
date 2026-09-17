@@ -64,30 +64,37 @@
   --line-100: #EAEEF5;
 
   /* ---- Typography ---- */
-  /* 본문/UI는 Pretendard 유지, 큰 타이틀(--font-display)만 Gmarket Sans로 차별화 */
-  --font-display: 'GmarketSans', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  /* 전 계열 Pretendard. 예전에는 큰 타이틀만 Gmarket Sans로 나눴는데, 서체를
+     하나로 통일하고 위계는 굵기·크기로만 준다. 토큰 이름(display/body/mono)은
+     참조하는 곳이 많아 그대로 두고 값만 같게 맞춘다. */
+  --font-display: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
   --font-mono: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
 
-  --fs-hero: clamp(2.6rem, 5vw, 4.4rem);
-  --fs-display: clamp(1.75rem, 2.6vw, 2.4rem);
-  --fs-h1: 1.75rem;
-  --fs-h2: 1.375rem;
-  --fs-h3: 1.125rem;
+  /* 위계를 크게 벌렸다. 예전에는 h3(18px)과 body(15px)가 3px 차이라 제목인지
+     본문인지 눈으로 구분되지 않았다. 이제 단계마다 최소 1.25배씩 벌어진다. */
+  --fs-hero: clamp(2.9rem, 5.4vw, 4.8rem);
+  --fs-display: clamp(2rem, 3vw, 2.8rem);
+  --fs-h1: 2rem;      /* 32px */
+  --fs-h2: 1.5rem;    /* 24px */
+  --fs-h3: 1.1875rem; /* 19px */
   --fs-body: 0.9375rem;
   --fs-small: 0.8125rem;
   --fs-micro: 0.6875rem;
 
   /* ---- Spacing (8px base, 4px half-step) ---- */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
-  --space-9: 96px;
+  /* 기존값의 1.3배. 컴포넌트마다 고치지 않고 여기 한 곳에서 늘린다 —
+     패딩·갭·마진이 전부 이 토큰을 쓰므로 화면 전체 밀도가 같은 비율로 내려간다.
+     (원래: 4 8 12 16 24 32 48 64 96 / 1.5배는 너무 성겨서 1.3배로 낮췄다) */
+  --space-1: 5px;
+  --space-2: 10px;
+  --space-3: 16px;
+  --space-4: 21px;
+  --space-5: 31px;
+  --space-6: 42px;
+  --space-7: 62px;
+  --space-8: 83px;
+  --space-9: 125px;
 
   /* ---- Radius ---- */
   --radius-sm: 6px;    /* input, chip */
@@ -96,8 +103,11 @@
   --radius-pill: 999px;/* 배지, 플로팅 버튼, 필터 칩 */
 
   /* ---- Shadow ---- */
-  --shadow-card: 0 2px 10px rgba(35, 53, 77, 0.07);
-  --shadow-card-hover: 0 10px 24px rgba(35, 53, 77, 0.12);
+  /* 카드 그림자는 쓰지 않는다. 면과 면은 1px 테두리로 나눈다.
+     (--shadow-float / --shadow-modal 은 떠 있는 요소라 남긴다 — 그림자가 없으면
+      바텀시트가 본문 위에 떠 있는 것으로 안 읽힌다) */
+  --shadow-card: none;
+  --shadow-card-hover: none;
   --shadow-float: 0 10px 28px rgba(35, 53, 77, 0.22);
   --shadow-modal: 0 28px 72px rgba(35, 53, 77, 0.30);
 

@@ -1,0 +1,14 @@
+.DS_Store
+
+# 빌드 산출물 — tools/build-www.mjs 가 매번 다시 만든다
+www/
+
+# npm
+node_modules/
+
+# Capacitor가 webDir 을 복사해 넣는 자리
+ios/App/App/public/
+android/app/src/main/assets/public/
+
+# CocoaPods (Podfile / Podfile.lock 은 커밋한다)
+ios/App/Pods/

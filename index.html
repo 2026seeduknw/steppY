@@ -2,13 +2,14 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>steppY — 교환학생 준비 플랫폼 (클릭 데모)</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/intro.css">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body data-page="intro">
 
@@ -23,7 +24,6 @@
         <a href="search.html">학교 찾기</a>
         <a href="prepare.html">교환 준비하기</a>
         <a href="credits.html">학점 인정</a>
-        <a href="calendar.html">캘린더</a>
       </div>
     </div>
     <a class="intro__brand" href="index.html">
@@ -36,22 +36,23 @@
     <div class="intro__earth-wrap">
       <img class="intro__earth" src="assets/hero-earth.png" alt="교환학생들이 향하는 세계 지도">
       <div class="intro__footsteps" aria-hidden="true">
-        <img class="intro__step" style="--sx:21.9%; --sy:61.0%; --sd:0.0s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:30.2%; --sy:58.5%; --sd:0.25s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:36.6%; --sy:52.8%; --sd:0.5s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:44.8%; --sy:50.2%; --sd:0.75s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:51.2%; --sy:44.5%; --sd:1.0s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:59.5%; --sy:42.0%; --sd:1.25s" src="assets/footstep-right.png" alt="">
-        <img class="intro__step" style="--sx:65.9%; --sy:36.2%; --sd:1.5s" src="assets/footstep-left.png" alt="">
-        <img class="intro__step" style="--sx:74.1%; --sy:33.7%; --sd:1.75s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:4.6%; --sy:89.6%; --sr:30deg; --sd:0.00s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:15.2%; --sy:88.3%; --sr:39deg; --sd:0.22s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:14.7%; --sy:74.8%; --sr:32deg; --sd:0.44s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:25.6%; --sy:73.9%; --sr:41deg; --sd:0.66s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:25.0%; --sy:60.3%; --sr:31deg; --sd:0.88s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:35.1%; --sy:60.1%; --sr:38deg; --sd:1.10s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:34.0%; --sy:47.0%; --sr:29deg; --sd:1.32s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:44.8%; --sy:46.6%; --sr:40deg; --sd:1.54s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:44.5%; --sy:32.9%; --sr:33deg; --sd:1.76s" src="assets/footstep-left.png" alt="">
+        <img class="intro__step" style="--sx:55.4%; --sy:31.8%; --sr:39deg; --sd:1.98s" src="assets/footstep-right.png" alt="">
+        <img class="intro__step" style="--sx:53.6%; --sy:19.6%; --sr:32deg; --sd:2.20s" src="assets/footstep-left.png" alt="">
       </div>
     </div>
 
     <div class="intro__content">
       <img class="intro__logo-badge" src="assets/logo-mark-circle.png" alt="steppY">
-      <h1 class="intro__heading">교환학생 준비, steppY로 한번에</h1>
-      <p class="intro__desc">나만의 조건에 맞는 파견교를 검색하고, GPA·어학 성적 목표 점수로 지원 가능한 학교를 시뮬레이션해보세요. 학과·과목 비교 기반의 전공 추천과 선배들의 생생한 후기까지 — 학교 검색부터 서류·학점까지, 교환학생 여정 전체를 하나의 공간에서 관리할 수 있어요.</p>
-      <a class="intro__cta" href="home.html">지금 바로 시작하기</a>
+      <h1 class="intro__heading">교환학생 준비,<br>steppY로 한번에</h1>
     </div>
 
     <div class="intro__marquee" aria-hidden="true">
@@ -61,26 +62,100 @@
 
   <section class="intro__services">
     <h2>무엇이든 준비할 수 있는 하나의 공간</h2>
+    <p class="intro__services-sub">검색부터 학점·서류까지, 교환학생 준비에 필요한 걸 한 앱에서 이어서 해요</p>
     <div class="intro__service-grid">
       <a class="intro__service-card" href="search.html">
         <h3>학교 찾기</h3>
-        <p>조건에 맞는 파견교를 검색하고 목표 점수를 시뮬레이션해요</p>
+        <p>271개 파견교를 학점·어학 기준으로 걸러 지원 가능한 곳만 봅니다. 국가·전공·기후·치안·상권으로 더 좁힐 수도 있어요.</p>
+        <ul class="intro__service-points">
+          <li>학교마다 치안·물가·상권·교통·여행 이동성을 0~100 점수로</li>
+          <li>지도, 계절별 기온, 기숙사비·월 생활비까지 한 화면에</li>
+          <li>마음에 드는 곳은 1~3지망으로 담아두기</li>
+        </ul>
+      </a>
+      <a class="intro__service-card" href="credits.html">
+        <h3>학점 인정 · 전공 매칭</h3>
+        <p>내 전공과 파견교 과목·전공을 비교해 학점 인정 가능성을 미리 확인해요.</p>
+        <ul class="intro__service-points">
+          <li>연세대 76개 전공 기준으로 유사 과목 찾기</li>
+          <li>국가별로 좁혀서 보기</li>
+          <li>과목코드·학점·관련 키워드까지 함께</li>
+        </ul>
       </a>
       <a class="intro__service-card" href="prepare.html">
         <h3>교환 준비하기</h3>
-        <p>서류 체크리스트와 생활 준비까지 한 번에 관리해요</p>
+        <p>학교를 확정하면 그 학교 기준으로 준비할 것들을 정리해 드려요.</p>
+        <ul class="intro__service-points">
+          <li>비자·서류 체크리스트와 마감 관리</li>
+          <li>32개국 통신·보험·계좌 개설 정보</li>
+          <li>오늘 할 일로 진행 상황 확인</li>
+        </ul>
       </a>
-      <a class="intro__service-card" href="credits.html">
-        <h3>학점 인정</h3>
-        <p>강의계획서를 비교해 학점 인정 가능성을 확인해요</p>
-      </a>
-      <a class="intro__service-card" href="consult.html">
-        <h3>멘토 없는 멘토 상담</h3>
-        <p>선배들의 생생한 후기로 막막함을 줄여요</p>
-      </a>
+      <div class="intro__service-card intro__service-card--soon">
+        <h3>Mentor's Step <span class="intro__soon-badge">준비 중</span></h3>
+        <p>선배들이 남긴 교환학생 경험보고서에서 질문과 관련 있는 내용을 찾아주는 기능이에요. 지금은 후기 데이터를 다시 준비하고 있어요.</p>
+      </div>
     </div>
   </section>
+
+  <section class="intro__stats">
+    <h2 class="intro__section-title">실제 파견 데이터로 움직여요</h2>
+    <p class="intro__section-sub">2027-1 파견대학 원본 자료를 그대로 옮겨 담았어요</p>
+    <div class="intro__stat-grid">
+      <div class="intro__stat"><strong>271</strong><span>개 파견교</span></div>
+      <div class="intro__stat"><strong>76</strong><span>개 연세대 전공</span></div>
+      <div class="intro__stat"><strong>32</strong><span>개국 생활 정보</span></div>
+    </div>
+  </section>
+
+  <section class="intro__steps">
+    <h2 class="intro__section-title">세 걸음이면 충분해요</h2>
+    <ol class="intro__step-list">
+      <li class="intro__step-item">
+        <span class="intro__step-num">1</span>
+        <div>
+          <h3>내 점수로 걸러보기</h3>
+          <p>학점과 어학 점수를 넣으면 지원 가능한 학교만 추려서 보여줘요. 로그인 없이도 해볼 수 있어요.</p>
+        </div>
+      </li>
+      <li class="intro__step-item">
+        <span class="intro__step-num">2</span>
+        <div>
+          <h3>1~3지망 담아두기</h3>
+          <p>비교하던 학교를 지망 순위로 담아두고, 마음이 정해지면 확정해요.</p>
+        </div>
+      </li>
+      <li class="intro__step-item">
+        <span class="intro__step-num">3</span>
+        <div>
+          <h3>준비 상황 관리하기</h3>
+          <p>서류·비자·생활 준비 할 일을 한곳에서 체크해요. 어느 기기에서든 이어집니다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="intro__final">
+    <h2 class="intro__final-title">연세대학교 재학생이라면<br>지금 시작할 수 있어요</h2>
+    <p class="intro__final-sub">재학생 확인을 위해 @yonsei.ac.kr 메일로 가입해요</p>
+    <a class="intro__cta intro__cta--final" href="auth.html">로그인 · 회원가입</a>
+    <a class="intro__final-skip" href="home.html">로그인 없이 둘러보기 →</a>
+  </section>
 </main>
+
+<!-- 화면 아래 고정. 스크롤해도 따라다닌다 — 랜딩이 길어서 버튼이 위에만 있으면
+     끝까지 읽은 사람이 다시 올라가야 한다. -->
+<div class="swipe-start" id="swipeStart">
+  <div class="swipe-start__track" role="button" tabindex="0"
+       aria-label="밀어서 시작하기 — 누르거나 스페이스로도 시작할 수 있어요">
+    <span class="swipe-start__trail" id="swipeTrail" aria-hidden="true"></span>
+    <span class="swipe-start__label">밀어서 시작하기</span>
+    <span class="swipe-start__chevrons" aria-hidden="true">›››</span>
+    <span class="swipe-start__knob" id="swipeKnob">
+      <img src="assets/logo-mark-circle.png" alt="" width="50" height="50" draggable="false">
+    </span>
+  </div>
+</div>
 
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
@@ -88,5 +163,6 @@
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/intro.js"></script>
+<script src="js/swipe-start.js"></script>
 </body>
 </html>

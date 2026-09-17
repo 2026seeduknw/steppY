@@ -8,8 +8,20 @@ const PREPARE_MARKUP = `
 
   <div class="page-shell prepare-grid">
     <div class="prepare-main">
-      <div id="prepareMap"></div>
-      <div id="prepareScore"></div>
+      <div id="targetMajorCard"></div>
+
+      <div id="departureCard"></div>
+
+      <section class="card card-pad" id="todoCard"></section>
+
+      <a class="credits-cta" href="credits.html">
+        <div class="credits-cta__body">
+          <span class="credits-cta__eyebrow">학점 인정</span>
+          <h2>확정한 학교 과목, 학점으로 인정될까요?</h2>
+          <p>내 전공과 이 학교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
+        </div>
+        <span class="credits-cta__arrow" aria-hidden="true">→</span>
+      </a>
 
       <section class="card card-pad" id="checklistSection">
         <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
@@ -28,20 +40,14 @@ const PREPARE_MARKUP = `
         <div class="tip-row" id="spotsList"></div>
       </section>
     </div>
-
-    <aside class="prepare-aside">
-      <section class="card card-pad" id="profileCard"></section>
-      <section class="card card-pad" id="todoCard"></section>
-    </aside>
   </div>
 `;
 
 function renderPrepareView() {
-  renderProfileCard(document.getElementById('profileCard'));
+  renderTargetMajorCard(document.getElementById('targetMajorCard'));
+  renderDepartureCard(document.getElementById('departureCard'));
   renderTodoCard(document.getElementById('todoCard'));
   renderPrepareHero();
-  renderPrepareMap();
-  renderPrepareScore();
   renderPrepareChecklist();
   renderPrepareLiving();
   renderPrepareTips();
@@ -64,9 +70,15 @@ function renderPrepareHero() {
     document.getElementById('tipsSection').style.display = 'none';
     return;
   }
-  document.getElementById('checklistSection').style.display = '';
+  // 출국하면 비자·서류 체크리스트와 학점 인정 카드를 내린다. 비자는 나오면 끝이고
+  // 학점 인정은 수강신청까지 끝난 뒤라, 남겨두면 이미 끝낸 일이 할 일처럼 보인다.
+  // 생활 준비와 Tips는 현지에서도 쓰는 정보라 그대로 둔다.
+  const departed = typeof hasDeparted === 'function' && hasDeparted();
+  document.getElementById('checklistSection').style.display = departed ? 'none' : '';
   document.getElementById('livingSection').style.display = '';
   document.getElementById('tipsSection').style.display = '';
+  const creditsCta = document.querySelector('.credits-cta');
+  if (creditsCta) creditsCta.style.display = departed ? 'none' : '';
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
       <div class="confirmed-card__identity">
@@ -88,31 +100,29 @@ function renderPrepareHero() {
       </div>
     </div>`;
   document.getElementById('confirmedCardBtn').addEventListener('click', () => openSchoolModal(confirmed.id, { onChange: renderPrepareView }));
-  document.getElementById('cancelConfirmBtn').addEventListener('click', (e) => {
+  document.getElementById('cancelConfirmBtn').addEventListener('click', async (e) => {
     e.stopPropagation();
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '취소하는 중…';
+
     AppState.confirmSchool(null);
+    // 서버에 반영된 뒤에 이동한다. 낙관적 갱신이라 화면은 이미 풀렸지만, 여기서
+    // 바로 홈으로 넘어가면 홈이 새로 읽은 confirmed_school_id 가 아직 옛 값이라
+    // 곧바로 교환 준비하기로 도로 튕겨 "취소가 안 되는" 것처럼 보인다.
+    await AppState.flush();
+
+    if (AppState.lastWriteError) {
+      btn.disabled = false;
+      btn.textContent = '학교 확정 취소';
+      if (typeof showToast === 'function') showToast('취소하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     window.location.href = 'home.html';
   });
 }
 
-function renderPrepareMap() {
-  const confirmed = AppState.getConfirmedSchool();
-  const mount = document.getElementById('prepareMap');
-  if (!confirmed) { mount.innerHTML = ''; return; }
-  mount.innerHTML = `
-    <section class="card card-pad">
-      <div class="section-title"><div><h2>학교 위치</h2></div></div>
-      <div class="map-embed">
-        <iframe src="${mapEmbedUrl(confirmed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${confirmed.name} 지도"></iframe>
-      </div>
-      <p class="map-caption">${confirmed.mapNote}</p>
-    </section>`;
-}
 
-function renderPrepareScore() {
-  const confirmed = AppState.getConfirmedSchool();
-  document.getElementById('prepareScore').innerHTML = confirmed ? scoreCardHtml(confirmed, { numbered: false }) : '';
-}
 
 function renderPrepareChecklist() {
   const mount = document.getElementById('checklistList');
@@ -214,7 +224,15 @@ function ensurePrepareStylesLoaded() {
   link.rel = 'stylesheet';
   link.href = 'css/pages/prepare.css';
   link.dataset.prepareCss = 'true';
-  document.head.appendChild(link);
+
+  // head 끝에 붙이면 앱 스킨(css/app.css)보다 뒤에 와서 이긴다. prepare.css의
+  // .prepare-grid{display:grid; 1fr 336px}가 app.css의 세로 1단 규칙을 덮어써
+  // 본문이 32px 폭으로 눌리고 글자가 세로로 쌓였다(prepare.html은 링크 순서가
+  // 맞아 멀쩡하고, 홈에서 확정 후 변신했을 때만 깨졌다).
+  // 페이지 CSS → 앱 스킨 순서를 지키도록 app.css 앞에 끼워 넣는다.
+  const appSkin = document.querySelector('link[rel="stylesheet"][href$="css/app.css"]');
+  if (appSkin) appSkin.parentNode.insertBefore(link, appSkin);
+  else document.head.appendChild(link);
 }
 
 /** 다른 화면에서 학교를 확정한 순간, 페이지 이동 없이 그 자리에서 F4 레이아웃으로 전환 */
@@ -225,7 +243,11 @@ function morphToPreparePage() {
   document.getElementById('mentor-float').insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
   document.body.dataset.page = 'prepare';
   document.title = '교환 준비하기 — steppY';
-  renderAppNav('prepare');
+  // 앱 셸로 바꾸면서 renderAppNav()가 renderAppBar()/renderTabBar() 둘로 갈렸는데
+  // 이 호출부를 놓쳤다. 정의가 없는 함수라 여기서 ReferenceError가 나면서 바로
+  // 아래 renderPrepareView()가 실행되지 않았고, 마크업만 꽂힌 빈 카드들이 남았다.
+  renderAppBar('prepare');
+  renderTabBar('prepare');
   renderPrepareView();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

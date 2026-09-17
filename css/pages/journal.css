@@ -1,0 +1,133 @@
+/* 기록하기 — 입력창 하나와 날짜별로 묶인 기록 목록. */
+
+.journal-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: var(--space-6);
+}
+
+/* ------------------------------------------------------------- 입력창 */
+
+.journal-compose { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.journal-compose__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.journal-phase { display: flex; gap: 6px; }
+
+.journal-phase__chip {
+  border: 1px solid var(--line-200);
+  background: #fff;
+  color: var(--ink-600);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.journal-phase__chip.is-active {
+  background: var(--ink-900);
+  border-color: var(--ink-900);
+  color: #fff;
+}
+
+.journal-compose__date {
+  border: 1px solid var(--line-200);
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--ink-600);
+  background: #fff;
+  font-family: inherit;
+  /* min-width:0이 없으면 date 입력이 자기 기본 폭을 고집해 줄을 밀어낸다 */
+  min-width: 0;
+}
+
+.journal-compose__title,
+.journal-compose__body {
+  width: 100%;
+  border: 1px solid var(--line-200);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink-900);
+  background: #fff;
+}
+.journal-compose__title { font-weight: 700; }
+.journal-compose__body { resize: vertical; line-height: 1.6; }
+.journal-compose__title::placeholder,
+.journal-compose__body::placeholder { color: var(--ink-400); font-weight: 400; }
+
+.journal-compose__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* --------------------------------------------------------------- 목록 */
+
+.journal-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.journal-group + .journal-group { margin-top: var(--space-4); }
+
+.journal-group__date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-600);
+  padding-left: 2px;
+  margin: 0;
+}
+
+.journal-entry { display: flex; flex-direction: column; gap: 6px; }
+
+.journal-entry__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.journal-entry__phase {
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+/* 두 시점은 기존 badge 색 한 벌을 그대로 쓴다 — 같은 앱 안에서 '상태 알약'은 한 벌로 보여야 한다 */
+.journal-entry__phase--prepare { background: var(--amber-100); color: var(--amber-700); }
+.journal-entry__phase--abroad  { background: var(--line-100); color: var(--ink-700); }
+
+.journal-entry__tools { display: flex; gap: var(--space-2); }
+.journal-entry__tool {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--ink-400);
+  cursor: pointer;
+  font-family: inherit;
+}
+.journal-entry__tool:hover { color: var(--ink-700); text-decoration: underline; }
+
+.journal-entry__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink-900); }
+.journal-entry__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-700);
+  /* 줄바꿈과 긴 URL 모두 카드 밖으로 나가지 않게 */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ----------------------------------------------------------- 빈 상태 */
+
+.journal-empty { text-align: center; }
+.journal-empty__title { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--ink-900); }
+.journal-empty__desc { margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink-400); }
