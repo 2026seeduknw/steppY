@@ -330,7 +330,7 @@ const AppState = {
 
   /* -------------------------------------------------------- 기록하기 */
 
-  addJournalEntry({ date, phase, title, body, photos, tags, location }) {
+  addJournalEntry({ date, phase, title, body, photos, tags, location, nowPlaying, weather }) {
     const s = this.load();
     // addTodo와 같은 방식 — 서버 uuid가 오기 전까지 쓸 임시 id
     const tempId = 'j' + Date.now();
@@ -343,6 +343,10 @@ const AppState = {
       photos: photos || [],
       tags: tags || [],
       location: location || null,
+      // 저장 직후 비동기로 추천받아 채워지는 자리. 실패하면 그냥 null로 남는다.
+      song: null,
+      nowPlaying: nowPlaying || null,
+      weather: weather || null,
       createdAt: new Date().toISOString()
     };
     s.journal.push(entry);
@@ -359,7 +363,9 @@ const AppState = {
             body: entry.body,
             photos: entry.photos,
             tags: entry.tags,
-            location: entry.location
+            location: entry.location,
+            now_playing: entry.nowPlaying,
+            weather: entry.weather
           })
           .select('id, created_at')
           .single();
@@ -388,6 +394,25 @@ const AppState = {
    * 쓰기 큐가 순서를 지켜주므로(insert가 항상 먼저 끝난다) 실행 시점에 entry.id를
    * 읽으면 언제나 진짜 uuid다.
    */
+  /*
+   * 저장이 끝난 뒤 추천이 도착해서 노래만 따로 붙인다.
+   * updateJournalEntry를 쓰지 않는 이유 — 그쪽은 본문·날짜를 통째로 덮어쓰기 때문에,
+   * 추천이 늦게 오는 사이 사용자가 글을 고쳤다면 그 수정을 되돌려 버린다.
+   * 여기서는 song 한 칸만 건드린다.
+   */
+  setEntrySong(id, song) {
+    const entry = this.load().journal.find(e => e.id === id || e.tempId === id);
+    if (!entry) return;
+    entry.song = song;
+    this.save();
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    if (!this.isAuthed) return;
+    // entry.id를 실행 시점에 읽는다 — 큐가 insert를 먼저 끝내주므로 그때는 진짜 uuid다.
+    this._push(() => supabaseClient.from('user_journal')
+      .update({ song: entry.song })
+      .eq('id', entry.id).eq('user_id', Auth.userId), '노래 저장');
+  },
+
   updateJournalEntry(id, patch) {
     const entry = this.load().journal.find(e => e.id === id);
     if (!entry) return;
@@ -463,7 +488,7 @@ const AppState = {
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, created_at').eq('user_id', uid)
+      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at').eq('user_id', uid)
     ]);
 
     const next = emptyState(this._displayName());
@@ -506,6 +531,9 @@ const AppState = {
         photos: r.photos || [],
         tags: r.tags || [],
         location: r.location || null,
+        song: r.song || null,
+        nowPlaying: r.now_playing || null,
+        weather: r.weather || null,
         createdAt: r.created_at
       }));
     }

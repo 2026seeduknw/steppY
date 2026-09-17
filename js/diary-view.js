@@ -21,6 +21,9 @@
   const photoUrls = {};
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
+  let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
+  let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
+  let nowPlayingSearchTimer = null;
   let lastStreak = null;
   let root = null;
 
@@ -239,6 +242,44 @@
     const locText = (loc) => (loc && (loc.city || loc.country))
       ? [loc.city, loc.country].filter(Boolean).join(', ') : '';
 
+    const weatherText = (e) => {
+      if (typeof SongEngine === 'undefined') return '';
+      if (!e.weather || typeof e.weather.code !== 'number') return '';
+      const w = SongEngine.weatherLabel(e.weather.code);
+      if (!w) return '';
+      return `${w.emoji} ${w.ko}${typeof e.weather.temp === 'number' ? ` ${Math.round(e.weather.temp)}°` : ''}`;
+    };
+
+    /*
+     * 노래는 사진 위 오버레이가 아니라 카드 아래에 따로 놓는다 — 링크를 눌러야 하는데
+     * 사진 위에 얹으면 대비가 들쭉날쭉해서 읽기도 누르기도 어렵다.
+     * 링크는 44px 이상 탭 영역을 갖도록 한 줄로 크게 뺀다.
+     */
+    const songRow = (item, label, variant) => {
+      if (!item) return '';
+      return `
+        <div class="diary-song diary-song--${variant}">
+          <div class="diary-song__top">
+            ${item.art
+              ? `<img class="diary-song__art" src="${item.art}" alt="">`
+              : `<span class="diary-song__art diary-song__art--empty">🎵</span>`}
+            <div class="diary-song__info">
+              <span class="diary-song__label">${label}</span>
+              <span class="diary-song__title">${esc(item.name)}</span>
+              <span class="diary-song__artist">${esc(item.artist)}</span>
+            </div>
+          </div>
+          <div class="diary-song__links">
+            ${item.spotifyUrl ? `<a class="diary-song__link diary-song__link--spotify" href="${item.spotifyUrl}" target="_blank" rel="noopener">Spotify ↗</a>` : ''}
+            <a class="diary-song__link diary-song__link--youtube" href="${item.youtubeUrl}" target="_blank" rel="noopener">YouTube ↗</a>
+          </div>
+        </div>`;
+    };
+    const songBlock = (e) => {
+      const rows = songRow(e.song, '🎵 오늘의 노래', 'recommend') + songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying');
+      return rows ? `<div class="diary-entry__songs">${rows}</div>` : '';
+    };
+
     const photoBlock = (e) => {
       const urls = (e.photos || []).map(photoUrl).filter(Boolean);
       if (!urls.length) return '';
@@ -258,6 +299,7 @@
       <div class="diary-entry__meta">
         <span class="diary-entry__time">${timeLabel(e.createdAt)}</span>
         ${!hasPhoto && locText(e.location) ? `<span class="diary-entry__location">📍 ${esc(locText(e.location))}</span>` : ''}
+        ${weatherText(e) ? `<span class="diary-entry__weather">${weatherText(e)}</span>` : ''}
         ${(hasPhoto ? (e.tags || []).slice(1) : (e.tags || [])).map(tagChip).join('')}
       </div>`;
 
@@ -279,6 +321,7 @@
             ${photoBlock(e)}
             ${topPills(e)}
             ${hasPhoto ? `<div class="diary-entry__overlay">${metaHtml(e, true)}</div>` : metaHtml(e, false)}
+            ${songBlock(e)}
             <button type="button" class="diary-entry__del" data-del="${esc(e.id)}" aria-label="이 기록 삭제">✕</button>
           </div>`;
         }).join('')
@@ -358,6 +401,8 @@
     const targetDate = view.selected || todayIso;
     pendingPhotos = [];
     pendingLocation = null;
+    pendingWeather = null;
+    pendingNowPlaying = null;
 
     const scrim = ensureScrim('entryModalScrim');
     scrim.innerHTML = `
@@ -383,6 +428,10 @@
               ${REPORT_CATEGORIES.map(c => `<button type="button" class="tag-chip" data-tag="${c.id}" style="--chip-color:${c.color}" aria-pressed="false">${c.ko}</button>`).join('')}
             </div>
           </div>
+          <div>
+            <span class="diary-form__label">그때 듣던 노래 (선택)</span>
+            <div id="nowPlayingPicker"></div>
+          </div>
           <span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>
           <input type="hidden" name="date" value="${targetDate}">
           <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">기록 저장</button>
@@ -393,6 +442,7 @@
     openModal(scrim);
     wireEntryForm(scrim);
     renderPhotoPicker(scrim);
+    renderNowPlayingPicker(scrim);
     requestLocation();
 
     if (initialFile) {
@@ -400,6 +450,55 @@
         .then(() => renderPhotoPicker(scrim))
         .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
     }
+  }
+
+  /*
+   * 곡명을 직접 타이핑하게 두면 오타·표기 흔들림 때문에 나중에 같은 곡이 다르게 쌓인다.
+   * Last.fm 검색으로 고르게 해서 제목·아티스트를 정규화한다.
+   * 고르기 전엔 검색창, 고른 뒤엔 칩 하나 — 사진 썸네일과 같은 패턴.
+   */
+  function renderNowPlayingPicker(scrim) {
+    const mount = scrim.querySelector('#nowPlayingPicker');
+    if (!mount) return;
+    if (typeof SongEngine === 'undefined') { mount.innerHTML = ''; return; }
+
+    if (pendingNowPlaying) {
+      mount.innerHTML = `
+        <div class="diary-nowplaying-chip">
+          <span>🎧 ${esc(pendingNowPlaying.artist)} · ${esc(pendingNowPlaying.name)}</span>
+          <button type="button" id="nowPlayingClear" aria-label="지우기">✕</button>
+        </div>`;
+      mount.querySelector('#nowPlayingClear').addEventListener('click', () => {
+        pendingNowPlaying = null;
+        renderNowPlayingPicker(scrim);
+      });
+      return;
+    }
+
+    mount.innerHTML = `
+      <div class="diary-nowplaying-search">
+        <input type="text" id="nowPlayingInput" placeholder="곡 제목을 검색해보세요" autocomplete="off">
+        <ul class="diary-nowplaying-results" id="nowPlayingResults" hidden></ul>
+      </div>`;
+    const input = mount.querySelector('#nowPlayingInput');
+    const list = mount.querySelector('#nowPlayingResults');
+    input.addEventListener('input', () => {
+      clearTimeout(nowPlayingSearchTimer);
+      const q = input.value;
+      // 글자마다 쏘면 Last.fm rate limit에 걸린다 — 멈춘 뒤에 한 번만.
+      nowPlayingSearchTimer = setTimeout(async () => {
+        const matches = await SongEngine.searchTracks(q);
+        if (!matches.length) { list.hidden = true; list.innerHTML = ''; return; }
+        list.innerHTML = matches.map((m, i) => `<li data-idx="${i}">${esc(m.name)} <span>· ${esc(m.artist)}</span></li>`).join('');
+        list.hidden = false;
+        list.querySelectorAll('li').forEach((li, i) => {
+          li.addEventListener('click', () => {
+            pendingNowPlaying = matches[i];
+            renderNowPlayingPicker(scrim);
+          });
+        });
+      }, 300);
+    });
   }
 
   function renderPhotoPicker(scrim) {
@@ -419,16 +518,21 @@
 
   function requestLocation() {
     const note = document.getElementById('locationNote');
+    pendingWeather = null;
     if (!navigator.geolocation) { if (note) note.textContent = '📍 위치 정보를 사용할 수 없어요'; return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude, longitude } = pos.coords;
+      // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
+      if (typeof SongEngine !== 'undefined') {
+        SongEngine.fetchWeather(latitude, longitude).then(w => { pendingWeather = w; }).catch(() => {});
+      }
       try {
         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ko`);
         const data = await res.json();
-        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, lat: latitude, lng: longitude };
+        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null, lat: latitude, lng: longitude };
         if (note) note.textContent = `📍 ${[pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') || '위치 확인됨'}`;
       } catch (err) {
-        pendingLocation = { country: null, city: null, lat: latitude, lng: longitude };
+        pendingLocation = { country: null, city: null, countryCode: null, lat: latitude, lng: longitude };
         if (note) note.textContent = '📍 위치는 저장했지만 지명 변환에 실패했어요';
       }
     }, () => {
@@ -466,18 +570,84 @@
       const body = (fd.get('caption') || '').trim();
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
 
-      AppState.addJournalEntry({
+      const nowPlaying = (pendingNowPlaying && typeof SongEngine !== 'undefined')
+        ? Object.assign(
+            { name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
+            SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
+        : null;
+
+      const entry = AppState.addJournalEntry({
         date, phase: departurePhaseFor(date), title, body,
         photos: pendingPhotos.map(p => p.path),
-        tags, location: pendingLocation
+        tags, location: pendingLocation,
+        nowPlaying, weather: pendingWeather
       });
       pendingPhotos = [];
+      pendingNowPlaying = null;
       closeModal(scrim);
       view.selected = date;
       renderAll();
       showToast('기록을 저장했어요');
       flashShutter();
+      // 추천은 저장을 막지 않는다 — 늦게 도착해도 카드에 붙고, 실패하면 조용히 넘어간다.
+      recommendSongFor(entry, tags);
     });
+  }
+
+  /* ------------------------------------------------------- 오늘의 노래 */
+
+  /*
+   * 기록을 저장한 직후, 그 순간의 태그·날씨·시간대로 무드를 계산해 현지 노래를 하나 고른다.
+   * 저장 흐름과 분리해 두는 이유 — Last.fm 왕복이 몇 초 걸릴 수 있는데 그동안 저장 버튼이
+   * 매달려 있으면 안 된다. 실패해도 기록 자체는 이미 남아 있다.
+   */
+  async function recommendSongFor(entry, tags) {
+    if (typeof SongEngine === 'undefined') return;
+    if (!entry || !pendingLocation || !pendingLocation.countryCode) return;
+    try {
+      const { mood, moodKo, keywords } = SongEngine.computeMood({
+        tags,
+        weatherCode: pendingWeather ? pendingWeather.code : undefined,
+        tempC: pendingWeather ? pendingWeather.temp : undefined,
+        date: new Date(entry.createdAt)
+      });
+      const song = await SongEngine.fetchSongRecommendation({
+        countryCode: pendingLocation.countryCode, keywords
+      });
+      if (!song) return;
+      song.mood = mood;
+      song.moodKo = moodKo;
+      // 저장이 끝나 실제 uuid로 바뀌었을 수 있어 tempId도 함께 찾는다(setEntrySong이 처리).
+      AppState.setEntrySong(entry.id, song);
+      // MOCK:updated만으로는 부족하다 — journal.js는 다이어리가 이미 떠 있으면
+      // 사진만 다시 채우고 목록은 그대로 둔다(하이드레이션이 화면을 흔들지 않도록).
+      // 그래서 뒤늦게 도착한 노래는 여기서 직접 다시 그려야 카드에 나타난다.
+      if (view.selected === entry.date) renderSide();
+      showSongPopup(song);
+    } catch (err) {
+      /* 추천은 덤이라 조용히 넘어간다 */
+    }
+  }
+
+  function showSongPopup(song) {
+    const old = document.getElementById('songPopup');
+    if (old) old.remove();
+    const popup = document.createElement('div');
+    popup.id = 'songPopup';
+    popup.className = 'song-popup';
+    popup.innerHTML = `
+      <button type="button" class="song-popup__close" aria-label="닫기">✕</button>
+      <span class="song-popup__mood">🎵 이 순간의 노래</span>
+      <span class="song-popup__title">${esc(song.name)}</span>
+      <span class="song-popup__artist">${esc(song.artist)}</span>
+      <div class="song-popup__links">
+        ${song.spotifyUrl ? `<a href="${song.spotifyUrl}" target="_blank" rel="noopener">Spotify ↗</a>` : ''}
+        <a href="${song.youtubeUrl}" target="_blank" rel="noopener">YouTube ↗</a>
+      </div>`;
+    document.body.appendChild(popup);
+    const remove = () => popup.remove();
+    popup.querySelector('.song-popup__close').addEventListener('click', remove);
+    setTimeout(remove, 9000);
   }
 
   function flashShutter() {

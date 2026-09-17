@@ -287,3 +287,153 @@
   color: var(--diary-text-dim);
   text-align: center;
 }
+
+/* ==========================================================================
+   오늘의 노래 / 그때 듣던 노래
+   ========================================================================== */
+
+/* 노래는 사진 오버레이 밖, 카드 아래에 둔다 — 링크를 눌러야 해서 대비가 일정해야 한다 */
+.diary-entry__songs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px dashed var(--line-200);
+}
+
+.diary-song {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--cloud-50);
+}
+/* 추천곡과 직접 고른 곡을 왼쪽 띠 색으로 구분 — 라벨을 안 읽어도 눈에 들어온다 */
+.diary-song--recommend { border-left: 3px solid var(--sky-500); }
+.diary-song--nowplaying { border-left: 3px solid var(--amber-500); }
+
+.diary-song__top { display: flex; align-items: center; gap: var(--space-3); }
+.diary-song__art {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+.diary-song__art--empty {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cloud-100);
+  font-size: var(--fs-body);
+}
+.diary-song__info { display: flex; flex-direction: column; min-width: 0; }
+.diary-song__label { font-size: var(--fs-micro); color: var(--ink-600); }
+.diary-song__title {
+  font-size: var(--fs-small); font-weight: 700; color: var(--ink-900);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.diary-song__artist {
+  font-size: var(--fs-micro); color: var(--ink-700);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* 링크는 정보 줄에 끼워넣지 않고 따로 뺀다 — 폰에서 오탭 없이 누르려면 44px이 필요하다 */
+.diary-song__links { display: flex; gap: var(--space-2); }
+.diary-song__link {
+  flex: 1;
+  min-height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-micro); font-weight: 700;
+  text-decoration: none;
+}
+.diary-song__link--spotify { background: #1DB954; color: #fff; }
+.diary-song__link--youtube { background: #FF0000; color: #fff; }
+
+.diary-entry__weather { font-size: var(--fs-micro); color: inherit; opacity: 0.9; }
+
+/* ---- 작성 모달: 그때 듣던 노래 ---- */
+
+.diary-nowplaying-search { position: relative; }
+.diary-nowplaying-search input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-small);
+  background: var(--cloud-0);
+}
+.diary-nowplaying-results {
+  position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px);
+  margin: 0; padding: var(--space-1);
+  list-style: none;
+  max-height: 220px; overflow-y: auto;
+  background: var(--cloud-0);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
+}
+.diary-nowplaying-results li {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.diary-nowplaying-results li:hover { background: var(--cloud-50); }
+.diary-nowplaying-results li span { color: var(--ink-600); }
+
+.diary-nowplaying-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--cloud-50);
+  font-size: var(--fs-small);
+}
+.diary-nowplaying-chip button {
+  flex: 0 0 auto;
+  border: 0; background: transparent;
+  color: var(--ink-600); font-size: var(--fs-small);
+  cursor: pointer;
+}
+
+/* ---- 저장 직후 뜨는 추천 팝업 ---- */
+
+/* 탭바 위에 뜬다 — 탭바에 가리면 링크를 못 누른다 */
+.song-popup {
+  position: fixed;
+  left: var(--space-4); right: var(--space-4);
+  bottom: calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom));
+  z-index: 60;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--oxford);
+  color: var(--moonlight, #F0ECDD);
+  box-shadow: var(--shadow-modal);
+  animation: song-popup-in 240ms ease-out;
+}
+@keyframes song-popup-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .song-popup { animation: none; }
+}
+.song-popup__close {
+  position: absolute; top: var(--space-2); right: var(--space-2);
+  border: 0; background: transparent;
+  color: inherit; opacity: 0.6;
+  font-size: var(--fs-small); cursor: pointer;
+}
+.song-popup__mood { font-size: var(--fs-micro); opacity: 0.75; }
+.song-popup__title { font-size: var(--fs-h3); font-weight: 800; }
+.song-popup__artist { font-size: var(--fs-small); opacity: 0.8; }
+.song-popup__links { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+.song-popup__links a {
+  flex: 1;
+  min-height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit; text-decoration: none;
+  font-size: var(--fs-micro); font-weight: 700;
+}

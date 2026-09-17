@@ -67,3 +67,11 @@ create policy diary_photos_insert_own on storage.objects for insert
   with check (bucket_id = 'diary-photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
 create policy diary_photos_delete_own on storage.objects for delete
   using (bucket_id = 'diary-photos' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- 2026-09-17 — 기록에 노래·날씨 붙이기 (js/song.js)
+-- 스키마를 고정하지 않고 jsonb로 둔다: 추천 엔진(Last.fm)이 돌려주는 필드가 바뀔 수
+-- 있고, 링크·앨범아트처럼 표시용으로만 쓰는 값이라 쿼리 대상이 아니다.
+alter table public.user_journal
+  add column if not exists song jsonb,        -- 저장 후 자동 추천된 "오늘의 노래"
+  add column if not exists now_playing jsonb, -- 사용자가 직접 고른 "그때 듣던 노래"
+  add column if not exists weather jsonb;     -- {code, temp} — 추천 무드 계산 + 카드 표시용
