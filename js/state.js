@@ -115,16 +115,12 @@ const AppState = {
 
   get isAuthed() { return typeof Auth !== 'undefined' && Auth.isAuthed; },
 
-  /**
-   * 아직 온보딩을 안내한 적 없는 로그인 계정인지.
-   * 프로필이 비어 있다는 사실과 "물어봤다"는 사실은 다르다 — 건너뛴 사용자에게
-   * 매번 다시 묻지 않으려면 후자를 따로 기록해야 한다.
-   */
-  get needsOnboarding() {
-    return this.isAuthed && this._hydrated && !this.load().onboardedAt;
-  },
+  /* needsOnboarding 게터는 지웠다 — 온보딩으로 강제 이동시키던 유일한 호출부가
+     사라졌다(layout.js). 홈의 버튼은 "물어봤는지"가 아니라 "학과·학점이 실제로
+     비었는지"를 본다. 그래야 건너뛴 사람에게도, 이 화면이 생기기 전에 가입한
+     사람에게도 같은 안내가 뜬다. */
 
-  /** 온보딩을 마쳤거나 건너뛴 시점을 남긴다. */
+  /** 기본 정보를 저장한 시점을 남긴다. 언제 받았는지 알아야 할 때 쓴다. */
   markOnboarded() {
     const now = new Date().toISOString();
     this.load().onboardedAt = now;
@@ -283,8 +279,20 @@ const AppState = {
 
   /* ------------------------------------------------- 파견 기간 / 사진 */
 
-  /** 파견 기간이 없으면 null. Day N·진행 바는 이 값이 있어야 그린다. */
-  getProgramRange() { return this.load().programRange; },
+  /**
+   * 파견 기간이 없으면 null. Day N·진행 바는 이 값이 있어야 그린다.
+   *
+   * 확정한 학교가 없으면 기간도 없는 것으로 본다. 학교 확정을 취소해도
+   * programRange 는 남는데, 그대로 두면 hasDeparted() 가 계속 true 라
+   * 취소한 뒤에도 탭바가 "출국 후" 모양(학점 인정 없음 + 교환보고서 있음)으로
+   * 남았다. 갈 학교가 없는데 출국했을 수는 없다.
+   * 값 자체는 지우지 않는다 — 같은 학교를 다시 확정하면 날짜를 다시 입력하지
+   * 않아도 되고, 확정 전에는 이 게터를 지나 어디에도 닿지 않는다.
+   */
+  getProgramRange() {
+    if (!this.load().confirmedSchoolId) return null;
+    return this.load().programRange;
+  },
 
   setProgramRange(start, end) {
     this.load().programRange = (start && end) ? { start, end } : null;
@@ -294,7 +302,7 @@ const AppState = {
   },
 
   isDateInProgram(iso) {
-    const r = this.load().programRange;
+    const r = this.getProgramRange();
     // 기간을 아직 안 정했으면 막지 않는다 — 기록부터 하게 두고 기간은 나중에 받는다
     if (!r) return true;
     return iso >= r.start && iso <= r.end;

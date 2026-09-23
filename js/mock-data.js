@@ -59,7 +59,7 @@ MOCK.visaRequirements = {};
  * ------------------------------------------------------------------- */
 MOCK.checklist = [
   { id: 'passport', title: '여권 유효기간 확인', done: false, dueOffset: 'D-90',
-    detail: '출국일 기준으로 6개월 이상 유효기간이 남아있어야 해요. 만료가 임박했다면 지금 바로 재발급을 신청하세요.',
+    detail: '출국일 기준으로 6개월 이상 유효기간이 남아있어야 해요. 얼마 안 남았다면 지금 바로 재발급을 신청하세요.',
     source: 'steppY 가이드', updatedAt: '2026-01-01' },
   { id: 'visa', title: '학생비자 신청', done: false, dueOffset: 'D-75',
     detail: '파견 국가 영사관/대사관에 학생비자를 신청하세요. 국가별로 필요 서류와 처리 기간이 크게 다르니 학교 위치 확정 직후 바로 시작하는 게 안전해요.',
@@ -68,13 +68,13 @@ MOCK.checklist = [
     detail: '학교 포털에서 영문 재학증명서와 성적증명서를 발급받아 파견교 제출용으로 준비하세요.',
     source: 'steppY 가이드', updatedAt: '2026-01-01' },
   { id: 'insurance', title: '해외여행자보험 가입', done: false, dueOffset: 'D-45',
-    detail: '파견 기간 전체를 커버하는 보험에 가입하세요. 파견교가 자체 보험(SHIP 등)을 요구하는 경우도 있으니 F4의 생활 준비 카드도 함께 확인하세요.',
+    detail: '파견 기간 전체를 커버하는 보험에 가입하세요. 파견교가 자체 보험(SHIP 등)을 요구하기도 하니 F4의 생활 준비 카드도 함께 확인하세요.',
     source: 'steppY 가이드', updatedAt: '2026-01-01' },
   { id: 'flight', title: '항공권 예약', done: false, dueOffset: 'D-30',
     detail: '오리엔테이션·기숙사 입주 일정에 맞춰 출국편을 예약하세요. 귀국편은 학기 종료일 확정 후 예약해도 늦지 않아요.',
     source: 'steppY 가이드', updatedAt: '2026-01-01' },
   { id: 'housing', title: '기숙사·숙소 신청', done: false, dueOffset: 'D-21',
-    detail: '파견교 housing 포털에서 기숙사를 신청하거나, 자체적으로 숙소를 구하는 경우 계약서를 미리 확인하세요.',
+    detail: '파견교 housing 포털에서 기숙사를 신청하거나, 직접 숙소를 구한다면 계약서를 미리 확인하세요.',
     source: 'steppY 가이드', updatedAt: '2026-01-01' }
 ];
 

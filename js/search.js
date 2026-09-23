@@ -9,11 +9,23 @@
     // else 가지라 마드리드·바르셀로나·로마처럼 여름이 건조한 도시까지 묶였다.
     climateType: { 'four-season': '사계절 뚜렷', hot: '연중 더움', cold: '겨울 영하', 'mild-winter': '겨울 온화' },
     commerceLevel: { high: '상권 풍부', medium: '상권 보통', low: '상권 작음' },
-    securityLevel: { high: '치안 우수', medium: '치안 보통', low: '치안 주의' }
+    securityLevel: { high: '치안 우수', medium: '치안 보통', low: '치안 주의' },
+    // 원본 목록에서 UIC 전용 파견교는 학교 이름 앞에 "(UIC Exclusive)"가 붙어
+    // 있는 것이 전부다. 별도 컬럼이 없어 이름으로 가른다.
+    program: { uic: 'UIC 전용', open: '전체 학부' },
+    // 원본 Language 열에 English 가 들어 있는지 하나로 가른 값이다
+    // (supabase/build_import.py). "영어 전용"이 아니라 "영어로 들을 수 있음"이다.
+    track: { english: '영어', nonEnglish: '현지어' }
   };
+
+  /** UIC(언더우드국제대학) 소속만 지원할 수 있는 파견교인지. */
+  function programOf(school) {
+    return /^\s*\(UIC Exclusive\)/i.test(school.name || '') ? 'uic' : 'open';
+  }
 
   const state = {
     query: '', country: '', majors: new Set(), regions: new Set(),
+    programs: new Set(), tracks: new Set(),
     commerce: new Set(), climate: new Set(), security: new Set(),
     qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default'
   };
@@ -39,6 +51,8 @@
   function renderFilters() {
     renderCountrySelect();
     renderMajorFilter();
+    renderChipGroup('programFilters', ['uic', 'open'], state.programs, LABELS.program);
+    renderChipGroup('trackFilters', uniq('track'), state.tracks, LABELS.track);
     renderChipGroup('regionFilters', uniq('region'), state.regions);
     renderChipGroup('commerceFilters', uniq('commerceLevel'), state.commerce, LABELS.commerceLevel);
     renderChipGroup('climateFilters', uniq('climateType'), state.climate, LABELS.climateType);
@@ -96,6 +110,8 @@
     }
     if (state.country && school.country !== state.country) return false;
     if (state.majors.size && ![...state.majors].some(m => schoolHasMajorMatch(school, m))) return false;
+    if (state.programs.size && !state.programs.has(programOf(school))) return false;
+    if (state.tracks.size && !state.tracks.has(school.track)) return false;
     if (state.regions.size && !state.regions.has(school.region)) return false;
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
     if (state.climate.size && !state.climate.has(school.climateType)) return false;
@@ -212,12 +228,12 @@
     banner.innerHTML = `
       <div class="score-prompt__head">
         <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
-        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장됩니다.' : '지원 가능 여부를 알려드려요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
       </div>
       <form class="score-prompt__form" id="guestScoreForm">
         <label class="score-prompt__field">
           <span>학점</span>
-          <input type="number" step="0.01" min="0" max="4.5" name="gpa"
+          <input type="number" step="0.01" min="0" max="4.5" data-decimals="2" name="gpa"
                  value="${filled ? p.gpa : ''}" placeholder="3.62">
         </label>
         <label class="score-prompt__field">
@@ -234,7 +250,7 @@
     document.getElementById('guestScoreForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const gpa = fd.get('gpa') === '' ? null : parseFloat(fd.get('gpa'));
+      const gpa = fd.get('gpa') === '' ? null : roundDecimals(fd.get('gpa'), 2);
       const score = fd.get('langScore') === '' ? null : parseFloat(fd.get('langScore'));
       AppState.updateProfile({
         gpa,
@@ -259,6 +275,7 @@
 
   document.getElementById('resetFilters').addEventListener('click', () => {
     state.country = ''; state.majors.clear(); state.regions.clear();
+    state.programs.clear(); state.tracks.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
     document.getElementById('qsSelect').value = '';

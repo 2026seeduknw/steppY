@@ -350,6 +350,8 @@ body[data-page="credits"]::before {
   gap: var(--space-4);
 }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-small); color: var(--ink-600); }
+/* 라벨만 굵게. .field 자체에 주면 안쪽 input 글자까지 굵어진다 */
+.field > span { font-weight: 700; color: var(--ink-900); }
 .field input, .field select {
   height: 40px;
   padding: 0 var(--space-3);

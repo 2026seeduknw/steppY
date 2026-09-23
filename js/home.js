@@ -36,11 +36,25 @@
     greeting.textContent = `안녕하세요, ${p.name || '회원'}님`;
     sub.textContent = term.year
       ? `${term.year} ${term.season} 파견을 준비하고 있어요`
-      : '교환 시기를 등록하면 준비 일정을 정리해 드려요';
+      : '교환 시기를 등록하면 준비 일정을 정리해드려요';
+  }
+
+  /**
+   * 학과·학점이 비어 있으면 지원 가능 판정이 전 학교에서 "정보 필요"로 나온다.
+   * 예전에는 가입 직후 온보딩 화면으로 강제로 보냈는데, 무엇을 쓰는 앱인지
+   * 보기도 전에 폼부터 만나는 순서였다 — 홈을 먼저 보여주고 여기서 부른다.
+   * 채워지면 버튼은 스스로 사라진다.
+   */
+  function renderProfileCta() {
+    const cta = document.getElementById('profileCta');
+    if (!cta) return;
+    const p = AppState.profile || {};
+    cta.hidden = !AppState.isAuthed || !!(p.major && p.gpa);
   }
 
   function renderAll() {
     renderGreeting();
+    renderProfileCta();
     // 기본 정보(프로필)는 앱바 계정 시트로 옮겼다 — 홈에서는 보여주지 않는다
     renderTodoCard(document.getElementById('todoCard'));
     renderWishlistRow();
@@ -57,7 +71,7 @@
   if (partnerBanner) {
     partnerBanner.addEventListener('click', () => {
       trackEvent('partner_promo_click');
-      showToast('서비스 준비중입니다. 관심 가져주셔서 감사해요 — 곧 찾아뵐게요!');
+      showToast('아직 준비 중이에요. 기다려 주셔서 고마워요, 곧 찾아뵐게요!');
     });
   }
 
@@ -65,6 +79,7 @@
   // (예전에는 지망 목록만 다시 그려서, 새로고침 전까지 옛 이름이 남았다)
   document.addEventListener('profile:updated', () => {
     renderGreeting();
+    renderProfileCta();
     renderWishlistRow();
   });
   document.addEventListener('MOCK:updated', () => {

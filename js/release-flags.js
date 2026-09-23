@@ -11,7 +11,7 @@
  *   mentorStep  — school_exchange_reports 에 후기 문장이 들어가면 (지금 0건,
  *                 그래서 열어 봐야 빈 챗봇이다)
  *   partnerPromo — 실제 제휴처가 생기고 눌렀을 때 갈 곳이 있으면
- *                 (지금은 클릭 수만 세는 더미 CTA라 "서비스 준비중" 토스트로 끝난다)
+ *                 (지금은 클릭 수만 세는 더미 CTA라 "아직 준비 중" 토스트로 끝난다)
  *
  * 이 파일은 layout.js·school-modal.js보다 먼저 실려야 한다.
  */

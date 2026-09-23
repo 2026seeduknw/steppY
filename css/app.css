@@ -248,12 +248,27 @@ body.is-sheet-open { overflow: hidden; }
   border-radius: 0;
   box-shadow: none;
   background: transparent;
-  padding: var(--space-4) var(--space-5) var(--space-6);
-  gap: var(--space-5);
+  padding: var(--space-3) var(--space-5) var(--space-5);
+
+  /* 한 줄에 하나씩 쌓으면 열 덩어리라 두 번 스크롤해야 끝까지 간다.
+     칩 두세 개짜리 그룹은 폭이 남으니 둘씩 나란히 둔다 — 세로가 반으로 준다.
+     칩이 네 개 이상인 그룹(지역·기후·치안)만 두 칸을 다 쓴다. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-3);
+  align-items: start;
 }
+.app-sheet .filter-panel > * { grid-column: 1 / -1; }
+.app-sheet .filter-group--half { grid-column: span 1; min-width: 0; }
+.app-sheet .filter-group { gap: 5px; }
 .app-sheet .filter-group .ss,
 .app-sheet .filter-group .sort-select { width: 100%; }
-.app-sheet .filter-chip-list .chip { height: 34px; padding: 0 var(--space-4); font-size: var(--fs-small); }
+/* 손가락으로 누를 수 있는 최소치는 지키되(30px), 기본 칩보다 여백을 덜 준다 */
+.app-sheet .filter-chip-list .chip { height: 30px; padding: 0 11px; font-size: var(--fs-small); }
+.app-sheet .filter-chip-list { gap: 5px; }
+/* 토글 줄도 제목 없이 한 칸씩 — 라벨이 길면 스위치가 밀려나므로 줄인다 */
+.app-sheet .filter-group--half .toggle-row { gap: var(--space-2); }
+.app-sheet .filter-group--half .toggle-row span { font-size: var(--fs-small); }
 
 
 /* ==========================================================================
@@ -330,11 +345,32 @@ body[data-page="credits"] .home-hero { padding-top: var(--space-3); padding-bott
   word-break: keep-all;
 }
 
+/* "나만 볼 수 있어요" 처럼 오해를 지우려고 두는 한 줄. 본문보다 조용해야
+   하지만 읽히기는 해야 한다 — 크기는 그대로 두고 색만 한 단 내린다. */
+.page-lede--quiet { color: var(--ink-400); margin-top: 3px; }
+
 /* 홈 인사말은 제목이 아니라 인사다 — 제목만 한 크기를 차지할 이유가 없다.
    아래 여백은 카드 사이 간격(--space-4)과 같게 둔다. 예전엔 --space-3 이라
    인사말이 첫 카드에 얹힌 것처럼 보였다. */
 body[data-page="home"] .home-hero { padding: var(--space-4) var(--space-4); }
 body[data-page="home"] .home-hero h1 { font-size: 1.25rem; }
+
+/* 인사말 아래 "기본 정보를 입력해 주세요" — 가입 직후 유일하게 할 일이라
+   카드로 감싸지 않고 인사말에 딸린 한 줄로 둔다(세로를 먹지 않는다).
+   클래스로 display를 주면 UA의 [hidden]을 이기므로 짝을 함께 적는다. */
+.profile-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  /* .home-hero 가 세로 flex 라 inline-flex 만으로는 한 줄을 다 차지한다 */
+  align-self: flex-start; width: fit-content;
+  margin-top: var(--space-3);
+  height: 34px; padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--ink-900); color: #fff;
+  font-size: var(--fs-small); font-weight: 700;
+  text-decoration: none;
+}
+.profile-cta::after { content: '→'; font-weight: 400; }
+.profile-cta[hidden] { display: none; }
 /* 부제가 카드와 같은 폭으로 끝까지 차면 카드 윗변과 한 덩어리로 읽힌다.
    한 뼘 좁혀서 문단이 먼저 끝나게 한다. */
 body[data-page="home"] #greetingSub {
@@ -894,7 +930,8 @@ body[data-page="onboarding"] {
   margin-bottom: var(--space-2);
 }
 .ob__title {
-  font-size: 1.5rem;
+  /* 홈 인사말(1.25rem)과 같은 단. 예전엔 1.5rem 이라 이 화면만 혼자 컸다 */
+  font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink-900);
@@ -907,14 +944,16 @@ body[data-page="onboarding"] {
   line-height: 1.6;
   color: var(--ink-600);
   word-break: keep-all;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
-.ob__form { display: flex; flex-direction: column; gap: var(--space-5); }
-.ob__group { display: flex; flex-direction: column; gap: 10px; }
+.ob__form { display: flex; flex-direction: column; gap: var(--space-4); }
+.ob__group { display: flex; flex-direction: column; gap: 7px; }
+/* 입력칸 위 라벨은 .field > span, .filter-group__title 과 같은 위계다.
+   800 은 카드 제목(.section-title h2)의 무게라 이 자리에서는 과하다. */
 .ob__label {
   display: flex; align-items: center; gap: 6px;
-  font-size: var(--fs-small); font-weight: 800; color: var(--ink-900);
+  font-size: var(--fs-small); font-weight: 700; color: var(--ink-900);
 }
 /* 필수 표시 — 넷 중 둘만 필수라, 무엇을 비워도 되는지 한눈에 보이게 한다 */
 .ob__req {
@@ -928,7 +967,7 @@ body[data-page="onboarding"] {
 .ob__row--score[hidden] { display: none; }
 .ob__form input,
 .ob__form select {
-  height: 50px; border-radius: 12px;
+  height: 44px; border-radius: 12px;
   /* 16px 미만이면 iOS가 포커스 때 화면을 확대한다 */
   font-size: 16px;
   padding: 0 14px;
@@ -939,7 +978,7 @@ body[data-page="onboarding"] {
 }
 .ob__form .ss { width: 100%; }
 .ob__chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ob__chips .chip { height: 40px; padding: 0 var(--space-4); font-size: var(--fs-small); }
+.ob__chips .chip { height: 32px; padding: 0 var(--space-3); font-size: var(--fs-small); }
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
 .ob__hint { font-size: var(--fs-micro); color: var(--ink-400); line-height: 1.5; word-break: keep-all; }
 
@@ -1125,8 +1164,9 @@ a.todo-pill__add { text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: var(--fs-micro);
-  color: var(--ink-600);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-900);
 }
 .score-prompt__field input,
 .score-prompt__field select {
@@ -1136,10 +1176,9 @@ a.todo-pill__add { text-decoration: none; }
   border: 1.5px solid var(--line-200);
   border-radius: 9px;
   background: var(--cloud-0);
-  /* 옆의 '기본순' 셀렉트와 같은 크기로 맞춘다.
-     16px 미만이면 iOS가 포커스할 때 화면을 확대하므로, Capacitor로 감쌀 때
-     WKWebView 쪽에서 자동 확대를 꺼야 한다. 웹에서만 보는 동안에는 영향이 작다. */
-  font-size: var(--fs-small);
+  /* 다른 화면의 입력칸과 같은 16px. 예전에는 13px 이라 이 폼만 글자가 작았고,
+     16px 미만이면 iOS가 포커스할 때 화면을 확대해 버리는 문제도 있었다. */
+  font-size: 16px;
 }
 .score-prompt__field input::placeholder { font-size: var(--fs-small); }
 .score-prompt__form .btn { flex: 0 0 auto; height: 38px; padding: 0 var(--space-3); white-space: nowrap; }
@@ -1439,7 +1478,7 @@ a.todo-pill__add { text-decoration: none; }
 
 body[data-page="prepare"],
 body[data-page="home"] {
-  --page-bg: url('../assets/bg/sky-B.jpg');
+  --page-bg: url('../assets/bg/campus.jpg');
   --glass-veil: rgba(244, 247, 251, 0.44);
   --glass-card: rgba(255, 255, 255, 0.66);
   --glass-line: rgba(255, 255, 255, 0.75);
@@ -1459,26 +1498,26 @@ body[data-page="home"]::after {
   /* 맨 위를 두껍게 덮는다. 홈 상단의 인사말은 카드 밖에 맨글자로 놓여서,
      사진의 어두운 구간과 겹치면 읽히지 않는다. 사진이 가장 잘 보이는 구간은
      어차피 카드에 가려지는 가운데다. */
-  /* sky-B는 아래 절반이 어두운 구름이라 sky-A용 막을 그대로 쓰면 카드 밑이
-     탁해진다. 위(인사말이 맨글자로 놓이는 자리)는 두껍게, 노을 띠가 지나는
-     가운데는 얇게, 어두운 구름이 깔리는 아래는 다시 두껍게 덮는다. */
+  /* campus.jpg 는 위 절반이 맑은 하늘이라 원래도 밝다 — 인사말 자리는 살짝만
+     덮어 사진을 살리고, 잔디·계단·사람이 몰려 있는 아래쪽을 두껍게 덮는다.
+     거기서 카드가 시작하는데, 디테일이 많으면 유리 카드 뒤가 지저분해진다. */
   background-image: linear-gradient(180deg,
-      rgba(244,247,251,.72) 0%,
-      rgba(244,247,251,.42) 26%,
-      rgba(244,247,251,.30) 44%,
-      var(--glass-veil) 62%,
-      rgba(244,247,251,.84) 100%),
+      rgba(244,247,251,.34) 0%,
+      rgba(244,247,251,.22) 24%,
+      rgba(244,247,251,.26) 46%,
+      var(--glass-veil) 60%,
+      rgba(244,247,251,.88) 100%),
     var(--page-bg);
-  background-size: cover, cover;
-  background-position: center top, center top;
-  /* 좌우를 뒤집어 날개를 오른쪽으로 보낸다. 원본은 날개가 왼쪽 위에 있는데,
-     인사말도 왼쪽 정렬이라 어두운 실루엣이 정확히 글자 뒤에 깔렸다.
-     (막은 세로 그라데이션이라 뒤집어도 그대로다) */
-  transform: scaleX(-1);
+  /* cover + center top 이면 세로가 딱 맞아 사진 전체가 들어오는데, 이 사진은
+     주제(잔디·길·건물)가 아래 절반에 있어서 위 20%(카드가 없는 유일한 구간)에는
+     빈 하늘만 남았다. 세로를 140%로 키우고 아래를 기준으로 붙여 하늘을 덜어낸다.
+     인사말이 놓이는 자리에는 여전히 수평선 위 흐린 하늘이 와서 글자를 가리지 않는다. */
+  background-size: cover, auto 140%;
+  background-position: center top, center bottom;
 }
 @media (min-width: 900px) {
   body[data-page="prepare"]::after,
-  body[data-page="home"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%) scaleX(-1); }
+  body[data-page="home"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
 }
 /* 픽셀 구름 텍스처와 겹치면 배경이 지저분해진다 */
 body[data-page="prepare"]::before,

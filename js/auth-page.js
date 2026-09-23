@@ -110,7 +110,7 @@
         setModeAfterSignup();
         return;
       }
-      location.replace('onboarding.html');
+      location.replace('home.html');
     } catch (err) {
       showError(Auth.message(err));
     } finally {

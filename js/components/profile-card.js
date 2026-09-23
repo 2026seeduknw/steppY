@@ -57,7 +57,7 @@ function profileEditTemplate() {
       </label>
       <label class="field">
         <span>GPA (4.3 만점, 0.01 단위)</span>
-        <input type="number" step="0.01" min="0" max="4.3" name="gpa" value="${p.gpa == null ? '' : p.gpa}" required>
+        <input type="number" step="0.01" min="0" max="4.3" data-decimals="2" name="gpa" value="${p.gpa == null ? '' : p.gpa}" required>
       </label>
       <label class="field">
         <span>어학 시험</span>
@@ -112,7 +112,7 @@ function wireProfileEdit(mount) {
     const fd = new FormData(e.target);
     AppState.updateProfile({
       name: String(fd.get('name') || '').trim(),
-      gpa: parseFloat(fd.get('gpa')),
+      gpa: roundDecimals(fd.get('gpa'), 2),
       major: fd.get('major'),
       languageTests: [{ type: fd.get('langType'), score: parseFloat(fd.get('langScore')) }],
       exchangeTerm: {

@@ -230,7 +230,7 @@ function climatePanelHtml(school) {
 
 const HOUSING_BADGE = {
   Yes: { cls: 'badge--go', label: '기숙사 보장' },
-  Partial: { cls: 'badge--amber', label: '기숙사 부분보장' },
+  Partial: { cls: 'badge--amber', label: '기숙사 부분 보장' },
   No: { cls: 'badge--warn', label: '기숙사 미보장' }
 };
 
@@ -279,7 +279,7 @@ function livingCostPanelHtml(school) {
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
-      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동 조사된 참고용 추정치예요 (미검증 — 실제 비용과 다를 수 있어요)</p>
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치라 실제 비용과 다를 수 있어요</p>
     </section>`;
 }
 
@@ -364,13 +364,13 @@ function confirmWarningTemplate(school, overwriting) {
     <div class="confirm-warning">
       <p class="confirm-warning__title">⚠️ 학교 확정 전 꼭 확인하세요</p>
       <ul>
-        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 기존 확정이 <strong>${school.name}</strong>(으)로 덮어써져요.</li>` : ''}
-        <li>배정 확정 이후 파견대학 변경은 원칙적으로 불가해요. (§7.3)</li>
-        <li>정해진 기한 내 취소는 가능하지만, 취소 시 패널티와 함께 <strong>향후 모든 국제처 해외파견프로그램 영구 재지원 불가</strong> 조치가 따라요.</li>
+        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 기존 확정이 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
+        <li>배정이 확정되면 파견대학은 원칙적으로 바꿀 수 없어요. (§7.3)</li>
+        <li>기한 안에는 취소할 수 있지만, 취소하면 패널티와 함께 <strong>앞으로 국제처 해외파견프로그램에 영원히 다시 지원할 수 없어요</strong>.</li>
       </ul>
       <div class="confirm-warning__actions">
         <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">다시 생각해볼게요</button>
-        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">내용 확인했어요, 확정합니다</button>
+        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">내용 확인했어요, 확정할게요</button>
       </div>
     </div>
   `;

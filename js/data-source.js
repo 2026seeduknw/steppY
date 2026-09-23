@@ -173,7 +173,12 @@
         name: s.name, nameKo: s.name_ko || s.name,
         country: s.country_ko || s.country_en, countryEn: s.country_en, region: s.region_ko || s.continent, city: s.city || '',
         campusCity: c ? (c.city || '') : '',
-        qsRank: s.qs_rank, slot: s.quota, track: s.track,
+        qsRank: s.qs_rank, slot: s.quota,
+        // track 은 원본 Language 열에 "English"가 있는지로만 갈린 값이라
+        // (supabase/build_import.py) Language 가 비면 else 가지로 떨어져
+        // nonEnglish 가 된다 — GE3(다국가 컨소시엄)가 그랬다. 모르는 건
+        // 모른다고 둔다. 수업 언어 필터도, 어학 성적 요구도 걸리지 않는다.
+        track: s.language ? s.track : null,
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
           cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,

@@ -231,7 +231,7 @@
         document.getElementById('matchList').innerHTML = `
           <div class="info-panel">
             <p class="info-panel__text">
-              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려주시면
+              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려 주시면
               그 전공 과목만 모아서 보여드려요.
             </p>
             <a class="btn btn--primary btn--sm" href="home.html">홈에서 신청 전공 고르기</a>
@@ -359,7 +359,7 @@
   });
 
   document.getElementById('downloadReportBtn').addEventListener('click', () => {
-    showToast('실제 서비스에서는 PDF 리포트로 다운로드돼요. 지금은 인쇄 미리보기로 보여드려요.');
+    showToast('인쇄 화면에서 PDF로 저장할 수 있어요.');
     setTimeout(() => window.print(), 400);
   });
 

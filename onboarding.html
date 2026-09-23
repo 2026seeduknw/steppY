@@ -19,8 +19,8 @@
 
 <main class="ob">
   <div class="ob__head">
-    <h1 class="ob__title">시작 전에 몇 가지만 알려주세요</h1>
-    <p class="ob__desc">지원 가능한 학교와 준비 일정을 여기에 맞춰 보여드려요. 나중에 언제든 고칠 수 있어요.</p>
+    <h1 class="ob__title">기본 정보를 알려 주세요</h1>
+    <p class="ob__desc">지원 가능한 학교와 준비 일정을 여기에 맞춰 보여드려요. 언제든 고칠 수 있어요.</p>
   </div>
 
   <div class="ob__form">
@@ -39,7 +39,7 @@
     <section class="ob__group">
       <h2 class="ob__label">학점 <span class="ob__req">필수</span></h2>
       <div class="ob__row">
-        <input type="number" inputmode="decimal" step="0.01" min="0" id="obGpa" placeholder="예: 3.62" aria-label="학점">
+        <input type="number" inputmode="decimal" step="0.01" min="0" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
         <select id="obScale" aria-label="학점 기준"></select>
       </div>
     </section>
@@ -65,7 +65,7 @@
 </main>
 
 <footer class="ob__footer">
-  <button type="button" class="btn btn--primary btn--block" id="obNext">시작하기</button>
+  <button type="button" class="btn btn--primary btn--block" id="obNext">내가 갈 수 있는 학교 보기</button>
 </footer>
 
 <script src="js/release-flags.js"></script>
@@ -79,6 +79,7 @@
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/decimal-input.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/onboarding.js"></script>
