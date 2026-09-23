@@ -1,0 +1,15 @@
+/* Pretendard Variable — 앱 번들에 포함된 사본.
+   예전에는 css/base.css가 jsdelivr에서 static pretendard.css를 @import 했는데,
+   네이티브 앱에서는 첫 실행 때 시스템 폰트로 그려졌다가 나중에 바뀌고,
+   CDN이 막히면 영영 안 바뀐다. 가변 폰트 파일 하나로 400~800을 전부 덮는다.
+
+   출처: https://github.com/orioncactus/pretendard (v1.3.9)
+   라이선스: SIL Open Font License 1.1 — 같은 폴더 OFL.txt */
+@font-face {
+  font-family: 'Pretendard';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+  src: local('Pretendard Variable'),
+       url('PretendardVariable.woff2') format('woff2-variations');
+}

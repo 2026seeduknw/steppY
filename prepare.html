@@ -21,18 +21,7 @@
   <div class="prepare-main">
     <div id="targetMajorCard"></div>
 
-    <div id="departureCard"></div>
-
     <section class="card card-pad" id="todoCard"></section>
-
-    <a class="credits-cta" href="credits.html">
-      <div class="credits-cta__body">
-        <span class="credits-cta__eyebrow">학점 인정</span>
-        <h2>확정한 학교 과목, 학점으로 인정될까요?</h2>
-        <p>내 전공과 이 학교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
-      </div>
-      <span class="credits-cta__arrow" aria-hidden="true">→</span>
-    </a>
 
     <section class="card card-pad" id="checklistSection">
       <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
@@ -43,25 +32,19 @@
       <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
       <div class="living-grid" id="livingGrid"></div>
     </section>
-
-    <section class="card card-pad" id="tipsSection">
-      <div class="section-title"><div><h2>Tips</h2></div></div>
-      <div class="tip-row" id="tipsList"></div>
-      <div class="section-title" style="margin-top:var(--space-5);"><div><h2>주변 가볼만한 곳</h2></div></div>
-      <div class="tip-row" id="spotsList"></div>
-    </section>
   </div>
 </div>
 
 <div id="mentor-float"></div>
 
+<script src="js/release-flags.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
 <script src="js/currency-rates.js"></script>
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/school-logos.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>

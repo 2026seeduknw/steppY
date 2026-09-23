@@ -125,6 +125,9 @@ body[data-page="credits"]::before {
 .btn--ghost { background: transparent; color: var(--sky-700); border: 1.5px solid var(--sky-300); }
 .btn--ghost:hover { background: var(--sky-50); border-color: var(--sky-500); }
 
+.btn--danger { background: var(--coral-500); color: #fff; box-shadow: 0 6px 16px rgba(225,93,70,0.28); }
+.btn--danger:hover { background: var(--coral-600); }
+
 .btn--text { height: auto; padding: 0; color: var(--sky-500); font-weight: 600; }
 .btn--text:hover { color: var(--sky-700); text-decoration: underline; }
 
@@ -415,6 +418,9 @@ body[data-page="credits"]::before {
 .info-panel__text { font-size: var(--fs-small); color: var(--ink-700); margin-bottom: var(--space-2); }
 .info-panel--wide { grid-column: 1 / -1; }
 .info-panel--map { margin-bottom: var(--space-4); }
+/* ② 날씨와 ③ 살기 어떤 곳인가 사이. info-panel 에는 아래 여백이 없어서 두 카드가
+   거의 붙어 있었다(③의 .score-card 는 아래 여백만 갖고 있다). */
+.climate-panel { margin-bottom: var(--space-5); }
 .tag-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
 .visa-source-list { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
 
@@ -513,7 +519,9 @@ body[data-page="credits"]::before {
 .radar-chart { flex: 0 0 264px; width: 264px; height: 244px; overflow: visible; }
 .radar-label { font-size: 10.5px; font-family: var(--font-body); fill: var(--ink-700); font-weight: 600; }
 .score-rows { flex: 1; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
-.score-row { display: grid; grid-template-columns: 128px 1fr 34px 64px; align-items: center; gap: var(--space-3); }
+/* 숫자 칸(34px)을 뺐다 — 점수 자체는 막대 길이로 충분하고, 그 자리는 아래
+   근거 한 줄이 대신한다. */
+.score-row { display: grid; grid-template-columns: 128px 1fr 64px; align-items: center; gap: var(--space-3); }
 .score-row__label { font-size: var(--fs-small); color: var(--ink-700); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 .score-row__help {
   display: inline-flex;
@@ -537,13 +545,18 @@ body[data-page="credits"]::before {
 .review-list li { font-size: var(--fs-small); color: var(--ink-700); padding-left: var(--space-3); position: relative; }
 .review-list li::before { content: '·'; position: absolute; left: 0; color: var(--sky-400); }
 
+/* 스크롤을 따라다니는 하단 바.
+   흰 배경이라 그 아래로 내용이 비치면 안 되는데, 예전에는 위쪽 패딩만 있고
+   좌우·아래가 0이라 칩과 버튼이 바 가장자리에 붙어 있었다. 좌우는 모달 안쪽
+   여백만큼 바깥으로 물려 바가 폭을 다 쓰게 하고, 그만큼 안쪽에 패딩을 준다. */
 .school-modal__footer {
   position: sticky; bottom: calc(var(--space-6) * -1);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding-top: var(--space-4);
+  margin: var(--space-4) calc(var(--space-6) * -1) calc(var(--space-6) * -1);
+  padding: var(--space-4) var(--space-6);
   border-top: 1px solid var(--line-200);
   background: var(--cloud-0);
 }
@@ -560,35 +573,6 @@ body[data-page="credits"]::before {
 .confirm-warning__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 
 /* ---- UC 캠퍼스 목록 모달(지도/날씨/점수 카드 대신 캠퍼스 선택 화면) ---- */
-.uc-group-modal { position: relative; padding: var(--space-6); }
-.uc-group-modal__header { padding-right: var(--space-6); margin-bottom: var(--space-5); }
-.uc-campus-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
-.uc-campus-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  text-align: left;
-}
-.uc-campus-row__logo {
-  flex: 0 0 auto;
-  width: 44px; height: 44px;
-  padding: 6px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid var(--line-200);
-  object-fit: contain;
-}
-.uc-campus-row__logo--fallback {
-  display: flex; align-items: center; justify-content: center;
-  background: var(--sky-100);
-  color: var(--sky-700);
-  font-weight: 700;
-  font-size: var(--fs-micro);
-}
-.uc-campus-row__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.uc-campus-row__name { font-weight: 700; font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.uc-campus-row__meta { font-size: var(--fs-micro); color: var(--ink-600); font-family: var(--font-mono); }
 
 /* ---- Empty / undecided-spec notice ---- */
 .spec-note {
@@ -675,3 +659,128 @@ body[data-page="credits"]::before {
 .ss__option.is-selected { background: var(--sky-100); color: var(--sky-700); font-weight: 600; }
 .ss__check { width: 14px; color: var(--sky-500); font-weight: 700; flex-shrink: 0; }
 .ss__empty { padding: var(--space-4); text-align: center; font-size: var(--fs-small); color: var(--ink-400); }
+
+/* ---- 학교 상세 ② 날씨 — 계절마다 한 줄 ----
+   예전에는 궤도형 인포그래픽이 네 계절 중 둘만 칩으로 띄웠다. 세로로 세우면
+   네 계절이 다 들어가고, 옆에 서울과의 차이를 붙일 자리도 생긴다. */
+.climate-list { display: grid; gap: 2px; margin-top: var(--space-2); }
+.climate-row {
+  display: grid;
+  /* 배지를 넣던 네 번째 칸을 없앴다 — 402px 폭에서 "서울보다 3°C 추움"이 세 줄로
+     접혔다. 파견 시기 표시는 줄 배경색과 캡션 한 줄이 대신한다. */
+  grid-template-columns: 4.4rem 3.1rem 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-small);
+}
+.climate-row__season { color: var(--ink-700); font-weight: 600; white-space: nowrap; }
+.climate-row__temp { font-family: var(--font-mono); font-weight: 700; color: var(--ink-900); }
+/* 기온 옆 칸에 "서울과 얼마나 다른지"와 "비가 며칠 오는지"를 위아래로 쌓는다.
+   가로로 한 칸 더 만들면 402px에서 글자가 접힌다. */
+.climate-row__meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.climate-row__delta { color: var(--ink-600); }
+.climate-row__rain { font-size: var(--fs-micro); color: var(--ink-400); }
+.climate-row__rain strong { color: var(--ink-600); font-weight: 700; }
+/* 파견 시기에 해당하는 계절 — 실제로 가서 겪을 날씨가 이 한 줄이다 */
+.climate-row.is-term { background: var(--amber-100); }
+.climate-row.is-term .climate-row__season,
+.climate-row.is-term .climate-row__delta { color: var(--ink-900); font-weight: 600; }
+.climate-row.is-term { box-shadow: inset 3px 0 0 var(--amber-700); }
+.climate-caption {
+  margin-top: var(--space-2);
+  font-size: var(--fs-micro);
+  color: var(--ink-400);
+}
+
+/* ---- 학교 상세 ④ 유사 전공 ---- */
+.major-match-list { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+.major-match {
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--sky-50);
+}
+.major-match__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.major-match__name { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); word-break: keep-all; }
+.major-match__score { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--sky-500); white-space: nowrap; }
+.major-match__topics { margin-top: 6px; }
+.major-match__note { margin-top: 6px; font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.55; }
+.chip--sm { height: 22px; padding: 0 8px; font-size: var(--fs-micro); }
+
+/* ---- 학교 상세 ③ 점수 근거 한 줄 ---- */
+.score-row__evidence {
+  /* .score-rows 가 이미 자식 사이에 16px 을 두는데, 여기에 아래 여백까지 얹혀
+     근거 한 줄과 다음 지표 사이가 32px 이었다 — 위(14px)와 거의 같아서 이 줄이
+     어느 지표에 딸린 설명인지 안 보였다. 아래 여백을 빼서 절반으로 줄이고,
+     위는 당겨서 자기 지표에 붙인다. */
+  margin: -8px 0 0;
+  padding-left: calc(var(--space-2) + 2px);
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--ink-600);
+  word-break: keep-all;
+}
+
+/* 국제처 링크 — 카드를 씌우지 않는다. 내용이 링크 한 줄뿐이라
+   테두리와 배경을 두르면 그 한 줄보다 껍데기가 더 커진다. */
+.school-modal__official {
+  margin-top: var(--space-4);
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  word-break: break-all;
+}
+.school-modal__official a {
+  color: var(--sky-500);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+/* ---- UC 캠퍼스 목록 (학교 상세의 'UC 9개 캠퍼스 한눈에 보기') ---- */
+.uc-group-modal { position: relative; padding: var(--space-6); }
+.uc-group-modal__header { padding-right: var(--space-6); margin-bottom: var(--space-5); }
+.uc-campus-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.uc-campus-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  text-align: left;
+}
+.uc-campus-row__logo {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  padding: 6px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line-200);
+  object-fit: contain;
+}
+.uc-campus-row__logo--fallback {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sky-100);
+  color: var(--sky-700);
+  font-weight: 700;
+  font-size: var(--fs-micro);
+}
+.uc-campus-row__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.uc-campus-row__name { font-weight: 700; font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uc-campus-row__meta { font-size: var(--fs-micro); color: var(--ink-600); font-family: var(--font-mono); }
+
+/* 캠퍼스 상세 맨 위에 놓이는 형제 캠퍼스로 가는 길 */
+.uc-siblings-link {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--sky-300);
+  border-radius: var(--radius-md);
+  background: var(--sky-50);
+  color: var(--sky-700);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-align: left;
+}
+.uc-siblings-link:hover { background: var(--sky-100); border-style: solid; }

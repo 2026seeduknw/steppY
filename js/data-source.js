@@ -13,8 +13,7 @@
  * schools 테이블은 실제 2027-1 파견대학 원본(공유용.zip, supabase/build_import.py)
  * 기준이라 mock-data.js가 원래 갖고 있던 일부 필드는 원본에 없습니다. 아래에서
  * 안전한 기본값으로 채우고, 그 한계를 함께 적어둡니다:
- *   - majors(지원 가능 연세대 전공), wishlistCount —
- *     원본에 대응 데이터 없음 → 빈 배열/기본값(wishlistCount는 시드 기반 데모 숫자).
+ *   - majors(지원 가능 연세대 전공) — 원본에 대응 데이터 없음 → 빈 배열.
  *     (security는 2027-1_치안.xlsx 반영 후 security_score/security_level로 채워짐.
  *      climate/climateType는 climate_staging 테이블의 계절별 실측 평균기온으로 채워짐 —
  *      climateType은 그 기온으로부터 파생 분류한 값이라 원본에 직접 있는 필드는 아님)
@@ -53,18 +52,19 @@
     return (h >>> 0) / 4294967295;
   }
 
-  function mockWishlistCount(id, qsRank) {
-    const seed = hashSeed(id);
-    const seed2 = hashSeed(id + ':total');
-    const prestige = qsRank ? Math.max(0, 1 - qsRank / 800) : 0.3;
-    const rank1 = Math.round((seed * 0.6 + prestige * 0.4) * 14);
-    const extra = Math.round(seed2 * 22);
-    return { rank1, total: rank1 + extra };
-  }
-
   const SEASON_TEMP_COLS = [
     ['봄학기', 'temp_spring_c'], ['여름학기', 'temp_summer_c'],
     ['가을학기', 'temp_autumn_c'], ['겨울학기', 'temp_winter_c']
+  ];
+
+  /* 계절별 강수 — 월 평균 강수량(mm)과 비 오는 날 수.
+     tools/fetch-precipitation.py 가 Open-Meteo ERA5(2020~2024)로 채운 값이다.
+     기온만으로는 마드리드(여름 14mm·3일)와 리버풀(여름 92mm·17일)이 구분되지 않는다. */
+  const SEASON_PRECIP_COLS = [
+    ['봄학기', 'precip_spring_mm', 'raindays_spring'],
+    ['여름학기', 'precip_summer_mm', 'raindays_summer'],
+    ['가을학기', 'precip_autumn_mm', 'raindays_autumn'],
+    ['겨울학기', 'precip_winter_mm', 'raindays_winter']
   ];
 
   /** 4계절 평균기온으로부터 대략적인 기후 유형을 분류(실측 기온 기반 파생값). */
@@ -78,23 +78,83 @@
     return 'mild-winter';
   }
 
+  /**
+   * 생활 점수의 "근거" 한 줄씩.
+   *
+   * school_livability_score_basis 에는 점수를 만들기 전의 원자료가 한국어
+   * key=value 문자열로 들어 있다(예: "도심 소요분=35.8, Transitland 정류장수=50.0").
+   * 학교 상세 카드는 0~100 점수 대신 이 값을 보여준다 — "교통 78점"보다
+   * "도심까지 36분, 1km 안 정류장 50곳"이 비교에 훨씬 쓸모 있다.
+   *
+   * 문자열을 통째로 뿌리지 않고 필요한 값만 뽑는다. 원본 문자열에는 화면에
+   * 쓸모없는 중간 계산값(원점수·전체범위·상태)까지 섞여 있다.
+   */
+  function num(text, label) {
+    if (!text) return null;
+    const m = text.match(new RegExp(label + '\\s*=?\\s*([0-9]+(?:\\.[0-9]+)?)'));
+    return m ? Number(m[1]) : null;
+  }
+  function str(text, label) {
+    if (!text) return null;
+    const m = text.match(new RegExp(label + '\\s*=\\s*([^,]+)'));
+    return m ? m[1].trim() : null;
+  }
+
+  function parseScoreBasis(row) {
+    if (!row) return null;
+    const costRank = num(row.cost_input, 'LivingCost 글로벌랭킹');
+    const costTotal = row.cost_input && row.cost_input.match(/랭킹\s*[0-9.]+\s*\/\s*([0-9.]+)/);
+    return {
+      // 랭킹은 1위가 가장 비싼 도시다(랭킹 숫자가 클수록 저렴 → cost_score가 높다).
+      cost: costRank != null ? { rank: costRank, total: costTotal ? Number(costTotal[1]) : null } : null,
+      commerce: {
+        within1km: num(row.commerce_input, '1km총합'),
+        within3km: num(row.commerce_input, '3km총합'),
+        food: num(row.commerce_input, '음식/카페3km'),
+        essentials: num(row.commerce_input, '생활필수3km')
+      },
+      transit: {
+        downtownMin: num(row.mobility_input, '도심 소요분'),
+        stops: num(row.mobility_input, 'Transitland 정류장수')
+      },
+      travel: {
+        airport: str(row.travel_mobility_input, '가까운공항'),
+        nearestCountry: str(row.travel_mobility_input, '가장가까운타국')
+      }
+    };
+  }
+
   async function loadSchools() {
-    const [{ data: schools, error }, { data: climateRows }] = await Promise.all([
+    const [{ data: schools, error }, { data: climateRows }, { data: basisRows }] = await Promise.all([
       supabaseClient.from('schools').select('*'),
-      supabaseClient.from('climate_staging').select('*')
+      supabaseClient.from('climate_staging').select('*'),
+      supabaseClient.from('school_livability_score_basis').select('*')
     ]);
     if (error || !schools) throw error || new Error('schools fetch failed');
     const climateBySchool = {};
     (climateRows || []).forEach(c => { if (c.school_id) climateBySchool[c.school_id] = c; });
+    const basisBySchool = {};
+    (basisRows || []).forEach(b => { if (b.school_id) basisBySchool[b.school_id] = parseScoreBasis(b); });
 
     return schools.map(s => {
       const c = climateBySchool[s.id];
       const climate = {};
+      // 서울과 견주려면 숫자가 필요하다 — 문자열로만 두면 화면에서 다시 파싱해야 한다.
+      const climateTemps = {};
+      const climatePrecip = {};
       if (c) {
         SEASON_TEMP_COLS.forEach(([season, col]) => {
           const t = coerce(c[col]);
           if (typeof t === 'number') {
             climate[season] = `평균 ${t}°C` + (c.climate_notes ? `. ${c.climate_notes}` : '');
+            climateTemps[season] = t;
+          }
+        });
+        SEASON_PRECIP_COLS.forEach(([season, mmCol, daysCol]) => {
+          const mm = coerce(c[mmCol]);
+          const days = coerce(c[daysCol]);
+          if (typeof mm === 'number' && typeof days === 'number') {
+            climatePrecip[season] = { mm, days };
           }
         });
       }
@@ -102,10 +162,13 @@
       const isEnglish = s.track === 'english';
       return {
         id: s.id, lat: s.lat, lng: s.lng,
+        // 다섯 개 다 coerce 를 태운다. 치안만 숫자로 바꾸고 나머지는 원본을 그대로
+        // 넘기고 있었는데, PostgREST 가 numeric 을 문자열로 돌려주는 순간
+        // typeof === 'number' 검사가 깨져 "자료 없음"으로 표시된다.
         scores: {
           security: coerce(s.security_score),
-          costOfLiving: s.cost_score, commerce: s.commerce_score,
-          transitMobility: s.mobility_score, travelMobility: s.travel_mobility_score
+          costOfLiving: coerce(s.cost_score), commerce: coerce(s.commerce_score),
+          transitMobility: coerce(s.mobility_score), travelMobility: coerce(s.travel_mobility_score)
         },
         name: s.name, nameKo: s.name_ko || s.name,
         country: s.country_ko || s.country_en, countryEn: s.country_en, region: s.region_ko || s.continent, city: s.city || '',
@@ -129,12 +192,13 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
-        climate, koreaComparison: c ? (c.korea_comparison || '') : '',
+        climate, climateTemps, climatePrecip, climateNotes: c ? (c.climate_notes || '') : '',
+        scoreBasis: basisBySchool[s.id] || null,
+        koreaComparison: c ? (c.korea_comparison || '') : '',
         security: SECURITY_TEXT[s.security_level] || '치안 점수 데이터 준비 중', securityLevel: s.security_level || undefined,
         access: s.available_areas || '상권 정보 준비 중',
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
-        wishlistCount: mockWishlistCount(s.id, s.qs_rank),
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
       };

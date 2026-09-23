@@ -2,10 +2,8 @@
  * 학교 상세 인포그래픽 모달 (F3 카드 클릭 시, F2/F4 지망·확정 카드 클릭 시 공통 사용).
  * §5 F3 "지망 선택 및 학교 확정" + §7.3 "확정 버튼은 재확인 모달 + 불이익 고지 필수" 반영.
  * 지역 패널은 OpenStreetMap 무료 임베드(iframe, API 키 불필요)를 사용합니다.
- * 날씨 · 생활 정보(후기)는 학교 이니셜을 중심에 둔 하나의 궤도형 인포그래픽으로 묶어 표현합니다.
+ * 날씨는 계절마다 한 줄씩, 서울 평년값과의 차이를 붙여 보여줍니다.
  */
-const ORBIT_POS = { tl: { x: 14, y: 12 }, tr: { x: 86, y: 12 }, bl: { x: 16, y: 88 }, br: { x: 84, y: 88 } };
-const ORBIT_ORDER = ['tl', 'tr', 'bl', 'br'];
 const SEASON_ICON = { '봄학기': '🌸', '여름학기': '☀️', '가을학기': '🍁', '겨울학기': '❄️' };
 const COMMERCE_LABEL = { high: '풍부', medium: '보통', low: '작음' };
 const VISA_SOURCE_KIND_LABEL = {
@@ -37,9 +35,13 @@ function openSchoolModal(schoolId, opts = {}) {
   openModal(scrim);
 }
 
-/** UC는 캠퍼스 9곳이 검색 결과에서 카드 한 장으로 합쳐지는데, 그 카드를 누르면
- *  개별 학교 모달(지도·날씨·점수 카드) 대신 캠퍼스 목록만 보여주는 전용 모달을 띄운다.
- *  캠퍼스마다 지원 요건·위치가 달라 지도/날씨/점수는 이 화면에서 의미가 없기 때문. */
+/** UC 9개 캠퍼스를 한 화면에 늘어놓는 목록.
+ *
+ *  예전에는 검색 결과에서 카드 한 장으로 묶고 그 카드가 이 목록을 열었는데,
+ *  묶어 두면 캠퍼스별 기후·물가·위치를 검색 결과에서 견줄 수가 없었다. 이제
+ *  9곳이 각자 카드로 나오고, 이 목록은 UC 캠퍼스 상세 안의 버튼으로 들어온다
+ *  ("UC는 한 곳만 고르는 게 아니라 9곳을 놓고 비교하는 것"이라는 맥락이
+ *   필요한 자리가 거기다). */
 function openUCGroupModal(onChange) {
   const campuses = MOCK.schools
     .filter(s => s.id.startsWith('university-of-california-'))
@@ -90,67 +92,140 @@ function mapEmbedUrl(school) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${school.lat}%2C${school.lng}`;
 }
 
-function orbitCardHtml({ title, initials, logoFile, chips, body }) {
-  const lines = chips.map(c => {
-    const p = ORBIT_POS[c.pos];
-    return `<line x1="50" y1="46" x2="${p.x}" y2="${p.y}" />`;
-  }).join('');
-  const chipsHtml = chips.map(c => `
-    <div class="orbit-chip orbit-chip--${c.pos}">
-      <span class="orbit-chip__icon">${c.icon}</span>
-      <span class="orbit-chip__text"><span class="orbit-chip__label">${c.label}</span><strong class="orbit-chip__value">${c.value}</strong></span>
-    </div>`).join('');
-  const avatarHtml = logoFile
-    ? `<div class="orbit-avatar orbit-avatar--logo"><img src="assets/school-logos/${logoFile}" alt="${initials}" loading="lazy"></div>`
-    : `<span class="orbit-avatar">${initials}</span>`;
-  return `
-    <div class="orbit-card orbit-card--wide">
-      <div class="orbit-stage">
-        <svg class="orbit-lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
-        ${chipsHtml}
-        <div class="orbit-card__center">
-          <span class="orbit-ring orbit-ring--outer"></span>
-          <span class="orbit-ring orbit-ring--inner"></span>
-          ${avatarHtml}
-        </div>
-      </div>
-      <div class="orbit-card__content">
-        <h3 class="orbit-card__title">${title}</h3>
-        <div class="orbit-card__desc">${body}</div>
-      </div>
-    </div>`;
+/**
+ * 모집 인원이 학교 하나가 아니라 묶음 전체에 걸린 경우.
+ *
+ * UC 9개 캠퍼스는 레코드가 따로지만 quota 는 전부 200 — 캠퍼스별 200명이 아니라
+ * UC 전체로 200명이다. 그대로 "모집 200명"을 아홉 번 찍으면 1,800명처럼 읽힌다.
+ */
+const SHARED_QUOTA_GROUPS = [
+  { test: (id) => id.startsWith('university-of-california-'), label: 'UC 전체' }
+];
+
+function quotaLabel(school) {
+  const group = SHARED_QUOTA_GROUPS.find(g => g.test(school.id));
+  return group ? `${group.label} ${school.slot}명 모집` : `모집 ${school.slot}명`;
 }
 
-/** 날씨 + 치안 + 생활 정보(후기)를 한 인포그래픽으로 묶어서 렌더링 */
-function lifeOrbitCard(school, initials) {
-  const seasonEntries = Object.entries(school.climate);
-  const flag = countryFlag(school.countryEn);
-  const chipDefs = seasonEntries.slice(0, 2).map(([season, text], i) => ({
-    icon: (i === 1 && flag) ? flag : (SEASON_ICON[season] || '🌤️'),
-    label: season.replace('학기', ''),
-    value: text.split(/[,.]/)[0]
-  }));
-  // 상권은 ③ 생활 점수 인포그래픽에서 지표로 따로 다룬다 — 여기서는 빼서
-  // 날씨에 집중시킨다(같은 항목이 두 카드에 중복으로 나오던 상태였다).
-  const chips = chipDefs.slice(0, 4).map((c, i) => Object.assign({ pos: ORBIT_ORDER[i] }, c));
+/**
+ * "미국 · Bellingham" — 카드 제목에 그 학교가 어디인지 바로 적는다.
+ *
+ * 도시 칸에 나라 이름이 그대로 들어 있는 행이 있다(홍콩은 '香港 Hong Kong',
+ * 싱가포르는 'Singapore'). 그대로 이으면 "홍콩 · 香港 Hong Kong" 처럼 같은 말이
+ * 두 번 나오므로, 도시가 나라 이름을 품고 있으면 나라만 남긴다.
+ */
+function schoolPlaceLabel(school) {
+  const country = school.country || '';
+  const city = (school.city || '').trim();
+  if (!city) return country || school.mapNote || '';
+  if (!country) return city;
 
-  const weatherLines = seasonEntries.length
-    ? seasonEntries.map(([season, text]) => `<p class="orbit-card__line"><strong>${season}</strong> — ${text}</p>`).join('')
-    : `<p class="orbit-card__line">날씨 정보 준비 중</p>`;
-  const dormCurrency = school.housing.dormCost ? school.housing.dormCost.currency : null;
-  const reviews = (MOCK.schoolReviews[school.id] || []).slice(0, 3);
-  const body = `
-    <p class="orbit-card__line"><strong>날씨</strong></p>
-    ${weatherLines}
-    ${school.koreaComparison ? `<p class="orbit-card__line">${school.koreaComparison}</p>` : ''}
-    ${dormCurrency ? mentalRateShortTipHtml(dormCurrency) : ''}
-    <p class="orbit-card__line"><strong>생활 정보 (후기)</strong></p>
-    ${reviews.length
-      ? `<ul class="review-list">${reviews.map(r => `<li>${r.tag ? `#${r.tag} ` : ''}${r.text}</li>`).join('')}</ul>`
-      : `<p class="info-panel__text">아직 등록된 선배 후기가 없어요.</p>`}
-    <a class="btn--text" href="consult.html?school=${school.id}">Mentor's Step에서 더 물어보기 →</a>
-  `;
-  return orbitCardHtml({ title: '② 날씨 · 생활 정보', initials, logoFile: SCHOOL_LOGOS[school.id], chips, body });
+  const norm = (v) => v.toLowerCase().replace(/[\s·,]/g, '');
+  const cityKey = norm(city);
+  const sameAsCountry = [country, school.countryEn]
+    .filter(Boolean)
+    .some(c => cityKey === norm(c) || cityKey.includes(norm(c)));
+
+  return sameAsCountry ? country : `${country} · ${city}`;
+}
+
+/**
+ * 서울의 계절 평균기온 (기상청 평년값 1991~2020, 월평균을 계절로 묶어 반올림).
+ * 파견교 기온을 "그래서 서울이랑 얼마나 다른데"로 바꿔 읽게 하는 기준점이다.
+ * 파견교 데이터에는 한국이 없어서 이 값만 상수로 들고 있다.
+ */
+const SEOUL_SEASON_TEMP = { '봄학기': 12, '여름학기': 25, '가을학기': 14, '겨울학기': 0 };
+
+/**
+ * 서울의 계절 강수 — 월 평균 강수량(mm)과 비 오는 날 수.
+ * 파견교와 같은 방식으로 뽑았다(Open-Meteo ERA5 2020~2024, 일 강수 1mm 이상을
+ * 비 온 날로 셈). 파견교 목록에 한국이 없어서 이 값만 상수로 들고 있다.
+ */
+const SEOUL_SEASON_RAIN = {
+  '봄학기': { mm: 80, days: 7 },
+  '여름학기': { mm: 286, days: 17 },
+  '가을학기': { mm: 113, days: 8 },
+  '겨울학기': { mm: 26, days: 4 }
+};
+const SEASON_ORDER = ['봄학기', '여름학기', '가을학기', '겨울학기'];
+
+/** "서울보다 4°C 따뜻" / "서울과 비슷" */
+function seoulDeltaLabel(season, temp) {
+  const base = SEOUL_SEASON_TEMP[season];
+  if (base == null || typeof temp !== 'number') return '';
+  const d = Math.round(temp - base);
+  if (Math.abs(d) <= 1) return '서울과 비슷';
+  return `서울보다 ${Math.abs(d)}°C ${d > 0 ? '따뜻' : '추움'}`;
+}
+
+/**
+ * ② 날씨 — 계절마다 한 줄.
+ *
+ * 예전에는 학교 로고를 가운데 두고 계절 두 개만 칩으로 띄우는 궤도형
+ * 인포그래픽이었다. 자리를 크게 먹으면서 정작 네 계절 중 둘만 보였고, 숫자를
+ * 견줄 기준도 없어서 "평균 14°C"가 더운 건지 추운 건지 알 수 없었다.
+ * 네 계절을 한 줄씩 세우고 서울과의 차이를 옆에 붙인다.
+ *
+ * 파견 시기를 등록한 사람에게는 그 계절 줄을 강조한다 — 실제로 가서 겪을
+ * 날씨가 그 한 줄이다. (나머지도 지우지 않는다. 학기가 바뀌거나 여행을 가면
+ * 다른 계절도 겪는다)
+ */
+function climatePanelHtml(school) {
+  const temps = school.climateTemps || {};
+  const rain = school.climatePrecip || {};
+  const seasons = SEASON_ORDER.filter(s => typeof temps[s] === 'number');
+  const term = (AppState.profile && AppState.profile.exchangeTerm) || {};
+  const mySeason = term.season || null;
+
+  if (!seasons.length) {
+    return `
+      <section class="info-panel info-panel--wide climate-panel">
+        <h3>Weather of ${schoolPlaceLabel(school)}!</h3>
+        <p class="info-panel__text">이 학교의 계절별 기온 자료가 아직 없어요.</p>
+      </section>`;
+  }
+
+  const rows = seasons.map(season => {
+    const t = temps[season];
+    const r = rain[season];
+    const mine = season === mySeason;
+    return `
+      <li class="climate-row${mine ? ' is-term' : ''}">
+        <span class="climate-row__season">${SEASON_ICON[season] || '🌤️'} ${season.replace('학기', '')}</span>
+        <span class="climate-row__temp tnum">${t}°C</span>
+        <span class="climate-row__meta">
+          <span class="climate-row__delta">${seoulDeltaLabel(season, t)}</span>
+          ${r ? `<span class="climate-row__rain">☔ <strong class="tnum">${r.days}일</strong> · ${r.mm}mm</span>` : ''}
+        </span>
+      </li>`;
+  }).join('');
+
+  // 계절마다 "서울은 며칠"을 붙이면 같은 말이 네 번 반복된다 — 아래 한 줄로 모은다.
+  const hasRain = seasons.some(s => rain[s]);
+  const seoulRain = hasRain
+    ? `<p class="climate-caption">☔ 는 한 달에 비 오는 날 수예요. 서울은 ${SEASON_ORDER
+        .map(s => `${s.replace('학기', '')} ${SEOUL_SEASON_RAIN[s].days}일`)
+        .join(' · ')}.</p>`
+    : '';
+
+  // '봄 서울보다 2도 따뜻' / '봄 서울과 비슷' 처럼 한 계절짜리 비교문이면 위 줄들과
+  // 같은 말이다. 그런 형태가 아닐 때(편차가 크다는 주석 등)만 남긴다.
+  const note = school.koreaComparison && !/서울(보다|과)/.test(school.koreaComparison)
+    ? `<p class="info-panel__text info-panel__note">${school.koreaComparison}</p>` : '';
+  const climateNote = school.climateNotes
+    ? `<p class="info-panel__text info-panel__note">${school.climateNotes}</p>` : '';
+
+  return `
+    <section class="info-panel info-panel--wide climate-panel">
+      <h3>Weather of ${schoolPlaceLabel(school)}!</h3>
+      <ul class="climate-list">${rows}</ul>
+      ${seoulRain}
+      <p class="climate-caption">${mySeason && seasons.includes(mySeason)
+        ? `표시된 <strong>${mySeason.replace('학기', '')}</strong>이 내 파견 시기예요 · `
+        : ''}기온은 서울 평년값(기상청 1991~2020), 강수는 Open-Meteo 2020~2024 기준</p>
+      ${climateNote}
+      ${note}
+    </section>`;
 }
 
 const HOUSING_BADGE = {
@@ -171,22 +246,6 @@ function extraInfoBadgesHtml(school) {
     badges.push(`<span class="badge ${housing.cls}" title="${school.housing.info || ''}">${housing.label}</span>`);
   }
   return badges.length ? `<div class="school-modal__badges school-modal__badges--extra">${badges.join('')}</div>` : '';
-}
-
-/** 유사 전공 (④). 이 학교 + 내(프로필) 전공 조합으로 major_matches를 직접 필터링한다 —
- *  학교마다, 전공마다 값이 달라져서 school 객체 자체에는 넣지 않는다.
- *  과목(course_matches) 매칭이 아니라 전공(major_matches) 매칭이라 예전엔 "학점 인정
- *  추천 과목"이라는 제목이 내용과 안 맞았음 — 제목·빈 상태 문구를 전공 매칭으로 정정.
- *  기준 전공은 내 프로필 전공이 기본값이지만, 검색 화면에서 학과 필터로 걸어서 들어온
- *  경우엔 그 필터 전공(contextMajor)을 우선한다 — 안 그러면 "중어중문학과로 필터링해서
- *  찾은 학교인데 모달에서는 왜 매칭이 없냐"는 혼란이 생긴다(필터는 내 프로필 전공이
- *  아니라 필터로 고른 전공 기준으로 학교를 찾아준 것이기 때문). */
-function similarMajorsHtml(school, major) {
-  const matches = (MOCK.majorMatches || []).filter(m => m.school === school.id && m.homeMajor === major);
-  if (!matches.length) {
-    return `<p class="info-panel__text">${major ? '아직 이 학교·전공 조합의 매칭 결과가 없어요.' : '재학 학과를 등록하면 유사 전공을 보여드려요.'}</p>`;
-  }
-  return `<div class="tag-row">${matches.map(m => `<span class="chip" title="유사도 ${m.similarity}%${m.note ? ` · ${m.note}` : ''}">${m.targetMajor}</span>`).join('')}</div>`;
 }
 
 /** 통화 환산 팁. MENTAL_FX_RATES(js/currency-rates.js, 암산용 반올림 환율)로
@@ -216,7 +275,7 @@ function livingCostPanelHtml(school) {
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   return `
     <section class="info-panel info-panel--wide">
-      <h3>⑤ 생활비 안내</h3>
+      <h3>Cost of living, 얼마나 들까?</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
@@ -226,29 +285,29 @@ function livingCostPanelHtml(school) {
 
 function schoolModalTemplate(school, opts = {}) {
   const profile = AppState.profile;
-  const similarMajorsFor = opts.contextMajor || profile.major;
   const elig = computeEligibility(profile, school);
   const isFav = AppState.isFavorite(school.id);
   const wishlist = AppState.getWishlist();
   const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
   const confirmed = AppState.getConfirmedSchool();
-  const initials = schoolInitials(school.name);
 
   return `
     <div class="modal-panel">
     <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
+    <button class="fav-btn school-modal__fav ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
+      <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
+    </button>
     <div class="school-modal">
       <header class="school-modal__header">
         <div>
-          <div class="school-modal__titlerow">
-            <h2 class="school-modal__title">${school.name}</h2>
-            <button class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle aria-label="즐겨찾기">
-              <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
-            </button>
-          </div>
+          <!-- 오른쪽 위 두 버튼(닫기·찜하기)이 차지하는 자리. 제목 첫 줄만
+               이만큼 비켜 가고 둘째 줄부터는 폭을 다 쓴다 — 예전에는 헤더
+               전체에 오른쪽 여백을 줘서 긴 학교 이름이 석 줄로 접혔다. -->
+          <span class="school-modal__btnspace" aria-hidden="true"></span>
+          <h2 class="school-modal__title">${school.name}</h2>
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
-            <span class="badge badge--neutral">모집 ${school.slot}명</span>
+            <span class="badge badge--neutral">${quotaLabel(school)}</span>
             <span class="badge badge--amber">GPA ${school.gpaCut}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
@@ -256,37 +315,31 @@ function schoolModalTemplate(school, opts = {}) {
         </div>
       </header>
 
+      ${SHARED_QUOTA_GROUPS.some(g => g.test(school.id)) ? `
+      <button type="button" class="uc-siblings-link" id="ucSiblingsBtn">
+        UC 9개 캠퍼스 한눈에 보기 →
+      </button>` : ''}
+
       <section class="info-panel info-panel--map">
-        <h3>① 지역</h3>
+        <h3>${schoolPlaceLabel(school)}</h3>
         <div class="map-embed">
           <iframe src="${mapEmbedUrl(school)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${school.name} 지도"></iframe>
         </div>
-        <p class="map-caption">${school.mapNote}</p>
       </section>
 
-      ${lifeOrbitCard(school, initials)}
+      ${climatePanelHtml(school)}
 
       ${scoreCardHtml(school)}
 
       <div class="school-modal__grid">
-        <section class="info-panel info-panel--wide">
-          <h3>④ 유사 전공</h3>
-          ${similarMajorsHtml(school, similarMajorsFor)}
-        </section>
-
         ${livingCostPanelHtml(school)}
-
-        <section class="info-panel">
-          <h3>⑥ 지망 통계</h3>
-          <p class="info-panel__text">1지망으로 <strong class="tnum">${school.wishlistCount.rank1}명</strong>이 선택했어요</p>
-          <p class="info-panel__text">1~3지망 합계 <strong class="tnum">${school.wishlistCount.total}명</strong>이 선택했어요</p>
-        </section>
-
-        <section class="info-panel info-panel--wide">
-          <h3>⑦ 공식 링크</h3>
-          <a class="btn--text" href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace('https://', '')} ↗</a>
-        </section>
       </div>
+
+      <!-- 카드로 감쌀 만한 내용이 아니다. 링크 한 줄이라 한 줄로 둔다. -->
+      <p class="school-modal__official">
+        국제처 링크
+        <a href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace(/^https?:\/\//, '')} ↗</a>
+      </p>
 
       ${AppState.isAuthed ? `
       <footer class="school-modal__footer" id="modalFooter">
@@ -324,6 +377,11 @@ function confirmWarningTemplate(school, overwriting) {
 }
 
 function wireSchoolModalActions(scrim, school, opts) {
+  // UC 캠퍼스끼리 오가는 길. 모집 인원이 9곳에 걸쳐 하나라서, 한 곳만 보고
+  // 정하기보다 9곳을 늘어놓고 견주는 편이 맞는 화면이다.
+  const ucBtn = scrim.querySelector('#ucSiblingsBtn');
+  if (ucBtn) ucBtn.addEventListener('click', () => openUCGroupModal(opts.onChange));
+
   scrim.querySelector('[data-fav-toggle]').addEventListener('click', (e) => {
     if (!AppState.isAuthed) {
       e.stopPropagation();

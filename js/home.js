@@ -51,12 +51,22 @@
 
   // 제휴 업체(보험/어학원/여행) 배너 — 아직 실제 제휴처가 없는 더미 CTA.
   // 클릭 수만 세어 실제 수요가 있는지 검증하는 용도라 트래킹이 핵심이다.
-  document.getElementById('partnerPromoBanner').addEventListener('click', () => {
-    trackEvent('partner_promo_click');
-    showToast('서비스 준비중입니다. 관심 가져주셔서 감사해요 — 곧 찾아뵐게요!');
-  });
+  // 출시 빌드에서는 release-flags.js가 통째로 걷어낸다(partnerPromo) — 눌러도
+  // 갈 곳이 없는 버튼이 보이면 심사에서 걸린다. 그래서 없을 수 있다.
+  const partnerBanner = document.getElementById('partnerPromoBanner');
+  if (partnerBanner) {
+    partnerBanner.addEventListener('click', () => {
+      trackEvent('partner_promo_click');
+      showToast('서비스 준비중입니다. 관심 가져주셔서 감사해요 — 곧 찾아뵐게요!');
+    });
+  }
 
-  document.addEventListener('profile:updated', renderWishlistRow);
+  // 계정 시트에서 이름을 바꾸면 인사말도 그 자리에서 바뀌어야 한다.
+  // (예전에는 지망 목록만 다시 그려서, 새로고침 전까지 옛 이름이 남았다)
+  document.addEventListener('profile:updated', () => {
+    renderGreeting();
+    renderWishlistRow();
+  });
   document.addEventListener('MOCK:updated', () => {
     if (redirectIfConfirmed()) return;
     renderAll();
@@ -119,28 +129,32 @@
    * 진행 단계 — 시작과 끝을 잇는 한 줄 위에 발자국으로 현재 위치를 표시한다.
    *
    * 예전엔 단계마다 카드를 만들어 가로로 스크롤시켰는데, 4단계 중 2개만 보이고
-   * 나머지는 밀어야 나와서 "지금 어디쯤인지"가 한눈에 안 잡혔다. 이제 네 단계를
+   * 나머지는 밀어야 나와서 "지금 어디쯤인지"가 한눈에 안 잡혔다. 이제 모든 단계를
    * 한 줄에 두고 지나온 구간만 선을 채운다.
+   *
+   * '학교 탐색'과 '지망 선택'은 한 단계다 — 찾아보는 일과 1~3지망에 담는 일이
+   * 같은 화면(학교 찾기)에서 이어지고, 둘을 나눠 봐야 사용자가 할 일이 달라지지
+   * 않는다. 나뉘어 있을 때는 즐겨찾기만 눌러도 첫 칸이 채워져, 아직 아무것도
+   * 고르지 않았는데 진도가 나간 것처럼 보였다.
    */
   function renderJourney() {
     const wishlist = AppState.getWishlist();
     const hasWishlist = Object.keys(wishlist).length > 0;
     const confirmed = AppState.getConfirmedSchool();
     const steps = [
-      { label: '학교 탐색', done: hasWishlist || AppState.load().favorites.length > 0 },
-      { label: '지망 선택', done: hasWishlist },
+      { label: '학교 탐색', done: hasWishlist },
       { label: '학교 확정', done: !!confirmed },
       { label: '교환 준비', done: false }
     ];
     const firstUndone = steps.findIndex(s => !s.done);
     const currentIdx = firstUndone === -1 ? steps.length - 1 : firstUndone;
 
-    // 각 단계는 자기 구간의 한가운데에 놓인다 (4단계면 12.5% / 37.5% / …)
+    // 각 단계는 자기 구간의 한가운데에 놓인다 (3단계면 16.7% / 50% / 83.3%)
     const at = (i) => ((i + 0.5) / steps.length) * 100;
 
     document.getElementById('journeySteps').innerHTML = `
       <div class="journey">
-        <ol class="journey__labels">
+        <ol class="journey__labels" style="--journey-count:${steps.length}">
           ${steps.map((s, i) => `
             <li class="journey__label ${s.done ? 'is-done' : ''} ${i === currentIdx ? 'is-current' : ''}">
               ${s.label}

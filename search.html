@@ -17,7 +17,7 @@
 
 <div class="page-shell">
   <div class="search-toolbar">
-    <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명 · 학과명으로 검색">
+    <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명으로 검색">
     <select class="sort-select" id="sortSelect">
       <option value="default">기본순</option>
       <option value="major">전공 유사도 순</option>
@@ -97,13 +97,14 @@
 
 <div id="mentor-float"></div>
 
+<script src="js/release-flags.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
 <script src="js/currency-rates.js"></script>
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/school-logos.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>

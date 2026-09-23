@@ -23,6 +23,9 @@
   // 입력값을 모아뒀다가 마지막에 한 번에 저장한다 — 중간에 이탈하면
   // 반쯤 채워진 프로필이 남는 것보다 아무것도 안 남는 편이 낫다.
   const draft = {
+    // 가입할 때 이름은 선택이었다. 안 적으면 홈 인사가 메일 아이디(hslee_819님)로
+    // 굳고 고칠 데가 없었다 — 첫 화면에서 한 번 묻는다.
+    name: '',
     major: null,
     gpa: null,
     gpaScale: 4.3,
@@ -36,6 +39,7 @@
 
   const el = {
     skip: document.getElementById('obSkip'),
+    name: document.getElementById('obName'),
     error: document.getElementById('obError'),
     next: document.getElementById('obNext'),
     majorMount: document.getElementById('obMajorMount'),
@@ -110,6 +114,7 @@
   }
 
   function validate() {
+    if (!draft.name) return { msg: '이름을 입력해 주세요.', focus: el.name };
     if (!draft.major) return { msg: '학과를 선택해 주세요.' };
     if (draft.gpa === null || Number.isNaN(draft.gpa)) return { msg: '학점을 입력해 주세요.', focus: el.gpa };
     if (draft.gpa < 0 || draft.gpa > draft.gpaScale) {
@@ -159,6 +164,7 @@
     if (problem) return showError(problem.msg, problem.focus);
 
     const patch = {
+      name: draft.name,
       major: draft.major,
       gpa: draft.gpa,
       gpaScale: draft.gpaScale,
@@ -176,6 +182,22 @@
   }
 
   /* --------------------------------------------------------------- 연결 */
+
+  // 가입할 때 이름을 적었거나 예전에 저장해 둔 값이 있으면 채워 둔다.
+  // 메일 아이디를 그대로 끌어오지는 않는다 — 그건 이름이 아니라 계정 식별자다.
+  (function prefillName() {
+    const saved = (AppState.profile && AppState.profile.name) || '';
+    const meta = (typeof Auth !== 'undefined' && Auth.user && Auth.user.user_metadata) || {};
+    const initial = (meta.name || '').trim() || (saved === '회원' ? '' : saved);
+    const emailId = (typeof Auth !== 'undefined' && Auth.email) ? Auth.email.split('@')[0] : '';
+    draft.name = initial && initial !== emailId ? initial : '';
+    el.name.value = draft.name;
+  })();
+
+  el.name.addEventListener('input', () => {
+    draft.name = el.name.value.trim();
+    clearError();
+  });
 
   el.gpa.addEventListener('input', () => {
     draft.gpa = el.gpa.value === '' ? null : parseFloat(el.gpa.value);

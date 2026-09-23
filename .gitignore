@@ -12,3 +12,10 @@ android/app/src/main/assets/public/
 
 # CocoaPods (Podfile / Podfile.lock 은 커밋한다)
 ios/App/Pods/
+
+# 크롤링 스크립트가 받아두는 원본·중간 산출물 (수십 MB, 다시 받으면 된다)
+tools/out/
+
+# 파이썬 바이트코드
+__pycache__/
+*.pyc

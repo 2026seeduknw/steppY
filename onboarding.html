@@ -25,6 +25,13 @@
 
   <div class="ob__form">
     <section class="ob__group">
+      <h2 class="ob__label">이름 <span class="ob__req">필수</span></h2>
+      <input type="text" id="obName" maxlength="20" autocomplete="nickname"
+             placeholder="예: 김스텝" aria-label="이름">
+      <p class="ob__hint">홈에서 “안녕하세요, ○○님”으로 불러드려요. 별명이어도 괜찮아요.</p>
+    </section>
+
+    <section class="ob__group">
       <h2 class="ob__label">학과 <span class="ob__req">필수</span></h2>
       <div id="obMajorMount"></div>
     </section>
@@ -61,12 +68,13 @@
   <button type="button" class="btn btn--primary btn--block" id="obNext">시작하기</button>
 </footer>
 
+<script src="js/release-flags.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
 <script src="js/currency-rates.js"></script>
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>

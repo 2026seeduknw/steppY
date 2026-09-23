@@ -6,6 +6,10 @@
  */
 window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 (function () {
+  // 네이티브 앱에서는 페이지가 capacitor://localhost 에서 뜨고 /_vercel/... 은
+  // 앱 번들 안에 없다. 그대로 두면 화면을 열 때마다 404 요청이 하나씩 나간다.
+  // va() 큐는 그대로 두므로 trackEvent()는 어디서든 Supabase 쪽에 계속 쌓인다.
+  if (!/^https?:$/.test(location.protocol)) return;
   const script = document.createElement('script');
   script.defer = true;
   script.src = '/_vercel/insights/script.js';

@@ -114,6 +114,33 @@ const Auth = {
     this.session = null;
   },
 
+  /**
+   * 회원 탈퇴 — 계정과 그에 딸린 데이터를 전부 지운다. 되돌릴 수 없다.
+   *
+   * App Store 심사 가이드라인 5.1.1(v)는 계정을 만들 수 있는 앱이면 앱 안에서
+   * 지울 수도 있어야 한다고 요구한다. 웹으로 내보내거나 메일로 요청하게 하면
+   * 리젝이다.
+   *
+   * 실제 삭제는 Edge Function(supabase/functions/delete-account)이 한다.
+   * anon 키로는 계정을 지울 수 없고 service_role 키를 여기 둘 수는 없어서,
+   * 서버에서 JWT를 확인한 뒤 "그 토큰의 주인"만 지우는 구조다. 사진(Storage)도
+   * 거기서 함께 지운다 — 클라이언트에서 지우면 중간에 앱이 꺼졌을 때 주인 없는
+   * 파일이 남는다.
+   */
+  async deleteAccount() {
+    if (!this.userId) throw new Error('not_authenticated');
+
+    // 현재 세션 토큰은 supabase-js가 알아서 Authorization 헤더에 싣는다.
+    const { data, error } = await supabaseClient.functions.invoke('delete-account', { method: 'POST' });
+    if (error) throw error;
+    if (!data || !data.deleted) throw new Error((data && data.error) || 'delete_failed');
+
+    // 사용자 행이 사라진 뒤라 서버에 로그아웃을 요청하면 401이 돌아온다.
+    // 남은 일은 이 기기의 토큰을 버리는 것뿐이므로 local 스코프로 끝낸다.
+    await supabaseClient.auth.signOut({ scope: 'local' }).catch(() => {});
+    this.session = null;
+  },
+
   /** Supabase 오류 코드를 사용자에게 보여줄 한국어 문장으로 바꾼다. */
   message(error) {
     const code = error && (error.code || error.message) || '';

@@ -20,41 +20,6 @@ body[data-page="intro"] {
   justify-content: space-between;
   padding: var(--space-4) var(--space-7);
 }
-.intro__nav-left { position: relative; display: flex; align-items: center; }
-.intro__hamburger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px; height: 40px;
-  border: none;
-  background: transparent;
-  color: var(--onnavy-100);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-}
-.intro__hamburger:hover { background: rgba(240,236,221,0.1); }
-.intro__navmenu {
-  position: absolute;
-  top: 48px; left: 0;
-  display: none;
-  flex-direction: column;
-  min-width: 180px;
-  padding: var(--space-2);
-  background: var(--cloud-0);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-modal);
-}
-.intro__navmenu.is-open { display: flex; }
-.intro__navmenu a {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--ink-900);
-  text-decoration: none;
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-.intro__navmenu a:hover { background: var(--sky-50); }
-
 .intro__brand {
   display: flex;
   align-items: center;
@@ -169,6 +134,9 @@ body[data-page="intro"] {
   /* 없으면 "한번에"가 "한번 / 에"로 쪼개져 마지막 줄에 한 글자만 남는다.
      한국어는 단어 중간이 아니라 어절 단위로 끊어야 읽힌다. */
   word-break: keep-all;
+  /* 지구와 발자국 위에 얹히는 글자라 배경 밝기가 자리마다 다르다.
+     그림자를 한 겹 깔면 어디에 걸치든 가장자리가 살아난다. */
+  text-shadow: 0 2px 18px rgba(1, 7, 15, 0.55);
 }
 .intro__desc {
   font-size: var(--fs-body);
@@ -229,49 +197,6 @@ body[data-page="intro"] {
   to { transform: translateX(-50%); }
 }
 
-/* ---- 서비스 설명 ---- */
-.intro__services {
-  position: relative;
-  z-index: 1;
-  background: transparent;
-  padding: var(--space-9) var(--space-7);
-}
-.intro__services h2 {
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: var(--fs-display);
-  color: var(--ink-900);
-  margin-bottom: var(--space-7);
-}
-.intro__service-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-  max-width: var(--page-max);
-  margin: 0 auto;
-}
-.intro__service-card {
-  display: block;
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--amber-500);
-  text-decoration: none;
-  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
-}
-.intro__service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
-.intro__service-card h3 {
-  font-size: var(--fs-h3);
-  font-weight: 700;
-  color: var(--ink-900);
-  margin-bottom: var(--space-2);
-}
-.intro__service-card p {
-  font-size: var(--fs-small);
-  color: var(--ink-700);
-  line-height: 1.5;
-}
-
 /* ==========================================================================
    랜딩 하단 — 스크롤해서 읽는 섹션들
    ========================================================================== */
@@ -281,13 +206,15 @@ body[data-page="intro"] {
 .intro__final {
   position: relative;
   z-index: 1;
-  padding: var(--space-9) var(--space-7);
+  /* 글 덩어리 사이 여백은 절반으로. 좁은 화면에서 125px 짜리 빈 구간이
+     연달아 놓이면, 다음 문단을 보려고 한 판을 통째로 넘겨야 한다. */
+  padding: calc(var(--space-9) / 2) var(--space-7);
   background: var(--cloud-0);
 }
 .intro__steps {
   background: var(--cloud-50);
-  /* 위 섹션(개국 통계)과 제목이 붙어 보여도 될 만큼 흐름이 이어져서 위 여백만 절반으로 줄인다 */
-  padding-top: calc(var(--space-9) / 2);
+  /* 위 섹션(숫자)과 흐름이 이어져서 위 여백은 한 번 더 줄인다 */
+  padding-top: calc(var(--space-9) / 4);
 }
 
 .intro__section-title {
@@ -312,56 +239,89 @@ body[data-page="intro"] {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
   max-width: var(--page-max);
-  margin: var(--space-7) auto 0;
+  margin: calc(var(--space-7) / 2) auto 0;
 }
+/* 카드를 씌우지 않는다. 유리 카드를 쓰면 배경 그라데이션이 밝아지는 구간에서
+   크림색 라벨이 카드 바탕에 묻혀 읽히지 않았다. 숫자 세 개를 가는 세로선으로만
+   나눠 두면 배경이 어디든 대비가 유지되고, 상자 하나가 줄어 화면도 조용해진다. */
 .intro__stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: var(--space-5) var(--space-2);
-  border-radius: var(--radius-lg);
-  background: var(--sky-50);
+  gap: 4px;
+  padding: var(--space-2);
 }
+.intro__stat + .intro__stat { border-left: 1px solid rgba(240, 236, 221, 0.18); }
 .intro__stat strong {
   font-family: var(--font-mono);
-  font-size: 1.75rem;
+  font-size: 2.25rem;
   font-weight: 800;
   color: var(--sky-700);
-  line-height: 1.1;
+  line-height: 1.05;
 }
 .intro__stat span { font-size: var(--fs-micro); color: var(--ink-600); text-align: center; word-break: keep-all; }
+/* 숫자와 단위를 한 줄에. 단위(개/개국)는 숫자를 읽는 데 방해가 되지 않도록
+   아래 라벨과 같은 크기로 두고, 밑줄을 맞춰 붙인다. */
+.intro__stat-num { display: inline-flex; align-items: baseline; gap: 2px; }
+.intro__stat-num em { font-style: normal; font-weight: 700; }
 
+/* 숫자가 세어 올라가는 동안 자릿수가 늘면 칸 너비가 출렁인다.
+   숫자용 고정폭(tabular-nums)으로 잡아 둔다. */
+.intro__stat strong { font-variant-numeric: tabular-nums; }
+
+/* 출처 한 줄 — 제목 밑이 아니라 숫자 밑에 둔다. 무엇의 출처인지가 바로 위에 있다. */
+.intro__stats-note {
+  margin-top: var(--space-2);
+  text-align: center;
+  font-size: var(--fs-micro);
+  word-break: keep-all;
+}
+
+/* 흰 카드를 걷어내고 글만 남긴다.
+   네 걸음은 나란히 놓인 네 개의 상자가 아니라 이어지는 하나의 흐름이다.
+   카드로 끊어 두면 그 순서가 안 읽힌다 — 상자 대신 여백과 번호로 나눈다. */
 .intro__step-list {
   list-style: none;
-  margin: var(--space-7) auto 0;
+  margin: calc(var(--space-7) / 2) auto 0;
   padding: 0;
   max-width: var(--page-max);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 .intro__step-item {
   display: flex;
   align-items: flex-start;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--cloud-0);
 }
+/* 채운 원 배지도 카드와 같은 장식이다. 번호만 얇게 세워 둔다. */
 .intro__step-num {
   flex: 0 0 auto;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: var(--sky-500);
-  color: #fff;
+  width: 2.1rem;
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: var(--fs-small);
-  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  padding-top: 3px;
+  color: var(--amber-500);
+  opacity: 0.85;
 }
-.intro__step-item h3 { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); margin-bottom: 4px; }
-.intro__step-item p { font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); word-break: keep-all; }
+.intro__step-item h3 { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); margin-bottom: 6px; word-break: keep-all; }
+.intro__step-item p { font-size: var(--fs-small); line-height: 1.7; color: var(--ink-700); word-break: keep-all; }
+
+/* 1번 안에 딸린 항목(학교 정보를 한눈에). 번호를 하나 더 만들지 않고 왼쪽
+   선으로만 매단다 — 번호가 늘면 "Four Steps" 와 숫자가 어긋난다. */
+.intro__step-sub {
+  margin-top: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid rgba(240, 236, 221, 0.22);
+}
+.intro__step-sub h4 {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
 
 .intro__final { background: var(--oxford); text-align: center; }
 .intro__final-title {
@@ -369,6 +329,7 @@ body[data-page="intro"] {
   font-weight: 800;
   font-size: var(--fs-h1);
   color: var(--onnavy-100);
+  text-shadow: 0 2px 14px rgba(1, 7, 15, 0.45);
   line-height: 1.45;
   letter-spacing: -0.02em;
   word-break: keep-all;
@@ -376,7 +337,7 @@ body[data-page="intro"] {
 .intro__final-sub {
   margin-top: var(--space-3);
   font-size: var(--fs-small);
-  color: var(--onnavy-300);
+  color: rgba(240, 236, 221, 0.88);
   word-break: keep-all;
 }
 .intro__cta--final { margin-top: var(--space-6); }
@@ -384,56 +345,9 @@ body[data-page="intro"] {
   display: block;
   margin-top: var(--space-5);
   font-size: var(--fs-small);
-  color: var(--onnavy-300);
-}
-
-/* ---- 서비스 카드 상세화 ---- */
-/* h2가 margin-bottom: --space-7 을 갖고 있다. 부제를 음수 마진으로 끌어올리면
-   제목과 겹치므로, 제목 여백 자체를 줄이고 부제가 아래 간격을 맡는다. */
-.intro__services h2 { margin-bottom: var(--space-2); }
-.intro__services-sub {
-  margin: 0 0 var(--space-7);
-  text-align: center;
-  font-size: var(--fs-small);
-  color: var(--ink-600);
-  word-break: keep-all;
-}
-.intro__service-points {
-  list-style: none;
-  margin: var(--space-3) 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.intro__service-points li {
-  position: relative;
-  padding-left: 14px;
-  font-size: var(--fs-micro);
-  line-height: 1.55;
-  color: var(--ink-700);
-  word-break: keep-all;
-}
-.intro__service-points li::before {
-  content: '';
-  position: absolute;
-  left: 2px; top: 7px;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--ink-400);
-}
-/* 아직 데이터를 채우지 못한 기능 — 링크로 두지 않는다 */
-.intro__service-card--soon { background: var(--cloud-100, #E6E9F0); cursor: default; }
-.intro__service-card--soon:hover { transform: none; box-shadow: none; }
-.intro__soon-badge {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: rgba(35, 53, 77, 0.12);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  vertical-align: middle;
+  color: rgba(240, 236, 221, 0.88);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 
@@ -526,7 +440,7 @@ body[data-page="intro"] {
 .swipe-start.is-done .swipe-start__track { border-color: var(--amber-500); }
 
 /* 고정 버튼이 마지막 섹션 내용을 가린다 */
-.intro__final { padding-bottom: calc(var(--space-9) + 76px); }
+.intro__final { padding-bottom: var(--space-5); }
 
 
 /* ==========================================================================
@@ -542,71 +456,62 @@ body[data-page="intro"] {
 body[data-page="intro"] {
   /* 위에서 아래로 계속 밝아지되 끝까지 남색 계열에 머문다. 중간에 흰색이 끼면
      거기서 다시 경계가 생긴다. */
+  /* 끝을 #7CA2C6까지 밝히면 마지막 섹션이 하늘색 판이 되는데, 그 위에 올라가는
+     글자는 전부 크림색이다(원래 --oxford 위에 놓이던 섹션이라). 크림 대 하늘색은
+     대비가 2.6:1밖에 안 나와서 "재학생 확인을 위해…" 같은 줄이 읽히지 않았다.
+     가장 밝은 구간을 80% 부근에 두고 바닥은 다시 중간 남색으로 내린다 —
+     지평선 너머가 밝아지는 모양은 그대로 남고, 글자는 어디서든 읽힌다. */
   background: linear-gradient(180deg,
     #01070F 0%,
     #06142C 16%,
     #12294C 34%,
     #24456E 52%,
-    #3D6491 70%,
-    #5A83AE 85%,
-    #7CA2C6 100%);
+    #3D6491 68%,
+    #557FA8 80%,
+    #3B5E88 100%);
   /* attachment: fixed를 쓰면 안 된다. 그라데이션이 뷰포트에 고정돼 스크롤해도
      늘 같은 구간만 보이고, "내려갈수록 밝아진다"가 사라진다. 기본값(scroll)이라야
      페이지 전체 높이에 펼쳐진다. */
 }
 
+
 /* 섹션은 각자 배경을 갖지 않는다 — 전부 위 그라데이션 위에 얹힌다 */
-.intro__services,
 .intro__stats,
 .intro__steps,
 .intro__final { background: transparent; }
 
-/* ---- 어두운 배경 기준으로 글자색 뒤집기 ---- */
-.intro__services h2,
-.intro__section-title { color: var(--moonlight, #F0ECDD); }
 
+/* ---- 어두운 배경 기준으로 글자색 뒤집기 ----
+   0.72는 그라데이션 중간(#24456E~#3D6491) 위에서 본문으로는 흐렸다.
+   부제·캡션을 0.88까지 올리고, 그림자를 한 겹 깔아 밝은 구간에서도 뜨게 한다. */
+.intro__section-title {
+  color: var(--moonlight, #F0ECDD);
+  text-shadow: 0 2px 14px rgba(1, 7, 15, 0.45);
+}
 .intro__section-sub,
-.intro__service-card p,
-.intro__stat span { color: rgba(240, 236, 221, 0.72); }
-
-/* 세 걸음 카드만 흰 바탕을 유지한다. 남색 배경용 크림색 글씨를 그대로 쓰면
-   흰 카드 위에 크림색이라 거의 안 보인다 — 여기는 어두운 잉크색으로 되돌린다. */
-.intro__step-item h3 { color: var(--ink-900); }
-.intro__step-item p { color: var(--ink-700); }
-
-/* 카드 안 목록은 원래 흰 바탕용 회색이라 남색 위에서는 거의 안 읽힌다 */
-.intro__service-points li { color: rgba(240, 236, 221, 0.66); }
-.intro__service-points li::before { background: var(--amber-500); opacity: 0.85; }
-.intro__service-card--soon .intro__service-points li { color: rgba(240, 236, 221, 0.4); }
-
-.intro__stat strong { color: #fff; }
-
-/* ---- 카드는 유리로 ---- */
-.intro__service-card,
-.intro__stat {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  backdrop-filter: saturate(150%) blur(14px);
-  -webkit-backdrop-filter: saturate(150%) blur(14px);
-  box-shadow: none;
+.intro__stat span,
+.intro__stats-note {
+  color: rgba(240, 236, 221, 0.88);
+  text-shadow: 0 1px 8px rgba(1, 7, 15, 0.4);
 }
-.intro__service-card:hover {
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: none;
-}
-.intro__service-card h3 { color: #fff; }
 
-/* 준비 중 카드는 눌리지 않는다는 것이 계속 보여야 한다 */
-.intro__service-card--soon {
-  background: rgba(255, 255, 255, 0.05);
-  border-style: dashed;
+/* 걸음 항목은 이제 흰 카드가 아니라 남색 배경 위에 바로 놓인다 */
+.intro__step-item h3,
+.intro__step-sub h4 {
+  color: var(--moonlight, #F0ECDD);
+  text-shadow: 0 2px 12px rgba(1, 7, 15, 0.4);
 }
-.intro__service-card--soon h3 { color: rgba(240, 236, 221, 0.6); }
+.intro__step-item p { color: rgba(240, 236, 221, 0.86); }
+.intro__step-sub p { color: rgba(240, 236, 221, 0.72); }
 
+.intro__stat strong {
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(1, 7, 15, 0.5);
+}
 /* 마지막 섹션은 이미 남색 전제라 글자색은 그대로 두고 배경만 뺐다 */
 
 /* 고정 버튼이 마지막 섹션 내용을 가린다 */
-.intro__final { padding-bottom: calc(var(--space-9) + 76px); }
+.intro__final { padding-bottom: var(--space-5); }
 
 /* 이미지는 끌면 브라우저가 "이미지 드래그"를 시작해 포인터 이벤트를 가로챈다.
    SVG를 쓸 때는 없던 문제라 로고로 바꾼 뒤에 스와이프가 통째로 먹통이 됐다.

@@ -153,20 +153,66 @@ function radarChartSvg(scores) {
   return `<svg class="radar-chart" viewBox="0 0 264 244" xmlns="http://www.w3.org/2000/svg">${rings}${axisLines}${polygonFill}${dots}${labels}</svg>`;
 }
 
-function scoreRowsHtml(scores) {
+/**
+ * 지표별 "그래서 실제로 어떤데" 한 줄.
+ *
+ * 점수(0~100)는 271개 파견교끼리 견준 상대값이라, 82라는 숫자만 봐서는 그 동네가
+ * 어떤 곳인지 알 수 없다. school_livability_score_basis 에 점수를 만들기 전의
+ * 원자료가 남아 있으므로(도심까지 몇 분, 공항까지 몇 km, 상권 몇 곳) 그걸 그대로
+ * 옮긴다 — 학교 둘을 놓고 고를 때 실제로 비교하게 되는 건 이 값들이다.
+ *
+ * 근거가 없는 지표(치안)나 원자료가 없는 학교는 빈 문자열을 돌려주고, 그때는
+ * 점수 막대만 남는다.
+ */
+function scoreEvidence(key, school) {
+  const b = school && school.scoreBasis;
+  if (!b) return '';
+  const km = (t) => t && t.replace(/\s*([0-9.]+)km$/, ' $1km');
+
+  if (key === 'costOfLiving' && b.cost && b.cost.rank && b.cost.total) {
+    // 랭킹 1위가 가장 비싼 도시다. 등수를 그대로 읽으면 방향을 헷갈리니 백분율로 바꾼다.
+    const pct = Math.max(1, Math.round(b.cost.rank / b.cost.total * 100));
+    const side = pct <= 50 ? `비싼 쪽 상위 ${pct}%` : `저렴한 쪽 상위 ${100 - pct}%`;
+    return `전 세계 ${b.cost.total.toLocaleString('ko-KR')}개 도시 중 ${side}`;
+  }
+  if (key === 'commerce' && b.commerce && b.commerce.within3km != null) {
+    const parts = [`학교 3km 안에 ${b.commerce.within3km}곳`];
+    if (b.commerce.within1km != null) parts.push(`그중 1km 안 ${b.commerce.within1km}곳`);
+    if (b.commerce.food != null) parts.push(`음식·카페 ${b.commerce.food}곳`);
+    return parts.join(' · ');
+  }
+  if (key === 'transitMobility' && b.transit && b.transit.downtownMin != null) {
+    const parts = [`도심까지 대중교통 ${Math.round(b.transit.downtownMin)}분`];
+    if (b.transit.stops != null) parts.push(`1km 안 정류장 ${Math.round(b.transit.stops)}곳`);
+    return parts.join(' · ');
+  }
+  if (key === 'travelMobility' && b.travel && (b.travel.airport || b.travel.nearestCountry)) {
+    const parts = [];
+    if (b.travel.airport) parts.push(`가까운 공항 ${km(b.travel.airport)}`);
+    if (b.travel.nearestCountry) parts.push(`가장 가까운 다른 나라 ${km(b.travel.nearestCountry)}`);
+    return parts.join(' · ');
+  }
+  if (key === 'security') {
+    return '외교부 여행경보 · Numbeo 범죄지수 · 세계평화지수를 합친 값';
+  }
+  return '';
+}
+
+function scoreRowsHtml(scores, school) {
   return RADAR_AXES.map(ax => {
     const hasData = typeof scores[ax.key] === 'number';
     const v = scores[ax.key] || 0;
     const band = scoreBand(v);
+    const evidence = hasData ? scoreEvidence(ax.key, school) : '';
     return `
       <div class="score-row">
         <span class="score-row__label">${ax.icon} ${ax.label}<button type="button" class="score-row__help"
               data-score-help="${ax.key}" aria-expanded="false" aria-controls="scoreHelp-${ax.key}"
               aria-label="${escapeAttr(ax.label)} 점수 계산 방법">?</button></span>
         <div class="score-row__bar"><div class="score-row__fill" style="width:${v}%; background:${band.color};"></div></div>
-        <span class="score-row__value tnum">${hasData ? v : '준비중'}</span>
-        <span class="score-row__band" style="color:${band.color};">${hasData ? band.label : ''}</span>
+        <span class="score-row__band" style="color:${band.color};">${hasData ? band.label : '자료 없음'}</span>
       </div>
+      ${evidence ? `<p class="score-row__evidence">${evidence}</p>` : ''}
       ${axisHelpHtml(ax)}`;
   }).join('');
 }
@@ -177,12 +223,14 @@ function scoreCardHtml(school, opts) {
   return `
     <div class="card score-card">
       <div class="section-title">
-        <div><h2>${numbered ? '③ ' : ''}생활 점수 인포그래픽</h2></div>
+        <div><h2>${numbered && typeof schoolPlaceLabel === 'function'
+          ? `How is ${schoolPlaceLabel(school)}?`
+          : '살기 어떤 곳인가'}</h2></div>
       </div>
-      <p class="score-card__note">치안 · 물가 · 상권 · 교통 이동성 · 여행 이동성 5개 지표를 100점 만점으로 점수화했어요. 모두 높을수록 유리해요 (물가는 저렴할수록 높은 점수).</p>
+      <p class="score-card__note">막대가 길수록 다른 파견교보다 좋다는 뜻이에요. 막대 아래 한 줄은 그 막대가 나온 실제 숫자고요.</p>
       <div class="score-card__body">
         ${radarChartSvg(scores)}
-        <div class="score-rows">${scoreRowsHtml(scores)}</div>
+        <div class="score-rows">${scoreRowsHtml(scores, school)}</div>
       </div>
     </div>`;
 }
