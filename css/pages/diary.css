@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&family=Gowun+Dodum&display=swap');
 /* Travel Journey App reference theme */
 :root {
   /* FAB 바와 각종 모달은 document.body 바로 아래에 붙는다. 이 팔레트를
@@ -574,3 +574,125 @@
 }
 .diary-featured__chip.is-active { background: var(--ink-900); color: #fff; }
 .diary-cal-section { margin-top: var(--space-6); }
+
+/* ==========================================================================
+   글래스 + 그라디언트 — 홈 화면과 같은 하늘 배경 위에 반투명 유리 카드.
+   기록하기 화면(body[data-page="journal"])에만 적용한다. 색 번짐은 배경 레이어에 얹은
+   옅은 복숭아·라벤더 글로우이고, 글자 뒤는 항상 밝게 유지한다.
+   ========================================================================== */
+body[data-page="journal"] {
+  --page-bg: url('../assets/bg/sky-A.jpg');
+  --glass-card: rgba(255, 255, 255, 0.62);
+  --glass-card-strong: rgba(255, 255, 255, 0.78);
+  --glass-line: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 8px 28px rgba(28, 46, 78, 0.12);
+  background: transparent;
+}
+body[data-page="journal"]::before { display: none; }
+body[data-page="journal"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    radial-gradient(60% 38% at 88% 14%, rgba(255, 196, 170, 0.50), transparent 70%),
+    radial-gradient(70% 42% at 8% 46%, rgba(170, 176, 255, 0.42), transparent 72%),
+    radial-gradient(70% 40% at 86% 86%, rgba(255, 178, 210, 0.34), transparent 72%),
+    linear-gradient(180deg, rgba(244, 247, 251, 0.82) 0%, rgba(244, 247, 251, 0.66) 40%, rgba(244, 247, 251, 0.62) 66%, rgba(244, 247, 251, 0.92) 100%),
+    var(--page-bg);
+  background-size: cover;
+  background-position: center top;
+}
+@media (min-width: 900px) {
+  body[data-page="journal"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
+}
+body[data-page="journal"] .diary-view { background: transparent; }
+body[data-page="journal"] .app-nav { background: rgba(255, 255, 255, 0.62); border-bottom-color: rgba(255, 255, 255, 0.6); }
+body[data-page="journal"] .tabbar { background: rgba(255, 255, 255, 0.72); }
+body[data-page="journal"] .diary-header { border-bottom-color: rgba(35, 53, 77, 0.10); }
+
+/* 유리 카드 */
+body[data-page="journal"] .diary-hero {
+  background: var(--glass-card);
+  -webkit-backdrop-filter: saturate(150%) blur(18px);
+  backdrop-filter: saturate(150%) blur(18px);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+body[data-page="journal"] .diary-day:not(.has-photo) {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: none;
+}
+body[data-page="journal"] .diary-day.is-today { box-shadow: 0 0 0 2px var(--ink-900); }
+body[data-page="journal"] .diary-hero__plane { border-color: rgba(255, 255, 255, 0.9); }
+body[data-page="journal"] .diary-icon-btn { background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.75); }
+
+/* 버튼 — 카메라는 유리, 기록하기는 남색 그라디언트 */
+body[data-page="journal"] .diary-write-bar__btn {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 20px rgba(28, 46, 78, 0.18);
+  background: linear-gradient(135deg, #23354D 0%, #46597F 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+body[data-page="journal"] .diary-write-bar__btn--camera {
+  background: var(--glass-card-strong);
+  color: var(--ink-900);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+/* 최근 사진 — 사진 위에 유리 패널, 칩도 유리 */
+body[data-page="journal"] .diary-featured__eyebrow { color: var(--ink-700); }
+body[data-page="journal"] .diary-featured__card { box-shadow: 0 18px 40px rgba(28, 46, 78, 0.22); }
+body[data-page="journal"] .diary-featured__panel {
+  background: rgba(255, 255, 255, 0.66);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+  backdrop-filter: saturate(160%) blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+body[data-page="journal"] .diary-featured__chip {
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+body[data-page="journal"] .diary-featured__chip.is-active { background: var(--ink-900); color: #fff; border-color: var(--ink-900); }
+
+/* 팝업 — 유리 시트 */
+body[data-page="journal"] .modal-scrim { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+body[data-page="journal"] .diary-day-modal,
+body[data-page="journal"] .diary-sheet {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(238, 241, 250, 0.82));
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  backdrop-filter: saturate(160%) blur(22px);
+  border: 1px solid var(--glass-line);
+}
+
+/* ==========================================================================
+   글씨체 — 기록하기 화면은 고운돋움. 앱바·탭바는 앱 공통(Pretendard) 그대로.
+   고운돋움은 굵기가 400 하나뿐이라 굵은 글씨는 브라우저가 진하게 흉내 낸다.
+   숫자(Day·날짜·시각)는 자릿수가 흔들리지 않도록 Pretendard를 유지한다.
+   ========================================================================== */
+body[data-page="journal"] {
+  --diary-font-ticket: 'Gowun Dodum', var(--font-display);
+  --diary-font-display: 'Gowun Dodum', var(--font-display);
+  --diary-font-body: 'Gowun Dodum', var(--font-body);
+}
+body[data-page="journal"] .diary-view,
+body[data-page="journal"] .modal-panel,
+body[data-page="journal"] .diary-write-bar__btn,
+body[data-page="journal"] .diary-featured__chip,
+body[data-page="journal"] .song-popup,
+body[data-page="journal"] .diary-form input,
+body[data-page="journal"] .diary-form textarea { font-family: 'Gowun Dodum', var(--font-body); }
+body[data-page="journal"] .diary-hero__daycount,
+body[data-page="journal"] .diary-streak__num,
+body[data-page="journal"] .diary-hero__dates,
+body[data-page="journal"] .diary-stamp__date,
+body[data-page="journal"] .diary-ticket-time,
+body[data-page="journal"] .diary-postmark b { font-family: var(--font-body); }
+
+/* 달력은 카드에 가두지 않고 화면 폭을 다 쓴다 — 날짜 칸이 작으면 누르기 불편하다 */
+body[data-page="journal"] .diary-cal-section { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }

@@ -424,7 +424,6 @@
           ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
         </div>
-        <button type="button" class="diary-entry__del" data-del="${esc(e.id)}" aria-label="이 기록 삭제">✕</button>
       </div>`;
   }
 
