@@ -134,15 +134,16 @@
       <div class="diary-cal-nav">
         <h2 class="diary-cal-nav__title" id="calTitle"></h2>
         <div class="diary-cal-nav__btns">
-          <button type="button" class="diary-icon-btn" id="openStampbook" aria-label="우표첩" title="우표첩">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" stroke-dasharray="2.5 2"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>
-          </button>
-          <button type="button" class="diary-icon-btn" id="openWrapup" aria-label="이번 달 정리" title="이번 달 정리">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
-          </button>
-          <button type="button" class="diary-icon-btn" id="openReport" aria-label="경험보고서 미리보기" title="경험보고서 미리보기">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 13h6M9 17h6"/></svg>
-          </button>
+          <div class="diary-menu">
+            <button type="button" class="diary-icon-btn" id="calMenuBtn" aria-label="더 보기" aria-haspopup="menu" aria-expanded="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+            </button>
+            <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
+              <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
+              <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
+              <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
+            </div>
+          </div>
           <span class="diary-cal-nav__divider"></span>
           <button type="button" class="diary-icon-btn" id="calPrev" aria-label="이전 달">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -156,10 +157,6 @@
       <div class="diary-month" id="calMonth"></div>
     </section>
 
-    <section class="diary-side">
-      <h2 id="sideDate" class="is-date"></h2>
-      <div class="diary-entry-list" id="entryList"></div>
-    </section>
   `;
 
   /* --------------------------------------------------------------- 파견 기간 */
@@ -167,47 +164,32 @@
   function renderHero() {
     const slot = root.querySelector('#diaryHeroSlot');
     const info = departureInfo();
-    const recordedDays = new Set(entries().map(e => e.date)).size;
-    const recorded = recordedDays ? `지금까지 ${recordedDays}일 기록했어요` : '오늘의 순간을 기록해보세요';
 
     // 날짜를 모르면 여기서 받지 않고 홈으로 보낸다 — 입력 자리가 두 곳이면
     // 한쪽에서 고친 값이 다른 쪽에 안 보이는 것처럼 느껴진다.
     if (!info.hasRange) {
       slot.innerHTML = `
-        <a class="diary-hero diary-hero--setup" href="home.html">
-          <span class="diary-hero__eyebrow">MY JOURNEY</span>
-          <p class="diary-setup__desc">홈에서 출국일을 입력하면 남은 날과 파견 며칠째인지 여기에 표시돼요</p>
+        <a class="diary-hero diary-hero--compact diary-hero--setup" href="home.html">
           <span class="diary-hero__cta">홈에서 출국일 입력하기 →</span>
         </a>`;
       return;
     }
 
-    // 출국 전 — 남은 날을 세고, 떠나기 전 기억을 남기도록 권한다.
+    // 출국 전 — 남은 날 한 줄.
     if (info.phase === DEPARTURE_PHASES.BEFORE) {
       slot.innerHTML = `
-        <div class="diary-hero diary-hero--before">
-          <div class="diary-hero__top">
-            <span class="diary-hero__eyebrow">출국까지</span>
-            <span class="diary-hero__daycount">D-<b class="diary-seg">${info.daysUntil}</b></span>
-          </div>
-          <p class="diary-hero__lede">배웅해준 친구들, 짐 싸던 밤. 떠나기 전 지금도 나중에 꺼내 볼 기억이 돼요.</p>
-          <div class="diary-hero__dates">
-            <span>오늘</span>
-            <span>${info.start} 출국</span>
-          </div>
-          <p class="diary-hero__sub">${recorded}</p>
+        <div class="diary-hero diary-hero--compact diary-hero--before">
+          <span class="diary-hero__daycount">D-<b class="diary-seg">${info.daysUntil}</b></span>
+          <span class="diary-hero__left">${info.start} 출국</span>
         </div>`;
       return;
     }
 
-    // 파견 중 / 귀국 후 — 기간 위에서 지금 어디쯤인지 보여준다.
+    // 파견 중 / 귀국 후 — 한 줄: Day N ▬▬✈━━ 남은 날. 날짜·설명 문장은 뺐다(화면 정보 줄이기).
     const isAfter = info.phase === DEPARTURE_PHASES.AFTER;
     slot.innerHTML = `
-      <div class="diary-hero">
-        <div class="diary-hero__top">
-          <span class="diary-hero__eyebrow">MY JOURNEY</span>
-          <span class="diary-hero__daycount">${isAfter ? '교환 종료' : `Day <b class="diary-seg">${info.dayNum}</b>`}</span>
-        </div>
+      <div class="diary-hero diary-hero--compact">
+        <span class="diary-hero__daycount">${isAfter ? '교환 종료' : `Day <b class="diary-seg">${info.dayNum}</b>`}</span>
         <div class="diary-hero__track">
           <span class="diary-hero__pin diary-hero__pin--start" aria-hidden="true"></span>
           <div class="diary-hero__line">
@@ -218,11 +200,7 @@
           </div>
           <span class="diary-hero__pin diary-hero__pin--end" aria-hidden="true">🏁</span>
         </div>
-        <div class="diary-hero__dates">
-          <span>${info.start}</span>
-          <span>${info.end}</span>
-        </div>
-        <p class="diary-hero__sub">${isAfter ? recorded : `귀국까지 ${info.daysLeft}일 · ${recorded}`}</p>
+        ${isAfter ? '' : `<span class="diary-hero__left">${info.daysLeft}일 남음</span>`}
       </div>`;
   }
 
@@ -590,7 +568,7 @@
     }
   }
   // 팝업을 닫거나 화면을 벗어나면 소리도 멈춘다
-  document.addEventListener('click', (ev) => { if (ev.target.closest('[data-modal-close], .modal-scrim') && !ev.target.closest('.diary-lp')) stopPreview(); });
+  document.addEventListener('click', (ev) => { if (ev.target.closest('[data-modal-close], .modal-scrim') && !ev.target.closest('[data-preview]')) stopPreview(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopPreview(); });
 
   /* 노래 무드 → 우표 빛깔. 무드가 저장돼 있지 않은 옛 기록은 태그·날씨·시간으로 다시 계산한다. */
@@ -614,24 +592,33 @@
    * 사진이 여러 장이면 뒤에 우표가 비스듬히 겹쳐 보인다. 노래가 있으면 앨범 표지가 LP처럼 붙고
    * 무드 색이 우표 둘레의 빛과 소인 색이 된다. 장소·날씨·태그·노래는 우표 아래에 따로 놓는다.
    */
+  /** 앨범 LP — 항상 천천히 돌고, 누르면 30초 미리듣기(재생 중엔 빨리 돈다). 표지가 없으면 검은 LP로 그린다. */
+  function lpHtml(track) {
+    if (!track) return '';
+    const bg = track.art ? ` style="background-image:url('${track.art}')"` : '';
+    return `<button type="button" class="diary-lp-btn" data-preview data-track="${esc(track.name)}" data-artist="${esc(track.artist)}" aria-label="${esc(track.name)} 30초 미리듣기">
+      <span class="diary-lp${track.art ? '' : ' diary-lp--plain'}"${bg}></span><span class="diary-lp-play" aria-hidden="true"></span>
+    </button>`;
+  }
+
   function stampHtml(e, i) {
     const urls = (e.photos || []).map(photoUrl).filter(Boolean);
     const heading = e.title || e.body || '';
     const alt = esc(heading || `${e.date} 기록 사진`);
     const city0 = (e.location && (e.location.city || e.location.country)) || '';
-    const lpTrack = (e.song && e.song.art) ? e.song : (e.nowPlaying && e.nowPlaying.art) ? e.nowPlaying : null;
-    const art = lpTrack ? lpTrack.art : '';
+    // 오늘의 노래를 우선하되, 없으면 그때 듣던 노래. 표지가 없어도 LP는 보인다.
+    const lpTrack = e.song || e.nowPlaying || null;
     let photo;
     if (!urls.length && photosLoading(e)) {
       photo = `<div class="diary-stamp__skeleton" aria-label="사진 불러오는 중"></div>`;
     } else if (!urls.length) {
-      photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p></div>`;
+      photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p>${lpHtml(lpTrack)}</div>`;
     } else {
       photo = `<div class="diary-entry__photo-wrap">
         <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
         ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
         ${city0 ? `<div class="diary-postmark diary-postmark--film" aria-hidden="true"><b data-film="${filmDate(e.date)}">${e.date.slice(5).replace('-', '.')}</b><span>${esc(city0)}</span></div>` : ''}
-        ${art ? `<button type="button" class="diary-lp" data-track="${esc(lpTrack.name)}" data-artist="${esc(lpTrack.artist)}" style="background-image:url('${art}')" aria-label="${esc(lpTrack.name)} 30초 미리듣기"></button>` : ''}
+        ${lpHtml(lpTrack)}
       </div>`;
     }
     const backs = urls.slice(1, 3).map((u, k) =>
@@ -682,9 +669,12 @@
     return `
       <div class="diary-ticket-song diary-ticket-song--${variant}">
         <div class="diary-ticket-song__top">
-          ${item.art
-            ? `<img class="diary-ticket-song__art" src="${item.art}" alt="">`
-            : `<span class="diary-ticket-song__art diary-ticket-song__art--empty">🎵</span>`}
+          <button type="button" class="diary-song-play" data-preview data-track="${esc(item.name)}" data-artist="${esc(item.artist)}" aria-label="${esc(item.name)} 30초 미리듣기">
+            ${item.art
+              ? `<img class="diary-ticket-song__art" src="${item.art}" alt="">`
+              : `<span class="diary-ticket-song__art diary-ticket-song__art--empty">🎵</span>`}
+            <span class="diary-lp-play" aria-hidden="true"></span>
+          </button>
           <div class="diary-ticket-song__info">
             <span class="diary-ticket-song__label">${label}</span>
             <span class="diary-ticket-song__title">${esc(item.name)}</span>
@@ -736,8 +726,8 @@
         });
       }
     });
-    container.querySelectorAll('.diary-lp').forEach(lp => {
-      lp.addEventListener('click', (ev) => { ev.stopPropagation(); togglePreview(lp); });
+    container.querySelectorAll('[data-preview]').forEach(btn => {
+      btn.addEventListener('click', (ev) => { ev.stopPropagation(); togglePreview(btn); });
     });
     container.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -763,6 +753,7 @@
   }
 
   function renderSide() {
+    if (!root || !root.querySelector('#entryList')) return;   // 달력 아래 목록은 뺐다 — 날짜를 누르면 팝업이 대신한다
     const items = byDate()[view.selected] || [];
     root.querySelector('#sideDate').textContent = view.selected;
     const list = root.querySelector('#entryList');
@@ -1323,6 +1314,18 @@
     });
     calSection.addEventListener('click', (ev) => { if (calSwiped) { ev.stopPropagation(); ev.preventDefault(); calSwiped = false; } }, true);
     root.querySelector('#openStampbook').addEventListener('click', openStampbook);
+    // 달력 오른쪽 ⋯ — 우표첩·이번 달 정리·보고서 미리보기를 한 곳에 모았다
+    const menuBtn = root.querySelector('#calMenuBtn');
+    const menu = root.querySelector('#calMenu');
+    const closeMenu = () => { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', outsideMenu, true); };
+    const outsideMenu = (ev) => { if (!menu.contains(ev.target) && ev.target !== menuBtn && !menuBtn.contains(ev.target)) closeMenu(); };
+    menuBtn.addEventListener('click', () => {
+      if (!menu.hidden) { closeMenu(); return; }
+      menu.hidden = false;
+      menuBtn.setAttribute('aria-expanded', 'true');
+      document.addEventListener('pointerdown', outsideMenu, true);
+    });
+    menu.addEventListener('click', () => closeMenu());
     root.querySelector('#writeBtn').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
     const camLabel = root.querySelector('#cameraBtn');
     const camInput = root.querySelector('#cameraInputMain');

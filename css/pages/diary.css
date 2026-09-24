@@ -1349,3 +1349,101 @@ body[data-page="journal"][data-theme="film"] .diary-ticket-row--time .diary-tick
   color: var(--diary-text-dim); display: inline-flex; align-items: center; gap: 6px;
 }
 body[data-page="journal"][data-theme="film"] .diary-ticket-row--time .diary-ticket-time::before { content: '🕒'; font-size: 1em; }
+
+/* ==========================================================================
+   화면 정보 줄이기 — 여정은 카드 없이 한 줄, 달력 메뉴는 ⋯ 하나
+   ========================================================================== */
+body[data-page="journal"] .diary-hero.diary-hero--compact {
+  display: flex; align-items: center; gap: var(--space-4); margin-top: 0; padding: 4px 2px;
+  background: none; border: 0; box-shadow: none; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+body[data-page="journal"] .diary-hero--compact .diary-hero__track { flex: 1; min-width: 0; margin: 0; }
+body[data-page="journal"] .diary-hero--compact .diary-hero__daycount { font-size: 1.05rem; white-space: nowrap; }
+body[data-page="journal"] .diary-hero--compact .diary-hero__left { font-size: var(--fs-micro); color: var(--diary-text-faint); white-space: nowrap; }
+body[data-page="journal"] .diary-hero--compact.diary-hero--before { justify-content: space-between; }
+body[data-page="journal"] .diary-hero--compact.diary-hero--setup { justify-content: flex-start; }
+body[data-page="journal"][data-theme="film"] .diary-hero.diary-hero--compact { background: none; border: 0; box-shadow: none; }
+body[data-page="journal"][data-theme="film"] .diary-hero--compact .diary-hero__daycount .diary-seg { font-size: 1.15rem; }
+body[data-page="journal"][data-theme="film"] .diary-hero--compact .diary-hero__left { font-family: var(--f-label); color: var(--diary-text-dim); letter-spacing: 0.06em; }
+body[data-page="journal"] .diary-hero--compact .diary-hero__cta { font-size: var(--fs-small); }
+
+.diary-menu { position: relative; }
+.diary-menu__pop {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; min-width: 200px; padding: 6px;
+  border-radius: 16px; border: 1px solid var(--glass-line, rgba(255, 255, 255, 0.7));
+  background: rgba(255, 255, 255, 0.94); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(28, 46, 78, 0.26); display: flex; flex-direction: column; animation: diary-qpop-in 200ms ease both; transform-origin: 90% 0;
+}
+.diary-menu__pop[hidden] { display: none; }
+.diary-menu__item { min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: none; text-align: left; font: inherit; font-size: var(--fs-small); font-weight: 600; color: #14213A; cursor: pointer; }
+.diary-menu__item:hover, .diary-menu__item:active { background: rgba(35, 53, 77, 0.08); }
+body[data-page="journal"][data-theme="film"] .diary-menu__pop { background: #211f1b; border-color: rgba(239, 232, 214, 0.2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65); }
+body[data-page="journal"][data-theme="film"] .diary-menu__item { color: var(--film-paper); font-family: var(--f-label); letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .diary-menu__item:hover, body[data-page="journal"][data-theme="film"] .diary-menu__item:active { background: rgba(239, 232, 214, 0.1); }
+
+/* ⋯ 메뉴 위치 — 아이콘이 아니라 달력 머리줄 기준으로 오른쪽 끝에 붙이고, 글자는 줄바꿈하지 않는다 */
+.diary-cal-nav { position: relative; }
+.diary-menu { position: static; }
+.diary-menu__pop {
+  right: 0; left: auto; top: calc(100% + 4px); width: max-content; min-width: 220px; max-width: calc(100vw - 32px);
+}
+.diary-menu__item { white-space: nowrap; font-size: 0.875rem; letter-spacing: 0.02em; display: block; width: 100%; }
+body[data-page="journal"][data-theme="film"] .diary-menu__item { font-size: 0.8125rem; letter-spacing: 0.06em; }
+
+/* ⋯ 메뉴 항목 — 모두 왼쪽 정렬, 같은 들여쓰기, 같은 높이 */
+.diary-menu__pop { gap: 2px; padding: 6px; }
+.diary-menu__pop .diary-menu__item {
+  display: flex; align-items: center; justify-content: flex-start; text-align: left; width: 100%;
+  min-height: 42px; padding: 0 16px; margin: 0; line-height: 1.2; text-indent: 0;
+}
+
+/* ==========================================================================
+   앨범 LP · 미리듣기 다시 정리
+   - 원판(.diary-lp)은 평소에도 천천히 돌고, 재생 중에는 빨리 돈다.
+   - ▶ / ❚❚ 표시(.diary-lp-play)는 원판 위에 얹되 원판과 따로라 같이 돌지 않는다.
+   - 노래 칸의 앨범 썸네일도 같은 재생 버튼이다.
+   ========================================================================== */
+.diary-lp-btn { position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 56px; height: 56px; padding: 0; border: 0; background: none; cursor: pointer; }
+.diary-lp-btn:focus-visible { outline: 2px solid var(--diary-accent); outline-offset: 3px; border-radius: 50%; }
+.diary-lp-btn .diary-lp {
+  position: absolute; inset: 0; width: auto; height: auto; right: auto; bottom: auto; border-radius: 50%;
+  background: #222 center / cover no-repeat; border: 2px solid rgba(255, 255, 255, 0.92); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: diary-lp-spin 9s linear infinite;
+}
+.diary-lp-btn .diary-lp::after { display: none; }
+.diary-lp-btn .diary-lp--plain { background: radial-gradient(circle, #555 0 12%, #151515 13% 60%, #2a2a2a 61% 64%, #111 65%); }
+.diary-lp-btn.is-playing .diary-lp { animation-duration: 2.6s; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45), 0 4px 14px rgba(0, 0, 0, 0.45); }
+.diary-lp-btn.is-loading .diary-lp { animation: diary-lp-pulse 900ms ease-in-out infinite; }
+.diary-lp-play {
+  position: absolute; inset: 0; margin: auto; width: 24px; height: 24px; border-radius: 50%; z-index: 1;
+  background: rgba(10, 10, 10, 0.62); color: #fff; display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.diary-lp-play::before { content: '▶'; font-size: 10px; line-height: 1; padding-left: 2px; }
+.is-playing > .diary-lp-play::before { content: '❚❚'; font-size: 8px; padding-left: 0; letter-spacing: -1px; }
+.is-loading > .diary-lp-play::before { content: '…'; font-size: 13px; padding-left: 0; }
+/* 앨범 사진이 없는 글 우표 안의 LP */
+.diary-stamp__blank { position: relative; }
+.diary-stamp__blank .diary-lp-btn { right: 8px; bottom: 8px; width: 46px; height: 46px; }
+
+/* 노래 칸 썸네일 = 재생 버튼 */
+.diary-song-play { position: relative; flex: none; width: 40px; height: 40px; padding: 0; border: 0; background: none; border-radius: 4px; cursor: pointer; }
+.diary-song-play .diary-ticket-song__art { width: 40px; height: 40px; }
+.diary-song-play .diary-lp-play { width: 20px; height: 20px; }
+.diary-song-play.is-playing .diary-ticket-song__art { box-shadow: 0 0 0 2px var(--film-amber, var(--diary-accent)); }
+@media (prefers-reduced-motion: reduce) { .diary-lp-btn .diary-lp { animation: none; } }
+
+/* ==========================================================================
+   기기 컬럼 고정 — 이 앱은 데스크탑에서도 402px 폭의 폰 컬럼으로만 그려진다(css/app.css --app-width).
+   그런데 위쪽의 `@media (max-width: 640px)` 규칙들은 브라우저 창 폭을 보기 때문에, 창이 640px보다
+   넓으면(데스크탑) 폰 레이아웃 규칙이 꺼져 달력 양옆에 42px씩 여백이 생기고 날짜 칸이 35px로 줄었다.
+   기록하기에서는 그 규칙들을 창 폭과 상관없이 항상 적용한다.
+   ========================================================================== */
+body[data-page="journal"] .diary-cal-section { padding: var(--space-5) 0 var(--space-6); background: transparent; box-shadow: none; border-radius: 0; margin-right: 0; }
+body[data-page="journal"] .diary-cal-section .diary-weekdays,
+body[data-page="journal"] .diary-cal-section .diary-month { margin: 0 calc(var(--space-4) * -1); }
+body[data-page="journal"] .diary-modal-pad { padding: var(--space-4); }
+body[data-page="journal"] .wrapup-stats { flex-wrap: wrap; gap: var(--space-4); }
+body[data-page="journal"] .wrapup-cover { grid-template-columns: repeat(3, 1fr); }
+body[data-page="journal"] .report-entry { flex-wrap: wrap; }
+/* 필름 테마 달력 머리 위 구분선은 위 규칙의 padding-top을 덮지 않게 다시 */
+body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-top: var(--space-5); }

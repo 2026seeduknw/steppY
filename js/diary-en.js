@@ -32,7 +32,7 @@
     '고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요': 'TAGS ARE SORTED INTO YOUR EXCHANGE REPORT AUTOMATICALLY',
     '사진을 누르면 대표 사진(우표에 크게 나오는 사진)이 돼요': 'TAP A PHOTO TO MAKE IT THE COVER',
     '그때 듣던 노래 (선택)': 'NOW PLAYING (OPTIONAL)', '곡 제목을 검색해보세요': 'SEARCH A SONG',
-    '이번 달 정리': 'MONTHLY WRAP-UP', '경험보고서 미리보기': 'REPORT PREVIEW', '우표첩': 'CONTACT SHEET',
+    '더 보기': 'MORE', '이번 달 정리': 'MONTHLY WRAP-UP', '경험보고서 미리보기': 'REPORT PREVIEW', '우표첩': 'CONTACT SHEET',
     '이전 달': 'PREVIOUS MONTH', '다음 달': 'NEXT MONTH', '닫기 ': 'CLOSE',
     '오늘의 질문 보기': "TODAY'S QUESTION", '바로 사진 찍어 기록하기': 'TAKE A PHOTO', '바로 사진 찍기': 'TAKE A PHOTO',
     '사진 빼기': 'REMOVE PHOTO', '대표': 'COVER',
@@ -68,6 +68,8 @@
     [/^지금까지 (\d+)일 기록했어요$/, (m) => `${m[1]} DAYS RECORDED`],
     [/^우표 (\d+)장(?: · 도시 (\d+)곳)?$/, (m) => `${m[1]} FRAMES${m[2] ? ` · ${m[2]} CITIES` : ''}`],
     [/^(\d{4})년 (\d{1,2})월 정리$/, (m) => `${ym(m[1], m[2])} WRAP-UP`],
+    [/^(\d+)일 남음$/, (m) => `${m[1]} DAYS LEFT`],
+    [/^(\d{4}-\d{2}-\d{2}) 출국$/, (m) => `DEPARTS ${m[1]}`],
     [/^(\d+)일 연속$/, (m) => `${m[1]} DAY STREAK`],
     [/^💭 오늘의 질문$/, () => "💭 TODAY'S QUESTION"],
     [/^(\d+)개$/, (m) => `${m[1]}`]
