@@ -62,23 +62,30 @@
     const link = (name, artist) => (typeof SongEngine !== 'undefined')
       ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' };
     guestCache = [
-      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['surroundings'] }),
-      mk(2, 19, 40, { title: '기숙사 첫 요리', body: '마트에서 산 바게트가 확실히 다르다.', photos: [P.dorm], tags: ['housing'],
+      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['neighborhood'] }),
+      mk(2, 19, 40, { title: '기숙사 첫 요리', body: '마트에서 산 바게트가 확실히 다르다.', photos: [P.dorm], tags: ['dorm'],
         weather: { code: 3, temp: 18 },
         song: Object.assign({ name: 'Dernière danse', artist: 'Indila', art: null }, link('Dernière danse', 'Indila')) }),
-      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['culture'] }),
-      mk(5, 15, 30, { title: '도서관 스터디룸', body: '국제학생 오피스에서 서류 도움 받고 스터디룸도 예약함.', photos: [P.library], tags: ['facilities', 'support'],
+      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['friends'] }),
+      mk(5, 15, 30, { title: '도서관 스터디룸', body: '국제학생 오피스에서 서류 도움 받고 스터디룸도 예약함.', photos: [P.library], tags: ['study', 'admin'],
         nowPlaying: Object.assign({ name: '밤편지', artist: 'IU', art: null }, link('밤편지', 'IU')) }),
-      mk(7, 17, 45, { title: '파리 당일치기', body: '주말에 에펠탑 보고 옴.', photos: [P.eiffel, P.cafe], tags: ['culture'], location: { country: '프랑스', city: '파리' },
+      mk(7, 17, 45, { title: '파리 당일치기', body: '주말에 에펠탑 보고 옴.', photos: [P.eiffel, P.cafe], tags: ['trip', 'food'], location: { country: '프랑스', city: '파리' },
         weather: { code: 61, temp: 12 },
         song: Object.assign({ name: 'Formidable', artist: 'Stromae', art: null }, link('Formidable', 'Stromae')) })
     ];
     return guestCache;
   }
   function photoUrl(path) { return photoUrls[path] || ''; }
-  function tagChip(id) {
+  /** 태그 하나의 표시 정보. 일상 태그는 이모지+이름, 옛 기록의 항목 id는 항목 이름 그대로. */
+  function tagInfo(id) {
+    const t = EVERYDAY_MAP[id];
+    if (t) return { label: `${t.emoji} ${t.ko}`, name: t.ko, color: (CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93' };
     const c = CATEGORY_MAP[id];
-    return c ? `<span class="tag-chip" style="--chip-color:${c.color}">${c.ko}</span>` : '';
+    return c ? { label: c.ko, name: c.ko, color: c.color } : null;
+  }
+  function tagChip(id) {
+    const t = tagInfo(id);
+    return t ? `<span class="tag-chip" style="--chip-color:${t.color}">${t.label}</span>` : '';
   }
 
   /* --------------------------------------------------------------- 뼈대 */
@@ -94,6 +101,8 @@
         <span class="diary-streak__label">일 연속</span>
       </div>
     </header>
+
+    <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
 
     <div id="diaryHeroSlot"></div>
 
@@ -115,6 +124,9 @@
       <div class="diary-cal-nav">
         <h2 class="diary-cal-nav__title" id="calTitle"></h2>
         <div class="diary-cal-nav__btns">
+          <button type="button" class="diary-icon-btn" id="openStampbook" aria-label="우표첩" title="우표첩">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" stroke-dasharray="2.5 2"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>
+          </button>
           <button type="button" class="diary-icon-btn" id="openWrapup" aria-label="이번 달 정리" title="이번 달 정리">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
           </button>
@@ -222,17 +234,79 @@
       badge.classList.add('is-bumping');
     }
     lastStreak = streak;
+    renderWeek();
   }
 
   /* --------------------------------------------------------------- 최근 사진 */
 
   /*
-   * 달력보다 먼저, 어제(없으면 가장 최근) 기록한 사진을 크게 보여준다. 아래 날짜 칩으로
-   * 다른 날의 사진으로 넘기고, 카드를 누르면 그날 기록이 팝업으로 열린다.
+   * 달력보다 먼저, 어제(없으면 가장 최근) 기록한 사진을 크게 보여준다. 좌우로 밀거나 아래
+   * 날짜 칩을 눌러 다른 날의 사진으로 넘기고(앞 사진이 부드럽게 겹치며 사라진다),
+   * 카드를 누르면 그날 기록이 팝업으로 열린다. 기록이 하나도 없으면 첫 우표 자리를 보여준다.
    */
-  function renderFeatured() {
+  /** 카드 위 한 줄 — 왼쪽은 제목, 오른쪽은 오늘의 질문을 여는 물음표 */
+  function featuredHead(label) {
+    const seen = (() => { try { return localStorage.getItem('diary_q_seen') === todayIso; } catch (e) { return false; } })();
+    return `
+      <div class="diary-featured__head">
+        <p class="diary-featured__eyebrow">${label}</p>
+        <button type="button" class="diary-qmark${seen ? '' : ' is-new'}" id="qmarkBtn" aria-label="오늘의 질문 보기" aria-expanded="false">?</button>
+        <div class="diary-qpop" id="qpop" role="dialog" aria-label="오늘의 질문" hidden>
+          <span class="diary-qpop__tail" aria-hidden="true"></span>
+          <small>💭 오늘의 질문</small>
+          <p>${esc(dailyQuestion())}</p>
+          <div class="diary-qpop__actions">
+            <button type="button" class="diary-qpop__ans" id="qpopAnswer">답하기</button>
+            <button type="button" class="diary-qpop__close" id="qpopClose">닫기</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /** 물음표를 누르면 그 옆에 질문 카드가 뜬다. 바깥을 누르거나 Esc로 닫는다. */
+  function wireQuestion(slot) {
+    const btn = slot.querySelector('#qmarkBtn');
+    const pop = slot.querySelector('#qpop');
+    if (!btn || !pop) return;
+    const close = () => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', outside, true); document.removeEventListener('keydown', esc_); };
+    const outside = (ev) => { if (!pop.contains(ev.target) && ev.target !== btn) close(); };
+    const esc_ = (ev) => { if (ev.key === 'Escape') close(); };
+    btn.addEventListener('click', () => {
+      if (!pop.hidden) { close(); return; }
+      pop.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      btn.classList.remove('is-new');
+      try { localStorage.setItem('diary_q_seen', todayIso); } catch (e) { /* 저장 못 해도 팝업은 뜬다 */ }
+      document.addEventListener('pointerdown', outside, true);
+      document.addEventListener('keydown', esc_);
+    });
+    slot.querySelector('#qpopClose').addEventListener('click', close);
+    slot.querySelector('#qpopAnswer').addEventListener('click', () => {
+      const q = dailyQuestion();
+      close();
+      if (!needLogin()) openEntryModal(null, q);
+    });
+  }
+
+  let featuredLastUrl = null;
+
+  function renderFeatured(swap) {
     const slot = root && root.querySelector('#diaryFeaturedSlot');
     if (!slot) return;
+
+    if (!entries().length) {
+      slot.innerHTML = `
+        ${featuredHead('첫 우표')}
+        <button type="button" class="diary-featured__empty" id="emptyStamp">
+          <span class="diary-featured__empty-icon" aria-hidden="true">✉️</span>
+          <b>첫 기록을 남겨보세요</b>
+          <span>사진 한 장이면 첫 우표가 붙어요</span>
+        </button>`;
+      slot.querySelector('#emptyStamp').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
+      wireQuestion(slot);
+      return;
+    }
+
     const withPhoto = entries().filter(e => (e.photos || []).some(p => photoUrl(p)));
     if (!withPhoto.length) { slot.innerHTML = ''; return; }
 
@@ -240,18 +314,25 @@
     const yest = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
     const pick = (view.featured && dates.includes(view.featured)) ? view.featured
       : (dates.includes(yest) ? yest : dates[0]);
+    const idx = dates.indexOf(pick);
     const list = withPhoto.filter(e => e.date === pick);
     const e = list[list.length - 1];
     const url = photoUrl(e.photos.find(p => photoUrl(p)));
+    const prev = swap && featuredLastUrl && featuredLastUrl !== url ? featuredLastUrl : null;
+    featuredLastUrl = url;
     const heading = e.title || e.body || '';
     const lt = (e.location && (e.location.city || e.location.country))
       ? [e.location.city, e.location.country].filter(Boolean).join(', ') : '';
     const short = (iso) => iso === todayIso ? '오늘' : iso === yest ? '어제' : `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
     const eyebrow = pick === yest ? '어제의 기록' : pick === todayIso ? '오늘의 기록' : '가장 최근 기록';
+    // 칩은 다섯 개씩 보여주되, 지금 고른 날이 항상 창 안에 들어오게 한다
+    const start = Math.max(0, Math.min(idx - 2, dates.length - 5));
+    const chipDates = dates.slice(start, start + 5);
 
     slot.innerHTML = `
-      <p class="diary-featured__eyebrow">${eyebrow}</p>
-      <div class="diary-featured__card" role="button" tabindex="0" aria-label="${esc(short(pick))} 기록 열기" style="background-image:url('${url}')">
+      ${featuredHead(eyebrow)}
+      <div class="diary-featured__card${prev ? ' has-prev' : ''}" role="button" tabindex="0" aria-label="${esc(short(pick))} 기록 열기"
+           style="background-image:url('${url}')${prev ? `;--prev:url('${prev}')` : ''}">
         <div class="diary-featured__panel">
           <div class="diary-featured__top">
             <p class="diary-featured__title">${esc(heading)}</p>
@@ -259,18 +340,138 @@
           </div>
           ${lt ? `<p class="diary-featured__loc">📍 ${esc(lt)}</p>` : ''}
         </div>
-        <div class="diary-featured__chips">
-          ${dates.slice(0, 5).map(d => `<button type="button" class="diary-featured__chip${d === pick ? ' is-active' : ''}" data-fdate="${d}">${short(d)}</button>`).join('')}
-        </div>
+      </div>
+      <div class="diary-featured__chips">
+        ${chipDates.map(d => `<button type="button" class="diary-featured__chip${d === pick ? ' is-active' : ''}" data-fdate="${d}">${short(d)}</button>`).join('')}
       </div>`;
 
+    wireQuestion(slot);
     const card = slot.querySelector('.diary-featured__card');
     const open = () => { view.selected = pick; renderMonth(); openDayModal(pick); };
-    card.addEventListener('click', (ev) => { if (!ev.target.closest('[data-fdate]')) open(); });
+    let sx = 0, sy = 0, swiped = false;
+    card.addEventListener('pointerdown', (ev) => { sx = ev.clientX; sy = ev.clientY; swiped = false; });
+    card.addEventListener('pointerup', (ev) => {
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      swiped = true;
+      // 왼쪽으로 밀면 더 이전 날, 오른쪽으로 밀면 더 최근 날
+      const next = dx < 0 ? Math.min(idx + 1, dates.length - 1) : Math.max(idx - 1, 0);
+      if (next !== idx) { view.featured = dates[next]; renderFeatured(true); }
+    });
+    card.addEventListener('click', (ev) => {
+      if (swiped) { swiped = false; return; }
+      if (!ev.target.closest('[data-fdate]')) open();
+    });
     card.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') open(); });
     slot.querySelectorAll('[data-fdate]').forEach(btn => {
-      btn.addEventListener('click', () => { view.featured = btn.dataset.fdate; renderFeatured(); });
+      btn.addEventListener('click', () => { view.featured = btn.dataset.fdate; renderFeatured(true); });
     });
+  }
+
+  /* --------------------------------------------------------------- 오늘의 질문 */
+
+  const QUESTIONS = [
+    '오늘 가장 웃겼던 순간은?', '오늘 처음 먹어본 음식이 있나요?', '오늘 만난 사람 중 기억에 남는 사람은?',
+    '지금 창밖에는 뭐가 보이나요?', '오늘 배운 새로운 단어나 표현은?', '오늘 하루를 색으로 표현한다면?',
+    '오늘 가장 어려웠던 일은 무엇이었나요?', '오늘 나를 칭찬한다면 어떤 점을?', '오늘 걸은 길 중 가장 예뻤던 곳은?',
+    '오늘 들은 노래 중 계속 맴도는 곡은?', '한국에서 가장 그리운 건 오늘 뭐였나요?', '오늘 찍은 사진 중 가장 마음에 드는 건?',
+    '오늘의 날씨는 내 기분과 닮았나요?', '내일의 나에게 한마디를 남긴다면?', '오늘 새로 알게 된 장소가 있나요?',
+    '오늘 누군가에게 도움을 받았나요?', '오늘 가장 조용했던 순간은?', '오늘 꼭 기억하고 싶은 냄새나 소리는?',
+    '오늘 가장 맛있었던 한 입은?', '오늘 처음 해본 일이 있나요?', '오늘 하루 중 가장 설렜던 순간은?',
+    '오늘 누군가와 나눈 대화 중 기억에 남는 한마디는?', '오늘 가장 피곤했던 순간과 이유는?', '오늘 나를 웃게 만든 사소한 것은?',
+    '오늘 여기서만 볼 수 있었던 풍경은?', '오늘 길에서 마주친 특별한 장면은?', '지금 내 방의 분위기를 한 줄로 말한다면?',
+    '오늘 가장 후회되는 일과 배운 점은?', '이번 주에 가장 기억에 남을 일은 무엇이 될까요?', '오늘의 나에게 점수를 준다면 몇 점인가요?'
+  ];
+  function dailyQuestion() {
+    const dayOfYear = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    return QUESTIONS[dayOfYear % QUESTIONS.length];
+  }
+  /* --------------------------------------------------------------- 이번 주 */
+
+  function renderWeek() {
+    const el = root && root.querySelector('#weekStrip');
+    if (!el) return;
+    const days = new Set(entries().map(e => e.date));
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());   // 일요일
+    const names = ['일', '월', '화', '수', '목', '금', '토'];
+    el.innerHTML = names.map((n, i) => {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const iso = toIso(d);
+      const cls = ['diary-week__day', days.has(iso) && 'is-done', iso === todayIso && 'is-today', iso > todayIso && 'is-future'].filter(Boolean).join(' ');
+      return `<div class="${cls}"><span>${n}</span><i>${days.has(iso) ? '✓' : ''}</i></div>`;
+    }).join('');
+  }
+
+  /* --------------------------------------------------------------- 시간대 배경 */
+
+  /** 낮·노을·밤에 따라 배경이 바뀐다. 시험용으로 ?tod=night 처럼 강제할 수 있다. */
+  function applyTimeOfDay() {
+    const forced = new URLSearchParams(location.search).get('tod');
+    const h = new Date().getHours();
+    const tod = ['day', 'dusk', 'night'].includes(forced) ? forced : (h >= 6 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night');
+    document.body.dataset.tod = tod;
+  }
+
+  /* --------------------------------------------------------------- 우표첩 */
+
+  function openStampbook() {
+    const list = entries().filter(e => (e.photos || []).some(p => photoUrl(p))).sort((a, b) => b.date.localeCompare(a.date));
+    const cities = new Set(list.map(e => e.location && e.location.city).filter(Boolean));
+    const groups = {};
+    list.forEach(e => { (groups[e.date.slice(0, 7)] = groups[e.date.slice(0, 7)] || []).push(e); });
+    const scrim = ensureScrim('stampbookScrim');
+    scrim.innerHTML = `
+      <div class="modal-panel diary-modal-pad diary-day-modal">
+        <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
+        <div class="diary-modal-header">
+          <h2>우표첩</h2>
+          <p class="diary-modal-header__note">${list.length ? `우표 ${list.length}장${cities.size ? ` · 도시 ${cities.size}곳` : ''}` : '사진을 남기면 우표가 모여요'}</p>
+        </div>
+        ${Object.keys(groups).sort().reverse().map(k => `
+          <h3 class="stampbook__month">${k.slice(0, 4)}년 ${Number(k.slice(5))}월</h3>
+          <div class="stampbook__grid">
+            ${groups[k].map((e, n) => {
+              const u = photoUrl(e.photos.find(p => photoUrl(p)));
+              const city = e.location && e.location.city;
+              return `<button type="button" class="stampbook__item" data-date="${e.date}" aria-label="${e.date} 기록 열기">
+                <span class="stampbook__stamp" style="--tilt:${n % 2 ? '1.5deg' : '-1.5deg'}"><span style="background-image:url('${u}')"></span></span>
+                <small>${Number(e.date.slice(5, 7))}/${Number(e.date.slice(8))}${city ? ` · ${esc(city)}` : ''}</small>
+              </button>`;
+            }).join('')}
+          </div>`).join('')}
+      </div>`;
+    wireModalDismiss(scrim);
+    scrim.querySelectorAll('[data-date]').forEach(b => b.addEventListener('click', () => {
+      closeModal(scrim);
+      view.selected = b.dataset.date;
+      renderMonth();
+      openDayModal(b.dataset.date);
+    }));
+    openModal(scrim);
+  }
+
+  /* --------------------------------------------------------------- 저장 연출 */
+
+  /** 기록을 저장하면 우표가 찍히듯 내려앉고 소인이 번지며 나타난다. */
+  function playStampFx({ photo, city, date, title }) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const old = document.getElementById('stampFx');
+    if (old) old.remove();
+    const fx = document.createElement('div');
+    fx.id = 'stampFx';
+    fx.className = 'stamp-fx';
+    const mmdd = date.slice(5).replace('-', '.');
+    fx.innerHTML = `
+      <div class="stamp-fx__wrap">
+        <div class="stamp-fx__stamp">
+          <div class="stamp-fx__photo" style="${photo ? `background-image:url('${photo}')` : ''}">${photo ? '' : '<span>✉️</span>'}</div>
+          <div class="stamp-fx__cap"><b>${esc(title || '')}</b><small>${date}</small></div>
+        </div>
+        ${city ? `<div class="diary-postmark stamp-fx__mark"><span>${esc(city)}</span><b>${mmdd}</b></div>` : ''}
+      </div>`;
+    document.body.appendChild(fx);
+    setTimeout(() => { fx.classList.add('is-out'); }, 1700);
+    setTimeout(() => { fx.remove(); }, 2100);
   }
 
   /* --------------------------------------------------------------- 캘린더 */
@@ -296,14 +497,14 @@
       const dayTags = [...new Set(items.flatMap(e => e.tags || []))];
       const shown = dayTags.slice(0, 3);
       const overflow = dayTags.length - shown.length;
-      const dots = shown.map(t => `<span class="diary-day__dot" style="background:${(CATEGORY_MAP[t] || {}).color || '#ccc'}"></span>`).join('')
+      const dots = shown.map(t => `<span class="diary-day__dot" style="background:${(tagInfo(t) || {}).color || '#ccc'}"></span>`).join('')
         + (overflow > 0 ? `<span class="diary-day__dot-more">+${overflow}</span>` : '');
       const hasText = !withPhoto && items.length;
       const classes = ['diary-day',
         iso === todayIso && 'is-today',
         iso === view.selected && 'is-selected',
         withPhoto && 'has-photo'].filter(Boolean).join(' ');
-      const names = dayTags.map(t => (CATEGORY_MAP[t] || {}).ko).filter(Boolean);
+      const names = dayTags.map(t => (tagInfo(t) || {}).name).filter(Boolean);
       const label = [`${view.year}년 ${view.month + 1}월 ${d}일`,
         iso === todayIso && '오늘',
         names.length ? names.join(', ') : (items.length ? '기록 있음' : '기록 없음')].filter(Boolean).join(', ');
@@ -332,33 +533,52 @@
   const locText = (loc) => (loc && (loc.city || loc.country))
     ? [loc.city, loc.country].filter(Boolean).join(', ') : '';
 
+  /* 노래 무드 → 우표 빛깔. 무드가 저장돼 있지 않은 옛 기록은 태그·날씨·시간으로 다시 계산한다. */
+  const MOOD_COLOR = { cozy: '#E8A66B', energetic: '#F26B5B', romantic: '#E77FA8', calm: '#5FB3B0', adventurous: '#5DB37A', melancholic: '#7A82D6' };
+  function moodColor(e) {
+    if (!e.song && !e.nowPlaying) return null;
+    let key = e.song && e.song.mood ? String(e.song.mood).split('+')[0] : '';
+    if (!key && typeof SongEngine !== 'undefined') {
+      try {
+        key = SongEngine.computeMood({
+          tags: e.tags || [], weatherCode: e.weather ? e.weather.code : undefined,
+          tempC: e.weather ? e.weather.temp : undefined, date: new Date(e.createdAt)
+        }).mood.split('+')[0];
+      } catch (err) { key = ''; }
+    }
+    return MOOD_COLOR[key] || null;
+  }
+
   /*
    * 기록 카드 — 우표. 톱니 가장자리 안에 사진, 아래 여백에 제목·날짜, 모서리에 소인(도시·날짜).
-   * 장소·날씨·태그·노래는 우표 아래에 따로 놓는다.
+   * 사진이 여러 장이면 뒤에 우표가 비스듬히 겹쳐 보인다. 노래가 있으면 앨범 표지가 LP처럼 붙고
+   * 무드 색이 우표 둘레의 빛과 소인 색이 된다. 장소·날씨·태그·노래는 우표 아래에 따로 놓는다.
    */
   function stampHtml(e, i) {
     const urls = (e.photos || []).map(photoUrl).filter(Boolean);
     const heading = e.title || e.body || '';
     const alt = esc(heading || `${e.date} 기록 사진`);
+    const art = (e.song && e.song.art) || (e.nowPlaying && e.nowPlaying.art) || '';
     let photo;
     if (!urls.length) {
       photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p></div>`;
-    } else if (urls.length === 1) {
-      photo = `<div class="diary-entry__photo-wrap"><img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}"></div>`;
     } else {
-      const extra = urls.length - 2;
-      photo = `<div class="diary-entry__photo-wrap diary-entry__photo-wrap--dual">
-        <img class="diary-entry__photo-main" src="${urls[0]}" alt="${alt}">
-        <img class="diary-entry__photo-inset" src="${urls[1]}" alt="${e.date} 추가 사진">
-        ${extra > 0 ? `<span class="diary-entry__photo-more">+${extra}</span>` : ''}
+      photo = `<div class="diary-entry__photo-wrap">
+        <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
+        ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
+        ${art ? `<span class="diary-lp" style="background-image:url('${art}')" aria-hidden="true"></span>` : ''}
       </div>`;
     }
+    const backs = urls.slice(1, 3).map((u, k) =>
+      `<div class="diary-stamp-back" style="--rot:${k ? -5 : 4}deg"><div style="background-image:url('${u}')"></div></div>`).join('');
     const city = (e.location && (e.location.city || e.location.country)) || '';
     const mmdd = e.date.slice(5).replace('-', '.');
     const mark = city ? `<div class="diary-postmark" aria-hidden="true"><span>${esc(city)}</span><b>${mmdd}</b></div>` : '';
     const capTitle = urls.length ? heading : (e.title || '');
+    const mood = moodColor(e);
     return `
-      <div class="diary-stamp-wrap" style="--tilt:${i % 2 ? '0.8deg' : '-0.8deg'}">
+      <div class="diary-stamp-wrap${mood ? ' has-mood' : ''}" style="--tilt:${i % 2 ? '0.8deg' : '-0.8deg'}${mood ? `;--mood:${mood}` : ''}">
+        ${backs}
         <div class="diary-stamp">
           ${photo}
           <div class="diary-stamp__cap">
@@ -423,6 +643,7 @@
           ${(e.song || e.nowPlaying) ? '<div class="diary-ticket-perf"></div>' : ''}
           ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
+          ${AppState.isAuthed ? `<button type="button" class="diary-entry__delete-link" data-del="${esc(e.id)}">이 기록 삭제</button>` : ''}
         </div>
       </div>`;
   }
@@ -441,7 +662,7 @@
       if (wrap && urls.length) {
         wrap.classList.add('is-clickable');
         wrap.addEventListener('click', (ev) => {
-          openPhotoLightbox(urls, ev.target.closest('.diary-entry__photo-inset') ? 1 : 0);
+          openPhotoLightbox(urls, 0);
         });
       }
     });
@@ -565,7 +786,7 @@
     return scrim;
   }
 
-  function openEntryModal(initialFile) {
+  function openEntryModal(initialFile, prompt) {
     // 원본은 파견 기간 밖을 막았지만, 여기서는 출국 전 기록이 핵심 용도라 막지 않는다.
     const targetDate = view.selected || todayIso;
     pendingPhotos = [];
@@ -594,12 +815,14 @@
             </label>
           </div>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
-          <textarea name="caption" placeholder="오늘 하루는 어땠나요? (선택)"></textarea>
+          ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
+          <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
           <div>
-            <span class="diary-form__label">태그 (여러 개 선택 가능)</span>
+            <span class="diary-form__label">오늘 뭘 했나요? (여러 개 골라도 돼요)</span>
             <div class="diary-tag-grid" id="tagGrid">
-              ${REPORT_CATEGORIES.map(c => `<button type="button" class="tag-chip" data-tag="${c.id}" style="--chip-color:${c.color}" aria-pressed="false">${c.ko}</button>`).join('')}
+              ${EVERYDAY_TAGS.map(t => `<button type="button" class="tag-chip" data-tag="${t.id}" style="--chip-color:${(CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93'}" aria-pressed="false"><span class="tag-chip__emoji" aria-hidden="true">${t.emoji}</span>${t.ko}</button>`).join('')}
             </div>
+            <p class="diary-form__hint">고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요</p>
           </div>
           <div>
             <span class="diary-form__label">그때 듣던 노래 (선택)</span>
@@ -757,6 +980,8 @@
         tags, location: pendingLocation,
         nowPlaying, weather: pendingWeather
       });
+      const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;
+      const fxCity = pendingLocation && (pendingLocation.city || pendingLocation.country);
       pendingPhotos = [];
       pendingNowPlaying = null;
       closeModal(scrim);
@@ -764,6 +989,7 @@
       renderAll();
       showToast('기록을 저장했어요');
       flashShutter();
+      playStampFx({ photo: fxPhoto, city: fxCity, date, title: title || body });
       // 추천은 저장을 막지 않는다 — 늦게 도착해도 카드에 붙고, 실패하면 조용히 넘어간다.
       recommendSongFor(entry, tags);
     });
@@ -844,10 +1070,12 @@
     const photos = source.flatMap(e => (e.photos || []).map(p => ({ src: photoUrl(p), date: e.date }))).filter(p => p.src).slice(0, 8);
     const daysRecorded = new Set(source.map(e => e.date)).size;
     const cities = [...new Set(source.map(e => e.location && e.location.city).filter(Boolean))];
-    const tagCounts = {};
-    source.forEach(e => (e.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
-    const topTag = Object.entries(tagCounts).sort((a, b) => b[1] - a[1])[0];
-    const topCat = topTag ? CATEGORY_MAP[topTag[0]] : null;
+    const rawCounts = {};
+    source.forEach(e => (e.tags || []).forEach(t => { rawCounts[t] = (rawCounts[t] || 0) + 1; }));
+    const topRaw = Object.entries(rawCounts).sort((a, b) => b[1] - a[1])[0];
+    const topCat = topRaw && tagInfo(topRaw[0]) ? { ko: tagInfo(topRaw[0]).label, color: tagInfo(topRaw[0]).color } : null;
+    const tagCounts = {};   // 보고서 항목별 — 일상 태그를 항목으로 풀어서 센다
+    source.forEach(e => categoriesOfTags(e.tags).forEach(c => { tagCounts[c] = (tagCounts[c] || 0) + 1; }));
     const hero = photos[0];
     const rest = photos.slice(1);
 
@@ -901,12 +1129,12 @@
         </div>
         <nav class="report-nav">
           ${REPORT_CATEGORIES.map(c => {
-            const has = all.some(e => (e.tags || []).includes(c.id));
+            const has = all.some(e => categoriesOfTags(e.tags).includes(c.id));
             return `<a href="#report-${c.id}" class="report-nav__chip" data-has="${has}" style="--chip-color:${c.color}">${c.ko}</a>`;
           }).join('')}
         </nav>
         ${REPORT_CATEGORIES.map(c => {
-          const items = all.filter(e => (e.tags || []).includes(c.id));
+          const items = all.filter(e => categoriesOfTags(e.tags).includes(c.id));
           return `<div class="report-section" id="report-${c.id}">
             <h3 class="report-section__title">${c.ko}</h3>
             ${items.length ? items.map(e => {
@@ -930,17 +1158,33 @@
 
   /* --------------------------------------------------------------- 부팅 */
 
+  function shiftMonth(delta) {
+    view.month += delta;
+    if (view.month < 0) { view.month = 11; view.year -= 1; }
+    if (view.month > 11) { view.month = 0; view.year += 1; }
+    renderMonth();
+    const grid = root.querySelector('#calMonth');
+    grid.dataset.slide = delta > 0 ? 'next' : 'prev';
+    void grid.offsetWidth;
+    grid.classList.remove('is-sliding'); void grid.offsetWidth; grid.classList.add('is-sliding');
+  }
+
   function wireChrome() {
-    root.querySelector('#calPrev').addEventListener('click', () => {
-      view.month -= 1;
-      if (view.month < 0) { view.month = 11; view.year -= 1; }
-      renderMonth();
+    root.querySelector('#calPrev').addEventListener('click', () => shiftMonth(-1));
+    root.querySelector('#calNext').addEventListener('click', () => shiftMonth(1));
+    // 달력을 좌우로 밀어 달을 넘긴다. 세로 스크롤은 그대로 두고, 민 직후의 클릭은 날짜 선택으로 치지 않는다.
+    const calSection = root.querySelector('.diary-cal-section');
+    let cx = 0, cy = 0, calSwiped = false;
+    calSection.addEventListener('pointerdown', (ev) => { cx = ev.clientX; cy = ev.clientY; });
+    calSection.addEventListener('pointerup', (ev) => {
+      const dx = ev.clientX - cx, dy = ev.clientY - cy;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      calSwiped = true;
+      setTimeout(() => { calSwiped = false; }, 300);
+      shiftMonth(dx < 0 ? 1 : -1);
     });
-    root.querySelector('#calNext').addEventListener('click', () => {
-      view.month += 1;
-      if (view.month > 11) { view.month = 0; view.year += 1; }
-      renderMonth();
-    });
+    calSection.addEventListener('click', (ev) => { if (calSwiped) { ev.stopPropagation(); ev.preventDefault(); calSwiped = false; } }, true);
+    root.querySelector('#openStampbook').addEventListener('click', openStampbook);
     root.querySelector('#writeBtn').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
     const camLabel = root.querySelector('#cameraBtn');
     const camInput = root.querySelector('#cameraInputMain');
@@ -976,6 +1220,7 @@
     root = mount;
     root.classList.add('diary-view');
     root.innerHTML = MARKUP;
+    applyTimeOfDay();
     wireChrome();
     renderAll();
     refreshPhotoUrls();

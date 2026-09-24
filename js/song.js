@@ -58,7 +58,13 @@ const SongEngine = (function () {
     trip: { adventurous: 2, energetic: 1 },
     admin: { calm: 2, melancholic: 1 },
     tip: { adventurous: 1, energetic: 1 },
-    daily: { cozy: 1, melancholic: 1 }
+    daily: { cozy: 1, melancholic: 1 },
+    study: { calm: 2, cozy: 1 },
+    transit: { adventurous: 1, energetic: 1 },
+    shopping: { cozy: 1, energetic: 1 },
+    event: { energetic: 2, romantic: 1 },
+    help: { cozy: 1, calm: 1 },
+    language: { adventurous: 1, calm: 1 }
   };
 
   const WEATHER_MOOD_WEIGHTS = {
