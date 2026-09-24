@@ -27,3 +27,38 @@ const REPORT_CATEGORIES = [
   { id: 'tips',         ko: '그 밖에',       color: '#8A4F42' }
 ];
 const CATEGORY_MAP = Object.fromEntries(REPORT_CATEGORIES.map(c => [c.id, c]));
+
+/**
+ * 기록할 때 고르는 일상 태그. 한 태그가 보고서 항목 하나 이상에 걸린다 — 예를 들어 "밥·카페"는
+ * 거주 및 식사와 문화 적응 경험 양쪽에 쓸 수 있다. 기록에는 일상 태그 id를 저장하고,
+ * 보고서 쪽은 categoriesOfTags()로 항목을 풀어서 센다. 옛 기록에 저장된 항목 id(housing 등)는
+ * 그대로 통과한다.
+ */
+const EVERYDAY_TAGS = [
+  { id: 'food',         emoji: '🍽️', ko: '밥·카페',      cats: ['housing', 'culture'] },
+  { id: 'dorm',         emoji: '🏠', ko: '기숙사·집',    cats: ['housing'] },
+  { id: 'class',        emoji: '📖', ko: '수업',         cats: ['academics'] },
+  { id: 'study',        emoji: '📚', ko: '공부·도서관',  cats: ['academics', 'facilities'] },
+  { id: 'campus',       emoji: '🏫', ko: '캠퍼스',       cats: ['facilities', 'overview'] },
+  { id: 'neighborhood', emoji: '🌆', ko: '동네 산책',    cats: ['surroundings'] },
+  { id: 'transit',      emoji: '🚌', ko: '교통·이동',    cats: ['surroundings', 'tips'] },
+  { id: 'shopping',     emoji: '🛒', ko: '장보기·물가',  cats: ['surroundings', 'housing'] },
+  { id: 'friends',      emoji: '🧑‍🤝‍🧑', ko: '친구·모임', cats: ['culture'] },
+  { id: 'event',        emoji: '🎉', ko: '행사·파티',    cats: ['culture', 'facilities'] },
+  { id: 'language',     emoji: '💬', ko: '언어·소통',    cats: ['culture', 'academics'] },
+  { id: 'admin',        emoji: '📄', ko: '서류·행정',    cats: ['support', 'resources'] },
+  { id: 'help',         emoji: '🙋', ko: '도움 받음',    cats: ['resources', 'support'] },
+  { id: 'trip',         emoji: '🗺️', ko: '여행',         cats: ['culture', 'surroundings'] },
+  { id: 'tip',          emoji: '💡', ko: '꿀팁',         cats: ['tips', 'resources'] }
+];
+const EVERYDAY_MAP = Object.fromEntries(EVERYDAY_TAGS.map(t => [t.id, t]));
+
+/** 기록의 tags(일상 태그 id 또는 옛 항목 id)를 교환보고서 항목 id 목록으로 푼다. */
+function categoriesOfTags(tags) {
+  const out = [];
+  (tags || []).forEach(t => {
+    const list = EVERYDAY_MAP[t] ? EVERYDAY_MAP[t].cats : [t];
+    list.forEach(c => { if (CATEGORY_MAP[c] && !out.includes(c)) out.push(c); });
+  });
+  return out;
+}

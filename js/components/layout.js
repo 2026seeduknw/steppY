@@ -198,6 +198,9 @@ function renderTabBar(activeKey) {
   // 위시리스트·홈의 '학교 찾기' 링크는 그대로 동작).
   // 출국하면 학점 인정도 뺀다 — 수강신청까지 끝난 뒤라 더 고를 것이 없다.
   // (departure.js가 layout.js보다 먼저 실려 있다. 혹시 없더라도 탭은 그대로 둔다)
+  // 서버 상태가 오기 전에는 게스트 기준으로 탭 수가 다르게 계산돼서(5개 → 4개) 눈에 띄게 바뀐다.
+  // 자리는 잡아두되 하이드레이션이 끝나기 전에는 숨긴다.
+  const pending = !AppState._hydrated;
   const departed = typeof hasDeparted === 'function' && hasDeparted();
   const confirmed = !!AppState.getConfirmedSchool();
   const tabs = APP_TABS.filter(tab => {
@@ -208,13 +211,12 @@ function renderTabBar(activeKey) {
     if (tab.key === 'credits' && departed) return false;
     // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
     // Day 수도 못 세고 남길 것도 마땅치 않다.
-    if (tab.key === 'journal' && !confirmed) return false;
     // 교환보고서는 출국 후에만. 출국 전에는 모을 기록 자체가 없다.
     if (tab.key === 'report' && !departed) return false;
     return true;
   });
   mount.innerHTML = `
-    <nav class="tabbar" role="navigation" aria-label="주요 화면">
+    <nav class="tabbar${pending ? ' tabbar--pending' : ''}" role="navigation" aria-label="주요 화면">
       ${tabs.map(tab => {
         const isHomeSlot = tab.key === 'home';
         const href = isHomeSlot ? slot.href : tab.href;

@@ -21,12 +21,10 @@
   let listMount = document.getElementById('journalList');
 
   /**
-   * 학교를 확정하면 이 탭은 사진 다이어리로 바뀐다(js/diary-view.js).
-   * 확정 전에는 아래의 글 기록 화면 그대로다 — 아직 파견 기간도, 찍을 사진도 없고
-   * 준비하면서 적어두는 메모가 필요한 시기라서다.
-   * 기록은 둘 다 같은 user_journal에 쌓이므로 출국 후에도 준비 때 쓴 글이 남는다.
+   * 기록하기는 항상 사진 다이어리(js/diary-view.js)다. 로그인 전 둘러보기에는 예시 기록을 읽기 전용으로
+   * 보여주고, 저장은 로그인 뒤에만 된다. 글 위주의 옛 화면은 아래에 그대로 남아 있지만 지금은 열리지 않는다.
    */
-  function wantsDiary() { return AppState.isAuthed && !!AppState.getConfirmedSchool(); }
+  function wantsDiary() { return true; }
 
   // 마지막으로 고른 단계를 이어 쓴다 — 교환을 떠난 뒤 매번 '교환 중'으로
   // 바꿔야 하면 번거롭다. 이 기기에만 남는 값이라 서버에는 올리지 않는다.
@@ -231,7 +229,7 @@
   document.addEventListener('MOCK:updated', () => {
     if (wantsDiary()) {
       // 하이드레이션으로 기록이 늘었을 수 있다. 이미 떠 있으면 사진만 다시 채운다.
-      if (diaryViewIsMounted()) { diaryRefreshPhotos(); return; }
+      if (diaryViewIsMounted()) { diaryRefreshAll(); return; }
       renderAll();
       return;
     }

@@ -1,3 +1,14 @@
+/* 글꼴은 앱 안(assets/fonts)에 넣어 둔다 — 인터넷 없이도, iOS 앱 안에서도 같은 모양으로 뜬다.
+   마루부리(네이버, OFL) Bold 한 굵기 · SUIT(SUNN, OFL) 가변 굵기 */
+@font-face { font-family: 'MaruBuriBold'; src: url('../../assets/fonts/MaruBuri-Bold.woff2') format('woff2'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'DSEG7 Classic'; src: url('../../assets/fonts/DSEG7Classic-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans KR'; src: url('../../assets/fonts/IBMPlexSansKR-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans KR'; src: url('../../assets/fonts/IBMPlexSansKR-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'IBM Plex Sans KR'; src: url('../../assets/fonts/IBMPlexSansKR-SemiBold.woff2') format('woff2'); font-weight: 600 900; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('../../assets/fonts/IBMPlexMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('../../assets/fonts/IBMPlexMono-Medium.woff2') format('woff2'); font-weight: 500 900; font-display: swap; }
+@font-face { font-family: 'Bebas Neue'; src: url('../../assets/fonts/BebasNeue-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'SUIT Variable'; src: url('../../assets/fonts/SUIT-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
 /* Travel Journey App reference theme */
 :root {
   /* FAB 바와 각종 모달은 document.body 바로 아래에 붙는다. 이 팔레트를
@@ -11,7 +22,7 @@
   --diary-text-faint: #6B7290;
   --diary-line: rgba(35,42,61,0.09);
   --diary-line-strong: rgba(35,42,61,0.18);
-  --diary-accent: #FF6F91;
+  --diary-accent: var(--ink-900);   /* 다른 화면과 같은 남색 */
   /* 원본은 Do Hyeon·Inter·IBM Plex Mono를 받아 썼지만, 이 앱은 Pretendard 하나로
      통일돼 있어 그대로 맞춘다. 날짜·Day 수 같은 숫자 레일은 mono 대신
      tabular-nums로 자릿수를 고정해 흔들리지 않게 했다. */
@@ -437,3 +448,904 @@
   color: inherit; text-decoration: none;
   font-size: var(--fs-micro); font-weight: 700;
 }
+
+
+/* ==========================================================================
+   기록 카드 — 포토티켓 구성 (사진 위 제목·날짜 / 보딩패스식 라벨+값 / 절취선 아래 노래)
+   위쪽의 기존 .diary-entry 규칙(사진이 카드 전체를 덮는 방식)을 덮어쓴다.
+   ========================================================================== */
+:root { --diary-font-ticket: 'Gothic A1', var(--font-display); }
+
+/* 우표 — 톱니 가장자리(마스크)와 소인. 그림자는 마스크에 잘리므로 바깥 wrap에 준다 */
+.diary-entry.diary-entry--stamp { padding: 0; aspect-ratio: auto; background: none; box-shadow: none; overflow: visible; border-radius: 0; }
+.diary-stamp-wrap { position: relative; transform: rotate(var(--tilt, 0deg)); filter: drop-shadow(0 6px 12px rgba(35,42,61,0.2)); margin: 6px 4px 0; }
+.diary-stamp,
+.diary-stamp-back {
+  --r: 5px; --g: 16px;
+  background: #fff; padding: 16px 16px 0;
+  -webkit-mask:
+    radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x,
+    radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x,
+    radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y,
+    radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x,
+    radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x,
+    radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y,
+    radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  mask-composite: intersect;
+}
+.diary-entry--stamp .diary-entry__photo-wrap { position: relative; inset: auto; aspect-ratio: 4/5; overflow: hidden; }
+.diary-entry__photo-wrap.is-clickable { cursor: zoom-in; }
+.diary-stamp__blank { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; padding: var(--space-4); background: var(--diary-surface-alt, #EEF2FA); }
+.diary-stamp__blank p { margin: 0; font-family: var(--diary-font-ticket); font-weight: 700; font-size: 1rem; line-height: 1.5; color: var(--diary-text); text-align: center; }
+.diary-stamp__cap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 10px 2px 14px; }
+.diary-stamp__title { font-family: var(--diary-font-ticket); font-size: 1rem; font-weight: 900; color: var(--diary-text); line-height: 1.35; min-width: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.diary-stamp__date { font-family: var(--diary-font-mono); font-size: var(--fs-micro); color: var(--diary-text-faint); flex-shrink: 0; white-space: nowrap; }
+/* 소인 — 우표 모서리에 겹쳐 찍힌 도장 */
+.diary-postmark {
+  position: absolute; top: -14px; left: -10px; z-index: 3; width: 64px; height: 64px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  border: 2px solid rgba(35,53,77,0.75); background: rgba(255,255,255,0.88); color: rgba(35,53,77,0.85);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.88), inset 0 0 0 4px rgba(35,53,77,0.45);
+  transform: rotate(-12deg); pointer-events: none; text-transform: uppercase;
+}
+.diary-postmark span { font-size: 9px; font-weight: 800; letter-spacing: 0.04em; max-width: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diary-postmark b { font-family: var(--diary-font-mono); font-size: 11px; font-weight: 700; }
+
+.diary-ticket-body { padding: var(--space-4) var(--space-2) 0; display: flex; flex-direction: column; gap: 8px; }
+.diary-ticket-caption { font-family: var(--diary-font-ticket); font-size: 1.1rem; font-weight: 900; color: var(--diary-text); line-height: 1.4; margin: 0; }
+.diary-ticket-text { font-size: var(--fs-body); color: var(--diary-text); line-height: 1.5; margin: 0; }
+.diary-ticket-time { font-size: var(--fs-small); font-family: var(--diary-font-mono); color: var(--diary-text-faint); }
+.diary-ticket-rows {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 10px 6px;
+  margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--diary-line);
+}
+.diary-ticket-row { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.diary-ticket-row__label { font-family: var(--diary-font-ticket); font-size: 11px; font-weight: 700; letter-spacing: 0.02em; color: var(--diary-text-faint); }
+.diary-ticket-row__value { font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diary-ticket-tags { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: 2px; }
+.diary-ticket-tags .tag-chip { background: none; padding: 0; border-radius: 0; height: auto; color: var(--diary-text-dim); font-size: var(--fs-small); font-weight: 600; }
+.diary-ticket-perf { border-top: 1.5px dashed var(--diary-line-strong); margin: 4px 0; }
+
+.diary-ticket-song { display: flex; flex-direction: column; gap: var(--space-2); padding: 6px 0; }
+.diary-ticket-song__top { display: flex; align-items: center; gap: var(--space-3); }
+.diary-ticket-song__art { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.diary-ticket-song__art--empty { display: flex; align-items: center; justify-content: center; background: var(--diary-surface-alt, #EEF2FA); font-size: 1rem; }
+.diary-ticket-song__info { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.diary-ticket-song__label { font-size: var(--fs-micro); font-weight: 700; color: var(--diary-accent); }
+.diary-ticket-song--nowplaying .diary-ticket-song__label { color: #3F7A82; }
+.diary-ticket-song__title { font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diary-ticket-song__artist { font-size: var(--fs-micro); color: var(--diary-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diary-ticket-song__links { display: flex; gap: var(--space-2); }
+.diary-ticket-song__link {
+  flex: 1; display: flex; align-items: center; justify-content: center; min-height: 44px;
+  font-size: var(--fs-small); font-weight: 700; border-radius: var(--radius-md);
+  background: var(--diary-surface-alt, #EEF2FA); color: var(--diary-text-dim);
+}
+.diary-ticket-song__link:active { transform: scale(0.97); }
+.diary-ticket-song__link--spotify:hover, .diary-ticket-song__link--spotify:active { background: color-mix(in srgb, #1DB954 18%, var(--diary-surface-alt, #EEF2FA)); color: #1a8f43; }
+.diary-ticket-song__link--youtube:hover, .diary-ticket-song__link--youtube:active { background: color-mix(in srgb, #FF0000 14%, var(--diary-surface-alt, #EEF2FA)); color: #d61f1f; }
+
+/* 달력 날짜 팝업 / 사진 확대 */
+.diary-day-modal { width: min(420px, 92vw); }
+.diary-day-modal .diary-entry-list { display: flex; flex-direction: column; gap: var(--space-4); }
+.modal-panel.diary-lightbox { position: relative; width: auto; max-width: 92vw; max-height: 92vh; padding: 0; background: transparent; box-shadow: none; }
+.diary-lightbox img { max-width: 92vw; max-height: 88vh; display: block; border-radius: var(--radius-md); }
+.diary-lightbox .modal-close { background: rgba(0,0,0,0.5); color: #fff; }
+.diary-lightbox__prev, .diary-lightbox__next {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1;
+}
+.diary-lightbox__prev { left: var(--space-3); }
+.diary-lightbox__next { right: var(--space-3); }
+.diary-lightbox__count {
+  position: absolute; bottom: var(--space-3); left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.5); color: #fff; font-size: var(--fs-micro); font-family: var(--diary-font-mono); padding: 3px 10px; border-radius: var(--radius-pill);
+}
+
+/* 기록하기 버튼 — 화면 아래 떠 있던 FAB 두 개를 없애고 본문 안으로 들였다 */
+.diary-write-bar { display: flex; gap: var(--space-3); margin-top: var(--space-4); }
+.diary-write-bar__btn {
+  flex: 1 1 0; min-width: 0; padding: 0; box-sizing: border-box; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+  border: 0; border-radius: var(--radius-lg); background: var(--ink-900); color: #fff;
+  font: inherit; font-size: var(--fs-body); font-weight: 700; cursor: pointer; position: relative;
+}
+.diary-write-bar__btn:active { transform: scale(0.98); }
+.diary-write-bar__btn--camera input[type="file"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.diary-photo-picker__camera { cursor: pointer; }
+
+/* 최근 사진 — 달력 위에 어제(없으면 가장 최근) 기록을 크게. 아래 날짜 칩으로 다른 날로 넘긴다 */
+.diary-featured { margin-top: var(--space-5); }
+.diary-featured:empty { display: none; }
+.diary-featured__eyebrow { margin: 0 0 var(--space-2) var(--space-2); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.06em; color: var(--diary-text-faint); }
+.diary-featured__card {
+  position: relative; height: 440px; border-radius: 32px; overflow: hidden; cursor: pointer;
+  background: var(--ink-900) center / cover no-repeat; box-shadow: 0 14px 32px rgba(35,42,61,0.18);
+}
+.diary-featured__card:focus-visible { outline: 2px solid var(--diary-accent); outline-offset: 3px; }
+.diary-featured__panel {
+  position: absolute; left: 12px; right: 12px; bottom: 64px; padding: 14px 16px; border-radius: 22px;
+  background: rgba(255,255,255,0.94); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.diary-featured__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.diary-featured__title { margin: 0; font-family: var(--diary-font-ticket); font-size: 0.95rem; font-weight: 900; line-height: 1.35; color: var(--diary-text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.diary-featured__date { flex-shrink: 0; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--ink-900); color: #fff; font-size: var(--fs-micro); font-weight: 700; }
+.diary-featured__loc, .diary-featured__tags, .diary-featured__song { margin: 0; font-size: var(--fs-micro); color: var(--diary-text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diary-featured__tags { color: var(--diary-text-faint); }
+.diary-featured__chips { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.diary-featured__chips::-webkit-scrollbar { display: none; }
+.diary-featured__chip {
+  flex: 0 0 auto; min-height: 40px; padding: 0 16px; border: 0; border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.94); color: var(--diary-text); font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer;
+}
+.diary-featured__chip.is-active { background: var(--ink-900); color: #fff; }
+.diary-cal-section { margin-top: var(--space-6); }
+
+/* ==========================================================================
+   글래스 + 그라디언트 — 홈 화면과 같은 하늘 배경 위에 반투명 유리 카드.
+   기록하기 화면(body[data-page="journal"])에만 적용한다. 색 번짐은 배경 레이어에 얹은
+   옅은 복숭아·라벤더 글로우이고, 글자 뒤는 항상 밝게 유지한다.
+   ========================================================================== */
+body[data-page="journal"] {
+  --page-bg: url('../../assets/bg/sky-A.jpg');
+  --glass-card: rgba(255, 255, 255, 0.62);
+  --glass-card-strong: rgba(255, 255, 255, 0.78);
+  --glass-line: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 8px 28px rgba(28, 46, 78, 0.12);
+  background: transparent;
+}
+body[data-page="journal"]::before { display: none; }
+body[data-page="journal"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    radial-gradient(60% 38% at 88% 14%, rgba(255, 196, 170, 0.50), transparent 70%),
+    radial-gradient(70% 42% at 8% 46%, rgba(170, 176, 255, 0.42), transparent 72%),
+    radial-gradient(70% 40% at 86% 86%, rgba(255, 178, 210, 0.34), transparent 72%),
+    linear-gradient(180deg, rgba(244, 247, 251, 0.82) 0%, rgba(244, 247, 251, 0.66) 40%, rgba(244, 247, 251, 0.62) 66%, rgba(244, 247, 251, 0.92) 100%),
+    var(--page-bg);
+  background-size: cover;
+  background-position: center top;
+}
+@media (min-width: 900px) {
+  body[data-page="journal"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
+}
+body[data-page="journal"] .diary-view { background: transparent; }
+body[data-page="journal"] .app-nav { background: rgba(255, 255, 255, 0.62); border-bottom-color: rgba(255, 255, 255, 0.6); }
+body[data-page="journal"] .tabbar { background: rgba(255, 255, 255, 0.72); }
+body[data-page="journal"] .diary-header { border-bottom-color: rgba(35, 53, 77, 0.10); }
+
+/* 유리 카드 */
+body[data-page="journal"] .diary-hero {
+  background: var(--glass-card);
+  -webkit-backdrop-filter: saturate(150%) blur(18px);
+  backdrop-filter: saturate(150%) blur(18px);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+body[data-page="journal"] .diary-day:not(.has-photo) {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: none;
+}
+body[data-page="journal"] .diary-day.is-today { box-shadow: 0 0 0 2px var(--ink-900); }
+body[data-page="journal"] .diary-hero__plane { border-color: rgba(255, 255, 255, 0.9); }
+body[data-page="journal"] .diary-icon-btn { background: rgba(255, 255, 255, 0.55); border: 1px solid rgba(255, 255, 255, 0.75); }
+
+/* 버튼 — 카메라는 유리, 기록하기는 남색 그라디언트 */
+body[data-page="journal"] .diary-write-bar__btn {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 20px rgba(28, 46, 78, 0.18);
+  background: linear-gradient(135deg, #23354D 0%, #46597F 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+body[data-page="journal"] .diary-write-bar__btn--camera {
+  background: var(--glass-card-strong);
+  color: var(--ink-900);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+/* 최근 사진 — 사진 위에 유리 패널, 칩도 유리 */
+body[data-page="journal"] .diary-featured__eyebrow { color: var(--ink-700); }
+body[data-page="journal"] .diary-featured__card { box-shadow: 0 18px 40px rgba(28, 46, 78, 0.22); }
+body[data-page="journal"] .diary-featured__panel {
+  background: rgba(255, 255, 255, 0.66);
+  -webkit-backdrop-filter: saturate(160%) blur(18px);
+  backdrop-filter: saturate(160%) blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+body[data-page="journal"] .diary-featured__chip {
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+body[data-page="journal"] .diary-featured__chip.is-active { background: var(--ink-900); color: #fff; border-color: var(--ink-900); }
+
+/* 팝업 — 유리 시트 */
+body[data-page="journal"] .modal-scrim { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+body[data-page="journal"] .diary-day-modal,
+body[data-page="journal"] .diary-sheet {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(238, 241, 250, 0.82));
+  -webkit-backdrop-filter: saturate(160%) blur(22px);
+  backdrop-filter: saturate(160%) blur(22px);
+  border: 1px solid var(--glass-line);
+}
+
+/* ==========================================================================
+   글씨체 — 기록하기 화면만: 제목 마루부리, 본문 SUIT. 앱바·탭바는 앱 공통(Pretendard) 그대로.
+   숫자(Day·날짜·시각)는 자릿수가 흔들리지 않도록 Pretendard를 유지한다.
+   마루부리는 굵기 하나(Bold)만 불러 쓰므로 font-synthesis로 더 진하게 흉내 내지 않는다.
+   ========================================================================== */
+body[data-page="journal"] {
+  --f-title: 'MaruBuriBold', 'MaruBuri', var(--font-display);
+  --f-body: 'SUIT Variable', var(--font-body);
+  --diary-font-ticket: var(--f-title);
+  --diary-font-display: var(--f-title);
+  --diary-font-body: var(--f-body);
+  font-synthesis: none;
+}
+body[data-page="journal"] .diary-view,
+body[data-page="journal"] .modal-panel,
+body[data-page="journal"] .diary-write-bar__btn,
+body[data-page="journal"] .diary-featured__chip,
+body[data-page="journal"] .song-popup,
+body[data-page="journal"] .diary-qpop,
+body[data-page="journal"] .diary-form input,
+body[data-page="journal"] .diary-form textarea { font-family: var(--f-body); }
+body[data-page="journal"] .diary-hero__daycount,
+body[data-page="journal"] .diary-streak__num,
+body[data-page="journal"] .diary-hero__dates,
+body[data-page="journal"] .diary-stamp__date,
+body[data-page="journal"] .diary-ticket-time,
+body[data-page="journal"] .diary-postmark b { font-family: var(--font-body); }
+
+/* 달력은 카드에 가두지 않고 화면 폭을 다 쓴다 — 날짜 칸이 작으면 누르기 불편하다 */
+body[data-page="journal"] .diary-cal-section { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* ==========================================================================
+   감성 개선 — 삭제 링크, 저장 연출, 이번 주 줄, 질문, 우표첩, 시간대 배경, 무드 색, 여러 장 우표
+   ========================================================================== */
+
+/* 기록 삭제 — 팝업 카드 맨 아래 작은 글씨 */
+.diary-entry__delete-link {
+  align-self: center; margin: var(--space-3) 0 var(--space-4); padding: 8px 12px; border: 0; background: none;
+  font: inherit; font-size: var(--fs-micro); color: var(--diary-text-faint); text-decoration: underline; cursor: pointer;
+}
+.diary-entry__delete-link:hover { color: #C0392B; }
+
+/* 여러 장 — 뒤에 우표가 비스듬히 겹친다. 앞 우표가 가려서 삐져나온 모서리만 보인다 */
+.diary-stamp { position: relative; z-index: 1; }
+.diary-stamp-back { position: absolute; inset: 0; z-index: 0; background: #fff; padding: 16px; transform: rotate(var(--rot, 4deg)); }
+.diary-stamp-back > div { height: 100%; background: center / cover no-repeat; }
+.diary-entry__photo-more {
+  position: absolute; right: 10px; top: 10px; z-index: 2; padding: 3px 9px; border-radius: var(--radius-pill);
+  background: rgba(20, 33, 58, 0.66); color: #fff; font-size: var(--fs-micro); font-weight: 700;
+}
+
+/* 노래 무드 — 우표 둘레 빛과 소인 색. 앨범 표지는 LP처럼 돈다 */
+.diary-stamp-wrap.has-mood {
+  filter: drop-shadow(0 6px 12px rgba(35, 42, 61, 0.2)) drop-shadow(0 0 18px color-mix(in srgb, var(--mood) 55%, transparent));
+}
+.diary-stamp-wrap.has-mood .diary-postmark {
+  border-color: color-mix(in srgb, var(--mood) 70%, #23354D);
+  color: color-mix(in srgb, var(--mood) 70%, #23354D);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.88), inset 0 0 0 4px color-mix(in srgb, var(--mood) 55%, transparent);
+}
+.diary-lp {
+  position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 54px; height: 54px; border-radius: 50%;
+  background: #222 center / cover no-repeat; border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); animation: diary-lp-spin 9s linear infinite;
+}
+.diary-lp::after { content: ''; position: absolute; inset: 0; margin: auto; width: 12px; height: 12px; border-radius: 50%; background: #F4F6FA; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25); }
+@keyframes diary-lp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .diary-lp { animation: none; } }
+
+/* 이번 주 — 일~토, 기록한 날은 채운다 */
+.diary-week { display: flex; justify-content: space-between; gap: 6px; margin-top: var(--space-4); }
+.diary-week__day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: var(--fs-micro); color: var(--diary-text-faint); }
+.diary-week__day i {
+  width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-style: normal; font-size: 13px; font-weight: 700; color: #fff; border: 1.5px dashed var(--diary-line-strong); background: rgba(255, 255, 255, 0.35);
+}
+.diary-week__day.is-done i { background: var(--ink-900); border: 1.5px solid var(--ink-900); }
+.diary-week__day.is-today span { color: var(--diary-text); font-weight: 700; }
+.diary-week__day.is-today i { border: 2px solid var(--ink-900); border-style: solid; }
+.diary-week__day.is-future { opacity: 0.55; }
+.diary-streak__num { font-size: 1.7rem; }
+
+/* 오늘의 질문 */
+.diary-prompt {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; margin-top: var(--space-4); padding: 12px 16px; text-align: left;
+  border: 1px solid var(--glass-line); border-radius: var(--radius-lg); background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font: inherit; color: var(--diary-text); cursor: pointer;
+}
+.diary-prompt__text { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-body); line-height: 1.4; }
+.diary-prompt__text small { font-size: var(--fs-micro); color: var(--diary-text-faint); }
+.diary-prompt-note { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--diary-surface-alt, #EEF2FA); font-size: var(--fs-small); color: var(--diary-text-dim); }
+
+/* 첫 우표 자리 (기록이 하나도 없을 때) */
+.diary-featured__empty {
+  width: 100%; height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border: 2px dashed rgba(35, 53, 77, 0.35); border-radius: 24px; background: rgba(255, 255, 255, 0.4);
+  font: inherit; color: var(--diary-text); cursor: pointer;
+}
+.diary-featured__empty b { font-size: 1.05rem; }
+.diary-featured__empty span:last-child { font-size: var(--fs-small); color: var(--diary-text-dim); }
+.diary-featured__empty-icon { font-size: 2rem; }
+
+/* 최근 사진 — 넘길 때 앞 사진이 겹치며 사라진다. 패널은 더 밝게 */
+.diary-featured__card { touch-action: pan-y; }
+.diary-featured__panel, .diary-featured__chips { z-index: 2; }
+.diary-featured__card.has-prev::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--prev) center / cover no-repeat; animation: diary-fade-out 480ms ease forwards;
+}
+.diary-featured__card.has-prev .diary-featured__panel { animation: diary-rise 420ms ease both; }
+@keyframes diary-fade-out { to { opacity: 0; } }
+@keyframes diary-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+body[data-page="journal"] .diary-featured__panel { background: rgba(255, 255, 255, 0.9); }
+body[data-page="journal"] .diary-featured__title { color: #14213A; }
+body[data-page="journal"] .diary-featured__loc { color: #3A4763; }
+
+/* 달력 — 좌우로 밀면 달이 미끄러지듯 바뀐다 */
+.diary-cal-section { touch-action: pan-y; }
+.diary-month.is-sliding { animation: diary-slide-next 320ms ease; }
+.diary-month.is-sliding[data-slide="prev"] { animation-name: diary-slide-prev; }
+@keyframes diary-slide-next { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes diary-slide-prev { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+
+/* 우표첩 */
+.stampbook__month { margin: var(--space-4) 0 var(--space-2); font-size: var(--fs-small); font-weight: 700; color: var(--diary-text-dim); }
+.stampbook__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4) var(--space-3); }
+.stampbook__item { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.stampbook__item small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-micro); color: var(--diary-text-faint); }
+.stampbook__stamp {
+  --r: 3px; --g: 10px; display: block; width: 100%; background: #fff; padding: 7px; transform: rotate(var(--tilt, 0deg));
+  filter: drop-shadow(0 3px 6px rgba(35, 42, 61, 0.22));
+  -webkit-mask: radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y, radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y, radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  mask-composite: intersect;
+}
+.stampbook__stamp > span { display: block; aspect-ratio: 4 / 5; background: center / cover no-repeat; }
+
+/* 저장 연출 — 우표가 내려앉아 찍히고 소인이 번지며 나타난다 */
+.stamp-fx { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; background: rgba(20, 30, 55, 0.35); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: diary-fx-in 200ms ease; pointer-events: none; }
+.stamp-fx.is-out { opacity: 0; transition: opacity 380ms ease; }
+.stamp-fx__wrap { position: relative; width: min(240px, 62vw); filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.35)); animation: diary-stamp-drop 560ms cubic-bezier(.2, .9, .3, 1.15) both; }
+.stamp-fx__stamp {
+  --r: 5px; --g: 16px; background: #fff; padding: 14px 14px 0;
+  -webkit-mask: radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y, radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle var(--r) at 50% 0, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 50% 100%, #0000 97%, #000) 0 0 / var(--g) 100% repeat-x, radial-gradient(circle var(--r) at 0 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y, radial-gradient(circle var(--r) at 100% 50%, #0000 97%, #000) 0 0 / 100% var(--g) repeat-y;
+  mask-composite: intersect;
+}
+.stamp-fx__photo { aspect-ratio: 4 / 5; background: #EEF2FA center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+.stamp-fx__cap { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 2px 14px; }
+.stamp-fx__cap b { font-family: var(--diary-font-ticket); font-size: 0.95rem; color: #14213A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stamp-fx__cap small { font-size: var(--fs-micro); color: #6B7290; flex-shrink: 0; }
+.stamp-fx__mark { top: -14px; left: auto; right: -18px; animation: diary-postmark-in 620ms 420ms ease both; }
+@keyframes diary-fx-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes diary-stamp-drop {
+  0% { opacity: 0; transform: translateY(-70px) scale(1.6) rotate(-8deg); }
+  60% { opacity: 1; transform: translateY(0) scale(0.94) rotate(-2deg); }
+  80% { transform: scale(1.02) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-1deg); }
+}
+@keyframes diary-postmark-in {
+  0% { opacity: 0; filter: blur(8px); transform: rotate(-12deg) scale(1.9); }
+  70% { opacity: 1; filter: blur(0); transform: rotate(-12deg) scale(0.94); }
+  100% { opacity: 1; filter: blur(0); transform: rotate(-12deg) scale(1); }
+}
+
+/* ---- 시간대 배경 — 낮은 기본, 노을·밤은 배경과 글자 색을 바꾼다 ---- */
+body[data-page="journal"][data-tod="dusk"]::after {
+  background-image:
+    radial-gradient(65% 40% at 90% 10%, rgba(255, 150, 110, 0.62), transparent 70%),
+    radial-gradient(70% 42% at 6% 44%, rgba(255, 120, 170, 0.46), transparent 72%),
+    radial-gradient(70% 40% at 88% 88%, rgba(150, 120, 230, 0.42), transparent 72%),
+    linear-gradient(180deg, rgba(255, 238, 228, 0.78) 0%, rgba(255, 232, 224, 0.58) 42%, rgba(250, 228, 232, 0.6) 68%, rgba(250, 236, 240, 0.92) 100%),
+    var(--page-bg);
+}
+body[data-page="journal"][data-tod="night"] { --glass-line: rgba(255, 255, 255, 0.16); }
+body[data-page="journal"][data-tod="night"]::after {
+  background-image:
+    radial-gradient(60% 36% at 86% 10%, rgba(120, 140, 255, 0.38), transparent 70%),
+    radial-gradient(70% 42% at 8% 50%, rgba(160, 110, 230, 0.30), transparent 72%),
+    linear-gradient(180deg, rgba(10, 18, 40, 0.80) 0%, rgba(14, 24, 52, 0.72) 50%, rgba(10, 18, 40, 0.88) 100%),
+    var(--page-bg);
+}
+body[data-page="journal"][data-tod="night"] .diary-view {
+  --diary-text: #EEF2FB; --diary-text-dim: #C9D3EA; --diary-text-faint: #9FB0D0;
+  --diary-line: rgba(255, 255, 255, 0.14); --diary-line-strong: rgba(255, 255, 255, 0.28);
+}
+body[data-page="journal"][data-tod="night"] .diary-hero { background: rgba(24, 38, 74, 0.55); border-color: rgba(255, 255, 255, 0.14); }
+body[data-page="journal"][data-tod="night"] .diary-hero__plane { background: #fff; color: var(--ink-900); border-color: rgba(24, 38, 74, 0.9); }
+body[data-page="journal"][data-tod="night"] .diary-hero__fill { background: #fff; }
+body[data-page="journal"][data-tod="night"] .diary-hero__pin--start { background: #fff; }
+body[data-page="journal"][data-tod="night"] .diary-day:not(.has-photo) { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.14); }
+body[data-page="journal"][data-tod="night"] .diary-day.is-today { box-shadow: 0 0 0 2px #fff; }
+body[data-page="journal"][data-tod="night"] .diary-icon-btn { background: rgba(255, 255, 255, 0.14); color: #EEF2FB; border-color: rgba(255, 255, 255, 0.18); }
+body[data-page="journal"][data-tod="night"] .diary-write-bar__btn--camera { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+body[data-page="journal"][data-tod="night"] .diary-write-bar__btn:not(.diary-write-bar__btn--camera) { background: linear-gradient(135deg, #5A6FA8 0%, #7C8FD0 100%); }
+body[data-page="journal"][data-tod="night"] .diary-week__day.is-done i { background: #fff; color: var(--ink-900); border-color: #fff; }
+body[data-page="journal"][data-tod="night"] .diary-week__day.is-today i { border-color: #fff; }
+body[data-page="journal"][data-tod="night"] .diary-prompt { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.16); color: #EEF2FB; }
+body[data-page="journal"][data-tod="night"] .diary-featured__eyebrow { color: #C9D3EA; }
+body[data-page="journal"][data-tod="night"] .diary-featured__empty { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #EEF2FB; }
+body[data-page="journal"][data-tod="night"] .diary-featured__empty span:last-child { color: #C9D3EA; }
+body[data-page="journal"][data-tod="night"] .diary-hero__eyebrow { color: #C9D3EA; }
+body[data-page="journal"][data-tod="night"] .diary-streak svg { color: #FFD3A0; }
+body[data-page="journal"][data-tod="night"] .diary-cal-nav__title, body[data-page="journal"][data-tod="night"] .diary-weekdays span { color: #EEF2FB; }
+
+/* 날짜 칩은 사진 밖, 카드 바로 아래에 둔다 */
+.diary-featured__panel { bottom: 12px; }
+.diary-featured__chips { position: static; left: auto; right: auto; bottom: auto; margin-top: var(--space-3); padding: 0 2px; }
+
+/* 오늘의 질문 — 위(사진·칩)와 아래(달력) 사이 간격을 좁힌다 */
+.diary-featured { margin-bottom: 0; }
+.diary-featured__chips { margin-top: var(--space-2); }
+.diary-prompt { margin-top: var(--space-2); }
+body[data-page="journal"] .diary-cal-section { margin-top: var(--space-3); padding-top: var(--space-3); }
+
+/* 블록 사이 간격 — .diary-view가 flex 열이라 빈 슬롯도 간격을 두 번 만들었다 */
+body[data-page="journal"] .diary-view { gap: 18px; }
+#diaryPromptSlot:empty { display: none; }
+.diary-prompt { margin-top: -4px; }
+body[data-page="journal"] .diary-cal-section { margin-top: 0; }
+
+/* 칩 ↔ 질문 ↔ 달력 사이를 넉넉하게 */
+.diary-prompt { margin-top: 10px; margin-bottom: 14px; }
+
+/* 태그 고르기 — 손가락으로 누르기 편하게 큰 버튼 3열 */
+#tagGrid.diary-tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#tagGrid.diary-tag-grid .tag-chip {
+  height: auto; min-height: 52px; padding: 8px 6px; flex-direction: column; justify-content: center; gap: 2px;
+  font-size: var(--fs-small); font-weight: 700; text-align: center; white-space: normal; line-height: 1.25; border-radius: 16px;
+}
+#tagGrid.diary-tag-grid .tag-chip__emoji { font-size: 1.15rem; line-height: 1; }
+#tagGrid.diary-tag-grid .tag-chip.is-selected { background: var(--ink-900); border-color: var(--ink-900); color: #fff; }
+.diary-form__hint { margin: 8px 2px 0; font-size: var(--fs-micro); color: var(--diary-text-faint); }
+
+/* ==========================================================================
+   최근 사진 카드 테두리 — 반투명 유리 액자 + 안쪽 흰 선 + 은은한 색 번짐 그림자
+   ========================================================================== */
+.diary-featured__card {
+  border: 7px solid rgba(255, 255, 255, 0.55);
+  background-clip: padding-box;
+  border-radius: 36px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6),
+    0 18px 40px rgba(28, 46, 78, 0.22),
+    0 10px 36px rgba(200, 150, 230, 0.28);
+}
+.diary-featured__card::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; border-radius: 28px; pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.85), inset 0 0 26px rgba(255, 255, 255, 0.16);
+}
+body[data-page="journal"] .diary-featured__card { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6), 0 18px 40px rgba(28, 46, 78, 0.22), 0 10px 36px rgba(200, 150, 230, 0.28); }
+.diary-featured__panel { left: 10px; right: 10px; bottom: 10px; border-radius: 22px; }
+
+/* 물음표 + 질문 팝업 */
+.diary-featured { position: relative; }
+.diary-featured__head { position: relative; display: flex; align-items: center; justify-content: space-between; margin: 0 0 var(--space-2); }
+.diary-featured__head .diary-featured__eyebrow { margin: 0 0 0 var(--space-2); }
+.diary-qmark {
+  position: relative; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--glass-line);
+  background: rgba(255, 255, 255, 0.62); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: var(--ink-900); font: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(28, 46, 78, 0.16);
+}
+.diary-qmark:active { transform: scale(0.94); }
+.diary-qmark.is-new::after {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9);
+  animation: diary-qmark-pulse 1.8s ease-out infinite;
+}
+@keyframes diary-qmark-pulse { from { opacity: 0.9; transform: scale(0.85); } to { opacity: 0; transform: scale(1.5); } }
+.diary-qpop {
+  position: absolute; right: 0; top: 44px; z-index: 30; width: min(290px, calc(100vw - 56px)); padding: 14px 16px 12px;
+  border-radius: 22px; border: 1px solid var(--glass-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 238, 252, 0.9));
+  -webkit-backdrop-filter: saturate(160%) blur(20px); backdrop-filter: saturate(160%) blur(20px);
+  box-shadow: 0 16px 40px rgba(28, 46, 78, 0.26); animation: diary-qpop-in 240ms cubic-bezier(.2, .9, .3, 1.2) both; transform-origin: 90% 0;
+}
+.diary-qpop[hidden] { display: none; }
+.diary-qpop__tail { position: absolute; top: -7px; right: 12px; width: 14px; height: 14px; background: rgba(255, 255, 255, 0.95); border-left: 1px solid var(--glass-line); border-top: 1px solid var(--glass-line); transform: rotate(45deg); border-radius: 3px 0 0 0; }
+.diary-qpop small { display: block; font-size: var(--fs-micro); color: #6B7290; }
+.diary-qpop p { margin: 4px 0 10px; font-size: 1.02rem; line-height: 1.45; color: #14213A; }
+.diary-qpop__actions { display: flex; gap: 8px; }
+.diary-qpop__ans, .diary-qpop__close { min-height: 40px; border: 0; border-radius: var(--radius-pill); font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer; }
+.diary-qpop__ans { flex: 1; background: linear-gradient(135deg, #23354D, #46597F); color: #fff; }
+.diary-qpop__close { padding: 0 16px; background: rgba(35, 53, 77, 0.08); color: #3A4763; }
+@keyframes diary-qpop-in { from { opacity: 0; transform: translateY(-6px) scale(0.92); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .diary-qmark.is-new::after, .diary-qpop { animation: none; } }
+body[data-page="journal"][data-tod="night"] .diary-qmark { background: rgba(255, 255, 255, 0.16); color: #fff; border-color: rgba(255, 255, 255, 0.24); }
+
+/* "오늘의 기록" — 카드 위 소제목이 아니라 제목처럼 크게 */
+.diary-featured__head .diary-featured__eyebrow {
+  margin-left: var(--space-2); font-family: var(--diary-font-display); font-size: 1.35rem; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--diary-text);
+}
+body[data-page="journal"] .diary-featured__head .diary-featured__eyebrow { color: #14213A; }
+body[data-page="journal"][data-tod="night"] .diary-featured__head .diary-featured__eyebrow { color: #EEF2FB; }
+
+/* ==========================================================================
+   미리듣기 LP · 수정/삭제 줄 · 대표 사진 · 스켈레톤
+   ========================================================================== */
+/* LP는 이제 버튼 — 평소엔 멈춰 있고, 재생 중에만 돈다 */
+button.diary-lp { padding: 0; cursor: pointer; animation: none; }
+button.diary-lp.is-playing { animation: diary-lp-spin 3.2s linear infinite; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.4); }
+button.diary-lp::before {
+  content: '▶'; position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(0, 0, 0, 0.32); color: #fff; font-size: 13px; padding-left: 2px; transition: opacity 160ms;
+}
+button.diary-lp.is-playing::before { opacity: 0; }
+button.diary-lp.is-loading { animation: diary-lp-pulse 900ms ease-in-out infinite; }
+button.diary-lp.is-loading::before { content: '…'; padding: 0; }
+@keyframes diary-lp-pulse { 50% { transform: scale(0.92); opacity: 0.8; } }
+button.diary-lp::after { z-index: 2; }
+
+/* 수정 · 삭제 */
+.diary-entry__actions { align-self: center; display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 var(--space-4); }
+.diary-entry__actions .diary-entry__delete-link { margin: 0; align-self: auto; }
+.diary-entry__edit-link { padding: 8px 14px; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.6); font: inherit; font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); cursor: pointer; }
+.diary-entry__edit-link:hover { background: #fff; }
+
+/* 대표 사진 */
+.diary-photo-thumb { position: relative; }
+.diary-photo-thumb img[data-cover] { cursor: pointer; }
+.diary-photo-thumb.is-cover { box-shadow: 0 0 0 2px var(--ink-900); border-radius: var(--radius-md); }
+.diary-photo-thumb__cover { position: absolute; left: 4px; bottom: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--ink-900); color: #fff; font-size: 10px; font-weight: 700; pointer-events: none; }
+
+/* 스켈레톤 — 사진 주소를 받는 동안 같은 크기의 자리를 흐릿하게 */
+@keyframes diary-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.diary-featured__skeleton, .diary-stamp__skeleton, .diary-day.is-loading {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.28) 30%, rgba(255, 255, 255, 0.62) 50%, rgba(255, 255, 255, 0.28) 70%) 0 0 / 200% 100%;
+  animation: diary-shimmer 1.4s linear infinite;
+}
+.diary-featured__skeleton { height: 440px; border-radius: 36px; border: 7px solid rgba(255, 255, 255, 0.4); background-clip: padding-box; }
+.diary-stamp__skeleton { aspect-ratio: 4 / 5; }
+.diary-day.is-loading { border: 1px solid rgba(255, 255, 255, 0.6); }
+@media (prefers-reduced-motion: reduce) { .diary-featured__skeleton, .diary-stamp__skeleton, .diary-day.is-loading, button.diary-lp.is-loading { animation: none; } }
+
+
+/* ==========================================================================
+   필름 카메라 테마 (기본) — 어두운 배경, 필름 띠, 주황 날짜 각인.
+   이전 유리 + 노을 테마는 ?theme=glass 로 그대로 볼 수 있다. 아래는 전부 data-theme="film" 안에서만 적용된다.
+   각인 숫자는 필름 카메라 날짜 표시에 쓰던 7세그먼트 글꼴(DSEG7, OFL)이다.
+   ========================================================================== */
+body[data-page="journal"][data-theme="film"] {
+  --diary-text: #efe8d6; --diary-text-dim: #cbc3ae; --diary-text-faint: #9a927e;
+  --diary-line: rgba(239, 232, 214, 0.14); --diary-line-strong: rgba(239, 232, 214, 0.30);
+  --diary-surface: #1c1b19; --diary-surface-alt: #2a2823; --diary-accent: #ff9a2e;
+  --glass-card: rgba(30, 29, 26, 0.72); --glass-card-strong: rgba(38, 36, 31, 0.9); --glass-line: rgba(239, 232, 214, 0.14);
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --film-amber: #ff9a2e; --film-glow: 0 0 6px rgba(255, 154, 46, 0.75);
+  --film-paper: #efe8d6; --film-black: #0c0b0a;
+  background: #0d0c0b;
+  color: var(--diary-text);
+}
+body[data-page="journal"][data-theme="film"]::before {
+  display: block; content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.16;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+body[data-page="journal"][data-theme="film"]::after {
+  background-image:
+    radial-gradient(70% 34% at 92% 0%, rgba(255, 154, 46, 0.16), transparent 72%),
+    radial-gradient(70% 40% at 0% 58%, rgba(150, 100, 60, 0.14), transparent 72%),
+    linear-gradient(180deg, #161513 0%, #0f0e0d 60%, #0b0a09 100%);
+}
+body[data-page="journal"][data-theme="film"] .app-nav { background: rgba(16, 15, 13, 0.78); border-bottom-color: rgba(239, 232, 214, 0.1); }
+body[data-page="journal"][data-theme="film"] .appbar__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .appbar__brand { color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .tabbar { background: rgba(26, 25, 22, 0.86); border: 1px solid rgba(239, 232, 214, 0.14); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
+body[data-page="journal"][data-theme="film"] .tabbar__item { color: #b5ad98; }
+body[data-page="journal"][data-theme="film"] .tabbar__item.is-active { background: var(--film-amber); color: #141210; }
+
+/* 머리 — 프레임 카운터처럼 */
+body[data-page="journal"][data-theme="film"] .diary-header__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-header { border-bottom-color: var(--diary-line); }
+body[data-page="journal"][data-theme="film"] .diary-streak svg { color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-streak__num, body[data-page="journal"][data-theme="film"] .diary-seg { font-family: 'DSEG7 Classic', var(--font-body); color: var(--film-amber); text-shadow: var(--film-glow); font-weight: 400; letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .diary-streak__num { font-size: 1.6rem; }
+body[data-page="journal"][data-theme="film"] .diary-streak__label { color: var(--diary-text-faint); }
+
+/* 이번 주 */
+body[data-page="journal"][data-theme="film"] .diary-week__day { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"] .diary-week__day i { background: rgba(239, 232, 214, 0.05); border-color: rgba(239, 232, 214, 0.25); color: #141210; }
+body[data-page="journal"][data-theme="film"] .diary-week__day.is-done i { background: var(--film-amber); border-color: var(--film-amber); box-shadow: var(--film-glow); }
+body[data-page="journal"][data-theme="film"] .diary-week__day.is-today i { border-color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-week__day.is-today span { color: var(--film-amber); }
+
+/* 여정 카드 — 필름 통 라벨 */
+body[data-page="journal"][data-theme="film"] .diary-hero { background: var(--glass-card); border: 1px solid var(--glass-line); box-shadow: var(--glass-shadow); }
+body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow { color: var(--diary-text-faint); letter-spacing: 0.2em; }
+body[data-page="journal"][data-theme="film"] .diary-hero__daycount { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-hero__daycount .diary-seg { font-size: 1.7rem; }
+body[data-page="journal"][data-theme="film"] .diary-hero__line { background-image: linear-gradient(90deg, rgba(239, 232, 214, 0.4) 0 6px, transparent 6px 12px); background-size: 12px 3px; height: 3px; }
+body[data-page="journal"][data-theme="film"] .diary-hero__fill { background: var(--film-amber); box-shadow: var(--film-glow); height: 3px; }
+body[data-page="journal"][data-theme="film"] .diary-hero__plane { background: var(--film-amber); color: #141210; border-color: #1c1b19; box-shadow: 0 0 12px rgba(255, 154, 46, 0.55); }
+body[data-page="journal"][data-theme="film"] .diary-hero__pin--start { background: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-hero__dates, body[data-page="journal"][data-theme="film"] .diary-hero__sub { color: var(--diary-text-faint); }
+
+/* 버튼 */
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn { background: linear-gradient(180deg, #ffab4d, #f28a14); color: #1a1208; border: 1px solid rgba(255, 190, 110, 0.5); box-shadow: 0 8px 22px rgba(255, 154, 46, 0.28); }
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn--camera { background: rgba(239, 232, 214, 0.08); color: var(--film-paper); border: 1px solid rgba(239, 232, 214, 0.28); box-shadow: none; }
+
+/* 최근 사진 — 필름 프레임 */
+body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-qmark { background: rgba(239, 232, 214, 0.08); color: var(--film-amber); border-color: rgba(239, 232, 214, 0.28); box-shadow: none; text-shadow: var(--film-glow); }
+body[data-page="journal"][data-theme="film"] .diary-qmark.is-new::after { border-color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-qpop { background: #211f1b; border-color: rgba(239, 232, 214, 0.2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65); }
+body[data-page="journal"][data-theme="film"] .diary-qpop__tail { background: #211f1b; border-color: rgba(239, 232, 214, 0.2); }
+body[data-page="journal"][data-theme="film"] .diary-qpop small { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"] .diary-qpop p { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-qpop__ans { background: linear-gradient(180deg, #ffab4d, #f28a14); color: #1a1208; }
+body[data-page="journal"][data-theme="film"] .diary-qpop__close { background: rgba(239, 232, 214, 0.1); color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-featured__film { background: var(--film-black); border-radius: 6px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(239, 232, 214, 0.1); padding: 0; overflow: hidden; }
+body[data-page="journal"][data-theme="film"] .diary-featured__card { border: 0; border-radius: 0; box-shadow: none; height: 400px; background-clip: border-box; }
+body[data-page="journal"][data-theme="film"] .diary-featured__card::after { display: none; }
+body[data-page="journal"][data-theme="film"] .diary-featured__panel { background: rgba(14, 13, 11, 0.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(239, 232, 214, 0.16); border-radius: 6px; left: 12px; right: 12px; bottom: 12px; }
+body[data-page="journal"][data-theme="film"] .diary-featured__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-featured__loc { color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-featured__date { background: transparent; color: var(--film-amber); border: 1px solid rgba(255, 154, 46, 0.6); border-radius: 4px; padding: 5px 9px; font-size: 0; text-shadow: var(--film-glow); }
+body[data-page="journal"][data-theme="film"] .diary-featured__date::after { content: attr(data-film); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.78rem; letter-spacing: 0.03em; }
+body[data-page="journal"][data-theme="film"] .film-bar { position: relative; height: 24px; background: var(--film-black); }
+body[data-page="journal"][data-theme="film"] .film-bar::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 7px; height: 10px;
+  background: repeating-linear-gradient(90deg, rgba(239, 232, 214, 0.88) 0 9px, transparent 9px 22px) 6px 0 / 100% 100% no-repeat;
+  border-radius: 2px; -webkit-mask: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 22px); mask: repeating-linear-gradient(90deg, #000 0 9px, transparent 9px 22px);
+}
+body[data-page="journal"][data-theme="film"] .film-bar--bottom { height: 40px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 14px 6px; }
+body[data-page="journal"][data-theme="film"] .film-bar--bottom::before { top: 6px; }
+body[data-page="journal"][data-theme="film"] .film-bar--bottom span { position: relative; font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.7rem; color: var(--film-amber); text-shadow: var(--film-glow); letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .diary-featured__chips { margin-top: var(--space-3); }
+body[data-page="journal"][data-theme="film"] .diary-featured__chip { background: rgba(239, 232, 214, 0.07); color: var(--diary-text-dim); border: 1px solid rgba(239, 232, 214, 0.2); -webkit-backdrop-filter: none; backdrop-filter: none; }
+body[data-page="journal"][data-theme="film"] .diary-featured__chip.is-active { background: var(--film-amber); color: #1a1208; border-color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-featured__empty { border-color: rgba(255, 154, 46, 0.5); background: rgba(255, 154, 46, 0.05); color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-featured__empty span:last-child { color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-featured__skeleton { border-radius: 6px; border: 0; background: linear-gradient(100deg, rgba(239, 232, 214, 0.05) 30%, rgba(239, 232, 214, 0.14) 50%, rgba(239, 232, 214, 0.05) 70%) 0 0 / 200% 100%; height: 400px; }
+
+/* 달력 — 인화지 콘택트 시트 */
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-icon-btn { background: rgba(239, 232, 214, 0.07); color: var(--diary-text-dim); border: 1px solid rgba(239, 232, 214, 0.2); }
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__divider { background: var(--diary-line-strong); }
+body[data-page="journal"][data-theme="film"] .diary-weekdays span { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"] .diary-day { border-radius: 6px; }
+body[data-page="journal"][data-theme="film"] .diary-day:not(.has-photo) { background: rgba(239, 232, 214, 0.05); border: 1px solid rgba(239, 232, 214, 0.12); }
+body[data-page="journal"][data-theme="film"] .diary-day__num { color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-day.has-photo .diary-day__num { color: var(--film-amber); text-shadow: 0 0 5px rgba(0, 0, 0, 0.9), var(--film-glow); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.72rem; }
+body[data-page="journal"][data-theme="film"] .diary-day.has-photo { box-shadow: 0 0 0 1px rgba(239, 232, 214, 0.22); }
+body[data-page="journal"][data-theme="film"] .diary-day.is-today { box-shadow: 0 0 0 2px var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-day.is-today .diary-day__num { color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-day.is-loading { background: linear-gradient(100deg, rgba(239, 232, 214, 0.05) 30%, rgba(239, 232, 214, 0.14) 50%, rgba(239, 232, 214, 0.05) 70%) 0 0 / 200% 100%; border-color: rgba(239, 232, 214, 0.12); }
+
+/* 팝업 — 어두운 시트 */
+body[data-page="journal"][data-theme="film"] .modal-panel { background: #1a1917; color: var(--diary-text); border: 1px solid rgba(239, 232, 214, 0.12); }
+body[data-page="journal"][data-theme="film"] .diary-day-modal, body[data-page="journal"][data-theme="film"] .diary-sheet { background: linear-gradient(180deg, #211f1b, #171614); border: 1px solid rgba(239, 232, 214, 0.14); -webkit-backdrop-filter: none; backdrop-filter: none; }
+body[data-page="journal"][data-theme="film"] .modal-scrim { background: rgba(6, 5, 4, 0.7); }
+body[data-page="journal"][data-theme="film"] .modal-close { background: rgba(239, 232, 214, 0.1); color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .modal-close:hover { background: rgba(239, 232, 214, 0.18); }
+body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-modal-header__note, body[data-page="journal"][data-theme="film"] .diary-form__label, body[data-page="journal"][data-theme="film"] .diary-form__hint { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"] .diary-form input, body[data-page="journal"][data-theme="film"] .diary-form textarea { background: #23211d; color: var(--film-paper); border-color: rgba(239, 232, 214, 0.22); }
+body[data-page="journal"][data-theme="film"] .diary-form__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-prompt-note { background: rgba(255, 154, 46, 0.1); color: #ffd49a; }
+body[data-page="journal"][data-theme="film"] .diary-photo-picker__add { background: rgba(239, 232, 214, 0.05); border-color: rgba(239, 232, 214, 0.28); color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-tag-grid { background: rgba(239, 232, 214, 0.04); }
+body[data-page="journal"][data-theme="film"] #tagGrid.diary-tag-grid .tag-chip { color: var(--diary-text); border-color: rgba(239, 232, 214, 0.22); background: rgba(239, 232, 214, 0.04); }
+body[data-page="journal"][data-theme="film"] #tagGrid.diary-tag-grid .tag-chip.is-selected { background: var(--film-amber); border-color: var(--film-amber); color: #1a1208; }
+body[data-page="journal"][data-theme="film"] .btn--primary { background: linear-gradient(180deg, #ffab4d, #f28a14); color: #1a1208; box-shadow: 0 8px 22px rgba(255, 154, 46, 0.25); }
+body[data-page="journal"][data-theme="film"] .diary-entry__edit-link { background: rgba(239, 232, 214, 0.06); color: var(--diary-text); border-color: rgba(239, 232, 214, 0.25); }
+body[data-page="journal"][data-theme="film"] .diary-entry__edit-link:hover { background: rgba(239, 232, 214, 0.12); }
+body[data-page="journal"][data-theme="film"] .diary-ticket-song__link { background: rgba(239, 232, 214, 0.08); color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-ticket-song__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-ticket-song__label { color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .diary-ticket-row__value, body[data-page="journal"][data-theme="film"] .diary-ticket-text { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-nowplaying-search input { background: #23211d; }
+body[data-page="journal"][data-theme="film"] .diary-ticket-time { color: var(--film-amber); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.8rem; text-shadow: var(--film-glow); }
+
+/* 기록 카드 — 우표 대신 필름 프레임(스프로킷 구멍 띠 + 주황 날짜 각인) */
+body[data-page="journal"][data-theme="film"] .diary-stamp, body[data-page="journal"][data-theme="film"] .diary-stamp-back {
+  -webkit-mask: none; mask: none; border-radius: 4px; background-color: var(--film-black); padding: 14px 28px 0;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(239, 232, 214, 0.88) 0 12px, transparent 12px 26px),
+    repeating-linear-gradient(180deg, rgba(239, 232, 214, 0.88) 0 12px, transparent 12px 26px);
+  background-position: left 9px top 6px, right 9px top 6px; background-size: 9px calc(100% - 12px), 9px calc(100% - 12px); background-repeat: no-repeat;
+}
+body[data-page="journal"][data-theme="film"] .diary-stamp-back { padding: 14px 28px; }
+body[data-page="journal"][data-theme="film"] .diary-stamp-back > div { background-color: #2a2823; }
+body[data-page="journal"][data-theme="film"] .diary-stamp-wrap { filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)); }
+body[data-page="journal"][data-theme="film"] .diary-stamp-wrap.has-mood { filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 14px color-mix(in srgb, var(--mood) 40%, transparent)); }
+body[data-page="journal"][data-theme="film"] .diary-stamp__cap { padding: 10px 0 14px; }
+body[data-page="journal"][data-theme="film"] .diary-stamp__title { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-stamp__date { color: var(--film-amber); text-shadow: var(--film-glow); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.68rem; letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .diary-stamp__blank { background: #23211d; }
+body[data-page="journal"][data-theme="film"] .diary-stamp__blank p { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .diary-stamp__skeleton { background: linear-gradient(100deg, rgba(239, 232, 214, 0.05) 30%, rgba(239, 232, 214, 0.14) 50%, rgba(239, 232, 214, 0.05) 70%) 0 0 / 200% 100%; }
+/* 소인 → 사진 안 날짜 각인 */
+body[data-page="journal"][data-theme="film"] .diary-stamp-wrap > .diary-postmark { display: none; }
+body[data-page="journal"][data-theme="film"] .diary-postmark--film {
+  position: absolute; left: 10px; bottom: 8px; top: auto; right: auto; z-index: 2; width: auto; height: auto; padding: 0; border: 0; background: none;
+  box-shadow: none; transform: none; border-radius: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-transform: none;
+}
+body[data-page="journal"][data-theme="film"] .diary-postmark--film b { font-size: 0; color: var(--film-amber); text-shadow: var(--film-glow), 0 0 4px rgba(0, 0, 0, 0.9); }
+body[data-page="journal"][data-theme="film"] .diary-postmark--film b::after { content: attr(data-film); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.86rem; letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .diary-postmark--film span { font-size: 10px; font-weight: 500; letter-spacing: 0.05em; max-width: none; color: rgba(255, 176, 90, 0.95); text-shadow: 0 0 4px rgba(0, 0, 0, 0.9); }
+body[data-page="journal"][data-theme="film"] .diary-entry__photo-more { background: rgba(12, 11, 10, 0.78); color: var(--film-amber); border: 1px solid rgba(255, 154, 46, 0.5); }
+
+/* 우표첩 — 콘택트 시트 */
+body[data-page="journal"][data-theme="film"] .stampbook__month { color: var(--film-amber); text-shadow: var(--film-glow); font-family: 'DSEG7 Classic', var(--font-body); font-weight: 400; letter-spacing: 0.05em; }
+body[data-page="journal"][data-theme="film"] .stampbook__item small { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"] .stampbook__stamp { -webkit-mask: none; mask: none; background: var(--film-black); border-radius: 3px; padding: 7px 10px; transform: none; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5)); }
+
+/* 저장 연출 — 셔터 플래시 + 필름 프레임이 내려앉는다 */
+body[data-page="journal"][data-theme="film"] .stamp-fx { background: rgba(6, 5, 4, 0.78); }
+body[data-page="journal"][data-theme="film"] .stamp-fx__flash { position: absolute; inset: 0; background: #fff; animation: diary-flash 520ms ease-out both; pointer-events: none; }
+@keyframes diary-flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+body[data-page="journal"][data-theme="film"] .stamp-fx__stamp { -webkit-mask: none; mask: none; background-color: var(--film-black); border-radius: 4px; padding: 14px 26px 0;
+  background-image: repeating-linear-gradient(180deg, rgba(239, 232, 214, 0.88) 0 12px, transparent 12px 26px), repeating-linear-gradient(180deg, rgba(239, 232, 214, 0.88) 0 12px, transparent 12px 26px);
+  background-position: left 8px top 6px, right 8px top 6px; background-size: 9px calc(100% - 12px), 9px calc(100% - 12px); background-repeat: no-repeat; }
+body[data-page="journal"][data-theme="film"] .stamp-fx__cap b { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"] .stamp-fx__cap small { color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"] .stamp-fx__mark { top: auto; right: auto; left: 40px; bottom: 58px; width: auto; height: auto; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 0; transform: none; align-items: flex-start; animation: diary-imprint-in 700ms 380ms ease both; }
+body[data-page="journal"][data-theme="film"] .stamp-fx__mark b { font-size: 0; color: var(--film-amber); text-shadow: var(--film-glow), 0 0 4px rgba(0, 0, 0, 0.9); }
+body[data-page="journal"][data-theme="film"] .stamp-fx__mark b::after { content: attr(data-film); font-family: 'DSEG7 Classic', var(--font-body); font-size: 0.95rem; letter-spacing: 0.04em; }
+body[data-page="journal"][data-theme="film"] .stamp-fx__mark span { color: rgba(255, 176, 90, 0.95); text-shadow: 0 0 4px rgba(0, 0, 0, 0.9); font-size: 10px; max-width: none; }
+@keyframes diary-imprint-in { 0% { opacity: 0; filter: blur(6px); } 100% { opacity: 1; filter: blur(0); } }
+
+/* 이전(유리) 테마에서는 필름 전용 요소를 그리지 않는다 */
+body[data-page="journal"][data-theme="glass"] .film-bar,
+body[data-page="journal"][data-theme="glass"] .diary-postmark--film,
+body[data-page="journal"][data-theme="glass"] .stamp-fx__flash { display: none; }
+body[data-page="journal"][data-theme="glass"] .diary-featured__film { display: contents; }
+/* 밤/노을 시간대 규칙이 필름 테마의 버튼 색을 덮지 않게 같은 구체성으로 한 번 더 */
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn:not(.diary-write-bar__btn--camera) { background: linear-gradient(180deg, #ffab4d, #f28a14); color: #1a1208; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-week__day.is-done i { background: var(--film-amber); border-color: var(--film-amber); color: #141210; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero { background: var(--glass-card); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__eyebrow { color: var(--film-paper); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-view {
+  --diary-text: #efe8d6; --diary-text-dim: #cbc3ae; --diary-text-faint: #9a927e;
+  --diary-line: rgba(239, 232, 214, 0.14); --diary-line-strong: rgba(239, 232, 214, 0.30);
+}
+body[data-page="journal"][data-theme="film"][data-tod] .diary-icon-btn { background: rgba(239, 232, 214, 0.07); color: var(--diary-text-dim); border-color: rgba(239, 232, 214, 0.2); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day:not(.has-photo) { background: rgba(239, 232, 214, 0.05); border-color: rgba(239, 232, 214, 0.12); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__plane { background: var(--film-amber); color: #141210; border-color: #1c1b19; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__fill, body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__pin--start { background: var(--film-amber); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-today { box-shadow: 0 0 0 2px var(--film-amber); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__eyebrow, body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__head .diary-featured__eyebrow { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__head .diary-featured__eyebrow { color: var(--film-paper); }
+
+
+/* ==========================================================================
+   필름 테마 글씨체 — 본문·라벨은 IBM Plex Sans KR, 라벨·숫자 성격의 작은 글씨는 IBM Plex Mono.
+   Plex Mono에는 한글이 없어서 한글은 자동으로 Plex Sans KR로 이어진다. 제목은 마루부리, 날짜 각인은 DSEG7 그대로.
+   ========================================================================== */
+body[data-page="journal"][data-theme="film"] {
+  --f-body: 'IBM Plex Sans KR', 'SUIT Variable', var(--font-body);
+  --f-label: 'IBM Plex Mono', 'IBM Plex Sans KR', ui-monospace, monospace;
+}
+body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow,
+body[data-page="journal"][data-theme="film"] .diary-hero__dates,
+body[data-page="journal"][data-theme="film"] .diary-hero__sub,
+body[data-page="journal"][data-theme="film"] .diary-streak__label,
+body[data-page="journal"][data-theme="film"] .diary-week__day span,
+body[data-page="journal"][data-theme="film"] .diary-weekdays span,
+body[data-page="journal"][data-theme="film"] .diary-day__num,
+body[data-page="journal"][data-theme="film"] .diary-ticket-row__label,
+body[data-page="journal"][data-theme="film"] .diary-ticket-row__value,
+body[data-page="journal"][data-theme="film"] .diary-ticket-tags,
+body[data-page="journal"][data-theme="film"] .diary-ticket-song__label,
+body[data-page="journal"][data-theme="film"] .diary-ticket-song__artist,
+body[data-page="journal"][data-theme="film"] .diary-featured__loc,
+body[data-page="journal"][data-theme="film"] .diary-featured__chip,
+body[data-page="journal"][data-theme="film"] .diary-form__label,
+body[data-page="journal"][data-theme="film"] .diary-form__hint,
+body[data-page="journal"][data-theme="film"] .diary-modal-header__note,
+body[data-page="journal"][data-theme="film"] .diary-qpop small,
+body[data-page="journal"][data-theme="film"] .diary-postmark--film span,
+body[data-page="journal"][data-theme="film"] .stampbook__item small,
+body[data-page="journal"][data-theme="film"] .diary-entry__edit-link,
+body[data-page="journal"][data-theme="film"] .diary-entry__delete-link,
+body[data-page="journal"][data-theme="film"] .diary-photo-thumb__cover,
+body[data-page="journal"][data-theme="film"] .diary-entry__photo-more,
+body[data-page="journal"][data-theme="film"] .diary-day__dot-more { font-family: var(--f-label); }
+body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow, body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { letter-spacing: 0.14em; }
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn, body[data-page="journal"][data-theme="film"] .diary-qpop__ans, body[data-page="journal"][data-theme="film"] .diary-qpop__close { font-family: var(--f-body); font-weight: 600; }
+body[data-page="journal"][data-theme="film"] .diary-prompt-note, body[data-page="journal"][data-theme="film"] .diary-qpop p, body[data-page="journal"][data-theme="film"] .diary-ticket-text, body[data-page="journal"][data-theme="film"] .diary-stamp__blank p { font-family: var(--f-body); }
+body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { letter-spacing: -0.01em; }
+
+/* 필름 테마 — 같은 날짜를 두 번 보여주지 않는다 */
+/* 최근 사진: 패널 오른쪽 날짜 칩은 없애고, 아래 필름 띠의 날짜 각인만 남긴다 */
+body[data-page="journal"][data-theme="film"] .diary-featured__date { display: none; }
+/* 기록 카드: 제목 옆 날짜는 없애서 제목이 한 줄로 길게 나오게 한다(날짜는 사진 안 각인이 대신한다) */
+body[data-page="journal"][data-theme="film"] .diary-stamp__date { display: none; }
+body[data-page="journal"][data-theme="film"] .diary-stamp__cap { display: block; }
+body[data-page="journal"][data-theme="film"] .diary-stamp__title { display: block; -webkit-line-clamp: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+/* ==========================================================================
+   필름 테마 제목 — Bebas Neue (좁고 굵은 대문자). 한글은 없어서 사용자가 쓴 한국어 제목은 마루부리로 이어진다.
+   화면 글자가 영어로 바뀌는 것은 js/diary-en.js (필름 테마에서만).
+   ========================================================================== */
+body[data-page="journal"][data-theme="film"] {
+  --f-title: 'Bebas Neue', 'MaruBuriBold', 'MaruBuri', var(--font-display);
+  --diary-font-ticket: var(--f-title); --diary-font-display: var(--f-title);
+}
+body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 2.3rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 2rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 1.9rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { font-size: 2rem; letter-spacing: 0.05em; font-weight: 400; }
+body[data-page="journal"][data-theme="film"] .stampbook__month { font-family: var(--f-title); font-size: 1.15rem; letter-spacing: 0.08em; color: var(--film-amber); text-shadow: var(--film-glow); }
+body[data-page="journal"][data-theme="film"] .diary-stamp__title, body[data-page="journal"][data-theme="film"] .diary-featured__title { letter-spacing: 0.01em; }
+body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow { font-family: var(--f-title); font-size: 1.05rem; letter-spacing: 0.16em; }
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn { letter-spacing: 0.08em; }
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn, body[data-page="journal"][data-theme="film"] .diary-qpop__ans, body[data-page="journal"][data-theme="film"] .diary-qpop__close { font-family: var(--f-title); font-size: 1.2rem; font-weight: 400; }
+body[data-page="journal"][data-theme="film"] .diary-week__day span, body[data-page="journal"][data-theme="film"] .diary-weekdays span { letter-spacing: 0.06em; font-size: 10px; }
+
+/* 필름 테마 — 날짜 칩과 달력 사이 구분선 */
+body[data-page="journal"][data-theme="film"] .diary-cal-section {
+  border-top: 1px solid rgba(239, 232, 214, 0.22);
+  margin-top: var(--space-3);
+  padding-top: var(--space-5);
+}
+
+/* 필름 테마 — 스트릭: 숫자는 조금 작게, DAY STREAK 글씨는 크게 */
+body[data-page="journal"][data-theme="film"] .diary-streak__num { font-size: 1.25rem; }
+body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 1rem; letter-spacing: 0.08em; margin-bottom: 0; align-self: center; color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-streak { gap: 8px; align-items: center; }
+body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 0.8rem; letter-spacing: 0.1em; }
+/* 불꽃 아이콘을 숫자 쪽(오른쪽)으로 붙인다 */
+body[data-page="journal"][data-theme="film"] .diary-streak svg { margin-right: -7px; }
+
+/* 기록 카드 아래쪽 — 시각을 태그 줄 오른쪽 아래의 작은 칩으로 */
+.diary-ticket-row--tags { position: relative; }
+.diary-ticket-row--tags .diary-ticket-time { position: absolute; right: 0; bottom: 0; }
+.diary-ticket-row--tags:has(> .diary-ticket-time:only-child) { min-height: 26px; }
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--tags .diary-ticket-time {
+  padding: 3px 10px; border: 1px solid rgba(255, 154, 46, 0.6); border-radius: 999px; font-size: 0.72rem; line-height: 1.3;
+}
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--tags { padding-right: 76px; }
+
+/* 팝업·날짜 머리글의 날짜도 디지털 숫자로 */
+body[data-page="journal"][data-theme="film"] .is-date {
+  font-family: 'DSEG7 Classic', var(--font-body); font-weight: 400; color: var(--film-amber); text-shadow: var(--film-glow);
+  font-size: 1.4rem; letter-spacing: 0.05em; line-height: 1.2;
+}
+
+/* 시각은 다른 태그와 같은 형식(이모지 + 글자, 같은 글씨체·크기·색), 자리는 태그 줄 오른쪽 */
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--tags .diary-ticket-time {
+  padding: 0; border: 0; border-radius: 0; background: none; text-shadow: none;
+  font-family: var(--f-label); font-size: var(--fs-small); font-weight: 600; letter-spacing: 0; line-height: 1.4;
+  color: var(--diary-text-dim); display: inline-flex; align-items: center; gap: 6px;
+}
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--tags .diary-ticket-time::before { content: '🕒'; font-size: 1em; }
+
+/* 날짜 머리글은 더 작게, 한 줄로, 주황색 유지 */
+body[data-page="journal"][data-theme="film"] .diary-modal-header h2.is-date,
+body[data-page="journal"][data-theme="film"] h2.is-date {
+  font-family: 'DSEG7 Classic', var(--font-body); font-size: 1.05rem; letter-spacing: 0.05em; white-space: nowrap;
+  color: var(--film-amber); text-shadow: var(--film-glow); font-weight: 400;
+}
+
+/* 정보 격자 — 열 수는 칸 수에 맞추고, 태그 칸은 앞쪽 열, 시각은 마지막 열(시간대 칸과 같은 세로선)에 놓는다 */
+.diary-ticket-rows { grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); }
+.diary-ticket-row--tags { position: static; padding-right: 0 !important; }
+.diary-ticket-row--time { align-self: end; }
+.diary-ticket-row--tags .diary-ticket-time, .diary-ticket-row--time .diary-ticket-time { position: static; }
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--time .diary-ticket-time {
+  padding: 0; border: 0; border-radius: 0; background: none; text-shadow: none;
+  font-family: var(--f-label); font-size: var(--fs-small); font-weight: 600; letter-spacing: 0; line-height: 1.4;
+  color: var(--diary-text-dim); display: inline-flex; align-items: center; gap: 6px;
+}
+body[data-page="journal"][data-theme="film"] .diary-ticket-row--time .diary-ticket-time::before { content: '🕒'; font-size: 1em; }

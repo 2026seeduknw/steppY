@@ -422,7 +422,7 @@ const AppState = {
   },
 
   updateJournalEntry(id, patch) {
-    const entry = this.load().journal.find(e => e.id === id);
+    const entry = this.load().journal.find(e => e.id === id || e.tempId === id);
     if (!entry) return;
     Object.assign(entry, patch);
     this.save();
@@ -433,6 +433,9 @@ const AppState = {
         phase: entry.phase,
         title: entry.title || null,
         body: entry.body,
+        photos: entry.photos || [],
+        tags: entry.tags || [],
+        now_playing: entry.nowPlaying || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', entry.id).eq('user_id', Auth.userId), '기록 수정');

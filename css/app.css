@@ -1,4 +1,4 @@
-/* ==========================================================================
+/* ===================================================================
    App skin — 기능은 웹 버전 그대로, 화면 구성만 네이티브 앱 관습으로
 
    왜 오버라이드 레이어인가
@@ -1718,6 +1718,9 @@ body[data-page="prepare"] .leg-card {
 .page-lede,
 .info-panel__note { color: var(--ink-400); font-weight: 400; }
 
+/* 서버 상태를 받기 전 — 탭 수가 바뀌는 게 보이지 않도록 숨긴다 */
+.tabbar--pending { visibility: hidden; }
+=======
 
 /* ---- 개인정보처리방침 링크 (계정 시트 / 로그인 화면) ---- */
 .account-sheet__legal { text-align: center; margin-top: var(--space-4); }
