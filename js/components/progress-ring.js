@@ -3,7 +3,7 @@
  * SVG 문자열을 직접 생성함. stroke-dasharray로 진행률(0~100)을 표현.
  */
 function progressRingSvg(percent, opts) {
-  const { size = 56, stroke = 6, color = 'var(--sky-500)', track = 'var(--cloud-100)' } =
+  const { size = 56, stroke = 6, color = 'var(--key-500)', track = 'var(--cloud-100)' } =
     opts || {};
   const r = (size - stroke) / 2;
   const c = size / 2;

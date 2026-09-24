@@ -33,6 +33,7 @@ function profileViewTemplate() {
       <button class="btn--text" data-edit-profile>수정</button>
     </div>
     <div class="profile-stats profile-stats--compact">
+      <div class="profile-stat"><span class="profile-stat__label">이름</span><span class="profile-stat__value">${p.name || '미등록'}</span></div>
       <div class="profile-stat"><span class="profile-stat__label">GPA</span><span class="profile-stat__value tnum">${p.gpa == null ? '미등록' : `${formatGpa(p.gpa)} <em>/ ${formatGpa(p.gpaScale)}</em>`}</span></div>
       <div class="profile-stat"><span class="profile-stat__label">어학 성적</span><span class="profile-stat__value tnum">${lang ? `${lang.type} ${lang.score}` : '미등록'}</span></div>
       <div class="profile-stat"><span class="profile-stat__label">교환 시기</span><span class="profile-stat__value">${p.exchangeTerm.year} ${p.exchangeTerm.season}</span></div>
@@ -50,8 +51,13 @@ function profileEditTemplate() {
     </div>
     <form class="profile-form" id="profileForm">
       <label class="field">
+        <span>이름 (홈 인사에 쓰여요)</span>
+        <input type="text" name="name" maxlength="20" autocomplete="nickname"
+               value="${(p.name || '').replace(/"/g, '&quot;')}" placeholder="예: 김스텝" required>
+      </label>
+      <label class="field">
         <span>GPA (4.3 만점, 0.01 단위)</span>
-        <input type="number" step="0.01" min="0" max="4.3" name="gpa" value="${p.gpa == null ? '' : p.gpa}" required>
+        <input type="number" step="0.01" min="0" max="4.3" data-decimals="2" name="gpa" value="${p.gpa == null ? '' : p.gpa}" required>
       </label>
       <label class="field">
         <span>어학 시험</span>
@@ -105,7 +111,8 @@ function wireProfileEdit(mount) {
     e.preventDefault();
     const fd = new FormData(e.target);
     AppState.updateProfile({
-      gpa: parseFloat(fd.get('gpa')),
+      name: String(fd.get('name') || '').trim(),
+      gpa: roundDecimals(fd.get('gpa'), 2),
       major: fd.get('major'),
       languageTests: [{ type: fd.get('langType'), score: parseFloat(fd.get('langScore')) }],
       exchangeTerm: {
@@ -116,6 +123,7 @@ function wireProfileEdit(mount) {
     });
     renderProfileCard(mount);
     showToast('기본 정보를 저장했어요');
+    // 홈 인사("안녕하세요, ○○님")가 이 이벤트를 듣고 다시 그린다.
     document.dispatchEvent(new CustomEvent('profile:updated'));
   });
 }

@@ -17,7 +17,7 @@
 
 <div class="page-shell">
   <div class="search-toolbar">
-    <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명 · 학과명으로 검색">
+    <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명으로 검색">
     <select class="sort-select" id="sortSelect">
       <option value="default">기본순</option>
       <option value="major">전공 유사도 순</option>
@@ -45,13 +45,30 @@
         <button class="btn--text filter-reset" id="resetFilters">초기화</button>
       </div>
 
-      <div class="filter-group">
+      <div class="filter-group filter-group--half">
         <span class="filter-group__title">국가</span>
         <div class="filter-chip-list" id="countryFilters"></div>
+      </div>
+      <div class="filter-group filter-group--half">
+        <span class="filter-group__title">QS 순위</span>
+        <select class="sort-select" id="qsSelect" style="height:36px;">
+          <option value="">전체</option>
+          <option value="50">Top 50</option>
+          <option value="100">Top 100</option>
+          <option value="200">Top 200</option>
+        </select>
       </div>
       <div class="filter-group">
         <span class="filter-group__title">학과</span>
         <div class="filter-chip-list" id="majorFilters"></div>
+      </div>
+      <div class="filter-group filter-group--half">
+        <span class="filter-group__title">지원 자격</span>
+        <div class="filter-chip-list" id="programFilters"></div>
+      </div>
+      <div class="filter-group filter-group--half">
+        <span class="filter-group__title">수업 언어</span>
+        <div class="filter-chip-list" id="trackFilters"></div>
       </div>
       <div class="filter-group">
         <span class="filter-group__title">지역</span>
@@ -69,20 +86,11 @@
         <span class="filter-group__title">치안</span>
         <div class="filter-chip-list" id="securityFilters"></div>
       </div>
-      <div class="filter-group">
-        <span class="filter-group__title">QS 순위</span>
-        <select class="sort-select" id="qsSelect" style="height:36px;">
-          <option value="">전체</option>
-          <option value="50">Top 50</option>
-          <option value="100">Top 100</option>
-          <option value="200">Top 200</option>
-        </select>
+      <div class="filter-group filter-group--half">
+        <div class="toggle-row"><span>지원 가능만</span><button class="toggle-switch" id="onlyEligibleToggle"></button></div>
       </div>
-      <div class="filter-group">
-        <div class="toggle-row"><span>지원 가능만 보기</span><button class="toggle-switch" id="onlyEligibleToggle"></button></div>
-      </div>
-      <div class="filter-group">
-        <div class="toggle-row"><span>즐겨찾기만 보기</span><button class="toggle-switch" id="onlyFavoriteToggle"></button></div>
+      <div class="filter-group filter-group--half">
+        <div class="toggle-row"><span>즐겨찾기만</span><button class="toggle-switch" id="onlyFavoriteToggle"></button></div>
       </div>
     </aside>
 
@@ -97,23 +105,26 @@
 
 <div id="mentor-float"></div>
 
+<script src="js/release-flags.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/review-topics.js"></script>
 <script src="js/currency-rates.js"></script>
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/school-logos.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
+<script src="js/wordmark-text.js"></script>
 <script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>

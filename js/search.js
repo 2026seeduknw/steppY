@@ -2,13 +2,30 @@
   AppState.load();
 
   const LABELS = {
-    climateType: { 'four-season': '사계절 뚜렷', hot: '고온다습', cold: '한랭·일조 짧음', 'mild-winter': '온화·잦은 비' },
+    // 기온이 말해주는 만큼만 적는다. climateType은 계절 평균기온 네 개로만
+    // 나눈 값이라(js/data-source.js climateTypeFromTemps) 강수·습도·일조 자료가
+    // 아예 없다. 예전 라벨('고온다습', '한랭·일조 짧음', '온화·잦은 비')은
+    // 측정한 적 없는 것을 단정했고, 특히 '온화·잦은 비'는 나머지를 전부 받는
+    // else 가지라 마드리드·바르셀로나·로마처럼 여름이 건조한 도시까지 묶였다.
+    climateType: { 'four-season': '사계절 뚜렷', hot: '연중 더움', cold: '겨울 영하', 'mild-winter': '겨울 온화' },
     commerceLevel: { high: '상권 풍부', medium: '상권 보통', low: '상권 작음' },
-    securityLevel: { high: '치안 우수', medium: '치안 보통', low: '치안 주의' }
+    securityLevel: { high: '치안 우수', medium: '치안 보통', low: '치안 주의' },
+    // 원본 목록에서 UIC 전용 파견교는 학교 이름 앞에 "(UIC Exclusive)"가 붙어
+    // 있는 것이 전부다. 별도 컬럼이 없어 이름으로 가른다.
+    program: { uic: 'UIC 전용', open: '전체 학부' },
+    // 원본 Language 열에 English 가 들어 있는지 하나로 가른 값이다
+    // (supabase/build_import.py). "영어 전용"이 아니라 "영어로 들을 수 있음"이다.
+    track: { english: '영어', nonEnglish: '현지어' }
   };
+
+  /** UIC(언더우드국제대학) 소속만 지원할 수 있는 파견교인지. */
+  function programOf(school) {
+    return /^\s*\(UIC Exclusive\)/i.test(school.name || '') ? 'uic' : 'open';
+  }
 
   const state = {
     query: '', country: '', majors: new Set(), regions: new Set(),
+    programs: new Set(), tracks: new Set(),
     commerce: new Set(), climate: new Set(), security: new Set(),
     qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default'
   };
@@ -34,6 +51,8 @@
   function renderFilters() {
     renderCountrySelect();
     renderMajorFilter();
+    renderChipGroup('programFilters', ['uic', 'open'], state.programs, LABELS.program);
+    renderChipGroup('trackFilters', uniq('track'), state.tracks, LABELS.track);
     renderChipGroup('regionFilters', uniq('region'), state.regions);
     renderChipGroup('commerceFilters', uniq('commerceLevel'), state.commerce, LABELS.commerceLevel);
     renderChipGroup('climateFilters', uniq('climateType'), state.climate, LABELS.climateType);
@@ -91,6 +110,8 @@
     }
     if (state.country && school.country !== state.country) return false;
     if (state.majors.size && ![...state.majors].some(m => schoolHasMajorMatch(school, m))) return false;
+    if (state.programs.size && !state.programs.has(programOf(school))) return false;
+    if (state.tracks.size && !state.tracks.has(school.track)) return false;
     if (state.regions.size && !state.regions.has(school.region)) return false;
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
     if (state.climate.size && !state.climate.has(school.climateType)) return false;
@@ -112,24 +133,6 @@
     return list;
   }
 
-  // UC는 9개 캠퍼스가 개별 school 레코드라 검색 결과에 9장 나란히 뜨는 게 어색함 —
-  // 카드 한 장으로 합치고, 클릭하면 캠퍼스 목록 전용 모달(openUCGroupModal)을 띄움.
-  const isUCCampus = (school) => school.id.startsWith('university-of-california-');
-
-  function groupUCCampuses(list) {
-    const result = [];
-    let ucGroup = null;
-    list.forEach(school => {
-      if (isUCCampus(school)) {
-        if (!ucGroup) { ucGroup = { isUCGroup: true, campuses: [] }; result.push(ucGroup); }
-        ucGroup.campuses.push(school);
-      } else {
-        result.push(school);
-      }
-    });
-    return result;
-  }
-
   function renderGrid() {
     const filtered = sortSchools(MOCK.schools.filter(matchesFilters));
     document.getElementById('resultCount').innerHTML = `<strong>${filtered.length}</strong>개 학교`;
@@ -138,8 +141,7 @@
       grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요. 필터를 조정해보세요.</div>`;
       return;
     }
-    const rows = groupUCCampuses(filtered);
-    grid.innerHTML = rows.map(row => row.isUCGroup ? ucGroupCardTemplate(row.campuses) : schoolCardTemplate(row)).join('');
+    grid.innerHTML = filtered.map(schoolCardTemplate).join('');
     grid.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav-toggle-card]')) return;
@@ -150,34 +152,12 @@
         openSchoolModal(schoolId, { onChange: renderGrid, contextMajor });
       });
     });
-    grid.querySelectorAll('[data-open-uc-group]').forEach(el => {
-      el.addEventListener('click', () => openUCGroupModal(renderGrid));
-    });
     grid.querySelectorAll('[data-fav-toggle-card]').forEach(btn => {
       btn.addEventListener('click', () => {
         const active = AppState.toggleFavorite(btn.dataset.favToggleCard);
         btn.classList.toggle('is-active', active);
       });
     });
-  }
-
-  function ucGroupCardTemplate(campuses) {
-    return `
-      <button type="button" class="card card--interactive school-card" data-open-uc-group="1">
-        <div class="school-card__top">
-          <span class="school-card__qs">${campuses.length}개 캠퍼스</span>
-        </div>
-        <div class="school-card__name">University of California</div>
-        <div class="school-card__loc">미국 · 캘리포니아 (${campuses.map(c => c.campusCity).filter(Boolean).join(' · ')})</div>
-        <div class="school-card__badges"><span class="badge badge--neutral">캠퍼스별로 지원 요건이 달라요</span></div>
-        <div class="uc-group-card__logos">
-          ${campuses.map(c => SCHOOL_LOGOS[c.id]
-            ? `<img class="uc-group-card__logo" src="assets/school-logos/${SCHOOL_LOGOS[c.id]}" alt="${c.name}" title="${c.name}">`
-            : ''
-          ).join('')}
-        </div>
-      </button>
-    `;
   }
 
   function schoolCardTemplate(school) {
@@ -189,7 +169,7 @@
           <div class="school-card__meta">
             <span class="school-card__qs">${school.qsRank ? `QS ${school.qsRank}` : '순위 미정'}</span>
             ${eligibilityBadgeHtml(elig)}
-            <span class="badge badge--neutral">모집 ${school.slot}명</span>
+            <span class="badge badge--neutral">${quotaLabel(school)}</span>
           </div>
           <span class="fav-btn ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}">
             <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
@@ -248,12 +228,12 @@
     banner.innerHTML = `
       <div class="score-prompt__head">
         <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
-        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장됩니다.' : '지원 가능 여부를 알려드려요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
       </div>
       <form class="score-prompt__form" id="guestScoreForm">
         <label class="score-prompt__field">
           <span>학점</span>
-          <input type="number" step="0.01" min="0" max="4.5" name="gpa"
+          <input type="number" step="0.01" min="0" max="4.5" data-decimals="2" name="gpa"
                  value="${filled ? p.gpa : ''}" placeholder="3.62">
         </label>
         <label class="score-prompt__field">
@@ -270,7 +250,7 @@
     document.getElementById('guestScoreForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const gpa = fd.get('gpa') === '' ? null : parseFloat(fd.get('gpa'));
+      const gpa = fd.get('gpa') === '' ? null : roundDecimals(fd.get('gpa'), 2);
       const score = fd.get('langScore') === '' ? null : parseFloat(fd.get('langScore'));
       AppState.updateProfile({
         gpa,
@@ -295,6 +275,7 @@
 
   document.getElementById('resetFilters').addEventListener('click', () => {
     state.country = ''; state.majors.clear(); state.regions.clear();
+    state.programs.clear(); state.tracks.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
     document.getElementById('qsSelect').value = '';

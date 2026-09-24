@@ -10,18 +10,7 @@ const PREPARE_MARKUP = `
     <div class="prepare-main">
       <div id="targetMajorCard"></div>
 
-      <div id="departureCard"></div>
-
       <section class="card card-pad" id="todoCard"></section>
-
-      <a class="credits-cta" href="credits.html">
-        <div class="credits-cta__body">
-          <span class="credits-cta__eyebrow">학점 인정</span>
-          <h2>확정한 학교 과목, 학점으로 인정될까요?</h2>
-          <p>내 전공과 이 학교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
-        </div>
-        <span class="credits-cta__arrow" aria-hidden="true">→</span>
-      </a>
 
       <section class="card card-pad" id="checklistSection">
         <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
@@ -32,25 +21,18 @@ const PREPARE_MARKUP = `
         <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
         <div class="living-grid" id="livingGrid"></div>
       </section>
-
-      <section class="card card-pad" id="tipsSection">
-        <div class="section-title"><div><h2>Tips</h2></div></div>
-        <div class="tip-row" id="tipsList"></div>
-        <div class="section-title" style="margin-top:var(--space-5);"><div><h2>주변 가볼만한 곳</h2></div></div>
-        <div class="tip-row" id="spotsList"></div>
-      </section>
     </div>
   </div>
 `;
 
 function renderPrepareView() {
   renderTargetMajorCard(document.getElementById('targetMajorCard'));
-  renderDepartureCard(document.getElementById('departureCard'));
   renderTodoCard(document.getElementById('todoCard'));
+  // 히어로를 먼저 그린다 — 출국 카드가 들어갈 자리(#departureCard)를 히어로가 만든다.
   renderPrepareHero();
+  renderDepartureCard(document.getElementById('departureCard'), { inline: true });
   renderPrepareChecklist();
   renderPrepareLiving();
-  renderPrepareTips();
 }
 
 function renderPrepareHero() {
@@ -63,22 +45,17 @@ function renderPrepareHero() {
           <h2>아직 확정한 학교가 없어요</h2>
           <p>학교 찾기에서 지망 학교를 선택하고 확정하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요</p>
         </div>
-        <a href="search.html" class="btn btn--primary">학교 찾기로 이동</a>
+        <a href="search.html" class="btn btn--accent">학교 찾기로 이동</a>
       </div>`;
     document.getElementById('checklistSection').style.display = 'none';
     document.getElementById('livingSection').style.display = 'none';
-    document.getElementById('tipsSection').style.display = 'none';
     return;
   }
-  // 출국하면 비자·서류 체크리스트와 학점 인정 카드를 내린다. 비자는 나오면 끝이고
-  // 학점 인정은 수강신청까지 끝난 뒤라, 남겨두면 이미 끝낸 일이 할 일처럼 보인다.
-  // 생활 준비와 Tips는 현지에서도 쓰는 정보라 그대로 둔다.
+  // 출국하면 비자·서류 체크리스트를 내린다. 비자는 나오면 끝이라 남겨두면
+  // 이미 끝낸 일이 할 일처럼 보인다. 생활 준비는 현지에서도 쓰니 그대로 둔다.
   const departed = typeof hasDeparted === 'function' && hasDeparted();
   document.getElementById('checklistSection').style.display = departed ? 'none' : '';
   document.getElementById('livingSection').style.display = '';
-  document.getElementById('tipsSection').style.display = '';
-  const creditsCta = document.querySelector('.credits-cta');
-  if (creditsCta) creditsCta.style.display = departed ? 'none' : '';
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
       <div class="confirmed-card__identity">
@@ -94,12 +71,20 @@ function renderPrepareHero() {
           </div>
         </div>
       </div>
+
+      <!-- 어느 학교로 언제 떠나는지는 학교 이름·국가와 같은 층위의 정보다.
+           별도 카드로 두면 카드 안에 카드가 들어앉는다 — 같은 층위의 글로 적는다. -->
+      <div id="departureCard"></div>
       <div class="confirmed-card__actions">
         <span class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.4);">학교 정보 보기</span>
         <button type="button" class="confirmed-card__cancel" id="cancelConfirmBtn">학교 확정 취소</button>
       </div>
     </div>`;
-  document.getElementById('confirmedCardBtn').addEventListener('click', () => openSchoolModal(confirmed.id, { onChange: renderPrepareView }));
+  // 카드 아무 데나 누르면 학교 상세가 열린다. 그 안의 '수정'·날짜 입력만
+  // 자기 일을 하도록 각자 stopPropagation 한다(js/components/departure.js).
+  document.getElementById('confirmedCardBtn').addEventListener('click', () => {
+    openSchoolModal(confirmed.id, { onChange: renderPrepareView });
+  });
   document.getElementById('cancelConfirmBtn').addEventListener('click', async (e) => {
     e.stopPropagation();
     const btn = e.currentTarget;
@@ -184,6 +169,9 @@ function renderPrepareLiving() {
     mount.innerHTML = `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
     return;
   }
+  // 넷을 전부 펼쳐 두면 화면 두 판이 설명문으로 찬다. 제목만 세워 두고 필요한
+  // 항목만 열어 보게 한다 — 보험을 알아보는 날과 계좌를 여는 날은 다르다.
+  // (체크리스트가 이미 같은 방식이라 조작이 낯설지 않다)
   mount.innerHTML = keys.map(k => {
     const d = lp[k];
     const scholarshipExtra = k === 'scholarship' ? `
@@ -196,26 +184,26 @@ function renderPrepareLiving() {
           </div>`).join('')}
       </div>` : '';
     return `
-      <div class="card living-card">
-        <div class="living-card__title">${d.title}</div>
-        <div class="living-card__summary">${d.summary}</div>
-        ${scholarshipExtra}
-        <div class="spec-note">⚠️ ${d.caution}</div>
+      <div class="card living-card" data-living="${k}">
+        <button type="button" class="living-card__row" aria-expanded="false">
+          <span class="living-card__title">${d.title}</span>
+          <span class="living-card__caret" aria-hidden="true">⌄</span>
+        </button>
+        <div class="living-card__detail">
+          <div class="living-card__summary">${d.summary}</div>
+          ${scholarshipExtra}
+          <div class="spec-note">⚠️ ${d.caution}</div>
+        </div>
       </div>`;
   }).join('');
-}
 
-function renderPrepareTips() {
-  const confirmed = AppState.getConfirmedSchool();
-  const schoolId = confirmed ? confirmed.id : null;
-  const tips = MOCK.tips.filter(t => t.school === schoolId);
-  const spots = MOCK.nearbySpots.filter(s => s.school === schoolId);
-  document.getElementById('tipsList').innerHTML = tips.length
-    ? tips.map(t => `<div class="tip-item"><div class="tip-item__title">${t.title}</div><div class="tip-item__summary">${t.summary}</div></div>`).join('')
-    : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
-  document.getElementById('spotsList').innerHTML = spots.length
-    ? spots.map(s => `<div class="tip-item"><div class="tip-item__title">${s.title}</div><div class="tip-item__summary">${s.summary}</div></div>`).join('')
-    : `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
+  mount.querySelectorAll('.living-card').forEach(card => {
+    const row = card.querySelector('.living-card__row');
+    row.addEventListener('click', () => {
+      const open = card.classList.toggle('is-expanded');
+      row.setAttribute('aria-expanded', String(open));
+    });
+  });
 }
 
 function ensurePrepareStylesLoaded() {

@@ -83,8 +83,13 @@ function renderAppBar(activeKey) {
 }
 
 /**
- * 계정 시트 — 로그인한 이메일 확인과 로그아웃.
+ * 계정 시트 — 로그인한 이메일 확인, 로그아웃, 회원 탈퇴.
  * 로그아웃하면 AppState가 'auth:changed'를 받아 게스트 상태로 다시 읽는다.
+ *
+ * 탈퇴가 왜 여기 있나
+ *   App Store 심사 가이드라인 5.1.1(v) — 앱에서 계정을 만들 수 있으면 앱에서
+ *   지울 수도 있어야 한다. 웹으로 보내거나 메일로 요청하게 하면 리젝이다.
+ *   계정을 관리하는 화면이 이 시트뿐이라 로그아웃 바로 아래에 둔다.
  */
 function openAccountSheet() {
   document.querySelectorAll('.app-sheet--account').forEach(el => el.remove());
@@ -101,6 +106,27 @@ function openAccountSheet() {
           <p class="account-sheet__email">${Auth.email || ''}</p>
           <section class="card card-pad account-sheet__profile" id="accountProfileCard"></section>
           <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
+
+          <p class="account-sheet__legal"><a href="privacy.html">개인정보처리방침</a></p>
+
+          <div class="account-danger">
+            <button type="button" class="btn btn--text account-danger__open" id="deleteAccountOpen">회원 탈퇴</button>
+
+            <div class="account-danger__panel" id="deleteAccountPanel" hidden>
+              <p class="account-danger__title">계정을 지우면 되돌릴 수 없어요</p>
+              <ul class="account-danger__list">
+                <li>남긴 기록과 사진</li>
+                <li>1~3지망 · 확정한 학교 · 즐겨찾기</li>
+                <li>학점·어학 성적, 교환 시기 같은 기본 정보</li>
+                <li>준비 체크리스트에서 직접 추가한 할 일</li>
+              </ul>
+              <p class="account-danger__note">같은 메일로 다시 가입할 수는 있지만, 지운 내용은 돌아오지 않아요.</p>
+              <div class="account-danger__actions">
+                <button type="button" class="btn btn--ghost btn--sm" id="deleteAccountCancel">그만두기</button>
+                <button type="button" class="btn btn--danger btn--sm" id="deleteAccountConfirm">네, 계정을 지울게요</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -129,6 +155,37 @@ function openAccountSheet() {
     close();
     location.replace('home.html');
   });
+
+  // 탈퇴는 두 번 눌러야 실행된다. 무엇이 사라지는지 먼저 보여주고, 그 화면에서
+  // 다시 한 번 눌러야 한다 — 로그아웃 옆에서 한 번에 지워지면 안 되는 동작이다.
+  const openBtn = sheet.querySelector('#deleteAccountOpen');
+  const panel = sheet.querySelector('#deleteAccountPanel');
+  const confirmBtn = sheet.querySelector('#deleteAccountConfirm');
+
+  openBtn.addEventListener('click', () => {
+    panel.hidden = false;
+    openBtn.hidden = true;
+    confirmBtn.focus();
+  });
+  sheet.querySelector('#deleteAccountCancel').addEventListener('click', () => {
+    panel.hidden = true;
+    openBtn.hidden = false;
+  });
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '지우는 중…';
+    try {
+      await Auth.deleteAccount();
+    } catch (err) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = '네, 계정을 지울게요';
+      showToast('계정을 지우지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    close();
+    // 로컬 상태까지 확실히 비우려면 되돌아가기가 아니라 새로 여는 편이 안전하다.
+    location.replace('index.html');
+  });
 }
 
 function renderTabBar(activeKey) {
@@ -147,6 +204,9 @@ function renderTabBar(activeKey) {
   const departed = typeof hasDeparted === 'function' && hasDeparted();
   const confirmed = !!AppState.getConfirmedSchool();
   const tabs = APP_TABS.filter(tab => {
+    // 후기 데이터가 0건이라 멘토 탭을 열면 빈 챗봇이 나온다. 출시 빌드에서는 뺀다
+    // (js/release-flags.js — 데이터가 들어오면 mentorStep을 true로).
+    if (tab.key === 'consult' && !RELEASE.mentorStep) return false;
     if (tab.key === 'search' && confirmed) return false;
     if (tab.key === 'credits' && departed) return false;
     // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
@@ -247,14 +307,10 @@ document.addEventListener('MOCK:updated', () => {
   const page = document.body.dataset.page;
   if (!page) return;
 
-  // 아직 온보딩을 안내한 적 없는 계정이면 프로필부터 받는다.
-  // needsOnboarding은 하이드레이션이 끝나야 true가 되므로, data-source.js가
-  // 먼저 쏘는 MOCK:updated에는 걸리지 않는다. onboarding.html은 layout.js를
-  // 불러오지 않아 순환 리다이렉트도 생기지 않는다.
-  if (AppState.needsOnboarding) {
-    location.replace('onboarding.html');
-    return;
-  }
+  // 예전에는 여기서 onboarding.html로 튕겼다. 가입하자마자 낯선 폼이 먼저 뜨니
+  // 무엇을 쓰는 앱인지도 모른 채 네 칸을 채워야 했다. 지금은 홈으로 들여보내고,
+  // 인사말 아래 "기본 정보를 입력해 주세요" 버튼으로 본인이 눌러 들어오게 한다
+  // (js/home.js의 renderProfileCta).
 
   // 프로필 이름(아바타 이니셜)과 확정 여부(홈 탭 목적지)가 하이드레이션 후에
   // 확정되므로 앱바와 탭바를 함께 다시 그린다.

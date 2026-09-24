@@ -54,11 +54,26 @@
   function schoolDisplay(schoolId) {
     const school = MOCK.schools.find(s => s.id === schoolId);
     return {
+      // 학교 상세를 열 수 있는지. 매칭 데이터에만 있고 schools 에는 없는 id가
+      // 섞여 있어서, 없는 학교 카드를 눌리게 해두면 아무 일도 안 일어난다.
+      exists: !!school,
       name: school ? (school.nameKo || school.name) : schoolId,
       country: school ? school.country : '',
       countryEn: school ? school.countryEn : '',
       logo: SCHOOL_LOGOS[schoolId]
     };
+  }
+
+  /** 매칭 카드를 누르면 그 학교 상세가 열린다. 목록이 자주 다시 그려지므로 위임. */
+  function wireMatchCardTaps() {
+    const list = document.getElementById('matchList');
+    if (!list || list.dataset.tapWired) return;
+    list.dataset.tapWired = 'true';
+    list.addEventListener('click', (e) => {
+      const card = e.target.closest('[data-open-school]');
+      if (!card) return;
+      openSchoolModal(card.dataset.openSchool, { onChange: renderMatches });
+    });
   }
 
   /** 카드에 붙는 국가 태그(국기 + 한글 국가명). 국가를 모르면 아무것도 안 만든다. */
@@ -216,7 +231,7 @@
         document.getElementById('matchList').innerHTML = `
           <div class="info-panel">
             <p class="info-panel__text">
-              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려주시면
+              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려 주시면
               그 전공 과목만 모아서 보여드려요.
             </p>
             <a class="btn btn--primary btn--sm" href="home.html">홈에서 신청 전공 고르기</a>
@@ -247,7 +262,8 @@
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
       const school = schoolDisplay(m.school);
       return `
-      <div class="card match-card">
+      <div class="card match-card${school.exists ? ' card--interactive' : ''}"
+           ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
         <div class="match-card__head">
           <h3 class="match-card__headline">${stripSchoolSuffix(m.targetCourse)}</h3>
           ${relevanceBadge(m.similarity)}
@@ -300,7 +316,8 @@
       const school = schoolDisplay(m.school);
       // 목록이 전부 확정 학교라 따로 표시할 것이 없다
       return `
-      <div class="card match-card">
+      <div class="card match-card${school.exists ? ' card--interactive' : ''}"
+           ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
         <div class="match-card__head">
           <h3 class="match-card__headline">${m.targetMajor}</h3>
           ${relevanceBadge(m.similarity)}
@@ -321,6 +338,7 @@
   function renderMatches() {
     if (mode === 'major') renderMajorMatches();
     else renderCourseMatches();
+    wireMatchCardTaps();
   }
 
   function applyModeUI() {
@@ -341,7 +359,7 @@
   });
 
   document.getElementById('downloadReportBtn').addEventListener('click', () => {
-    showToast('실제 서비스에서는 PDF 리포트로 다운로드돼요. 지금은 인쇄 미리보기로 보여드려요.');
+    showToast('인쇄 화면에서 PDF로 저장할 수 있어요.');
     setTimeout(() => window.print(), 400);
   });
 

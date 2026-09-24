@@ -18,7 +18,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'www');
 
 /* 디렉터리는 통째로, HTML은 루트에 있는 것만 자동으로 집는다. */
-const DIRS = ['css', 'js', 'assets'];
+const DIRS = ['css', 'js', 'assets', 'vendor'];
 
 /* www/ 자체는 지우지 않고 안의 내용만 비운다.
    개발 서버(tools/no-cache-server.py 8124 www)가 이 폴더를 작업 디렉터리로 잡고

@@ -78,12 +78,101 @@ function guessProgramRange() {
 }
 
 /**
- * 홈(교환 준비하기)에 놓는 카운트다운 카드.
- * 날짜가 없으면 입력받고, 있으면 D-NN 또는 Day N을 보여주며 기록 탭으로 보낸다.
+ * 확정 학교 카드 안에 들어가는 비행 경로.
+ *
+ * 원래는 항공권처럼 생긴 별도 카드였는데, 확정 카드 안으로 들이고 나니 카드
+ * 안에 카드가 들어앉아 "잘린 상자"처럼 보였다. 껍데기(배경·테두리·그림자)만
+ * 벗기고 경로 자체는 남긴다 — 어디서 어디로 가는지는 글보다 선이 빠르다.
+ *
+ *          D-346
+ *   서울  ──▶──────  Liverpool
+ *   준비 중            9월 1일
+ *
+ * D-day는 경로 한가운데 위에 올린다. 예전에는 선 아래 알약이었고 옆에
+ * "출국까지"가 붙어 있었는데, 서울 → Liverpool 이 이미 위에 적혀 있어서
+ * 같은 말을 한 번 더 하는 자리였다.
  */
-function renderDepartureCard(mount) {
+function tripPathHtml({ fromLabel, fromSub, toLabel, toSub, pct, dday, editLabel }) {
+  return `
+    <div class="confirmed-card__trip">
+      <div class="leg-card__ends">
+        <div class="leg-card__end">
+          <span class="leg-card__place">${fromLabel}</span>
+          <span class="leg-card__date">${fromSub}</span>
+        </div>
+        <div class="leg-card__end leg-card__end--to">
+          <span class="leg-card__place">${toLabel}</span>
+          <span class="leg-card__date">${toSub}</span>
+        </div>
+      </div>
+
+      <div class="confirmed-card__dday tnum">${dday}</div>
+
+      <div class="leg-card__track" aria-hidden="true">
+        <span class="leg-card__line"></span>
+        <span class="leg-card__line leg-card__line--done" style="width:${pct}%"></span>
+        <span class="leg-card__plane" style="left:${pct}%">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
+        </span>
+      </div>
+
+      <button type="button" class="confirmed-card__trip-edit" id="depEdit">${editLabel}</button>
+    </div>`;
+}
+
+/** 출국 전 진행률의 기준점 — 온보딩한 날, 없으면 출국 6개월 전. */
+function beforeDeparturePct(startISO) {
+  const DAY = 86400000;
+  const onboarded = AppState.load().onboardedAt;
+  const dep = new Date(`${startISO}T00:00:00`).getTime();
+  const s = onboarded ? Date.parse(onboarded) : NaN;
+  const from = (!Number.isNaN(s) && s < dep) ? s : dep - 180 * DAY;
+  const now = new Date(`${todayISO()}T00:00:00`).getTime();
+  return Math.round(Math.min(96, Math.max(3, ((now - from) / (dep - from)) * 100)));
+}
+
+/**
+ * 홈(교환 준비하기)에 놓는 카운트다운.
+ * 날짜가 없으면 입력받고, 있으면 D-NN 또는 Day N을 보여준다.
+ *
+ * opts.inline — 확정 학교 카드 안에 얹는 모드. 카드 껍데기 없이 위
+ * tripPathHtml()의 경로만 그린다. 지금 쓰는 건 이쪽뿐이다.
+ */
+function renderDepartureCard(mount, opts = {}) {
   if (!mount) return;
+  const inline = !!opts.inline;
   const info = departureInfo();
+
+  if (!info.hasRange && inline) {
+    const g = guessProgramRange();
+    mount.innerHTML = `
+      <div class="confirmed-card__trip">
+        <button type="button" class="confirmed-card__trip-setup" id="depSetup">
+          출국일을 입력하면 남은 날을 세어드려요
+        </button>
+        <div class="confirmed-card__trip-form" hidden>
+          <label>출국<input type="date" id="depStart" value="${g.start}"></label>
+          <label>귀국<input type="date" id="depEnd" value="${g.end}"></label>
+          <button type="button" class="btn btn--accent btn--sm" id="depSave">저장</button>
+        </div>
+      </div>`;
+    const form = mount.querySelector('.confirmed-card__trip-form');
+    mount.querySelector('#depSetup').addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.currentTarget.hidden = true;
+      form.hidden = false;
+    });
+    form.addEventListener('click', (e) => e.stopPropagation());
+    mount.querySelector('#depSave').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const start = mount.querySelector('#depStart').value;
+      const end = mount.querySelector('#depEnd').value;
+      if (!start || !end || start > end) { showToast('출국일이 귀국일보다 늦을 수 없어요'); return; }
+      AppState.setProgramRange(start, end);
+      renderDepartureCard(mount, opts);
+    });
+    return;
+  }
 
   if (!info.hasRange) {
     const g = guessProgramRange();
@@ -111,6 +200,41 @@ function renderDepartureCard(mount) {
   const school = AppState.getConfirmedSchool();
   const city = school ? (school.city || school.country || '파견교') : '파견교';
   const fmt = (iso) => { const [, m, d] = iso.split('-'); return `${Number(m)}월 ${Number(d)}일`; };
+
+  if (inline) {
+    if (info.phase === DEPARTURE_PHASES.BEFORE) {
+      mount.innerHTML = tripPathHtml({
+        fromLabel: '서울', fromSub: '준비 중',
+        toLabel: city, toSub: fmt(info.start),
+        pct: beforeDeparturePct(info.start),
+        dday: `D-${info.daysUntil}`,
+        editLabel: '출국일 수정'
+      });
+    } else if (info.phase === DEPARTURE_PHASES.ABROAD) {
+      mount.innerHTML = tripPathHtml({
+        fromLabel: city, fromSub: fmt(info.start),
+        toLabel: '서울', toSub: fmt(info.end),
+        pct: Math.round(Math.min(97, Math.max(3, info.pct))),
+        dday: `Day ${info.dayNum}`,
+        editLabel: '파견 기간 수정'
+      });
+    } else {
+      mount.innerHTML = tripPathHtml({
+        fromLabel: city, fromSub: fmt(info.start),
+        toLabel: '서울', toSub: fmt(info.end),
+        pct: 100,
+        dday: `${info.totalDays}일`,
+        editLabel: '파견 기간 수정'
+      });
+    }
+    const editBtn = mount.querySelector('#depEdit');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      AppState.setProgramRange(null, null);
+      renderDepartureCard(mount, opts);
+    });
+    return;
+  }
 
   /**
    * 비행 경로 카드. 출발지·도착지를 양 끝에 두고 그 사이를 비행기가 지나간다.

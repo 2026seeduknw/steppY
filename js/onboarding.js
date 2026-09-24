@@ -1,17 +1,21 @@
 /**
- * 가입 직후 프로필 온보딩.
+ * 기본 정보 입력 화면.
  *
  * 없을 때 무슨 일이 벌어지냐면 — 가입한 사용자가 GPA·학과가 빈 채로 홈에
  * 떨어지고, 학교 검색의 지원 가능 판정이 전 학교에서 "GPA 정보 필요"로 나온다.
- * 서비스의 핵심 기능이 첫 화면부터 동작하지 않는 셈이라, 가입 직후 최소한의
- * 정보를 받는다.
+ * 서비스의 핵심 기능이 동작하지 않는 셈이라, 최소한의 정보를 받는다.
+ *
+ * 다만 가입하자마자 이 화면으로 튕기지는 않는다. 무엇을 쓰는 앱인지 보기도
+ * 전에 낯선 폼 네 칸을 채우게 되기 때문이다 — 홈으로 먼저 들여보내고,
+ * 인사말 아래 "기본 정보를 입력해 주세요" 버튼으로 본인이 눌러 들어온다
+ * (js/home.js의 renderProfileCta). 학과·학점이 채워지면 버튼은 사라진다.
  *
  * 한 화면에서 네 가지를 다 받는다. 예전에는 한 단계씩 넘기는 방식이었는데,
  * 물어보는 것이 넷뿐이고 전부 짧은 입력이라 넘기는 동작이 입력보다 오래 걸렸다.
  * 한 화면이면 무엇을 묻는지 한눈에 보이고, 앞 답을 고치러 되돌아갈 필요도 없다.
  *
- * 상단 "나중에"로 전체를 건너뛸 수 있다. 어느 쪽이든 markOnboarded()로
- * "물어봤다"는 사실을 남겨 다시 묻지 않는다.
+ * 상단 "나중에"로 건너뛰면 아무것도 저장하지 않고 홈으로 돌아간다. 홈의
+ * 버튼은 그대로 남아 있어 언제든 다시 들어올 수 있다.
  */
 (function () {
   const SEASONS = ['봄학기', '여름학기', '가을학기', '겨울학기'];
@@ -23,6 +27,9 @@
   // 입력값을 모아뒀다가 마지막에 한 번에 저장한다 — 중간에 이탈하면
   // 반쯤 채워진 프로필이 남는 것보다 아무것도 안 남는 편이 낫다.
   const draft = {
+    // 가입할 때 이름은 선택이었다. 안 적으면 홈 인사가 메일 아이디(hslee_819님)로
+    // 굳고 고칠 데가 없었다 — 첫 화면에서 한 번 묻는다.
+    name: '',
     major: null,
     gpa: null,
     gpaScale: 4.3,
@@ -36,6 +43,7 @@
 
   const el = {
     skip: document.getElementById('obSkip'),
+    name: document.getElementById('obName'),
     error: document.getElementById('obError'),
     next: document.getElementById('obNext'),
     majorMount: document.getElementById('obMajorMount'),
@@ -110,6 +118,7 @@
   }
 
   function validate() {
+    if (!draft.name) return { msg: '이름을 입력해 주세요.', focus: el.name };
     if (!draft.major) return { msg: '학과를 선택해 주세요.' };
     if (draft.gpa === null || Number.isNaN(draft.gpa)) return { msg: '학점을 입력해 주세요.', focus: el.gpa };
     if (draft.gpa < 0 || draft.gpa > draft.gpaScale) {
@@ -134,7 +143,7 @@
    * 낙관적 갱신이라 화면은 이미 맞지만, 여기서 바로 홈으로 넘어가면 홈이 새로
    * 읽은 onboarded_at이 아직 null이라 온보딩으로 도로 튕긴다.
    */
-  async function saveAndLeave(writes) {
+  async function saveAndLeave(writes, to = 'home.html') {
     AppState.lastWriteError = null;
     el.next.disabled = true;
     el.skip.disabled = true;
@@ -151,7 +160,7 @@
       el.next.textContent = label;
       return;
     }
-    location.replace('home.html');
+    location.replace(to);
   }
 
   function finish() {
@@ -159,6 +168,7 @@
     if (problem) return showError(problem.msg, problem.focus);
 
     const patch = {
+      name: draft.name,
       major: draft.major,
       gpa: draft.gpa,
       gpaScale: draft.gpaScale,
@@ -169,16 +179,34 @@
     if (draft.langType !== LANG_NONE && draft.langScore !== null && draft.langScore !== '') {
       patch.languageTests = [{ type: draft.langType, score: Number(draft.langScore) }];
     }
+    // 점수를 받은 바로 그 값으로 무엇이 달라지는지 보여준다 — 홈으로 돌려보내면
+    // 방금 채운 네 칸이 무슨 쓸모였는지 스스로 찾아가야 한다.
     saveAndLeave(() => {
       AppState.updateProfile(patch);
       AppState.markOnboarded();
-    });
+    }, 'search.html');
   }
 
   /* --------------------------------------------------------------- 연결 */
 
+  // 가입할 때 이름을 적었거나 예전에 저장해 둔 값이 있으면 채워 둔다.
+  // 메일 아이디를 그대로 끌어오지는 않는다 — 그건 이름이 아니라 계정 식별자다.
+  (function prefillName() {
+    const saved = (AppState.profile && AppState.profile.name) || '';
+    const meta = (typeof Auth !== 'undefined' && Auth.user && Auth.user.user_metadata) || {};
+    const initial = (meta.name || '').trim() || (saved === '회원' ? '' : saved);
+    const emailId = (typeof Auth !== 'undefined' && Auth.email) ? Auth.email.split('@')[0] : '';
+    draft.name = initial && initial !== emailId ? initial : '';
+    el.name.value = draft.name;
+  })();
+
+  el.name.addEventListener('input', () => {
+    draft.name = el.name.value.trim();
+    clearError();
+  });
+
   el.gpa.addEventListener('input', () => {
-    draft.gpa = el.gpa.value === '' ? null : parseFloat(el.gpa.value);
+    draft.gpa = el.gpa.value === '' ? null : roundDecimals(el.gpa.value, 2);
     clearError();
   });
   el.scale.addEventListener('change', e => { draft.gpaScale = parseFloat(e.target.value); });

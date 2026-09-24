@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 167.81 1300.0" role="img" aria-label="!">
+  <title>!</title>
+  <!-- tools/wordmark.py 가 알파벳 아틀라스에서 글자를 붙여 만든 것.
+       폰트 없이도 어느 기기에서든 같은 모양으로 나온다.
+       다시 만들기: python3 tools/wordmark.py "!" (name: bang) -->
+  <g fill="currentColor">
+    <g transform="translate(28.00,994.86) scale(0.1,-0.1)"><path d="M0 4325 l0 -2575 560 0 560 0 0 2575 0 2575 -560 0 -560 0 0 -2575z M0 536 l0 -485 23 -3 c14 -2 23 -11 25 -25 l3 -23 535 0 534 0 0 510 0 510 -560 0 -560 0 0 -484z"/></g>
+  </g>
+</svg>

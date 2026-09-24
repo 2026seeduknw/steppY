@@ -1,5 +1,6 @@
 /**
- * 오늘의 할 일 — 가로로 긴 알약(pill) 요약 + 펼치면 목록.
+ * 할 일 — 가로로 긴 알약(pill) 요약 + 펼치면 목록.
+ * ("오늘의"를 뗐다 — 목록에는 오늘 것만이 아니라 마감이 남은 항목이 전부 들어온다)
  *
  * 홈 첫 화면에서는 "몇 개 중 몇 개 했는지"만 알면 된다. 목록까지 항상 펼쳐두면
  * 정작 아래의 지망 학교가 화면 밖으로 밀린다. 그래서 기본은 접어두고, 알약을
@@ -12,6 +13,7 @@ function renderTodoCard(mount, options) {
   const expanded = !!opts.expanded;
 
   mount.innerHTML = todoCardTemplate(adding, expanded);
+  if (typeof paintWordmarkText === 'function') paintWordmarkText(mount);
   const rerender = (next) => renderTodoCard(mount, Object.assign({ adding, expanded }, next));
 
   mount.querySelector('[data-todo-expand]').addEventListener('click', () => {
@@ -59,13 +61,13 @@ function todoCardTemplate(adding, expanded) {
   return `
     <div class="todo-pill${expanded ? ' is-expanded' : ''}">
       <button type="button" class="todo-pill__summary" data-todo-expand
-              aria-expanded="${expanded}" aria-label="오늘의 할 일 ${done}/${total} 완료">
+              aria-expanded="${expanded}" aria-label="할 일 ${done}/${total} 완료">
         <span class="todo-pill__ring">
-          ${progressRingHtml(percent, { size: 46, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
+          ${progressRingHtml(percent, { size: 46, color: 'var(--key-500)' })}
         </span>
         <span class="todo-pill__text">
+          <span class="todo-pill__label brand-head" data-wordmark="">To-Do</span>
           <span class="todo-pill__count"><strong>${done}</strong><span>/${total}</span></span>
-          <span class="todo-pill__label">오늘의 할 일</span>
         </span>
         <span class="todo-pill__caret" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
       </button>

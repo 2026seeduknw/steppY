@@ -24,10 +24,12 @@ function computeEligibility(profile, school) {
   const langOk = langScore ? (typeof school.langTest.cut === 'number' ? langScore.score >= school.langTest.cut : true) : false;
 
   if (gpaOk && langOk) return { status: 'go', label: '지원 가능', detail: 'GPA·어학 기준을 충족해요' };
-  const reasons = [];
-  if (!gpaOk) reasons.push(`GPA ${school.gpaCut} 이상 필요`);
-  if (!langOk) reasons.push(`${school.langTest.type} ${school.langTest.cut} 이상 필요`);
-  return { status: 'warn', label: '기준 미달', detail: reasons.join(' · ') };
+  // 못 하는 이유를 늘어놓는 대신 "무엇이 되면 되는지"로 적는다. 숫자는 같지만
+  // 사용자가 다음에 할 일이 문장 안에 들어온다.
+  const needs = [];
+  if (!gpaOk) needs.push(`GPA ${school.gpaCut}`);
+  if (!langOk) needs.push(`${school.langTest.type} ${school.langTest.cut}`);
+  return { status: 'warn', label: '기준 미달', detail: `${needs.join(' · ')}부터 지원할 수 있어요` };
 }
 
 function eligibilityBadgeHtml(elig) {

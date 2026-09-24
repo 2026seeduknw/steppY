@@ -26,7 +26,7 @@
       const items = all.filter(e => categoriesOfTags(e.tags).includes(c.id));
       const body = items.length
         ? items.slice(0, 2).map(e => esc((e.body || e.title || '').slice(0, 70))).join(' ')
-        : '교환 기간 동안 남긴 기록이 이 자리에 정리돼 들어갑니다. 날짜와 사진도 함께 묶여요.';
+        : '교환 기간에 남긴 기록이 이 자리에 정리돼요. 날짜와 사진도 함께 묶여요.';
       return `
         <div class="report-blur__section">
           <h3 style="--chip-color:${c.color}">${c.ko}</h3>
@@ -86,7 +86,7 @@
         <p class="report-head__meta">
           ${range ? `${range.start} ~ ${range.end} · ` : ''}기록한 날 ${days}일 · 항목 ${new Set(all.flatMap(e => categoriesOfTags(e.tags))).size}/${REPORT_CATEGORIES.length}
         </p>
-        <p class="report-head__note">적어두신 글을 항목별·날짜순으로 모았어요. 문장을 새로 지어내지 않았으니, 그대로 옮기거나 고쳐 쓰시면 돼요.</p>
+        <p class="report-head__note">적어둔 글을 항목별·날짜순으로 모았어요. 문장을 새로 지어내지 않으니 그대로 옮기거나 고쳐 쓰면 돼요.</p>
         <button type="button" class="btn btn--ghost btn--sm" id="copyReport">전체 복사</button>
       </section>
 
