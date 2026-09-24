@@ -77,6 +77,8 @@
     ];
     return guestCache;
   }
+  /** 필름 카메라 날짜 각인 — 2026-09-12 → '26 9 12 */
+  function filmDate(iso) { return `'${iso.slice(2, 4)} ${Number(iso.slice(5, 7))} ${Number(iso.slice(8, 10))}`; }
   function photoUrl(path) { return photoUrls[path] || ''; }
   const photoFailed = new Set();   // 주소를 받았는데 찾지 못한 사진 — 스켈레톤을 끝없이 돌리지 않는다
   /** 사진이 있는 기록인데 주소가 아직 안 온 상태 */
@@ -155,7 +157,7 @@
     </section>
 
     <section class="diary-side">
-      <h2 id="sideDate"></h2>
+      <h2 id="sideDate" class="is-date"></h2>
       <div class="diary-entry-list" id="entryList"></div>
     </section>
   `;
@@ -186,7 +188,7 @@
         <div class="diary-hero diary-hero--before">
           <div class="diary-hero__top">
             <span class="diary-hero__eyebrow">출국까지</span>
-            <span class="diary-hero__daycount">D-${info.daysUntil}</span>
+            <span class="diary-hero__daycount">D-<b class="diary-seg">${info.daysUntil}</b></span>
           </div>
           <p class="diary-hero__lede">배웅해준 친구들, 짐 싸던 밤. 떠나기 전 지금도 나중에 꺼내 볼 기억이 돼요.</p>
           <div class="diary-hero__dates">
@@ -204,7 +206,7 @@
       <div class="diary-hero">
         <div class="diary-hero__top">
           <span class="diary-hero__eyebrow">MY JOURNEY</span>
-          <span class="diary-hero__daycount">${isAfter ? '교환 종료' : `Day ${info.dayNum}`}</span>
+          <span class="diary-hero__daycount">${isAfter ? '교환 종료' : `Day <b class="diary-seg">${info.dayNum}</b>`}</span>
         </div>
         <div class="diary-hero__track">
           <span class="diary-hero__pin diary-hero__pin--start" aria-hidden="true"></span>
@@ -345,15 +347,19 @@
 
     slot.innerHTML = `
       ${featuredHead(eyebrow)}
+      <div class="diary-featured__film">
+      <div class="film-bar film-bar--top" aria-hidden="true"></div>
       <div class="diary-featured__card${prev ? ' has-prev' : ''}" role="button" tabindex="0" aria-label="${esc(short(pick))} 기록 열기"
            style="background-image:url('${url}')${prev ? `;--prev:url('${prev}')` : ''}">
         <div class="diary-featured__panel">
           <div class="diary-featured__top">
             <p class="diary-featured__title">${esc(heading)}</p>
-            <span class="diary-featured__date">${pick.slice(5).replace('-', '/')}</span>
+            <span class="diary-featured__date" data-film="${filmDate(pick)}">${pick.slice(5).replace('-', '/')}</span>
           </div>
           ${lt ? `<p class="diary-featured__loc">📍 ${esc(lt)}</p>` : ''}
         </div>
+      </div>
+      <div class="film-bar film-bar--bottom" aria-hidden="true"><span>▶ ${dates.length - idx}A</span><span>${filmDate(pick)}</span></div>
       </div>
       <div class="diary-featured__chips">
         ${chipDates.map(d => `<button type="button" class="diary-featured__chip${d === pick ? ' is-active' : ''}" data-fdate="${d}">${short(d)}</button>`).join('')}
@@ -424,6 +430,9 @@
     const h = new Date().getHours();
     const tod = ['day', 'dusk', 'night'].includes(forced) ? forced : (h >= 6 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night');
     document.body.dataset.tod = tod;
+    // 화면 분위기 — 기본은 필름 카메라. ?theme=glass 로 이전의 유리 + 노을 테마를 볼 수 있다.
+    const th = new URLSearchParams(location.search).get('theme');
+    document.body.dataset.theme = th === 'glass' ? 'glass' : 'film';
   }
 
   /* --------------------------------------------------------------- 우표첩 */
@@ -476,12 +485,13 @@
     fx.className = 'stamp-fx';
     const mmdd = date.slice(5).replace('-', '.');
     fx.innerHTML = `
+      <div class="stamp-fx__flash" aria-hidden="true"></div>
       <div class="stamp-fx__wrap">
         <div class="stamp-fx__stamp">
           <div class="stamp-fx__photo" style="${photo ? `background-image:url('${photo}')` : ''}">${photo ? '' : '<span>✉️</span>'}</div>
           <div class="stamp-fx__cap"><b>${esc(title || '')}</b><small>${date}</small></div>
         </div>
-        ${city ? `<div class="diary-postmark stamp-fx__mark"><span>${esc(city)}</span><b>${mmdd}</b></div>` : ''}
+        ${city ? `<div class="diary-postmark stamp-fx__mark"><span>${esc(city)}</span><b data-film="${filmDate(date)}">${mmdd}</b></div>` : ''}
       </div>`;
     document.body.appendChild(fx);
     setTimeout(() => { fx.classList.add('is-out'); }, 1700);
@@ -608,6 +618,7 @@
     const urls = (e.photos || []).map(photoUrl).filter(Boolean);
     const heading = e.title || e.body || '';
     const alt = esc(heading || `${e.date} 기록 사진`);
+    const city0 = (e.location && (e.location.city || e.location.country)) || '';
     const lpTrack = (e.song && e.song.art) ? e.song : (e.nowPlaying && e.nowPlaying.art) ? e.nowPlaying : null;
     const art = lpTrack ? lpTrack.art : '';
     let photo;
@@ -619,6 +630,7 @@
       photo = `<div class="diary-entry__photo-wrap">
         <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
         ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
+        ${city0 ? `<div class="diary-postmark diary-postmark--film" aria-hidden="true"><b data-film="${filmDate(e.date)}">${e.date.slice(5).replace('-', '.')}</b><span>${esc(city0)}</span></div>` : ''}
         ${art ? `<button type="button" class="diary-lp" data-track="${esc(lpTrack.name)}" data-artist="${esc(lpTrack.artist)}" style="background-image:url('${art}')" aria-label="${esc(lpTrack.name)} 30초 미리듣기"></button>` : ''}
       </div>`;
     }
@@ -626,7 +638,7 @@
       `<div class="diary-stamp-back" style="--rot:${k ? -5 : 4}deg"><div style="background-image:url('${u}')"></div></div>`).join('');
     const city = (e.location && (e.location.city || e.location.country)) || '';
     const mmdd = e.date.slice(5).replace('-', '.');
-    const mark = city ? `<div class="diary-postmark" aria-hidden="true"><span>${esc(city)}</span><b>${mmdd}</b></div>` : '';
+    const mark = city ? `<div class="diary-postmark diary-postmark--stamp" aria-hidden="true"><span>${esc(city)}</span><b data-film="${filmDate(e.date)}">${mmdd}</b></div>` : '';
     const capTitle = urls.length ? heading : (e.title || '');
     const mood = moodColor(e);
     return `
@@ -643,7 +655,8 @@
       </div>`;
   }
 
-  function infoRows(e) {
+  /** 장소·날씨·시간대 칸 + (같은 격자 안에) 태그 칸과 시각 칸. 시각은 마지막 열 — 시간대 칸 바로 아래에 맞춘다. */
+  function infoRows(e, tags) {
     const cells = [];
     const lt = locText(e.location);
     if (lt) cells.push({ label: '장소', value: esc(lt) });
@@ -653,12 +666,15 @@
       const t = SongEngine.timeLabel(new Date(e.createdAt).getHours());
       if (t) cells.push({ label: '시간대', value: `${t.emoji} ${t.ko}` });
     }
-    if (!cells.length) return '';
-    return `<div class="diary-ticket-rows">${cells.map(c => `
+    const cols = Math.min(3, Math.max(2, cells.length));
+    const timeCell = `<div class="diary-ticket-row diary-ticket-row--time" style="grid-column:${cols}"><span class="diary-ticket-time">${clockLabel(e.createdAt)}</span></div>`;
+    const tagCell = tags.length
+      ? `<div class="diary-ticket-row diary-ticket-row--tags" style="grid-column:1 / ${cols}"><span class="diary-ticket-row__label">태그</span><div class="diary-ticket-tags">${tags.join('')}</div></div>` : '';
+    return `<div class="diary-ticket-rows" style="--cols:${cols}">${cells.map(c => `
       <div class="diary-ticket-row">
         <span class="diary-ticket-row__label">${c.label}</span>
         <span class="diary-ticket-row__value">${c.value}</span>
-      </div>`).join('')}</div>`;
+      </div>`).join('')}${tagCell}${timeCell}</div>`;
   }
 
   function songRow(item, label, variant) {
@@ -690,9 +706,7 @@
         ${stampHtml(e, i)}
         <div class="diary-ticket-body">
           ${bodyText ? `<p class="diary-ticket-text">${esc(bodyText)}</p>` : ''}
-          <span class="diary-ticket-time">${clockLabel(e.createdAt)}</span>
-          ${infoRows(e)}
-          ${tags.length ? `<div class="diary-ticket-row"><span class="diary-ticket-row__label">태그</span><div class="diary-ticket-tags">${tags.join('')}</div></div>` : ''}
+          ${infoRows(e, tags)}
           ${(e.song || e.nowPlaying) ? '<div class="diary-ticket-perf"></div>' : ''}
           ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
@@ -763,7 +777,7 @@
     scrim.innerHTML = `
       <div class="modal-panel diary-modal-pad diary-day-modal">
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
-        <div class="diary-modal-header"><h2>${iso}</h2></div>
+        <div class="diary-modal-header"><h2 class="is-date">${iso}</h2></div>
         <div class="diary-entry-list" id="dayModalList">${items.length ? items.map(entryCard).join('') : EMPTY_HTML}</div>
       </div>`;
     wireModalDismiss(scrim);
@@ -873,7 +887,7 @@
         <div class="diary-sheet__handle"></div>
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <div class="diary-modal-header">
-          <h2>${edit ? '기록 수정' : targetDate}</h2>
+          <h2${edit ? '' : ' class="is-date"'}>${edit ? '기록 수정' : targetDate}</h2>
           <p class="diary-modal-header__note">${edit ? targetDate : (departurePhaseFor(targetDate) === 'abroad' ? '파견 중 기록' : '출국 전 기록')}</p>
         </div>
         <form class="diary-form" id="entryForm">
