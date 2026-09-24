@@ -1469,3 +1469,13 @@ body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-top: v
 .diary-lp-play { width: 28px; height: 28px; }
 .diary-lp-play::before { font-size: 11px; }
 .diary-stamp__blank .diary-lp-btn { width: 72px; height: 72px; }
+/* 원판 크기 조정 — 96px은 너무 커서 72px(우표 사진 폭의 약 4분의 1) */
+.diary-lp-btn { width: 72px; height: 72px; right: 10px; bottom: 10px; }
+.diary-lp-play { width: 22px; height: 22px; }
+.diary-lp-play::before { font-size: 9px; }
+.diary-stamp__blank .diary-lp-btn { width: 56px; height: 56px; }
+/* 원판 크기 최종 — 72px도 커서 56px(우표 사진 폭의 약 5분의 1) */
+.diary-lp-btn { width: 56px; height: 56px; right: 10px; bottom: 10px; }
+.diary-lp-play { width: 18px; height: 18px; }
+.diary-lp-play::before { font-size: 8px; }
+.diary-stamp__blank .diary-lp-btn { width: 46px; height: 46px; }
