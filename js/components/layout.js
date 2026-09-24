@@ -26,7 +26,7 @@ const APP_TABS = [
   { key: 'home', label: '홈', href: 'home.html' },
   { key: 'search', label: '학교 찾기', href: 'search.html' },
   { key: 'credits', label: '학점 인정', href: 'credits.html' },
-  { key: 'journal', label: '기록하기', href: 'journal.html' },
+  { key: 'journal', label: '기록하기', href: 'diary.html' },
   { key: 'report', label: '교환보고서', href: 'report.html' },
   { key: 'consult', label: '멘토', href: 'consult.html' }
 ];
@@ -148,7 +148,6 @@ function renderTabBar(activeKey) {
     if (tab.key === 'credits' && departed) return false;
     // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
     // Day 수도 못 세고 남길 것도 마땅치 않다.
-    if (tab.key === 'journal' && !confirmed) return false;
     // 교환보고서는 출국 후에만. 출국 전에는 모을 기록 자체가 없다.
     if (tab.key === 'report' && !departed) return false;
     return true;
