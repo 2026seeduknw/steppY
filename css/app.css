@@ -1574,3 +1574,6 @@ body[data-page="prepare"] .leg-card {
 .section-title p,
 .page-lede,
 .info-panel__note { color: var(--ink-400); font-weight: 400; }
+
+/* 서버 상태를 받기 전 — 탭 수가 바뀌는 게 보이지 않도록 숨긴다 */
+.tabbar--pending { visibility: hidden; }
