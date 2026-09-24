@@ -61,19 +61,29 @@
       photos: [], tags: [], location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null,
       weather: null, createdAt: at(day, h, min)
     }, o);
-    const link = (name, artist) => (typeof SongEngine !== 'undefined')
-      ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' };
+    // 예시 기록에도 앨범 표지 있는 노래를 붙인다 — 둘러보기에서 LP가 돌아가는 모습을 보여주기 위해서다.
+    const ART = {
+      indila: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/49/58/30/49583018-308b-431d-c691-4a28e78be8cd/14UMGIM01109.rgb.jpg/300x300bb.jpg',
+      air: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/d1/f9/26/d1f926e7-e996-7166-3744-0710a82177ac/017046664455.jpg/300x300bb.jpg',
+      iu: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/dc/12/fe/dc12fe03-172b-a843-0d96-12819fa05b6c/cover-.jpg/300x300bb.jpg',
+      stromae: 'https://is1-ssl.mzstatic.com/image/thumb/Video5/v4/49/ab/0f/49ab0f2e-9895-b63a-6438-0cf87201f875/13UAAIM09601_1_1.jpg/300x300bb.jpg'
+    };
+    const track = (name, artist, art) => Object.assign({ name, artist, art },
+      (typeof SongEngine !== 'undefined') ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' });
     guestCache = [
-      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['neighborhood'] }),
+      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['neighborhood'],
+        song: track('Sexy Boy', 'Air', ART.air) }),
       mk(2, 19, 40, { title: '기숙사 첫 요리', body: '마트에서 산 바게트가 확실히 다르다.', photos: [P.dorm], tags: ['dorm'],
         weather: { code: 3, temp: 18 },
-        song: Object.assign({ name: 'Dernière danse', artist: 'Indila', art: null }, link('Dernière danse', 'Indila')) }),
-      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['friends'] }),
+        song: track('Dernière danse', 'Indila', ART.indila) }),
+      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['friends'],
+        song: track('밤편지', 'IU', ART.iu) }),
       mk(5, 15, 30, { title: '도서관 스터디룸', body: '국제학생 오피스에서 서류 도움 받고 스터디룸도 예약함.', photos: [P.library], tags: ['study', 'admin'],
-        nowPlaying: Object.assign({ name: '밤편지', artist: 'IU', art: null }, link('밤편지', 'IU')) }),
+        song: track('Formidable', 'Stromae', ART.stromae),
+        nowPlaying: track('밤편지', 'IU', ART.iu) }),
       mk(7, 17, 45, { title: '파리 당일치기', body: '주말에 에펠탑 보고 옴.', photos: [P.eiffel, P.cafe], tags: ['trip', 'food'], location: { country: '프랑스', city: '파리' },
         weather: { code: 61, temp: 12 },
-        song: Object.assign({ name: 'Formidable', artist: 'Stromae', art: null }, link('Formidable', 'Stromae')) })
+        song: track('Formidable', 'Stromae', ART.stromae) })
     ];
     return guestCache;
   }
