@@ -26,7 +26,7 @@ body[data-page="intro"] {
   gap: var(--space-2);
   text-decoration: none;
 }
-.intro__brand img { width: 28px; height: 28px; border-radius: 50%; }
+.intro__brand-mark { width: 28px; height: 28px; border-radius: 50%; }
 .intro__brand span {
   font-family: var(--font-display);
   font-weight: 800;
@@ -67,57 +67,52 @@ body[data-page="intro"] {
   -webkit-mask-image: linear-gradient(180deg, #000 50%, rgba(0,0,0,.4) 76%, transparent 96%);
   mask-image: linear-gradient(180deg, #000 50%, rgba(0,0,0,.4) 76%, transparent 96%);
 }
+/* 지구 — js/globe.js 가 캔버스에 직접 그린다(진짜 자전).
+   예전에는 각도가 다른 사진 5컷을 겹쳐 넘겼는데, 5컷으로는 대륙이 흐르지 않고
+   다른 면으로 녹아드는 디졸브로 보였다. */
 .intro__earth {
+  position: relative;
   width: 100%; height: 100%;
-  object-fit: contain;
-  opacity: 0.3;
-  animation: earth-float 7s var(--ease-out) infinite;
+  display: grid;
+  place-items: center;
 }
-@keyframes earth-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-22px); }
-}
-
-.intro__footsteps {
-  position: absolute;
-  inset: 0;
-}
-.intro__step {
-  position: absolute;
-  left: var(--sx);
-  top: var(--sy);
-  width: 22px;
+.intro__earth-canvas,
+.intro__earth-pins {
+  grid-area: 1 / 1;
+  width: 100%;
   height: auto;
-  /* 이미지는 위를 향해 서 있다. --sr 만큼 돌려 진행 방향(좌하 → 우상)을 보게 한다. */
-  transform: translate(-50%, -50%) rotate(var(--sr, 0deg));
-  opacity: 0;
-  animation: step-appear 6s ease-in-out infinite;
-  animation-delay: var(--sd);
+  max-width: 100%;
+  aspect-ratio: 1;
 }
-/* 한 걸음씩 찍히고 → 자국이 남았다가 → 함께 옅어지며 다시 시작한다.
-   걸음마다 animation-delay가 달라서, 같은 키프레임이어도 순서대로 찍힌다.
-   6초 주기에 마지막 걸음의 지연이 2.2초라, 다 찍힌 자국이 한동안 머문다.
+/* 지구 자체는 배경이라 많이 낮추고, 불빛은 켜진 티가 나게 남긴다 */
+/* 흰 바탕 위에서는 지구가 또렷할수록 "얹힌 원반"으로 보인다.
+   배경 질감처럼 물러나야 흰 바탕의 선명함을 해치지 않는다. */
+.intro__earth-canvas { opacity: 0.28; }
+.intro__earth-pins { opacity: 1; }
 
-   불투명도 최고값은 0.45 — 브랜드 모티프지만 히어로 제목과 겹치는 자리라
-   또렷하면 글자를 방해한다. */
-@keyframes step-appear {
-  0%   { opacity: 0; }
-  4%   { opacity: 0.45; }
-  70%  { opacity: 0.45; }
-  88%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* 움직임을 줄여달라고 한 사용자에게는 완성된 자취만 보여준다 */
-  .intro__step { animation: none; opacity: 0.45; }
-}
-
-.intro__content {
+/* 제목은 "지구 한가운데"에 놓여야 하고, 국가 마퀴는 "지구 바로 밑"이어야 한다.
+   픽셀로 밀어 넣으면 화면 폭이 바뀔 때마다 어긋난다. 대신 지구와 **똑같은
+   정사각형 띠**를 흐름 안에 하나 두고, 제목을 그 안에서 가운데 정렬한다.
+   (padding-top: 100% 는 가로 폭의 100% — 그래서 정사각형이 된다)
+   띠가 끝나는 곳이 곧 지구가 끝나는 곳이라, 그 뒤에 오는 것들은 자연히
+   지구 아래로 내려간다. */
+.intro__globe-band {
   position: relative;
   z-index: 2;
-  max-width: 640px;
-  padding: var(--space-8) 0 var(--space-9);
+  /* 지구와 제목을 함께 줄인다 — 둘의 비율은 그대로 두고 전체만 작게.
+     .intro__earth-wrap 과 폭·여백이 같아야 제목이 지구 한가운데 온다. */
+  width: 84%;
+  max-width: 460px;
+  margin: 8px auto 0;
+}
+.intro__globe-band::before { content: ''; display: block; padding-top: 100%; }
+
+.intro__content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  z-index: 2;
 }
 .intro__logo-badge {
   width: 64px; height: 64px;
@@ -206,15 +201,17 @@ body[data-page="intro"] {
 .intro__final {
   position: relative;
   z-index: 1;
-  /* 글 덩어리 사이 여백은 절반으로. 좁은 화면에서 125px 짜리 빈 구간이
-     연달아 놓이면, 다음 문단을 보려고 한 판을 통째로 넘겨야 한다. */
-  padding: calc(var(--space-9) / 2) var(--space-7);
+  /* 글 덩어리 사이 여백은 1/4 로. 좁은 화면에서 125px 짜리 빈 구간이
+     연달아 놓이면, 다음 문단을 보려고 한 판을 통째로 넘겨야 한다.
+     절반(62px)도, 1/4(31px)도 첫 화면에 숫자까지 넣기에는 컸다. */
+  padding: 8px var(--space-7) 12px;
   background: var(--cloud-0);
 }
 .intro__steps {
   background: var(--cloud-50);
-  /* 위 섹션(숫자)과 흐름이 이어져서 위 여백은 한 번 더 줄인다 */
-  padding-top: calc(var(--space-9) / 4);
+  /* 위 섹션(숫자+문구)과 새 단락이 시작되는 자리라 한 박자 띄운다.
+     너무 붙으면 "…도와줍니다" 의 다음 줄처럼 읽힌다. */
+  padding-top: 34px;
 }
 
 .intro__section-title {
@@ -234,12 +231,18 @@ body[data-page="intro"] {
   word-break: keep-all;
 }
 
+/* 숫자가 섹션의 첫머리로 올라왔다 — 먼저 규모로 치고, 그게 무엇인지
+   바로 아래 한 줄로 받는다. 그래서 둘 사이는 붙여 둔다. */
+.intro__stat-grid + .intro__section-title { margin-top: var(--space-4); }
+
 .intro__stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
   max-width: var(--page-max);
-  margin: calc(var(--space-7) / 2) auto 0;
+  /* 지구 바로 밑에 붙는 자리다. 31px 을 더 얹으면 지구와 숫자가 남남으로
+     보인다 — 지구에서 불 켜진 나라를 세어 준 것이라 이어져야 한다. */
+  margin: 0 auto;
 }
 /* 카드를 씌우지 않는다. 유리 카드를 쓰면 배경 그라데이션이 밝아지는 구간에서
    크림색 라벨이 카드 바탕에 묻혀 읽히지 않았다. 숫자 세 개를 가는 세로선으로만
@@ -444,85 +447,242 @@ body[data-page="intro"] {
 
 
 /* ==========================================================================
-   랜딩 전체를 한 장의 남색 그라데이션으로
+   랜딩 = 밝은 하늘색 한 장 + 키 컬러 워드마크
 
-   예전에는 히어로만 남색이고 그 아래가 흰 섹션이라 경계가 뚝 끊겼다. 섹션마다
-   배경색을 따로 주는 대신, 페이지 전체에 위(짙은 남색) → 아래(옅은 남색)로
-   이어지는 그라데이션 한 장을 깔고 섹션은 전부 투명하게 둔다.
+   예전에는 페이지 전체가 남색 그라데이션이었다. 어두운 바탕이 답답해서
+   옅은 하늘색으로 뒤집었다 — 가운데가 살짝 진하고 가장자리로 갈수록 하얘지는
+   한 장. 섹션은 전부 투명하게 두어 경계가 생기지 않게 한다.
 
-   흰 바탕에 맞춰져 있던 글자·카드 색을 전부 어두운 배경 기준으로 뒤집는다.
+   키 컬러(#12E5E2)는 이 밝은 바탕에 맨몸으로 올리면 1.1:1 이라 안 보인다.
+   그래서 워드마크에만, 네이비 테두리를 두른 형태로 쓴다(.wordmark).
+
+   그리고 랜딩은 전부 가운데 정렬이다.
    ========================================================================== */
 
 body[data-page="intro"] {
-  /* 위에서 아래로 계속 밝아지되 끝까지 남색 계열에 머문다. 중간에 흰색이 끼면
-     거기서 다시 경계가 생긴다. */
-  /* 끝을 #7CA2C6까지 밝히면 마지막 섹션이 하늘색 판이 되는데, 그 위에 올라가는
-     글자는 전부 크림색이다(원래 --oxford 위에 놓이던 섹션이라). 크림 대 하늘색은
-     대비가 2.6:1밖에 안 나와서 "재학생 확인을 위해…" 같은 줄이 읽히지 않았다.
-     가장 밝은 구간을 80% 부근에 두고 바닥은 다시 중간 남색으로 내린다 —
-     지평선 너머가 밝아지는 모양은 그대로 남고, 글자는 어디서든 읽힌다. */
-  background: linear-gradient(180deg,
-    #01070F 0%,
-    #06142C 16%,
-    #12294C 34%,
-    #24456E 52%,
-    #3D6491 68%,
-    #557FA8 80%,
-    #3B5E88 100%);
-  /* attachment: fixed를 쓰면 안 된다. 그라데이션이 뷰포트에 고정돼 스크롤해도
-     늘 같은 구간만 보이고, "내려갈수록 밝아진다"가 사라진다. 기본값(scroll)이라야
-     페이지 전체 높이에 펼쳐진다. */
+  /* 고정하지 않는다(scroll 기본값) — 페이지 전체 높이에 펼쳐져야
+     아래로 갈수록 하얘지는 흐름이 산다. */
+  /* 하늘색 그라데이션은 "희끄무레하다"는 피드백이 있었다. 흰 바탕으로 두면
+     요소들이 배경과 싸우지 않고 또렷해진다 — 대신 지구는 흰 위에서 더 옅어
+     보이므로 아래에서 투명도를 올려 보정한다. */
+  background: #fff;
 }
 
-
-/* 섹션은 각자 배경을 갖지 않는다 — 전부 위 그라데이션 위에 얹힌다 */
+/* 섹션은 각자 배경을 갖지 않는다 */
 .intro__stats,
 .intro__steps,
 .intro__final { background: transparent; }
 
 
-/* ---- 어두운 배경 기준으로 글자색 뒤집기 ----
-   0.72는 그라데이션 중간(#24456E~#3D6491) 위에서 본문으로는 흐렸다.
-   부제·캡션을 0.88까지 올리고, 그림자를 한 겹 깔아 밝은 구간에서도 뜨게 한다. */
-.intro__section-title {
-  color: var(--moonlight, #F0ECDD);
-  text-shadow: 0 2px 14px rgba(1, 7, 15, 0.45);
+/* ---- 워드마크 ----
+   시안 채움 + 네이비 테두리 + 옅은 그림자.
+   paint-order 가 없으면 테두리가 획 안쪽까지 깎아 글자가 가늘어진다.
+   작은 크기(앱바 10px, 파비콘)에서는 테두리가 메워지므로 여기서만 쓴다. */
+.wordmark {
+  color: var(--key-500);
+  paint-order: stroke fill;
+  /* px 로 고정하면 큰 제목에서는 얇고 작은 제목에서는 메워진다.
+     글자 크기에 비례하도록 em 으로 묶는다(76px 기준 3px = 0.04em). */
+  -webkit-text-stroke: 0.04em var(--key-ink);
+  text-shadow: 0.053em 0.053em 0 rgba(2, 18, 47, 0.22);
 }
+/* 히어로 말고 본문 속 키워드(STEP, Four Steps!, step)는 글줄에 묻히지 않을
+   정도만. 히어로와 같은 1.9em 을 주면 문장이 글자에 끌려다닌다.
+   대신 작아서 시안만으로는 안 읽히므로 여기에는 테두리를 남긴다. */
+.intro__section-title .wordmark-svg,
+.intro__final-title .wordmark-svg {
+  height: 1.69em;         /* 1.3em 에서 1.3배 */
+  vertical-align: -0.42em;
+}
+/* 한 줄을 통째로 차지하는 워드마크(Four Steps!)는 옆에 한글이 없다.
+   글줄에 맞출 이유가 없으니 섹션 제목만 한 크기로 키운다.
+   위 규칙과 같은 층위(클래스 둘)로 적어야 이긴다 — .wordmark-svg--solo 만
+   쓰면 .intro__section-title .wordmark-svg 에 밀린다. */
+.intro__section-title .wordmark-svg--solo {
+  display: block;
+  height: 2.15em;   /* 1.69em(작음) 과 2.6em(큼) 의 중간 */
+  margin-inline: auto;
+  vertical-align: baseline;
+}
+
+
+/* ---- 밝은 배경 기준으로 글자색 ---- */
+/* 워드마크는 패스라 fill=currentColor 다 — 쓰는 쪽에서 색을 정한다.
+   상단 브랜드는 22px 밖에 안 돼서 테두리를 두르면 메워진다. 단색으로 둔다. */
+.intro__wordmark {
+  display: block;
+  height: 30px;          /* 세로 상자에 어센더·디센더 여백이 포함돼 있다 */
+  width: auto;           /* viewBox 비율대로 */
+  color: var(--key-ink);
+}
+
+/* 히어로의 워드마크 — 트리트먼트 D 를 SVG 로.
+   paint-order: stroke fill 이라 테두리가 획 안쪽을 깎지 않는다.
+   글자 줄에 끼어 있으므로 height 를 em 으로 묶어 본문과 같이 커지고,
+   vertical-align 으로 한글 베이스라인에 맞춘다. */
+.wordmark-svg {
+  display: inline-block;
+  /* 모든 워드마크가 같은 세로 자(어센더 1000 / 디센더 300, 베이스라인 y=0)를
+     쓰므로 height 하나만 주면 어느 단어든 같은 크기·같은 베이스라인으로 앉는다.
+     1.3em = 상자 높이 1300 → 대문자 700 이 0.7em 이 된다(본문 글자와 비슷). */
+  /* 히어로에서는 제목 글자보다 확실히 크게 — 여기가 브랜드를 보여주는 자리다.
+     (다른 자리의 키워드는 아래에서 다시 줄인다) */
+  height: 1.9em;
+  width: auto;
+  vertical-align: -0.52em;
+  margin-inline: 0.04em;
+  color: var(--key-500);
+  /* 밝은 하늘색 위의 시안은 대비가 1.3:1 이라 맨몸으로는 안 읽힌다.
+     네이비 테두리가 대비를 맡는다. 패스가 <g transform="scale(0.1)"> 안에
+     있어서 stroke-width 는 그 안쪽 좌표계로 먹는다 — 보이는 두께의 10배.
+     세로 상자 1300 단위 = 1.3em 이므로 1em = 1000단위, 0.045em = 45단위 → 450. */
+  stroke: var(--key-ink);
+  stroke-width: 450;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  filter: drop-shadow(0.03em 0.03em 0 rgba(2, 18, 47, 0.20));
+}
+
+.intro__heading {
+  color: var(--ink-900);
+  /* 지구 위에 얹히는 글자다. 어두운 그림자 대신 밝은 후광으로 가장자리를 살린다 */
+  text-shadow: 0 2px 16px rgba(255, 255, 255, 0.9);
+}
+.intro__desc,
+.intro__marquee-track .country { color: var(--ink-600); }
+.intro__marquee-track .dot { background: var(--ink-400); }
+
+.intro__section-title { color: var(--ink-900); text-shadow: none; }
 .intro__section-sub,
 .intro__stat span,
-.intro__stats-note {
-  color: rgba(240, 236, 221, 0.88);
-  text-shadow: 0 1px 8px rgba(1, 7, 15, 0.4);
-}
+.intro__stats-note { color: var(--ink-600); text-shadow: none; }
+.intro__stat strong { color: var(--sky-700); text-shadow: none; }
 
-/* 걸음 항목은 이제 흰 카드가 아니라 남색 배경 위에 바로 놓인다 */
+.intro__step-num { color: var(--sky-500); opacity: 1; }
 .intro__step-item h3,
-.intro__step-sub h4 {
-  color: var(--moonlight, #F0ECDD);
-  text-shadow: 0 2px 12px rgba(1, 7, 15, 0.4);
-}
-.intro__step-item p { color: rgba(240, 236, 221, 0.86); }
-.intro__step-sub p { color: rgba(240, 236, 221, 0.72); }
+.intro__step-sub h4 { color: var(--ink-900); text-shadow: none; }
+.intro__step-item p { color: var(--ink-700); }
+.intro__step-sub p { color: var(--ink-600); }
+.intro__step-sub { border-left-color: var(--line-200); }
 
-.intro__stat strong {
-  color: #fff;
-  text-shadow: 0 2px 16px rgba(1, 7, 15, 0.5);
+.intro__final-title { color: var(--ink-900); text-shadow: none; }
+.intro__final-sub,
+.intro__final-skip { color: var(--ink-600); }
+.intro__footer a { color: var(--ink-600); }
+
+/* 발자국 이미지는 흰색이라 밝은 바탕에서 사라진다. 뒤집어서 옅은 남색 자국으로 */
+
+
+/* ---- 가운데 정렬 (상단 브랜드만 왼쪽) ---- */
+.intro__nav { justify-content: flex-start; }
+.intro__content { text-align: center; }
+.intro__desc { margin-inline: auto; }
+/* base.css 가 img 를 display:block 으로 둔다 — text-align 으로는 안 가운데 온다 */
+.intro__logo-badge { margin-inline: auto; }
+
+.intro__step-list { align-items: center; }
+.intro__step-item {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  max-width: 34ch;
 }
-/* 마지막 섹션은 이미 남색 전제라 글자색은 그대로 두고 배경만 뺐다 */
+/* 세로로 세우면 번호 칸의 고정 폭이 글자를 가운데에서 밀어낸다 */
+.intro__step-num { width: auto; padding-top: 0; }
+/* 왼쪽 선은 가운데 정렬에서 축이 어긋난다 — 위쪽 선으로 바꿔 매단다 */
+.intro__step-sub {
+  padding-left: 0;
+  border-left: none;
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--line-200);
+  width: 100%;
+}
+
+.intro__footer { text-align: center; }
+
+
+/* ---- CTA ---- */
+/* 밝은 바탕에서는 크림색 버튼이 배경에 묻는다. 네이비로 채운다 */
+.intro__cta { background: var(--ink-900); color: #fff; }
+.intro__cta:hover { background: var(--oxford); }
+
+/* 밀어서 시작하기 — 키 컬러를 크게 쓰는 유일한 자리.
+   네이비 글자와 짝이라 7.9:1 이다(흰 글자면 1.6:1 이라 절대 안 된다). */
+.swipe-start__track { background: rgba(255, 255, 255, 0.72); border-color: var(--line-200); }
+.swipe-start__label { color: var(--ink-900); }
+.swipe-start__chevrons { color: var(--ink-400); }
+.swipe-start__trail { background: var(--key-500); }
+.swipe-start__knob { background: var(--key-500); }
+.swipe-start.is-done .swipe-start__track { border-color: var(--key-500); }
 
 /* 고정 버튼이 마지막 섹션 내용을 가린다 */
 .intro__final { padding-bottom: var(--space-5); }
 
-/* 이미지는 끌면 브라우저가 "이미지 드래그"를 시작해 포인터 이벤트를 가로챈다.
-   SVG를 쓸 때는 없던 문제라 로고로 바꾼 뒤에 스와이프가 통째로 먹통이 됐다.
-   pointer-events를 꺼서 모든 포인터 이벤트가 손잡이(span)로 바로 가게 한다. */
-.swipe-start__knob img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  user-select: none;
-  -webkit-user-select: none;
+/* 이미지는 끌면 브라우저가 "이미지 드래그"를 시작해 포인터 이벤트를 가로챈다. */
+.swipe-start__knob img { width: 100%; height: 100%; }
+
+
+/* 제목 끝의 느낌표. steppY 와 같은 글씨체지만 로고가 아니라 문장 부호라
+   조금 작게 둔다. 앞 글자(한글)와 맞닿으면 오타처럼 읽혀서 왼쪽을 띄운다.
+   스플래시의 ! 는 이 요소의 실제 사각형으로 떨어지므로 여기만 고치면 된다. */
+.wordmark-svg--bang {
+  height: 1.35em;
+  vertical-align: -0.3em;
+  margin-inline: 0.18em 0;
 }
-.swipe-start__trail.is-returning { transition: width 200ms var(--ease-out); }
+
+
+/* ==========================================================================
+   인트로 스플래시 — 글자가 떨어졌다가 제목의 제자리로 낙하한다
+   (js/intro-splash.js · 데이터는 tools/make-splash.py 가 만든다)
+   ========================================================================== */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  /* 배경 불투명도는 js 가 낙하 진행도에 맞춰 직접 준다 — 떨어지는 동안
+     뒤의 랜딩이 서서히 비친다. */
+  background: #fff;
+  /* 가운데가 아니라 전원 버튼이 끝나는 높이(위에서 30%)부터 글자가 시작한다.
+     가운데에 두면 떨어지고 나서 제목 자리까지 올라가는 거리가 멀어
+     "모인다"보다 "이동한다"로 보인다. */
+  display: grid;
+  grid-template-rows: 30vh auto 1fr;
+  justify-items: center;
+}
+.splash__stage { grid-row: 2; }
+.splash.is-gone { opacity: 0; pointer-events: none; transition: opacity .24s ease; }
+
+/* 스플래시가 떠 있는 동안 랜딩은 스크롤되지 않는다 */
+.is-splashing, .is-splashing body { overflow: hidden; }
+
+/* 떨어지는 글자 밑에 진짜 워드마크가 비치면 두 겹으로 보인다.
+   착지하는 순간 바꿔 끼운다. JS 가 안 돌면 이 클래스가 안 붙으므로
+   워드마크는 평소대로 보인다. */
+.is-splashing .intro__heading .wordmark-svg { visibility: hidden; }
+
+.splash__stage { position: relative; }
+
+.splash__letter {
+  /* 좌표를 재는 동안에는 흐름 안에 있다가, js 가 fixed 로 띄운다 */
+  position: absolute;
+  height: auto;
+  opacity: 0;
+  color: var(--key-500);
+  /* 흰 화면에 떨어지는 동안에는 테두리 없이 시안 그대로 — 원본 시안이 그렇다.
+     두께는 js 가 착지 직전에 0 에서 키운다(진짜 워드마크와 이어지도록). */
+  stroke: var(--key-ink);
+  stroke-width: 0;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  /* 바닥에 닿는 느낌이라 변형 기준점을 글자 아래쪽에 둔다 */
+  transform-origin: 50% 100%;
+  will-change: transform, opacity;
+}
+
+/* 움직임을 줄이라고 한 사용자에게는 js 가 아예 안 띄운다 */
+@media (prefers-reduced-motion: reduce) {
+  .splash { display: none; }
+}

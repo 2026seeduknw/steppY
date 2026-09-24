@@ -4,13 +4,16 @@
 (function () {
   const COUNTRIES = ['UNITED STATES', 'UNITED KINGDOM', 'FRANCE', 'GERMANY', 'JAPAN', 'SINGAPORE', 'AUSTRALIA', 'CANADA', 'SWITZERLAND'];
 
+  /* 국가 마퀴는 지구 위 불빛과 같은 말을 해서 랜딩에서 뺐다. 마크업이 없으면
+     그냥 건너뛴다 — 예전에는 여기서 null 에 innerHTML 을 쓰다 터졌고, 같은
+     IIFE 안에 있던 숫자 카운트업까지 통째로 죽었다(숫자가 0 에 멈춰 있던 원인).
+     되돌리고 싶으면 index.html 에 .intro__marquee 를 다시 넣기만 하면 된다. */
   const track = document.getElementById('marqueeTrack');
-  function renderMarquee() {
+  if (track) {
     const itemsHtml = COUNTRIES.map(c => `<span class="country">${c}</span><span class="dot"></span>`).join('');
     // 두 번 반복해 translateX(-50%) 루프가 이음매 없이 이어지도록 함
     track.innerHTML = itemsHtml + itemsHtml;
   }
-  renderMarquee();
 
   /**
    * 숫자 세어 올리기 — 271 / 76 / 32.
@@ -50,7 +53,22 @@
         countUp(entry.target);
       });
     }, { threshold: 0.6 });
-    counters.forEach(el => io.observe(el));
+
+    /**
+     * 인트로 스플래시가 끝난 뒤에 관찰을 시작한다.
+     *
+     * 숫자는 이제 첫 화면 안에 있다(국가 마퀴를 빼면서 위로 올라왔다).
+     * 관찰을 바로 걸면 스플래시가 흰 화면으로 덮고 있는 1.9초 동안 숫자가
+     * 다 올라가 버려서, 정작 화면이 드러났을 때는 아무 일도 없던 것처럼 보인다.
+     *
+     * 스플래시가 없거나(재방문·모션 최소화) 이미 끝났으면 바로 시작한다.
+     */
+    const startCounting = () => counters.forEach(el => io.observe(el));
+    if (document.getElementById('introSplash')) {
+      document.addEventListener('splash:done', startCounting, { once: true });
+    } else {
+      startCounting();
+    }
   }
 
 })();

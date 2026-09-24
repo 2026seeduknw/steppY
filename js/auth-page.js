@@ -13,7 +13,9 @@
   const subEl = document.getElementById('authSub');
   const passwordInput = form.elements.password;
 
-  let mode = 'signin';
+  // 처음 오는 사람이 대부분이라 회원가입을 먼저 보여준다.
+  // 가입 직후에는 setModeAfterSignup() 이 로그인 탭으로 넘긴다.
+  let mode = 'signup';
 
   Auth.init().then(session => {
     // OAuth로 갔다가 실패해서 돌아온 경우 먼저 알린다
@@ -26,13 +28,17 @@
 
   const COPY = {
     signin: {
-      title: '다시 만나서 반가워요',
-      sub: '연세대학교 메일로 로그인하면 지망 학교와 준비 상황을 어느 기기에서든 이어서 볼 수 있어요',
+      // 처음 여는 사람도 이 탭을 먼저 본다 — "다시 만나서"는 재방문을 전제해
+      // 첫 사용자에게 어색했다. 무엇을 하는 화면인지만 말한다.
+      title: '이어서 준비할까요',
+      sub: '연세대학교 메일로 로그인하면 지망 학교와 준비 상황을 어느 기기에서든 이어 볼 수 있어요',
       submit: '로그인',
       autocomplete: 'current-password'
     },
     signup: {
-      title: 'steppY 시작하기',
+      // step 은 랜딩의 키워드와 같은 워드마크로 보여준다(js 가 아니라 정적 문자열이라 안전)
+      titleHtml: '첫 <svg class="wordmark-svg auth__kw" viewBox="0 0 2237.06 1300.0" role="img" aria-label="step"><use href="#wm-step-lower"/></svg> 시작하기',
+      title: '첫 step 시작하기',
       sub: '재학생 확인을 위해 연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요',
       submit: '가입하고 시작하기',
       autocomplete: 'new-password'
@@ -42,7 +48,8 @@
   function setMode(next) {
     mode = next;
     const copy = COPY[next];
-    titleEl.textContent = copy.title;
+    if (copy.titleHtml) titleEl.innerHTML = copy.titleHtml;
+    else titleEl.textContent = copy.title;
     subEl.textContent = copy.sub;
     submit.textContent = copy.submit;
     passwordInput.setAttribute('autocomplete', copy.autocomplete);
@@ -125,5 +132,5 @@
     showNotice(notice);
   }
 
-  setMode('signin');
+  setMode('signup');
 })();
