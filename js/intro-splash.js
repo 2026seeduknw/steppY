@@ -43,7 +43,7 @@
   const stage = root.querySelector('.splash__stage');
   if (!hero) { root.remove(); return; }
 
-  document.documentElement.classList.add('is-splashing');
+  document.documentElement.classList.add('is-splashing', 'is-splash-lock');
   try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* 무시 */ }
 
   /* ---- 타이밍 (ms) ---- */
@@ -121,20 +121,20 @@
   const HERO_STROKE_RATIO = 45 / 1300;
   let heroH = 0;
 
-  function measure() {
-    const sr = stage.getBoundingClientRect();
+  /**
+   * 목표는 **매 프레임 다시 잰다.**
+   *
+   * 한 번만 재면 그 사이에 레이아웃이 조금이라도 움직였을 때 글자가 빈자리에
+   * 앉는다. 실제로 그랬다 — 스크롤 잠금이 풀리면서 폭이 줄고 제목이 4px
+   * 올라갔는데, 목표는 옛 좌표 그대로였다. 읽는 건 사각형 두 개뿐이라 값싸고,
+   * 프레임 맨 앞에서 한 번에 읽으므로 transform 쓰기와 엇갈리지도 않는다.
+   */
+  function measureTargets() {
     const hr = hero.getBoundingClientRect();
-    const br = bang && bang.getBoundingClientRect();
     if (!hr.width) return false;
-
-    starts = nodes.map(({ el, d }) => {
-      const r = el.getBoundingClientRect();
-      return { cx: sr.left + d.sx * LW + r.width / 2,
-               cy: sr.top + d.sy * LH + r.height / 2,
-               w: r.width, h: r.height };
-    });
+    const br = bang && bang.getBoundingClientRect();
     heroH = hr.height;
-    targets = nodes.map(({ d }, i) => {
+    targets = nodes.map(({ d }) => {
       if (d.hx == null) {                       // 느낌표는 제목 끝 느낌표 자리로
         if (!br || !br.width) return null;
         return { cx: br.left + br.width / 2, cy: br.top + br.height / 2, w: br.width };
@@ -146,10 +146,32 @@
     return true;
   }
 
+  /** 출발 자리는 낙하가 시작되기 전까지만 다시 잰다 — 도중에 바꾸면 글자가 튄다. */
+  function measureStarts() {
+    const sr = stage.getBoundingClientRect();
+    starts = nodes.map(({ el, d }) => {
+      const r = el.getBoundingClientRect();
+      return { cx: sr.left + d.sx * LW + r.width / 2,
+               cy: sr.top + d.sy * LH + r.height / 2,
+               w: r.width, h: r.height };
+    });
+  }
+
+  function measure() {
+    if (!measureTargets()) return false;
+    measureStarts();
+    return true;
+  }
+
+  function unlockScroll() {
+    document.documentElement.classList.remove('is-splash-lock');
+  }
+
   function finish() {
     if (done) return;
     done = true;
     cancelAnimationFrame(raf);
+    unlockScroll();
     // 떨어진 글자를 지우는 것과 진짜 워드마크를 켜는 것이 같은 프레임에 일어나야
     // 한 겹으로 이어진다. 자리가 같으니 위치는 안 튀고, 테두리만 짧게 차오른다.
     root.style.backgroundColor = 'transparent';
@@ -163,6 +185,16 @@
   function frame(now) {
     if (!t0) t0 = now;
     const ms = now - t0;
+
+    /* 잠금은 **낙하가 시작되기 한참 전에** 푼다. 풀리는 순간 레이아웃이 조금이라도
+       움직이면 목표가 옮겨지는데, 그때 이미 착지해 있던 글자는 한 프레임에
+       그만큼 순간이동한다. 등장 중(f=0)에 풀면 그 보정이 공짜다.
+       스플래시는 화면 전체를 덮고 아무 데나 누르면 끝나므로, 이 시점에 잠금이
+       풀려도 사용자가 랜딩을 스크롤할 수는 없다. */
+    if (ms > 300) unlockScroll();
+
+    measureTargets();
+    if (ms < TL.hold) measureStarts();
 
     nodes.forEach(({ el }, i) => {
       const s = starts[i], tg = targets[i];

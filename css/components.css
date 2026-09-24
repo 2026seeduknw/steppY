@@ -419,6 +419,7 @@ body[data-page="credits"]::before {
 .info-panel {
   background: var(--cloud-0);
   border: 1px solid var(--line-100);
+  box-shadow: var(--shadow-card);
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }

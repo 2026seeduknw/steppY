@@ -653,10 +653,21 @@ body[data-page="intro"] {
   justify-items: center;
 }
 .splash__stage { grid-row: 2; }
+/* 사라질 때 글자는 같이 흐려지지 않는다 — 아래 is-gone 규칙 참고 */
 .splash.is-gone { opacity: 0; pointer-events: none; transition: opacity .24s ease; }
+.splash.is-gone .splash__letter { opacity: 0 !important; transition: none; }
 
-/* 스플래시가 떠 있는 동안 랜딩은 스크롤되지 않는다 */
-.is-splashing, .is-splashing body { overflow: hidden; }
+/* 스플래시가 떠 있는 동안 랜딩은 스크롤되지 않는다.
+   이 잠금을 **끝나기 전에 미리 푼다** — 스크롤바가 생기면서 폭이 줄고, 폭에
+   묶인 지구본(84%, 정사각형)이 작아지면서 그 아래 제목이 4px 올라간다. 잠금을
+   교체하는 순간에 풀면 가짜 글자는 옛 자리에, 진짜 워드마크는 새 자리에 있어서
+   착지가 어긋나 보인다. 그래서 클래스를 둘로 나눴다. */
+.is-splash-lock, .is-splash-lock body { overflow: hidden; }
+/* scrollbar-gutter: stable 로 자리를 미리 잡아 두려 했는데 소용없다 — 그 속성은
+   overflow 가 auto/scroll 일 때만 자리를 비운다. hidden 인 동안에는 아무것도
+   비워 두지 않다가 풀리는 순간 스크롤바가 생긴다. 그래서 폭 변화를 없애는 대신
+   **낙하 전에 미리 풀어** 그 변화가 문제가 되지 않는 시점으로 옮겼다
+   (js/intro-splash.js 의 unlockScroll). */
 
 /* 떨어지는 글자 밑에 진짜 워드마크가 비치면 두 겹으로 보인다.
    착지하는 순간 바꿔 끼운다. JS 가 안 돌면 이 클래스가 안 붙으므로
