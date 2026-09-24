@@ -1406,7 +1406,7 @@ body[data-page="journal"][data-theme="film"] .diary-menu__item { font-size: 0.81
 .diary-lp-btn { position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 56px; height: 56px; padding: 0; border: 0; background: none; cursor: pointer; }
 .diary-lp-btn:focus-visible { outline: 2px solid var(--diary-accent); outline-offset: 3px; border-radius: 50%; }
 .diary-lp-btn .diary-lp {
-  position: absolute; inset: 0; width: auto; height: auto; right: auto; bottom: auto; border-radius: 50%;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; box-sizing: border-box; border-radius: 50%;
   background: #222 center / cover no-repeat; border: 2px solid rgba(255, 255, 255, 0.92); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   animation: diary-lp-spin 9s linear infinite;
 }
@@ -1447,3 +1447,25 @@ body[data-page="journal"] .wrapup-cover { grid-template-columns: repeat(3, 1fr);
 body[data-page="journal"] .report-entry { flex-wrap: wrap; }
 /* 필름 테마 달력 머리 위 구분선은 위 규칙의 padding-top을 덮지 않게 다시 */
 body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-top: var(--space-5); }
+
+/* CD는 이 기능의 핵심이라 항상 돈다. '동작 줄이기'를 켠 기기에서도 멈추지 않고 더 천천히 돈다. */
+@media (prefers-reduced-motion: reduce) {
+  .diary-lp-btn .diary-lp { animation: diary-lp-spin 16s linear infinite !important; }
+  .diary-lp-btn.is-playing .diary-lp { animation: diary-lp-spin 5s linear infinite !important; }
+}
+/* ▶ 표시는 앨범 표지를 가리지 않게 작고 옅게 — 눌러야 하는 곳이라는 것만 알려 준다 */
+.diary-lp-play { width: 20px; height: 20px; background: rgba(10, 10, 10, 0.42); }
+.diary-lp-play::before { font-size: 9px; opacity: 0.9; }
+.diary-lp-btn:not(.is-playing):not(.is-loading) .diary-lp-play { opacity: 0.75; }
+
+/* 앨범 원판을 더 크게 — 표지가 알아볼 수 있도록 */
+.diary-lp-btn { width: 78px; height: 78px; right: 12px; bottom: 12px; }
+.diary-lp-play { width: 24px; height: 24px; }
+.diary-lp-play::before { font-size: 10px; }
+.diary-stamp__blank .diary-lp-btn { width: 64px; height: 64px; right: 10px; bottom: 10px; }
+.diary-song-play .diary-lp-play { width: 20px; height: 20px; }
+/* 원판 한 번 더 키움 — 우표 사진 폭의 약 3분의 1 */
+.diary-lp-btn { width: 96px; height: 96px; right: 10px; bottom: 10px; }
+.diary-lp-play { width: 28px; height: 28px; }
+.diary-lp-play::before { font-size: 11px; }
+.diary-stamp__blank .diary-lp-btn { width: 72px; height: 72px; }
