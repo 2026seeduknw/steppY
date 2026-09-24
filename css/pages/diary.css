@@ -1479,3 +1479,55 @@ body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-top: v
 .diary-lp-play { width: 18px; height: 18px; }
 .diary-lp-play::before { font-size: 8px; }
 .diary-stamp__blank .diary-lp-btn { width: 46px; height: 46px; }
+
+/* ==========================================================================
+   필름 테마 — 페이지 배경만 흰색. 필름 프레임·주황 각인·어두운 팝업은 그대로 두고,
+   흰 바탕 위에 직접 놓이는 글씨·칸·버튼만 진한 색으로 바꾼다. (팝업은 .diary-view 밖이라 어두운 채로 남는다)
+   ========================================================================== */
+body[data-page="journal"][data-theme="film"][data-tod] { background: #ffffff; --film-amber-ink: #dc7a00; }
+body[data-page="journal"][data-theme="film"][data-tod]::before { display: none; }
+body[data-page="journal"][data-theme="film"][data-tod]::after { background-image: linear-gradient(180deg, #ffffff 0%, #faf8f3 100%); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-view {
+  --diary-text: #1b1a17; --diary-text-dim: #4d483f; --diary-text-faint: #8a8372;
+  --diary-line: rgba(27, 26, 23, 0.14); --diary-line-strong: rgba(27, 26, 23, 0.30);
+}
+/* 흰 바탕 위 제목 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-header__title,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-cal-nav__title,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__head .diary-featured__eyebrow,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__daycount { color: #1b1a17; }
+/* 주황 숫자는 흰 바탕에서 묻히지 않게 조금 진하게 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-streak__num,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-seg,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-streak svg,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-qmark { color: var(--film-amber-ink); text-shadow: none; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-streak__label { color: var(--diary-text-dim); }
+/* 이번 주 · 여정 · 질문 표시 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-week__day span { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-week__day i { background: rgba(27, 26, 23, 0.04); border-color: rgba(27, 26, 23, 0.25); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-week__day.is-done i { background: var(--film-amber); border-color: var(--film-amber); box-shadow: none; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-week__day.is-today span { color: var(--film-amber-ink); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero--compact .diary-hero__left { color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__cta { color: var(--film-amber-ink); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-hero__line { background-image: linear-gradient(90deg, rgba(27, 26, 23, 0.35) 0 6px, transparent 6px 12px); }
+/* 버튼 · 칩 · 아이콘 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-write-bar__btn--camera { background: rgba(27, 26, 23, 0.05); color: #1b1a17; border-color: rgba(27, 26, 23, 0.3); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-qmark { background: rgba(27, 26, 23, 0.05); border-color: rgba(27, 26, 23, 0.25); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-icon-btn { background: rgba(27, 26, 23, 0.05); color: var(--diary-text-dim); border-color: rgba(27, 26, 23, 0.22); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__chip { background: rgba(27, 26, 23, 0.05); color: var(--diary-text-dim); border-color: rgba(27, 26, 23, 0.2); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__chip.is-active { background: var(--film-amber); color: #1a1208; border-color: var(--film-amber); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__empty { border-color: rgba(220, 122, 0, 0.5); background: rgba(255, 154, 46, 0.06); color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__empty span:last-child { color: var(--diary-text-dim); }
+/* 필름 프레임 그림자는 흰 바탕에 맞게 연하게 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__film { box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(27, 26, 23, 0.35); }
+/* 달력 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-cal-section { border-top-color: rgba(27, 26, 23, 0.18); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-weekdays span { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day:not(.has-photo) { background: rgba(27, 26, 23, 0.04); border-color: rgba(27, 26, 23, 0.12); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day__num { color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-today .diary-day__num { color: var(--film-amber-ink); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day.has-photo { box-shadow: 0 0 0 1px rgba(27, 26, 23, 0.3); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-today { box-shadow: 0 0 0 2px var(--film-amber); }
+/* 불러오는 자리(스켈레톤) */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__skeleton,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-loading { background: linear-gradient(100deg, rgba(27, 26, 23, 0.05) 30%, rgba(27, 26, 23, 0.12) 50%, rgba(27, 26, 23, 0.05) 70%) 0 0 / 200% 100%; }
