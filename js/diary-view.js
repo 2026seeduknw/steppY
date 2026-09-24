@@ -19,6 +19,8 @@
 
   // 비공개 버킷이라 경로 → 서명 URL 변환이 필요하다. 받아온 것은 여기 모아둔다.
   const photoUrls = {};
+  let editingEntry = null;   // 수정 중인 기록(없으면 새 기록)
+  let editKeepTags = [];     // 일상 태그가 아닌 옛 태그 — 수정해도 잃지 않게 들고 있는다
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
@@ -76,6 +78,12 @@
     return guestCache;
   }
   function photoUrl(path) { return photoUrls[path] || ''; }
+  const photoFailed = new Set();   // 주소를 받았는데 찾지 못한 사진 — 스켈레톤을 끝없이 돌리지 않는다
+  /** 사진이 있는 기록인데 주소가 아직 안 온 상태 */
+  function photosLoading(e) {
+    const ps = e.photos || [];
+    return ps.length > 0 && !ps.some(p => photoUrls[p]) && !ps.every(p => photoFailed.has(p));
+  }
   /** 태그 하나의 표시 정보. 일상 태그는 이모지+이름, 옛 기록의 항목 id는 항목 이름 그대로. */
   function tagInfo(id) {
     const t = EVERYDAY_MAP[id];
@@ -308,7 +316,13 @@
     }
 
     const withPhoto = entries().filter(e => (e.photos || []).some(p => photoUrl(p)));
-    if (!withPhoto.length) { slot.innerHTML = ''; return; }
+    if (!withPhoto.length) {
+      // 사진 주소를 받는 중이면 빈 칸 대신 같은 크기의 자리를 먼저 보여준다
+      slot.innerHTML = entries().some(photosLoading)
+        ? `${featuredHead('가장 최근 기록')}<div class="diary-featured__skeleton" aria-label="사진 불러오는 중"></div>` : '';
+      if (slot.innerHTML) wireQuestion(slot);
+      return;
+    }
 
     const dates = [...new Set(withPhoto.map(e => e.date))].sort().reverse();   // 최신순
     const yest = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
@@ -500,7 +514,8 @@
       const dots = shown.map(t => `<span class="diary-day__dot" style="background:${(tagInfo(t) || {}).color || '#ccc'}"></span>`).join('')
         + (overflow > 0 ? `<span class="diary-day__dot-more">+${overflow}</span>` : '');
       const hasText = !withPhoto && items.length;
-      const classes = ['diary-day',
+      const loading = !withPhoto && items.some(photosLoading);
+      const classes = ['diary-day', loading && 'is-loading',
         iso === todayIso && 'is-today',
         iso === view.selected && 'is-selected',
         withPhoto && 'has-photo'].filter(Boolean).join(' ');
@@ -533,6 +548,41 @@
   const locText = (loc) => (loc && (loc.city || loc.country))
     ? [loc.city, loc.country].filter(Boolean).join(', ') : '';
 
+  /* --------------------------------------------------------------- 미리듣기 */
+
+  // 우표의 LP를 누르면 30초 미리듣기가 재생되고 LP가 돈다. 다시 누르면 멈춘다. 한 번에 한 곡만.
+  let previewAudio = null;
+  let previewLp = null;
+  function stopPreview() {
+    if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+    if (previewLp) { previewLp.classList.remove('is-playing', 'is-loading'); previewLp = null; }
+  }
+  async function togglePreview(lp) {
+    if (previewLp === lp) { stopPreview(); return; }
+    stopPreview();
+    if (typeof SongEngine === 'undefined') return;
+    previewLp = lp;
+    lp.classList.add('is-loading');
+    const url = await SongEngine.fetchPreviewUrl(lp.dataset.track, lp.dataset.artist);
+    if (previewLp !== lp) return;   // 기다리는 사이 다른 곡을 눌렀거나 멈췄다
+    if (!url) { stopPreview(); showToast('이 곡은 미리듣기를 찾지 못했어요'); return; }
+    const audio = new Audio(url);
+    audio.volume = 0.85;
+    previewAudio = audio;
+    audio.addEventListener('ended', stopPreview);
+    try {
+      await audio.play();
+      lp.classList.remove('is-loading');
+      lp.classList.add('is-playing');
+    } catch (err) {
+      stopPreview();
+      showToast('재생하지 못했어요');
+    }
+  }
+  // 팝업을 닫거나 화면을 벗어나면 소리도 멈춘다
+  document.addEventListener('click', (ev) => { if (ev.target.closest('[data-modal-close], .modal-scrim') && !ev.target.closest('.diary-lp')) stopPreview(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopPreview(); });
+
   /* 노래 무드 → 우표 빛깔. 무드가 저장돼 있지 않은 옛 기록은 태그·날씨·시간으로 다시 계산한다. */
   const MOOD_COLOR = { cozy: '#E8A66B', energetic: '#F26B5B', romantic: '#E77FA8', calm: '#5FB3B0', adventurous: '#5DB37A', melancholic: '#7A82D6' };
   function moodColor(e) {
@@ -558,15 +608,18 @@
     const urls = (e.photos || []).map(photoUrl).filter(Boolean);
     const heading = e.title || e.body || '';
     const alt = esc(heading || `${e.date} 기록 사진`);
-    const art = (e.song && e.song.art) || (e.nowPlaying && e.nowPlaying.art) || '';
+    const lpTrack = (e.song && e.song.art) ? e.song : (e.nowPlaying && e.nowPlaying.art) ? e.nowPlaying : null;
+    const art = lpTrack ? lpTrack.art : '';
     let photo;
-    if (!urls.length) {
+    if (!urls.length && photosLoading(e)) {
+      photo = `<div class="diary-stamp__skeleton" aria-label="사진 불러오는 중"></div>`;
+    } else if (!urls.length) {
       photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p></div>`;
     } else {
       photo = `<div class="diary-entry__photo-wrap">
         <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
         ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
-        ${art ? `<span class="diary-lp" style="background-image:url('${art}')" aria-hidden="true"></span>` : ''}
+        ${art ? `<button type="button" class="diary-lp" data-track="${esc(lpTrack.name)}" data-artist="${esc(lpTrack.artist)}" style="background-image:url('${art}')" aria-label="${esc(lpTrack.name)} 30초 미리듣기"></button>` : ''}
       </div>`;
     }
     const backs = urls.slice(1, 3).map((u, k) =>
@@ -643,7 +696,10 @@
           ${(e.song || e.nowPlaying) ? '<div class="diary-ticket-perf"></div>' : ''}
           ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
-          ${AppState.isAuthed ? `<button type="button" class="diary-entry__delete-link" data-del="${esc(e.id)}">이 기록 삭제</button>` : ''}
+          ${AppState.isAuthed ? `<div class="diary-entry__actions">
+            <button type="button" class="diary-entry__edit-link" data-edit="${esc(e.id)}">수정</button>
+            <button type="button" class="diary-entry__delete-link" data-del="${esc(e.id)}">이 기록 삭제</button>
+          </div>` : ''}
         </div>
       </div>`;
   }
@@ -666,10 +722,24 @@
         });
       }
     });
+    container.querySelectorAll('.diary-lp').forEach(lp => {
+      lp.addEventListener('click', (ev) => { ev.stopPropagation(); togglePreview(lp); });
+    });
+    container.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const entry = items.find(x => x.id === btn.dataset.edit);
+        if (!entry || !AppState.isAuthed) return;
+        stopPreview();
+        const scrim = document.getElementById('dayModalScrim');
+        if (scrim) closeModal(scrim);
+        openEntryModal(null, null, entry);
+      });
+    });
     container.querySelectorAll('[data-del]').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!AppState.isAuthed) return;
         if (!window.confirm('이 기록을 삭제할까요? 되돌릴 수 없어요.')) return;
+        stopPreview();
         AppState.deleteJournalEntry(btn.dataset.del);
         const scrim = document.getElementById('dayModalScrim');
         if (scrim) closeModal(scrim);
@@ -768,6 +838,7 @@
     if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); return; }
     const map = await AppState.signPhotoPaths(paths);
     Object.assign(photoUrls, map);
+    paths.forEach(p => { if (!map[p]) photoFailed.add(p); });
     renderFeatured();
     renderMonth();
     renderSide();
@@ -786,13 +857,15 @@
     return scrim;
   }
 
-  function openEntryModal(initialFile, prompt) {
+  function openEntryModal(initialFile, prompt, edit) {
     // 원본은 파견 기간 밖을 막았지만, 여기서는 출국 전 기록이 핵심 용도라 막지 않는다.
-    const targetDate = view.selected || todayIso;
-    pendingPhotos = [];
+    editingEntry = edit || null;
+    const targetDate = edit ? edit.date : (view.selected || todayIso);
+    pendingPhotos = edit ? (edit.photos || []).map(p => ({ path: p, url: photoUrl(p) })) : [];
     pendingLocation = null;
     pendingWeather = null;
-    pendingNowPlaying = null;
+    pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
+    editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
     const scrim = ensureScrim('entryModalScrim');
     scrim.innerHTML = `
@@ -800,8 +873,8 @@
         <div class="diary-sheet__handle"></div>
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <div class="diary-modal-header">
-          <h2>${targetDate}</h2>
-          <p class="diary-modal-header__note">${departurePhaseFor(targetDate) === 'abroad' ? '파견 중 기록' : '출국 전 기록'}</p>
+          <h2>${edit ? '기록 수정' : targetDate}</h2>
+          <p class="diary-modal-header__note">${edit ? targetDate : (departurePhaseFor(targetDate) === 'abroad' ? '파견 중 기록' : '출국 전 기록')}</p>
         </div>
         <form class="diary-form" id="entryForm">
           <div class="diary-photo-picker" id="photoPicker">
@@ -814,6 +887,7 @@
               <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
             </label>
           </div>
+          <p class="diary-form__hint" id="photoHint" hidden>사진을 누르면 대표 사진(우표에 크게 나오는 사진)이 돼요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
           <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
@@ -828,18 +902,28 @@
             <span class="diary-form__label">그때 듣던 노래 (선택)</span>
             <div id="nowPlayingPicker"></div>
           </div>
-          <span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>
+          ${edit ? '' : '<span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>'}
           <input type="hidden" name="date" value="${targetDate}">
-          <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">기록 저장</button>
+          <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
         </form>
       </div>`;
 
     wireModalDismiss(scrim);
     openModal(scrim);
     wireEntryForm(scrim);
+    if (edit) {
+      // 이미 쓴 내용을 채워 넣는다
+      const form = scrim.querySelector('#entryForm');
+      form.querySelector('[name=title]').value = edit.title || '';
+      form.querySelector('[name=caption]').value = edit.body || '';
+      (edit.tags || []).forEach(t => {
+        const chip = scrim.querySelector(`#tagGrid [data-tag="${t}"]`);
+        if (chip) { chip.classList.add('is-selected'); chip.setAttribute('aria-pressed', 'true'); }
+      });
+    }
     renderPhotoPicker(scrim);
     renderNowPlayingPicker(scrim);
-    requestLocation();
+    if (!edit) requestLocation();
 
     if (initialFile) {
       addPendingPhoto(initialFile)
@@ -903,12 +987,25 @@
     picker.querySelectorAll('.diary-photo-thumb').forEach(el => el.remove());
     pendingPhotos.forEach((p, i) => {
       const div = document.createElement('div');
-      div.className = 'diary-photo-thumb';
-      div.innerHTML = `<img src="${p.url}" alt=""><button type="button" data-remove="${i}" aria-label="사진 빼기">✕</button>`;
+      div.className = 'diary-photo-thumb' + (i === 0 ? ' is-cover' : '');
+      div.innerHTML = `<img src="${p.url}" alt="" ${i > 0 ? `data-cover="${i}" role="button" tabindex="0"` : ''}>${i === 0 ? '<span class="diary-photo-thumb__cover">대표</span>' : ''}<button type="button" data-remove="${i}" aria-label="사진 빼기">✕</button>`;
       picker.insertBefore(div, addBtn);
     });
+    const hint = scrim.querySelector('#photoHint');
+    if (hint) hint.hidden = pendingPhotos.length < 2;
     picker.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => { pendingPhotos.splice(Number(btn.dataset.remove), 1); renderPhotoPicker(scrim); });
+    });
+    // 누른 사진을 맨 앞으로 — 앞의 사진이 우표의 대표 사진이다
+    picker.querySelectorAll('[data-cover]').forEach(img => {
+      const pick = () => {
+        const [chosen] = pendingPhotos.splice(Number(img.dataset.cover), 1);
+        pendingPhotos.unshift(chosen);
+        renderPhotoPicker(scrim);
+        showToast('대표 사진으로 바꿨어요');
+      };
+      img.addEventListener('click', pick);
+      img.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') pick(); });
     });
   }
 
@@ -967,6 +1064,33 @@
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
+
+      // 수정 — 위치·날씨·오늘의 노래는 그대로 두고 글·태그·사진·그때 듣던 노래만 바꾼다
+      if (editingEntry) {
+        const target = editingEntry;
+        const keepNP = pendingNowPlaying && target.nowPlaying
+          && pendingNowPlaying.name === target.nowPlaying.name && pendingNowPlaying.artist === target.nowPlaying.artist;
+        const nextNP = keepNP ? target.nowPlaying
+          : (pendingNowPlaying && typeof SongEngine !== 'undefined')
+            ? Object.assign({ name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
+                SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
+            : null;
+        AppState.updateJournalEntry(target.id, {
+          title, body,
+          photos: pendingPhotos.map(p => p.path),
+          tags: [...tags, ...editKeepTags.filter(t => !tags.includes(t))],
+          nowPlaying: nextNP
+        });
+        editingEntry = null;
+        pendingPhotos = [];
+        pendingNowPlaying = null;
+        closeModal(scrim);
+        view.selected = date;
+        renderAll();
+        showToast('기록을 수정했어요');
+        openDayModal(date);
+        return;
+      }
 
       const nowPlaying = (pendingNowPlaying && typeof SongEngine !== 'undefined')
         ? Object.assign(

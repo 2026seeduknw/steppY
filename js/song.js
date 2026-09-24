@@ -268,6 +268,25 @@ const SongEngine = (function () {
     }
   }
 
+  // 30초 미리듣기 — iTunes 검색이 곡마다 previewUrl을 준다. 같은 곡은 한 번만 찾는다.
+  const previewCache = {};
+  async function fetchPreviewUrl(name, artist) {
+    const key = `${artist}|${name}`;
+    if (key in previewCache) return previewCache[key];
+    let url = null;
+    try {
+      const q = encodeURIComponent(`${artist} ${name}`.trim());
+      const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        const hit = (data.results || []).find((r) => r.previewUrl);
+        url = hit ? hit.previewUrl : null;
+      }
+    } catch (e) { url = null; }
+    previewCache[key] = url;
+    return url;
+  }
+
   // 매핑 안 된 나라(폴백) — 글로벌 인기 차트
   async function fetchGlobalCandidates() {
     try {
@@ -401,6 +420,6 @@ const SongEngine = (function () {
 
   return {
     computeMood, fetchWeather, fetchSongRecommendation, searchTracks, buildSongLinks,
-    fetchAlbumArt, weatherLabel, timeLabel
+    fetchAlbumArt, fetchPreviewUrl, weatherLabel, timeLabel
   };
 })();

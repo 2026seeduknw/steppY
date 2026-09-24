@@ -1,6 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Gothic+A1:wght@700;900&display=swap');
-@import url('https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css');
-@import url('https://hangeul.pstatic.net/hangeul_static/css/maru-buri.css');
+/* 글꼴은 앱 안(assets/fonts)에 넣어 둔다 — 인터넷 없이도, iOS 앱 안에서도 같은 모양으로 뜬다.
+   마루부리(네이버, OFL) Bold 한 굵기 · SUIT(SUNN, OFL) 가변 굵기 */
+@font-face { font-family: 'MaruBuriBold'; src: url('../../assets/fonts/MaruBuri-Bold.woff2') format('woff2'); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: 'SUIT Variable'; src: url('../../assets/fonts/SUIT-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
 /* Travel Journey App reference theme */
 :root {
   /* FAB 바와 각종 모달은 document.body 바로 아래에 붙는다. 이 팔레트를
@@ -970,3 +971,42 @@ body[data-page="journal"][data-tod="night"] .diary-qmark { background: rgba(255,
 }
 body[data-page="journal"] .diary-featured__head .diary-featured__eyebrow { color: #14213A; }
 body[data-page="journal"][data-tod="night"] .diary-featured__head .diary-featured__eyebrow { color: #EEF2FB; }
+
+/* ==========================================================================
+   미리듣기 LP · 수정/삭제 줄 · 대표 사진 · 스켈레톤
+   ========================================================================== */
+/* LP는 이제 버튼 — 평소엔 멈춰 있고, 재생 중에만 돈다 */
+button.diary-lp { padding: 0; cursor: pointer; animation: none; }
+button.diary-lp.is-playing { animation: diary-lp-spin 3.2s linear infinite; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.4); }
+button.diary-lp::before {
+  content: '▶'; position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(0, 0, 0, 0.32); color: #fff; font-size: 13px; padding-left: 2px; transition: opacity 160ms;
+}
+button.diary-lp.is-playing::before { opacity: 0; }
+button.diary-lp.is-loading { animation: diary-lp-pulse 900ms ease-in-out infinite; }
+button.diary-lp.is-loading::before { content: '…'; padding: 0; }
+@keyframes diary-lp-pulse { 50% { transform: scale(0.92); opacity: 0.8; } }
+button.diary-lp::after { z-index: 2; }
+
+/* 수정 · 삭제 */
+.diary-entry__actions { align-self: center; display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 var(--space-4); }
+.diary-entry__actions .diary-entry__delete-link { margin: 0; align-self: auto; }
+.diary-entry__edit-link { padding: 8px 14px; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.6); font: inherit; font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); cursor: pointer; }
+.diary-entry__edit-link:hover { background: #fff; }
+
+/* 대표 사진 */
+.diary-photo-thumb { position: relative; }
+.diary-photo-thumb img[data-cover] { cursor: pointer; }
+.diary-photo-thumb.is-cover { box-shadow: 0 0 0 2px var(--ink-900); border-radius: var(--radius-md); }
+.diary-photo-thumb__cover { position: absolute; left: 4px; bottom: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--ink-900); color: #fff; font-size: 10px; font-weight: 700; pointer-events: none; }
+
+/* 스켈레톤 — 사진 주소를 받는 동안 같은 크기의 자리를 흐릿하게 */
+@keyframes diary-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.diary-featured__skeleton, .diary-stamp__skeleton, .diary-day.is-loading {
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.28) 30%, rgba(255, 255, 255, 0.62) 50%, rgba(255, 255, 255, 0.28) 70%) 0 0 / 200% 100%;
+  animation: diary-shimmer 1.4s linear infinite;
+}
+.diary-featured__skeleton { height: 440px; border-radius: 36px; border: 7px solid rgba(255, 255, 255, 0.4); background-clip: padding-box; }
+.diary-stamp__skeleton { aspect-ratio: 4 / 5; }
+.diary-day.is-loading { border: 1px solid rgba(255, 255, 255, 0.6); }
+@media (prefers-reduced-motion: reduce) { .diary-featured__skeleton, .diary-stamp__skeleton, .diary-day.is-loading, button.diary-lp.is-loading { animation: none; } }
