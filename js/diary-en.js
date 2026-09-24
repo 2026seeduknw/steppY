@@ -57,7 +57,7 @@
     '국제학생 지원부서': 'SUPPORT OFFICE', '캠퍼스 시설': 'FACILITIES', '문화 적응 경험': 'CULTURE', '도움 받을 곳': 'RESOURCES', '기타 및 한마디': 'NOTES'
   };
   // 앱바 제목처럼 자리에 따라 뜻이 다른 글자
-  const BY_CLASS = [['appbar__title', { '기록하기': 'RECORD' }]];
+  const BY_CLASS = [['appbar__title', { '기록하기': 'RECORD' }], ['tabbar__item', { '기록하기': 'RECORD' }]];
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   const ym = (y, m) => `${String(y).slice(2)}.${MONTHS[Number(m) - 1]}`;   // 2026, 9 → 26.SEP
 
