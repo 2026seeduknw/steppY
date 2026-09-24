@@ -50,7 +50,9 @@ html { background: var(--oxford); }
 body {
   /* 데스크탑 전용 잠금(min-width:1120px) 해제 — 앱은 좁은 폭이 기본이다 */
   min-width: 0;
-  background: var(--cloud-50);
+  /* 랜딩·로그인·온보딩과 같은 흰 바탕. 예전의 --cloud-50 은 그 화면들과
+     나란히 놓이면 한 톤 가라앉아 보인다. */
+  background: #fff;
   /* 콘텐츠가 짧은 화면(예: 학교를 아직 고르지 않은 Mentor's Step)에서 body가
      뷰포트보다 작아지면, 데스크탑 기기 컬럼용으로 html에 깔아둔 oxford 배경이
      아래쪽에 그대로 드러난다. 최소 한 화면은 채우게 한다. */
@@ -62,10 +64,11 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* 픽셀 구름 배경은 웹 버전의 무드였다. 앱은 화면당 정보 밀도가 높아 그대로 두면
-   본문 대비가 떨어진다 → 크게 낮춰 질감만 남긴다. */
-body[data-page]::before { opacity: 0.12; }
-body[data-page="credits"]::before { opacity: 0.14; }
+/* 픽셀 구름 배경은 웹 버전의 무드다. 앱에서는 12~14% 로 낮춰 두었는데,
+   그 정도면 보이지도 않으면서 흰 바탕만 미세하게 탁하게 만든다.
+   앱에서는 끈다 — 이미지와 규칙(components.css)은 웹 버전을 위해 남겨 둔다.
+   50초짜리 무한 애니메이션도 함께 멎는다. */
+body[data-page]::before { display: none; }
 
 .page-shell { max-width: 100%; padding: 0 var(--space-4); }
 
@@ -101,7 +104,7 @@ body[data-page="credits"]::before { opacity: 0.14; }
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  background: rgba(255, 255, 255, 0.9);
+  background: #fff;
   backdrop-filter: saturate(160%) blur(14px);
   border-bottom: 1px solid var(--line-100);
 }
@@ -170,8 +173,7 @@ body[data-page="credits"]::before { opacity: 0.14; }
   height: var(--tabbar-h);
   padding: 6px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: saturate(180%) blur(20px);
+  background: #fff;
   box-shadow: 0 12px 32px rgba(35, 53, 77, 0.18), 0 0 0 1px rgba(35, 53, 77, 0.05);
 }
 
@@ -188,7 +190,8 @@ body[data-page="credits"]::before { opacity: 0.14; }
   transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
 }
 .tabbar__icon { width: 21px; height: 21px; flex: 0 0 auto; }
-.tabbar__item.is-active { background: var(--ink-900); color: #fff; }
+/* 지금 보고 있는 탭도 "고른 것" 이다 — 칩·진행 표시와 같은 색을 쓴다 */
+.tabbar__item.is-active { background: var(--key-500); color: var(--key-ink); }
 .tabbar__item:not(.is-active):active { background: rgba(35, 53, 77, 0.07); }
 
 
@@ -844,21 +847,27 @@ body[data-page="auth"] {
   color: inherit;
 }
 .todo-pill__ring { flex: 0 0 auto; display: flex; }
-.todo-pill__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+/* "To-Do 0/0" — 이름과 숫자를 위아래로 쌓았더니 46px 링 옆에서 둘 다 작아졌다.
+   한 줄에 나란히 두면 이름을 제목 크기로 키울 자리가 생긴다. 베이스라인을 맞춰야
+   로고 글씨체(SVG)와 숫자가 같은 줄에 앉은 것처럼 보인다. */
+.todo-pill__text {
+  flex: 1; min-width: 0;
+  display: flex; align-items: baseline; gap: var(--space-2);
+}
 .todo-pill__count { font-family: var(--font-mono); line-height: 1.1; color: var(--ink-900); }
 .todo-pill__count strong { font-size: 1.5rem; font-weight: 800; }
 .todo-pill__count span { font-size: var(--fs-body); color: var(--ink-400); }
-.todo-pill__label { font-size: var(--fs-small); color: var(--ink-600); }
+.todo-pill__label.brand-head { font-size: 1.25rem; }
 .todo-pill__caret { flex: 0 0 auto; color: var(--ink-400); font-size: 0.9rem; padding-right: var(--space-2); }
 
-/* 레퍼런스의 노란 원형 + 버튼 */
+/* 원형 + 버튼 — 이 줄에서 누를 수 있는 곳이 여기뿐이라 키 컬러를 준다 */
 .todo-pill__add {
   flex: 0 0 auto;
   width: 46px; height: 46px;
   border: none;
   border-radius: 50%;
-  background: var(--moonlight, #F0ECDD);
-  color: var(--ink-900);
+  background: var(--key-500);
+  color: var(--key-ink);
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
@@ -904,7 +913,9 @@ body[data-page="auth"] {
    ========================================================================== */
 
 body[data-page="onboarding"] {
-  background: var(--cloud-50);
+  /* 랜딩·로그인과 같은 흰 바탕. 예전의 연회색(--cloud-50)은 그 둘 사이에
+     끼면 화면이 한 톤 가라앉아 보인다. */
+  background: #fff;
   padding-bottom: 0;
   display: flex;
   flex-direction: column;
@@ -914,13 +925,13 @@ body[data-page="onboarding"] {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   height: calc(var(--appbar-h) + var(--safe-top));
-  padding: var(--safe-top) var(--space-3) 0;
-  background: var(--cloud-50);
+  padding: var(--safe-top) var(--space-4) 0;
+  background: #fff;
 }
 .ob__back {
   width: 40px; height: 40px;
@@ -938,11 +949,14 @@ body[data-page="onboarding"] {
   cursor: pointer;
 }
 
-/* 진행 표시는 점이 아니라 채워지는 막대 — 남은 단계 수가 한눈에 보인다 */
-.ob__brand {
-  font-family: var(--font-display);
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em;
-  color: var(--ink-400);
+/* 랜딩·로그인 상단과 같은 로고 묶음 — 어디서 왔는지 알아보게 한다 */
+.ob__brand { display: inline-flex; align-items: center; gap: 7px; }
+.ob__mark { width: 26px; height: 26px; border-radius: 50%; }
+.ob__wordmark {
+  display: block;
+  height: 19px;
+  width: auto;
+  color: var(--key-ink);   /* 이 크기에서는 테두리를 두르면 획이 메워진다 */
 }
 .ob__progress { display: flex; gap: 4px; }
 .ob__dot {
@@ -1021,6 +1035,11 @@ body[data-page="onboarding"] {
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
 .ob__hint { font-size: var(--fs-micro); color: var(--ink-400); line-height: 1.5; word-break: keep-all; }
 
+/* 로그인 화면의 기본 버튼과 같은 네이비 — 두 화면이 이어서 나온다.
+   버튼은 <main class="ob"> 밖의 .ob__footer 안에 있다. */
+.ob__footer .btn--primary { background: var(--ink-900); color: #fff; }
+.ob__footer .btn--primary:hover { background: var(--oxford); color: #fff; }
+
 .ob__error {
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);
@@ -1035,7 +1054,8 @@ body[data-page="onboarding"] {
   position: sticky;
   bottom: 0;
   padding: var(--space-3) var(--space-4) calc(var(--safe-bottom) + var(--space-4));
-  background: linear-gradient(to top, var(--cloud-50) 70%, transparent);
+  /* 페이지가 흰 바탕이라 그라데이션도 흰색이어야 한다 — 회색이면 띠가 생긴다 */
+  background: linear-gradient(to top, #fff 70%, rgba(255,255,255,0));
 }
 .ob__footer .btn { height: 52px; }
 
@@ -1115,7 +1135,10 @@ body[data-page="onboarding"] {
   top: 0;
   left: 0;
   height: 26px;
-  background: var(--sky-700);
+  /* 걸어온 발자국은 본문 남색. 하늘색으로 찍어 봤는데, 발자국 하나가 2~3px라
+     그 크기에서는 옅은 색이 자국이 아니라 얼룩처럼 보였다. 지금 서 있는 칸
+     (.journey__node.is-current)만 하늘색으로 남겨서 눈이 거기로 간다. */
+  background: var(--ink-900);
   -webkit-mask: var(--journey-steps-mask);
   mask: var(--journey-steps-mask);
   transition: width var(--dur-base) var(--ease-out);
@@ -1130,13 +1153,14 @@ body[data-page="onboarding"] {
   background: var(--cloud-0);
   box-shadow: inset 0 0 0 2.5px var(--line-200);
 }
-.journey__node.is-done { box-shadow: inset 0 0 0 2.5px var(--sky-500); }
+.journey__node.is-done { box-shadow: inset 0 0 0 2.5px var(--key-500); }
+/* 지금 서 있는 칸. 하늘색은 배경으로만 쓰고 글자는 올리지 않는다(대비 1.6:1). */
 .journey__node.is-current {
   width: 13px; height: 13px;
   top: 6px;
   margin-left: -6.5px;
-  background: var(--sky-700);
-  box-shadow: 0 0 0 3px rgba(62, 102, 144, 0.18);
+  background: var(--key-500);
+  box-shadow: 0 0 0 3px rgba(18, 229, 226, 0.22);
 }
 
 /* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
@@ -1517,50 +1541,23 @@ a.todo-pill__add { text-decoration: none; }
 
 body[data-page="prepare"],
 body[data-page="home"] {
-  --page-bg: url('../assets/bg/campus.jpg');
-  --glass-veil: rgba(244, 247, 251, 0.44);
-  --glass-card: rgba(255, 255, 255, 0.66);
-  --glass-line: rgba(255, 255, 255, 0.75);
-  /* 배경은 아래 ::after(고정 레이어)가 그린다. body가 불투명하면 그 레이어를
-     덮어버려 사진이 안 보인다. background-attachment: fixed 로 body에 직접
-     깔지 않는 이유는 iOS WKWebView에서 그 속성이 제대로 동작하지 않아서다. */
-  background: transparent;
+  /* 랜딩·로그인·온보딩이 모두 흰 바탕이라 앱 화면만 사진이면 톤이 갈린다.
+     사진과 유리 카드를 걷고 흰 바탕 + 헤어라인 카드로 통일한다.
+     되돌리려면 --page-bg 에 사진을 넣고 아래 ::after 를 되살리면 된다. */
+  --glass-card: #fff;
+  --glass-line: var(--line-100);
+  background: #fff;
 }
 
-/* 배경은 고정해서 스크롤해도 하늘이 따라 흐르지 않게 한다 */
-body[data-page="prepare"]::after,
-body[data-page="home"]::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  /* 맨 위를 두껍게 덮는다. 홈 상단의 인사말은 카드 밖에 맨글자로 놓여서,
-     사진의 어두운 구간과 겹치면 읽히지 않는다. 사진이 가장 잘 보이는 구간은
-     어차피 카드에 가려지는 가운데다. */
-  /* campus.jpg 는 위 절반이 맑은 하늘이라 원래도 밝다 — 인사말 자리는 살짝만
-     덮어 사진을 살리고, 잔디·계단·사람이 몰려 있는 아래쪽을 두껍게 덮는다.
-     거기서 카드가 시작하는데, 디테일이 많으면 유리 카드 뒤가 지저분해진다. */
-  background-image: linear-gradient(180deg,
-      rgba(244,247,251,.34) 0%,
-      rgba(244,247,251,.22) 24%,
-      rgba(244,247,251,.26) 46%,
-      var(--glass-veil) 60%,
-      rgba(244,247,251,.88) 100%),
-    var(--page-bg);
-  /* cover + center top 이면 세로가 딱 맞아 사진 전체가 들어오는데, 이 사진은
-     주제(잔디·길·건물)가 아래 절반에 있어서 위 20%(카드가 없는 유일한 구간)에는
-     빈 하늘만 남았다. 세로를 140%로 키우고 아래를 기준으로 붙여 하늘을 덜어낸다.
-     인사말이 놓이는 자리에는 여전히 수평선 위 흐린 하늘이 와서 글자를 가리지 않는다. */
-  background-size: cover, auto 140%;
-  background-position: center top, center bottom;
-}
-@media (min-width: 900px) {
-  body[data-page="prepare"]::after,
-  body[data-page="home"]::after { left: 50%; right: auto; width: var(--app-width); transform: translateX(-50%); }
-}
 /* 픽셀 구름 텍스처와 겹치면 배경이 지저분해진다 */
 body[data-page="prepare"]::before,
 body[data-page="home"]::before { display: none; }
+
+/* 앱바·탭바는 뒤가 비치는 전제로 반투명이었다. 흰 바탕에서는 비칠 것이
+   없으므로 불투명으로 둔다 — 반투명은 스크롤할 때 경계만 흐릿해진다. */
+body[data-page="prepare"] .app-nav,
+body[data-page="home"] .app-nav { background: #fff; }
+body[data-page="home"] .tabbar { background: #fff; }
 
 /* ---- 카드들을 유리로 ---- */
 body[data-page="prepare"] .card,
@@ -1571,11 +1568,11 @@ body[data-page="home"] .card,
 body[data-page="home"] .credits-cta,
 body[data-page="home"] .wishlist-slot,
 body[data-page="home"] .search-cta {
+  /* 유리(반투명 + blur)는 뒤에 사진이 있을 때만 뜻이 있다. 흰 바탕에서는
+     흐릿한 테두리만 남아 지저분해진다 — 불투명 카드 + 헤어라인으로 바꾼다. */
   background: var(--glass-card);
-  backdrop-filter: saturate(150%) blur(16px);
-  -webkit-backdrop-filter: saturate(150%) blur(16px);
   border: 1px solid var(--glass-line);
-  box-shadow: 0 6px 22px rgba(28, 46, 78, 0.10);
+  box-shadow: 0 2px 10px rgba(28, 46, 78, 0.05);
 }
 
 /* 확정 학교 카드와 D-day 카드는 원래 어두운 면이다. 유리로 바꾸면 대비가 죽으니
@@ -1677,31 +1674,25 @@ body[data-page="prepare"] .leg-card {
 }
 
 /* ------------------------------------------------- 학교 상세 시트의 카드들
-   ①지역 ②날씨 … 패널이 불투명한 회색이라 시트 안이 답답했다. 시트와 그 안의
-   카드를 모두 반투명으로 바꿔 뒤가 비치게 한다.
+   예전에는 시트와 그 안의 카드가 모두 반투명 유리였다(회색 면이 답답해서 뒤가
+   비치게 만든 것). 앱 전체가 흰 바탕이 되면서 비칠 뒤가 없어졌고, 옅은 파랑
+   틴트만 남아 화면마다 색이 달라 보였다. 이제 전부 흰 카드다.
 
-   시트 자체를 먼저 반투명으로 만들어야 안쪽 카드의 "비침"이 의미가 생긴다.
-   불투명한 흰 시트 위에서는 무엇을 올려도 비칠 뒤가 없다. */
+   바탕이 다 희면 카드 경계가 사라지므로 **테두리가 유일한 구분선**이다.
+   지도 카드만 예외 — 지도 자체가 색이 강해서 카드가 알아서 구분된다. */
 .modal-panel {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: saturate(170%) blur(24px);
-  -webkit-backdrop-filter: saturate(170%) blur(24px);
+  background: var(--cloud-0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* 회색 면을 없애지 않고 반투명 틴트로 바꾼다. 완전히 투명하게 두면 시트 배경과
-   구분이 사라져서 어디부터 어디까지가 한 항목인지 안 보인다. */
-.modal-panel .info-panel {
-  background: rgba(223, 231, 243, 0.5);
-  border-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: saturate(140%) blur(10px);
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
-}
+.modal-panel .info-panel,
 .modal-panel .score-card,
 .modal-panel .orbit-card {
-  background: rgba(255, 255, 255, 0.52);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  backdrop-filter: saturate(140%) blur(10px);
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  background: var(--cloud-0);
+  border: 1px solid var(--line-100);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: none;
 }
 
@@ -1897,9 +1888,11 @@ textarea {
    같은 층위의 카드 제목인데 마크업이 달라서 크기가 갈렸다.
    지도·날씨·생활비는 .info-panel h3 (13px / 700), '살기 어떤 곳인가'만
    .score-card 안의 .section-title h2 (16px / 800) 라 혼자 커 보였다.
-   카드가 나란히 쌓이는 화면이라 제목은 하나로 맞춘다. */
-.school-modal .info-panel h3,
-.school-modal .score-card .section-title h2 {
+   카드가 나란히 쌓이는 화면이라 제목은 하나로 맞춘다.
+   .brand-head 는 일부러 크게 띄우는 제목이라 여기서 뺀다 — 특이도로 싸우는
+   대신 이 규칙이 애초에 잡지 않게 한다. */
+.school-modal .info-panel h3:not(.brand-head),
+.school-modal .score-card .section-title h2:not(.brand-head) {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.01em;

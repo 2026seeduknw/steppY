@@ -45,7 +45,7 @@ function renderPrepareHero() {
           <h2>아직 확정한 학교가 없어요</h2>
           <p>학교 찾기에서 지망 학교를 선택하고 확정하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요</p>
         </div>
-        <a href="search.html" class="btn btn--primary">학교 찾기로 이동</a>
+        <a href="search.html" class="btn btn--accent">학교 찾기로 이동</a>
       </div>`;
     document.getElementById('checklistSection').style.display = 'none';
     document.getElementById('livingSection').style.display = 'none';

@@ -30,6 +30,8 @@ function openSchoolModal(schoolId, opts = {}) {
   if (!school) return;
   const scrim = ensureSchoolModalScrim();
   scrim.innerHTML = schoolModalTemplate(school, opts);
+  // 카드 제목의 알파벳을 로고 글씨체로 (js/wordmark-text.js)
+  if (typeof paintWordmarkText === 'function') paintWordmarkText(scrim);
   wireModalCloseButtons(scrim);
   wireSchoolModalActions(scrim, school, opts);
   openModal(scrim);
@@ -114,6 +116,27 @@ function quotaLabel(school) {
  * 싱가포르는 'Singapore'). 그대로 이으면 "홍콩 · 香港 Hong Kong" 처럼 같은 말이
  * 두 번 나오므로, 도시가 나라 이름을 품고 있으면 나라만 남긴다.
  */
+/**
+ * 로고 글씨체로 조판할 지명. 아틀라스에 A–Z, a–z, ! 밖에 없어서 **아스키로 쓸 수
+ * 있는 형태**만 남긴다.
+ *   "香港 Hong Kong" → "Hong Kong"   (한자·영문이 같이 든 칸은 영문만)
+ *   "München"       → "Munchen"     (분음 부호는 떼어 낸다 — 글자 하나만 본문
+ *                                    글씨체로 튀어나오는 것보다 낫다)
+ *   "臺北市"         → "Taiwan"      (남는 라틴 문자가 없으면 나라 이름으로)
+ * 나라 이름(한글)을 앞에 붙이지 않는 이유는 제목 전체가 이 글씨체로 읽히게 하려고.
+ */
+function schoolPlaceEn(school) {
+  const ascii = (school.campusCity || school.city || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // Göteborg → Goteborg
+    .replace(/\([^)]*\)/g, ' ')                         // Amherst(MA) → Amherst
+    .split('/')[0]                                      // Espoo/Helsinki → Espoo
+    .replace(/[^A-Za-z -]/g, ' ')                       // 한자·마침표: Washington D.C. → Washington DC
+    .replace(/\s+/g, ' ')
+    .trim();
+  // 값이 아닌 칸("N/A( , )", "(Inholland )")은 글자가 한두 개만 남는다
+  return ascii.length >= 2 ? ascii : (school.countryEn || school.country || '');
+}
+
 function schoolPlaceLabel(school) {
   const country = school.country || '';
   const city = (school.city || '').trim();
@@ -180,7 +203,7 @@ function climatePanelHtml(school) {
   if (!seasons.length) {
     return `
       <section class="info-panel info-panel--wide climate-panel">
-        <h3>Weather of ${schoolPlaceLabel(school)}!</h3>
+        <h3 class="brand-head" data-wordmark="">Weather of ${schoolPlaceEn(school)} !</h3>
         <p class="info-panel__text">이 학교의 계절별 기온 자료가 아직 없어요.</p>
       </section>`;
   }
@@ -217,7 +240,7 @@ function climatePanelHtml(school) {
 
   return `
     <section class="info-panel info-panel--wide climate-panel">
-      <h3>Weather of ${schoolPlaceLabel(school)}!</h3>
+      <h3 class="brand-head" data-wordmark="">Weather of ${schoolPlaceEn(school)} !</h3>
       <ul class="climate-list">${rows}</ul>
       ${seoulRain}
       <p class="climate-caption">${mySeason && seasons.includes(mySeason)
@@ -275,11 +298,11 @@ function livingCostPanelHtml(school) {
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   return `
     <section class="info-panel info-panel--wide">
-      <h3>Cost of living, 얼마나 들까?</h3>
+      <h3 class="brand-head" data-wordmark="">Cost of living, 얼마나 들까 ?</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
-      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치라 실제 비용과 다를 수 있어요</p>
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요. 여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
     </section>`;
 }
 
@@ -321,7 +344,6 @@ function schoolModalTemplate(school, opts = {}) {
       </button>` : ''}
 
       <section class="info-panel info-panel--map">
-        <h3>${schoolPlaceLabel(school)}</h3>
         <div class="map-embed">
           <iframe src="${mapEmbedUrl(school)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${school.name} 지도"></iframe>
         </div>

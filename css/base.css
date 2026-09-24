@@ -14,7 +14,7 @@ body {
   font-size: var(--fs-body);
   line-height: 1.55;
   color: var(--ink-900);
-  background: var(--cloud-50);
+  background: #fff;
   min-width: 1120px; /* 데스크탑 전용 스코프 */
 }
 

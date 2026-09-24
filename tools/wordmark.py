@@ -24,7 +24,7 @@ from PIL import Image
 
 HERE   = pathlib.Path(__file__).parent
 ASSETS = HERE.parent / 'assets'
-ATLAS  = HERE / 'wordmark-glyphs.json'
+ATLAS  = ASSETS / 'wordmark-glyphs.json'   # 앱에도 실린다 — js/wordmark-text.js 가 같은 파일을 읽는다
 
 # 어느 시트의 몇 번째 줄에 어떤 글자가 있는지. 줄 번호는 --list 로 확인한다.
 SHEETS = [

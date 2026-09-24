@@ -13,6 +13,7 @@ function renderTodoCard(mount, options) {
   const expanded = !!opts.expanded;
 
   mount.innerHTML = todoCardTemplate(adding, expanded);
+  if (typeof paintWordmarkText === 'function') paintWordmarkText(mount);
   const rerender = (next) => renderTodoCard(mount, Object.assign({ adding, expanded }, next));
 
   mount.querySelector('[data-todo-expand]').addEventListener('click', () => {
@@ -62,11 +63,11 @@ function todoCardTemplate(adding, expanded) {
       <button type="button" class="todo-pill__summary" data-todo-expand
               aria-expanded="${expanded}" aria-label="할 일 ${done}/${total} 완료">
         <span class="todo-pill__ring">
-          ${progressRingHtml(percent, { size: 46, color: percent === 100 ? 'var(--mint-500)' : 'var(--sky-500)' })}
+          ${progressRingHtml(percent, { size: 46, color: 'var(--key-500)' })}
         </span>
         <span class="todo-pill__text">
+          <span class="todo-pill__label brand-head" data-wordmark="">To-Do</span>
           <span class="todo-pill__count"><strong>${done}</strong><span>/${total}</span></span>
-          <span class="todo-pill__label">할 일</span>
         </span>
         <span class="todo-pill__caret" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
       </button>

@@ -223,11 +223,11 @@ function scoreCardHtml(school, opts) {
   return `
     <div class="card score-card">
       <div class="section-title">
-        <div><h2>${numbered && typeof schoolPlaceLabel === 'function'
-          ? `How is ${schoolPlaceLabel(school)}?`
-          : '살기 어떤 곳인가'}</h2></div>
+        <div>${numbered && typeof schoolPlaceEn === 'function'
+          ? `<h2 class="brand-head" data-wordmark="">How is ${schoolPlaceEn(school)} ?</h2>`
+          : '<h2>살기 어떤 곳인가</h2>'}</div>
       </div>
-      <p class="score-card__note">막대가 길수록 다른 파견교보다 좋다는 뜻이에요. 막대 아래 한 줄은 그 막대가 나온 실제 숫자고요.</p>
+      <p class="score-card__note">생활 점수를 steppY가 수치화해서 알려드려요. 막대 아래 한 줄은 그 점수가 나온 실제 숫자예요.</p>
       <div class="score-card__body">
         ${radarChartSvg(scores)}
         <div class="score-rows">${scoreRowsHtml(scores, school)}</div>
