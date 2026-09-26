@@ -857,7 +857,9 @@ body[data-page="auth"] {
 .todo-pill__count { font-family: var(--font-mono); line-height: 1.1; color: var(--ink-900); }
 .todo-pill__count strong { font-size: 1.5rem; font-weight: 800; }
 .todo-pill__count span { font-size: var(--fs-body); color: var(--ink-400); }
-.todo-pill__label.brand-head { font-size: 1.25rem; }
+/* To-Do 만 하늘색 로고 글씨체 대신 원래 남색으로 되돌린다 — 배경(--sky-100)이
+   이미 하늘색이라 글자까지 같은 색이면 묻힌다. */
+.todo-pill__label.brand-head { font-size: 1.25rem; color: var(--ink-900); -webkit-text-stroke: 0; }
 .todo-pill__caret { flex: 0 0 auto; color: var(--ink-400); font-size: 0.9rem; padding-right: var(--space-2); }
 
 /* 원형 + 버튼 — 이 줄에서 누를 수 있는 곳이 여기뿐이라 키 컬러를 준다 */
@@ -1244,6 +1246,10 @@ a.todo-pill__add { text-decoration: none; }
   font-size: 16px;
 }
 .score-prompt__field input::placeholder { font-size: var(--fs-small); }
+/* select 는 예외 — iOS 확대 버그는 글자를 입력하는 캐럿이 있는 input/textarea 에서만
+   생긴다. select 는 네이티브 휠 피커로 열려서 뷰포트를 확대하지 않으니, 옆 칸
+   예시 숫자(13px)에 맞춰 내려도 안전하다. */
+.score-prompt__field select { font-size: var(--fs-small); }
 .score-prompt__form .btn { flex: 0 0 auto; height: 38px; padding: 0 var(--space-3); white-space: nowrap; }
 
 /* 목표 시뮬레이션(로그인 상태)의 입력도 같은 크기로 */

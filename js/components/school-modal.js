@@ -384,15 +384,14 @@ function schoolModalTemplate(school, opts = {}) {
 function confirmWarningTemplate(school, overwriting) {
   return `
     <div class="confirm-warning">
-      <p class="confirm-warning__title">⚠️ 학교 확정 전 꼭 확인하세요</p>
+      <p class="confirm-warning__title">🎓 합격 발표를 받으셨나요?</p>
       <ul>
         ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 기존 확정이 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
-        <li>배정이 확정되면 파견대학은 원칙적으로 바꿀 수 없어요. (§7.3)</li>
-        <li>기한 안에는 취소할 수 있지만, 취소하면 패널티와 함께 <strong>앞으로 국제처 해외파견프로그램에 영원히 다시 지원할 수 없어요</strong>.</li>
+        <li><strong>${school.name}</strong>(으)로 교환학생 합격이 확정된 뒤에 눌러주세요.</li>
       </ul>
       <div class="confirm-warning__actions">
-        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">다시 생각해볼게요</button>
-        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">내용 확인했어요, 확정할게요</button>
+        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">아직이에요</button>
+        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">합격했어요, 확정할게요</button>
       </div>
     </div>
   `;
