@@ -482,13 +482,12 @@ body[data-page="intro"] {
   -webkit-text-stroke: 0.04em var(--key-ink);
   text-shadow: 0.053em 0.053em 0 rgba(2, 18, 47, 0.22);
 }
-/* 히어로 말고 본문 속 키워드(STEP, Four Steps!, step)는 글줄에 묻히지 않을
-   정도만. 히어로와 같은 1.9em 을 주면 문장이 글자에 끌려다닌다.
-   대신 작아서 시안만으로는 안 읽히므로 여기에는 테두리를 남긴다. */
+/* 히어로 말고 본문 속 키워드(STEP, Four Steps!, step)는 옆 한글과 같은
+   크기로 — 로고 글씨체(패스)일 때는 캡 높이가 작아서 키워야 했지만,
+   SB 어그로는 한글과 나란히 둬도 크기가 비슷해서 더 키울 이유가 없다. */
 .intro__section-title .wordmark-svg,
 .intro__final-title .wordmark-svg {
-  height: 1.69em;         /* 1.3em 에서 1.3배 */
-  vertical-align: -0.42em;
+  font-size: 1.15em;
 }
 /* 한 줄을 통째로 차지하는 워드마크(Four Steps!)는 옆에 한글이 없다.
    글줄에 맞출 이유가 없으니 섹션 제목만 한 크기로 키운다.
@@ -496,9 +495,8 @@ body[data-page="intro"] {
    쓰면 .intro__section-title .wordmark-svg 에 밀린다. */
 .intro__section-title .wordmark-svg--solo {
   display: block;
-  height: 2.15em;   /* 1.69em(작음) 과 2.6em(큼) 의 중간 */
-  margin-inline: auto;
-  vertical-align: baseline;
+  font-size: 1.55em;
+  text-align: center;
 }
 
 
@@ -512,30 +510,12 @@ body[data-page="intro"] {
   color: var(--key-ink);
 }
 
-/* 히어로의 워드마크 — 트리트먼트 D 를 SVG 로.
-   paint-order: stroke fill 이라 테두리가 획 안쪽을 깎지 않는다.
-   글자 줄에 끼어 있으므로 height 를 em 으로 묶어 본문과 같이 커지고,
-   vertical-align 으로 한글 베이스라인에 맞춘다. */
+/* 히어로의 워드마크(색·테두리는 css/components.css의 .wm-text가 맡는다).
+   히어로에서는 제목 글자보다 확실히 크게 — 여기가 브랜드를 보여주는 자리다
+   (다른 자리의 키워드는 위에서 따로 줄인다). */
 .wordmark-svg {
-  display: inline-block;
-  /* 모든 워드마크가 같은 세로 자(어센더 1000 / 디센더 300, 베이스라인 y=0)를
-     쓰므로 height 하나만 주면 어느 단어든 같은 크기·같은 베이스라인으로 앉는다.
-     1.3em = 상자 높이 1300 → 대문자 700 이 0.7em 이 된다(본문 글자와 비슷). */
-  /* 히어로에서는 제목 글자보다 확실히 크게 — 여기가 브랜드를 보여주는 자리다.
-     (다른 자리의 키워드는 아래에서 다시 줄인다) */
-  height: 1.9em;
-  width: auto;
-  vertical-align: -0.52em;
+  font-size: 1.15em;
   margin-inline: 0.04em;
-  color: var(--key-500);
-  /* 밝은 하늘색 위의 시안은 대비가 1.3:1 이라 맨몸으로는 안 읽힌다.
-     네이비 테두리가 대비를 맡는다. 패스가 <g transform="scale(0.1)"> 안에
-     있어서 stroke-width 는 그 안쪽 좌표계로 먹는다 — 보이는 두께의 10배.
-     세로 상자 1300 단위 = 1.3em 이므로 1em = 1000단위, 0.045em = 45단위 → 450. */
-  stroke: var(--key-ink);
-  stroke-width: 450;
-  stroke-linejoin: round;
-  paint-order: stroke fill;
   filter: drop-shadow(0.03em 0.03em 0 rgba(2, 18, 47, 0.20));
 }
 
@@ -622,8 +602,7 @@ body[data-page="intro"] {
    조금 작게 둔다. 앞 글자(한글)와 맞닿으면 오타처럼 읽혀서 왼쪽을 띄운다.
    스플래시의 ! 는 이 요소의 실제 사각형으로 떨어지므로 여기만 고치면 된다. */
 .wordmark-svg--bang {
-  height: 1.35em;
-  vertical-align: -0.3em;
+  font-size: 0.9em;
   margin-inline: 0.18em 0;
 }
 

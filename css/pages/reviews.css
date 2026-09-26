@@ -1,0 +1,106 @@
+/* ==========================================================================
+   F6. 국가별 후기 — 파견교 선배 후기를 국가 단위로 모아 보여준다.
+   홈의 "파견 국가별 후기 보기" 카드를 누르면 들어온다.
+   ========================================================================== */
+
+/* 대륙·나라 이름은 영문으로 보여준다 — 앱 기본 글꼴(프리텐다드, --font-body)을
+   그대로 쓴다. 화면 맨 위 제목(.review-page-title)만 따로 SB 어그로를 쓴다. */
+.review-en {
+  font-family: var(--font-body);
+}
+
+/* 화면 맨 위 제목("Mentor's Step !")은 다른 로고 제목과 같은 css/components.css의
+   .wm-text 를 그대로 쓴다 — 나라·대륙 이름(.review-en)만 프리텐다드로 남는다. */
+
+.review-country-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.review-country-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-200);
+  background: var(--cloud-0);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+.review-country-card:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-2px); }
+/* 아이콘을 맨몸으로 띄우지 않는다 — 학교 로고(.confirmed-card__logo), 궤도형
+   인포그래픽 아바타(.orbit-avatar)처럼 이 앱은 아이콘을 항상 동그란 판 위에
+   얹는다. 국기·지구본도 같은 자리에 놓인 아이콘이라 같은 규칙을 따른다. */
+.review-country-card__flag {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--sky-50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.review-country-card__name { font-weight: 700; font-size: var(--fs-body); color: var(--ink-900); }
+.review-country-card__meta { font-size: var(--fs-micro); color: var(--ink-600); }
+
+/* ---- 국가 상세: 뒤로가기 + 헤더 + 주제 필터 + 후기 목록 ---- */
+.review-back {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--sky-700);
+  cursor: pointer;
+}
+
+.review-detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.review-detail-head__flag {
+  flex: 0 0 auto;
+  width: 64px; height: 64px;
+  border-radius: var(--radius-md);
+  background: var(--sky-50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  line-height: 1;
+}
+.review-detail-head h2 { font-size: 1.25rem; font-weight: 800; color: var(--ink-900); }
+.review-detail-head p { font-size: var(--fs-small); color: var(--ink-600); }
+
+.review-tag-filter { flex-wrap: wrap; margin-bottom: var(--space-4); }
+
+.review-list--page { display: flex; flex-direction: column; gap: var(--space-3); }
+.review-item {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-200);
+  background: var(--cloud-0);
+}
+.review-item__top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.review-item__school {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--sky-700);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.review-item__text { font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); word-break: keep-all; }
+.review-item__author { display: block; margin-top: var(--space-2); font-size: var(--fs-micro); color: var(--ink-400); }
+
+.review-empty { padding: var(--space-6) 0; text-align: center; color: var(--ink-600); font-size: var(--fs-small); }

@@ -37,7 +37,7 @@
     },
     signup: {
       // step 은 랜딩의 키워드와 같은 워드마크로 보여준다(js 가 아니라 정적 문자열이라 안전)
-      titleHtml: '첫 <svg class="wordmark-svg auth__kw" viewBox="0 0 2237.06 1300.0" role="img" aria-label="step"><use href="#wm-step-lower"/></svg> 시작하기',
+      titleHtml: '첫 <span class="wordmark-svg auth__kw wm-text" role="img" aria-label="step">step</span> 시작하기',
       title: '첫 step 시작하기',
       sub: '재학생 확인을 위해 연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요',
       submit: '가입하고 시작하기',
