@@ -65,7 +65,9 @@
      */
     const startCounting = () => counters.forEach(el => io.observe(el));
     if (document.getElementById('introSplash')) {
-      document.addEventListener('splash:done', startCounting, { once: true });
+      // 착지 직후 바로 세면 스플래시가 끝나는 것과 숫자가 튀는 게 겹쳐 보인다.
+      // 착지의 여운이 가시고 나서 세어 올리도록 한 박자(1초) 쉰다.
+      document.addEventListener('splash:done', () => setTimeout(startCounting, 1000), { once: true });
     } else {
       startCounting();
     }

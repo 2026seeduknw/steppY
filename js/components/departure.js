@@ -84,13 +84,12 @@ function guessProgramRange() {
  * 안에 카드가 들어앉아 "잘린 상자"처럼 보였다. 껍데기(배경·테두리·그림자)만
  * 벗기고 경로 자체는 남긴다 — 어디서 어디로 가는지는 글보다 선이 빠르다.
  *
- *          D-346
- *   서울  ──▶──────  Liverpool
- *   준비 중            9월 1일
+ *   서울  D-346  Liverpool
+ *   준비 중         9월 1일
+ *   ──────▶──────────────
  *
- * D-day는 경로 한가운데 위에 올린다. 예전에는 선 아래 알약이었고 옆에
- * "출국까지"가 붙어 있었는데, 서울 → Liverpool 이 이미 위에 적혀 있어서
- * 같은 말을 한 번 더 하는 자리였다.
+ * D-day는 출발·도착 사이, 이름과 같은 줄에 끼워 넣는다. 따로 한 줄을 차지하면
+ * 카드가 그만큼 길어지고, 어차피 "어디서 어디로"의 가운데라 그 자리가 자연스럽다.
  */
 function tripPathHtml({ fromLabel, fromSub, toLabel, toSub, pct, dday, editLabel }) {
   return `
@@ -100,13 +99,12 @@ function tripPathHtml({ fromLabel, fromSub, toLabel, toSub, pct, dday, editLabel
           <span class="leg-card__place">${fromLabel}</span>
           <span class="leg-card__date">${fromSub}</span>
         </div>
+        <div class="confirmed-card__dday tnum">${dday}</div>
         <div class="leg-card__end leg-card__end--to">
           <span class="leg-card__place">${toLabel}</span>
           <span class="leg-card__date">${toSub}</span>
         </div>
       </div>
-
-      <div class="confirmed-card__dday tnum">${dday}</div>
 
       <div class="leg-card__track" aria-hidden="true">
         <span class="leg-card__line"></span>

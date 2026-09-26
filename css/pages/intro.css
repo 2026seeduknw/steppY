@@ -326,7 +326,9 @@ body[data-page="intro"] {
   margin-bottom: 2px;
 }
 
-.intro__final { background: var(--oxford); text-align: center; }
+/* 마지막 걸음("골라드려요.")과 이 섹션의 제목이 배경색만 바뀐 채 바짝 붙어
+   있었다 — 밝은 바탕에서 짙은 남색으로 넘어가는 자리라 한 박자 더 띄운다. */
+.intro__final { background: var(--oxford); text-align: center; padding-top: var(--space-6); }
 .intro__final-title {
   font-family: var(--font-display);
   font-weight: 800;
@@ -337,13 +339,7 @@ body[data-page="intro"] {
   letter-spacing: -0.02em;
   word-break: keep-all;
 }
-.intro__final-sub {
-  margin-top: var(--space-3);
-  font-size: var(--fs-small);
-  color: rgba(240, 236, 221, 0.88);
-  word-break: keep-all;
-}
-.intro__cta--final { margin-top: var(--space-6); }
+.intro__cta--final { margin-top: var(--space-4); }
 .intro__final-skip {
   display: block;
   margin-top: var(--space-5);
@@ -566,7 +562,6 @@ body[data-page="intro"] {
 .intro__step-sub { border-left-color: var(--line-200); }
 
 .intro__final-title { color: var(--ink-900); text-shadow: none; }
-.intro__final-sub,
 .intro__final-skip { color: var(--ink-600); }
 .intro__footer a { color: var(--ink-600); }
 

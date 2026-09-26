@@ -509,12 +509,13 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .confirmed-card {
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-4);
   border-radius: var(--radius-row);
 }
 .confirmed-card__logo { width: 56px; height: 56px; }
 .confirmed-card__name { font-size: 1.25rem; }
+.confirmed-card__badges { margin-top: var(--space-2); }
 .confirmed-card__actions { flex-direction: row; align-items: center; justify-content: space-between; }
 .empty-hero { flex-direction: column; align-items: stretch; gap: var(--space-4); padding: var(--space-5); border-radius: var(--radius-row); }
 .checklist-item { border-radius: 12px; }
@@ -1834,15 +1835,16 @@ textarea {
    선 하나만 그어도 다시 "위아래가 나뉜 판"으로 보인다. */
 .confirmed-card__trip { margin-top: var(--space-2); }
 
-/* D-day는 경로 한가운데 위. 출발·도착이 양 끝에 있으니 가운데가 비어 있다. */
+/* D-day는 출발·도착 이름과 한 줄에 낀다 — 따로 줄을 두면 카드가 길어진다. */
 .confirmed-card__dday {
-  margin: var(--space-3) 0 2px;
-  text-align: center;
+  flex: 0 0 auto;
+  align-self: center;
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
   color: #fff;
+  white-space: nowrap;
 }
 
 .confirmed-card__trip .leg-card__place { font-size: 0.95rem; }
