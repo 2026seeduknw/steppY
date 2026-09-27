@@ -1,174 +1,473 @@
 /**
- * 멘토 없는 멘토 상담 — 학교를 고르면 선배 경험보고서 후기를 질문 키워드로
- * 매칭해 챗봇 형태로 보여준다. 실제 AI/백엔드 없이 클라이언트 키워드 매칭으로만
- * 동작하며, 후기 원문은 Supabase school_exchange_reports에서 온다
- * (js/data-source.js::loadSchoolExchangeReports → MOCK.schoolReviews).
- * 질문 키워드 사전은 js/review-topics.js(REVIEW_TOPICS)를 후기 태깅 쪽과 공유한다 —
- * 두 곳이 따로 놀면 여기서 제안하는 주제 칩이 실제 후기 태그와 어긋날 수 있어서다.
+ * Mentor's Step — 공개 질문·답변 게시판.
+ *
+ * 질문·답변은 누구나(비로그인 포함) 읽을 수 있고, 올리려면 로그인이 필요하다.
+ * 이름·이메일은 어디에도 표시하지 않는다 — 소수 인원만 가는 학교의 질문이면
+ * "이 질문 = 누구"로 짐작될 수 있어서, 학교 태그(선택)와 별개로 작성자 표시
+ * 자체를 아예 없앴다(질문·답변 둘 다).
+ *
+ * 크레딧이 걸린 두 동작(질문 등록 -10 / 답변 등록 +10)은 클라이언트에서 계산하지
+ * 않는다 — supabase/mentor_step.sql의 ask_question/submit_answer RPC가 서버에서
+ * 원자적으로 처리하고, js/state.js(AppState.askQuestion/submitAnswer)가 그 결과를
+ * 받아서만 화면을 바꾼다.
+ *
+ * 학교별 "관련 후기"는 예전 챗봇(키워드 매칭, js/review-topics.js)의 로직을 그대로
+ * 재사용해 질문 상세 보조 패널로 보여준다 — 학교를 지정한 질문에서만 뜬다.
  */
 (function () {
   AppState.load();
 
-  const SUGGEST_TAGS = REVIEW_TOPICS.map(t => t.tag);
+  const ASK_COST = 10;
+  const ANSWER_REWARD = 10;
 
-  const params = new URLSearchParams(location.search);
-  const preselect = params.get('school');
+  const state = { onlyFavorite: false };
 
-  let activeSchool = null;
-  let messages = [];
-
-  const panel = document.getElementById('chatPanel');
-  const messagesEl = document.getElementById('chatMessages');
-  const form = document.getElementById('chatForm');
-  const input = document.getElementById('chatInput');
+  const listEl = document.getElementById('mentorList');
+  const favToggle = document.getElementById('mentorFavToggle');
+  const creditWrap = document.getElementById('mentorCredit');
+  const creditNum = document.getElementById('mentorCreditNum');
+  const askOpenBtn = document.getElementById('askOpenBtn');
 
   function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str == null ? '' : str;
     return div.innerHTML;
   }
 
-  function nowLabel() {
-    return new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
+  function timeAgo(iso) {
+    const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diffMin < 1) return '방금 전';
+    if (diffMin < 60) return `${diffMin}분 전`;
+    const hr = Math.floor(diffMin / 60);
+    if (hr < 24) return `${hr}시간 전`;
+    const day = Math.floor(hr / 24);
+    if (day < 30) return `${day}일 전`;
+    return `${Math.floor(day / 30)}개월 전`;
   }
 
-  function matchReviews(schoolId, questionText) {
-    const topics = matchReviewTopics(questionText);
-    const all = MOCK.schoolReviews[schoolId] || [];
-    if (topics.length) {
-      const hits = all.filter(r => topics.includes(r.tag));
-      if (hits.length) return { hits, fallback: false, topics };
-    }
-    return { hits: all.slice(0, 3), fallback: true, topics };
+  function schoolName(id) {
+    const s = MOCK.schools.find(x => x.id === id);
+    return s ? s.name : null;
   }
 
-  function addMessage(msg) { messages.push(msg); renderMessages(); }
+  /**
+   * 학교 찾기/국가별 후기(js/reviews.js)가 쓰는 대륙 묶음을 그대로 재사용한다 —
+   * 국가 고르는 카드 자리를 새로 만들 때마다 대륙 분류가 어긋나지 않도록.
+   */
+  const REGION_ICON = { '미주': '🌎', '유럽': '🌍', '아시아/오세아니아': '🌏', '기타': '🌐' };
+  const REGION_LABEL_EN = { '미주': 'Americas', '유럽': 'Europe', '아시아/오세아니아': 'Asia/Oceania', '기타': 'Other' };
 
-  function botBubbleInner(m) {
-    if (m.type === 'typing') {
-      return `<div class="chat-typing"><span></span><span></span><span></span></div>`;
-    }
-    if (m.type === 'chips') {
-      return `
-        <div class="chat-message__sender">Mentor's Step</div>
-        <p>${escapeHtml(m.text)}</p>
-        <div class="chat-suggest-chips">${m.chips.map(c => `<button type="button" class="chip" data-suggest="${c}">${c}</button>`).join('')}</div>
-      `;
-    }
-    if (m.type === 'reviews') {
-      return `
-        <div class="chat-message__sender">Mentor's Step</div>
-        <p>${escapeHtml(m.text)}</p>
-        ${m.reviews.map(r => `
-          <div class="chat-message__quote">
-            <div class="chat-message__quote-meta">${r.tag ? `#${r.tag} · ` : ''}${escapeHtml(r.author || '선배 후기')}</div>
-            <div class="chat-message__quote-text">${escapeHtml(r.text)}</div>
-          </div>
-        `).join('')}
-      `;
-    }
-    return `<div class="chat-message__sender">Mentor's Step</div><p>${escapeHtml(m.text)}</p>`;
-  }
-
-  function renderMessages() {
-    const logoFile = activeSchool && SCHOOL_LOGOS[activeSchool];
-    const avatarInner = logoFile ? `<img src="assets/school-logos/${logoFile}" alt="">` : '🐾';
-    messagesEl.innerHTML = messages.map(m => {
-      if (m.role === 'user') {
-        return `<div class="chat-message chat-message--user">
-          <div class="chat-message__bubble">${escapeHtml(m.text)}</div>
-          <div class="chat-message__meta">${m.time || ''}</div>
-        </div>`;
-      }
-      return `<div class="chat-message chat-message--bot">
-        <div class="chat-message__row">
-          <div class="chat-message__avatar">${avatarInner}</div>
-          <div class="chat-message__bubble">${botBubbleInner(m)}</div>
-        </div>
-        ${m.type === 'typing' ? '' : `<div class="chat-message__meta">${m.time || ''}</div>`}
-      </div>`;
-    }).join('');
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function startChat(schoolId) {
-    const school = MOCK.schools.find(s => s.id === schoolId);
-    if (!school) return;
-    activeSchool = schoolId;
-    messages = [];
-    document.getElementById('chatSchoolName').textContent = `${school.name} 후기 챗봇`;
-    panel.hidden = false;
-    if (currentSelect) currentSelect.setSelected(schoolId);
-    addMessage({ role: 'bot', type: 'chips', text: `${school.name}에 대해 뭐가 궁금해요? 선배들의 후기를 찾아드릴게요.`, chips: SUGGEST_TAGS, time: nowLabel() });
-  }
-
-  function askQuestion(text) {
-    if (!activeSchool || !text.trim()) return;
-    trackEvent('consult_question', { schoolId: activeSchool });
-    addMessage({ role: 'user', text, time: nowLabel() });
-
-    const typingMsg = { role: 'bot', type: 'typing' };
-    messages.push(typingMsg);
-    renderMessages();
-
-    setTimeout(() => {
-      const idx = messages.indexOf(typingMsg);
-      if (idx !== -1) messages.splice(idx, 1);
-
-      const { hits, fallback, topics } = matchReviews(activeSchool, text);
-      if (!hits.length) {
-        addMessage({ role: 'bot', text: '관련 후기를 찾지 못했어요. 다른 키워드로 물어봐 주세요.', time: nowLabel() });
-        return;
-      }
-      const intro = fallback
-        ? '정확히 일치하는 후기는 없지만, 이 학교의 선배 후기를 보여드려요.'
-        : `${topics.join(', ')} 관련 선배 후기를 찾았어요.`;
-      addMessage({ role: 'bot', type: 'reviews', text: intro, reviews: hits, time: nowLabel() });
-    }, 600);
-  }
-
-  const pickerMount = document.getElementById('schoolPicker');
-  let currentSelect = null;
-  function renderSchoolPicker() {
-    pickerMount.innerHTML = '';
-    const items = MOCK.schools.map(s => ({ value: s.id, label: s.name, group: s.country }));
-    const keepSelected = activeSchool && MOCK.schools.some(s => s.id === activeSchool) ? activeSchool : null;
-    currentSelect = createSearchableSelect({
-      items,
-      selected: keepSelected,
-      multiple: false,
-      placeholder: '학교를 검색해서 선택하세요',
-      onChange: (value) => { if (value) startChat(value); }
+  function buildCountryRegions() {
+    const countryMap = new Map();
+    (MOCK.schools || []).forEach(school => {
+      const key = school.country;
+      if (!key) return;
+      if (!countryMap.has(key)) countryMap.set(key, { country: key, countryEn: school.countryEn, region: school.region || '기타', schoolCount: 0 });
+      countryMap.get(key).schoolCount += 1;
     });
-    pickerMount.appendChild(currentSelect.el);
+    const countries = [...countryMap.values()].sort((a, b) => (a.countryEn || a.country).localeCompare(b.countryEn || b.country));
+    const regionMap = new Map();
+    countries.forEach(c => {
+      if (!regionMap.has(c.region)) regionMap.set(c.region, { region: c.region, countries: [], schoolCount: 0 });
+      const r = regionMap.get(c.region);
+      r.countries.push(c);
+      r.schoolCount += c.schoolCount;
+    });
+    return [...regionMap.values()].sort((a, b) => b.schoolCount - a.schoolCount);
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = input.value;
-    input.value = '';
-    askQuestion(text);
-  });
+  /* ---------------------------------------------------------------- 목록 */
 
-  messagesEl.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-suggest]');
-    if (btn) askQuestion(btn.dataset.suggest);
-  });
-
-  function tryPreselect() {
-    if (!preselect || activeSchool) return;
-    if (MOCK.schools.some(s => s.id === preselect)) startChat(preselect);
+  function renderCreditBadge() {
+    if (!AppState.isAuthed) { creditWrap.hidden = true; return; }
+    creditWrap.hidden = false;
+    creditNum.textContent = AppState.getCredits();
   }
 
-  renderSchoolPicker();
-  tryPreselect();
+  // 홈에서는 국가 상관없이 모든 질문을 보여준다 — 국가/학교는 각 줄 옆에
+  // 라벨로만 보여주고, 필터로 거르지 않는다. 국가는 질문을 "올릴 때"만
+  // (카드로) 고른다.
+  function filteredQuestions() {
+    return MOCK.mentorQuestions.filter(q => {
+      if (state.onlyFavorite && !AppState.isQuestionFavorite(q.id)) return false;
+      return true;
+    });
+  }
+
+  /**
+   * 카드 대신 네이버 카페식 게시글 목록 — 한 줄에 제목 + 답변 수, 그 아래 한
+   * 줄에 국가/학교·시간·즐겨찾기만 작게. 게시글이 많아질수록(271개교 x 여러
+   * 질문) 카드보다 이 밀도가 스크롤 없이 더 많이 훑어볼 수 있다.
+   */
+  function questionRowTemplate(q) {
+    const isFav = AppState.isQuestionFavorite(q.id);
+    const sName = q.schoolId ? schoolName(q.schoolId) : null;
+    return `
+      <button type="button" class="mentor-row" data-open-question="${q.id}">
+        <div class="mentor-row__line">
+          <span class="mentor-row__tag">[${escapeHtml(q.country)}]</span>
+          <span class="mentor-row__title">${escapeHtml(q.title)}</span>
+          ${q.answers.length ? `<span class="mentor-row__count">[${q.answers.length}]</span>` : ''}
+        </div>
+        <div class="mentor-row__foot">
+          <span class="mentor-row__meta">${sName ? `${escapeHtml(sName)} · ` : ''}${timeAgo(q.createdAt)}</span>
+          <span class="mentor-row__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-q="${q.id}" role="button" aria-label="즐겨찾기">
+            <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
+          </span>
+        </div>
+      </button>`;
+  }
+
+  function openAskSheet() {
+    if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+    openAskSheetImpl();
+  }
+
+  function renderList() {
+    renderCreditBadge();
+    const items = filteredQuestions();
+    if (!items.length) {
+      listEl.innerHTML = `
+        <div class="empty-state mentor-empty">
+          <p>아직 질문이 없어요. 첫 질문을 남겨보세요.</p>
+          <button type="button" class="btn btn--accent" id="mentorEmptyAsk">질문하기</button>
+        </div>`;
+      const btn = document.getElementById('mentorEmptyAsk');
+      if (btn) btn.addEventListener('click', openAskSheet);
+      return;
+    }
+    listEl.innerHTML = items.map(questionRowTemplate).join('');
+    listEl.querySelectorAll('[data-open-question]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-fav-toggle-q]')) return;
+        openQuestionSheet(el.dataset.openQuestion);
+      });
+    });
+    listEl.querySelectorAll('[data-fav-toggle-q]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+        const active = AppState.toggleQuestionFavorite(btn.dataset.favToggleQ);
+        btn.classList.toggle('is-active', active);
+      });
+    });
+  }
+
+  favToggle.addEventListener('click', () => {
+    if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+    state.onlyFavorite = !state.onlyFavorite;
+    favToggle.classList.toggle('is-on');
+    renderList();
+  });
+  askOpenBtn.addEventListener('click', openAskSheet);
+
+  /* ---------------------------------------------------------- 바텀시트 공통 */
+
+  function openSheet(html, { onOpen } = {}) {
+    document.querySelectorAll('.app-sheet--mentor').forEach(el => el.remove());
+    const sheet = document.createElement('div');
+    sheet.className = 'app-sheet app-sheet--mentor';
+    sheet.innerHTML = html;
+    document.body.appendChild(sheet);
+    requestAnimationFrame(() => sheet.classList.add('is-open'));
+    document.body.classList.add('is-sheet-open');
+    const close = () => {
+      sheet.classList.remove('is-open');
+      document.body.classList.remove('is-sheet-open');
+      setTimeout(() => sheet.remove(), 300);
+    };
+    sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) close(); });
+    if (onOpen) onOpen(sheet, close);
+    return { sheet, close };
+  }
+
+  /* ------------------------------------------------------------- 질문하기 */
+
+  function openAskSheetImpl() {
+    const html = `
+      <div class="app-sheet__scrim" data-close></div>
+      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="질문하기">
+        <div class="app-sheet__grip" data-close></div>
+        <div class="app-sheet__head"><h2>질문하기</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
+        <div class="app-sheet__body">
+          <form class="mentor-form" id="askForm">
+            <div class="mentor-form__field">
+              <span class="mentor-form__label">국가</span>
+              <button type="button" class="mentor-select-trigger" id="askCountryTrigger">
+                <span id="askCountryTriggerLabel" class="is-placeholder">국가를 선택하세요</span>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+            <div class="mentor-form__field">
+              <span class="mentor-form__label">학교 (선택)</span>
+              <div id="askSchoolPicker"></div>
+            </div>
+            <label class="mentor-form__field">
+              <span class="mentor-form__label">제목</span>
+              <input type="text" name="title" maxlength="60" required placeholder="예: 기숙사 계약 언제부터 해요?">
+            </label>
+            <label class="mentor-form__field">
+              <span class="mentor-form__label">내용</span>
+              <textarea name="body" required placeholder="상황을 조금 더 적어주면 답변받기 쉬워요"></textarea>
+            </label>
+            <div class="mentor-form__cost">질문 등록에 <strong>🪙 ${ASK_COST}</strong> 크레딧이 필요해요 · 내 크레딧 <strong id="askBalance">${AppState.getCredits()}</strong></div>
+            <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>
+          </form>
+        </div>
+      </div>`;
+    openSheet(html, {
+      onOpen: (sheet, close) => {
+        let selectedSchool = null;
+        let selectedCountry = '';
+
+        const pickerMount = sheet.querySelector('#askSchoolPicker');
+        const items = MOCK.schools.map(s => ({ value: s.id, label: s.name, group: s.country }));
+        const select = createSearchableSelect({
+          items, selected: null, multiple: false,
+          placeholder: '학교를 검색해서 선택하세요 (선택)',
+          onChange: (value) => { selectedSchool = value || null; }
+        });
+        pickerMount.appendChild(select.el);
+
+        const countryTrigger = sheet.querySelector('#askCountryTrigger');
+        const countryLabel = sheet.querySelector('#askCountryTriggerLabel');
+        countryTrigger.addEventListener('click', () => {
+          openCountryPickerSheet((country) => {
+            selectedCountry = country;
+            countryLabel.textContent = country;
+            countryLabel.classList.remove('is-placeholder');
+          });
+        });
+
+        const form = sheet.querySelector('#askForm');
+        const submitBtn = sheet.querySelector('#askSubmitBtn');
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const title = (new FormData(form).get('title') || '').trim();
+          const body = (new FormData(form).get('body') || '').trim();
+          if (!selectedCountry) {
+            if (typeof showToast === 'function') showToast('국가를 선택해 주세요.');
+            return;
+          }
+          if (!title || !body) return;
+          if (AppState.getCredits() < ASK_COST) {
+            if (typeof showToast === 'function') showToast('크레딧이 부족해요.');
+            return;
+          }
+          submitBtn.disabled = true;
+          submitBtn.textContent = '등록 중…';
+          const res = await AppState.askQuestion({ country: selectedCountry, schoolId: selectedSchool, title, body });
+          if (!res.ok) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '질문 등록';
+            if (typeof showToast === 'function') showToast('질문을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.');
+            return;
+          }
+          if (typeof trackEvent === 'function') trackEvent('mentor_question_asked', { country: selectedCountry });
+          close();
+          renderList();
+          if (typeof showToast === 'function') showToast('질문을 등록했어요');
+        });
+      }
+    });
+  }
+
+  /**
+   * 국가 선택 — 예전 국가별 후기(js/reviews.js)에 있던 대륙 → 국가 카드 방식을
+   * 그대로 가져오되, 바텀시트 안이라 한 단 작게(3열) 줄였다. 질문하기 시트
+   * 위에 한 장 더 쌓이는 자리라 body의 is-sheet-open은 건드리지 않는다 —
+   * 이미 질문하기 시트가 잠가 둔 걸 여기서 풀면 뒤 시트 스크롤이 풀려버린다.
+   */
+  function openCountryPickerSheet(onPick) {
+    const regions = buildCountryRegions();
+    let activeRegion = null;
+
+    function bodyHtml() {
+      if (!activeRegion) {
+        return `
+          <div class="mentor-country-grid">
+            ${regions.map(r => `
+              <button type="button" class="mentor-country-card" data-region="${r.region}">
+                <span class="mentor-country-card__flag">${REGION_ICON[r.region] || '🌐'}</span>
+                <span class="mentor-country-card__name">${REGION_LABEL_EN[r.region] || r.region}</span>
+                <span class="mentor-country-card__meta">${r.countries.length}개국</span>
+              </button>`).join('')}
+          </div>`;
+      }
+      const region = regions.find(r => r.region === activeRegion);
+      return `
+        <button type="button" class="mentor-back" data-back>← 대륙 전체</button>
+        <div class="mentor-country-grid">
+          ${region.countries.map(c => `
+            <button type="button" class="mentor-country-card" data-country="${escapeHtml(c.country)}">
+              <span class="mentor-country-card__flag">${countryFlag(c.countryEn) || '🌍'}</span>
+              <span class="mentor-country-card__name">${escapeHtml(c.country)}</span>
+              <span class="mentor-country-card__meta">${c.schoolCount}개 학교</span>
+            </button>`).join('')}
+        </div>`;
+    }
+
+    const sheet = document.createElement('div');
+    sheet.className = 'app-sheet app-sheet--mentor-picker';
+    sheet.innerHTML = `
+      <div class="app-sheet__scrim" data-close></div>
+      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="국가 선택">
+        <div class="app-sheet__grip" data-close></div>
+        <div class="app-sheet__head"><h2>국가 선택</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
+        <div class="app-sheet__body" id="countryPickerBody"></div>
+      </div>`;
+    document.body.appendChild(sheet);
+    requestAnimationFrame(() => sheet.classList.add('is-open'));
+
+    const close = () => {
+      sheet.classList.remove('is-open');
+      setTimeout(() => sheet.remove(), 300);
+    };
+    sheet.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) close(); });
+
+    const bodyEl = sheet.querySelector('#countryPickerBody');
+    function wire() {
+      bodyEl.querySelectorAll('[data-region]').forEach(btn => {
+        btn.addEventListener('click', () => { activeRegion = btn.dataset.region; bodyEl.innerHTML = bodyHtml(); wire(); });
+      });
+      bodyEl.querySelectorAll('[data-back]').forEach(btn => {
+        btn.addEventListener('click', () => { activeRegion = null; bodyEl.innerHTML = bodyHtml(); wire(); });
+      });
+      bodyEl.querySelectorAll('[data-country]').forEach(btn => {
+        btn.addEventListener('click', () => { onPick(btn.dataset.country); close(); });
+      });
+    }
+    bodyEl.innerHTML = bodyHtml();
+    wire();
+  }
+
+  /* --------------------------------------------------------- 질문 상세 */
+
+  function relatedReviewsHtml(q) {
+    if (!q.schoolId) return '';
+    const all = MOCK.schoolReviews[q.schoolId] || [];
+    if (!all.length) return '';
+    const topics = matchReviewTopics(`${q.title} ${q.body}`);
+    const hits = topics.length ? all.filter(r => topics.includes(r.tag)) : [];
+    if (!hits.length) return '';
+    return `
+      <div class="mentor-related">
+        <h3 class="mentor-section-title">관련 후기</h3>
+        ${hits.slice(0, 3).map(r => `
+          <div class="chat-message__quote">
+            <div class="chat-message__quote-meta">${r.tag ? `#${escapeHtml(r.tag)} · ` : ''}${escapeHtml(r.author || '선배 후기')}</div>
+            <div class="chat-message__quote-text">${escapeHtml(r.text)}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  function answerItemTemplate(a) {
+    return `
+      <div class="mentor-answer">
+        <div class="mentor-answer__meta">${timeAgo(a.createdAt)}</div>
+        <div class="mentor-answer__body">${escapeHtml(a.body)}</div>
+      </div>`;
+  }
+
+  function openQuestionSheet(id) {
+    const q = MOCK.mentorQuestions.find(x => x.id === id);
+    if (!q) return;
+    const sName = q.schoolId ? schoolName(q.schoolId) : null;
+    const tagLabel = sName ? `${q.country} · ${sName}` : q.country;
+    const isOwn = AppState.isAuthed && typeof Auth !== 'undefined' && q.authorId === Auth.userId;
+    const html = `
+      <div class="app-sheet__scrim" data-close></div>
+      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="질문 상세">
+        <div class="app-sheet__grip" data-close></div>
+        <div class="app-sheet__head"><h2>질문</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
+        <div class="app-sheet__body">
+          <div class="mentor-detail">
+            <span class="badge badge--neutral">${escapeHtml(tagLabel)}</span>
+            <h3 class="mentor-detail__title">${escapeHtml(q.title)}</h3>
+            <p class="mentor-detail__body">${escapeHtml(q.body)}</p>
+            <div class="mentor-detail__meta">${timeAgo(q.createdAt)}</div>
+          </div>
+          ${relatedReviewsHtml(q)}
+          <div class="mentor-answers">
+            <h3 class="mentor-section-title">답변 ${q.answers.length}개</h3>
+            <div id="mentorAnswerList">${q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="mentor-answers__empty">아직 답변이 없어요.</p>'}</div>
+          </div>
+          ${isOwn ? '' : `
+          <form class="mentor-form mentor-answer-form" id="answerForm">
+            <textarea name="body" required placeholder="아는 만큼 도와주세요"></textarea>
+            <div class="mentor-form__cost">답변을 등록하면 <strong>🪙 +${ANSWER_REWARD}</strong> 크레딧을 받아요</div>
+            <button type="submit" class="btn btn--accent btn--block" id="answerSubmitBtn">답변 등록</button>
+          </form>`}
+        </div>
+      </div>`;
+    openSheet(html, {
+      onOpen: (sheet, close) => {
+        const form = sheet.querySelector('#answerForm');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+          const fd = new FormData(form);
+          const body = (fd.get('body') || '').trim();
+          if (!body) return;
+          const submitBtn = sheet.querySelector('#answerSubmitBtn');
+          submitBtn.disabled = true;
+          submitBtn.textContent = '등록 중…';
+          const res = await AppState.submitAnswer({ questionId: q.id, body });
+          if (!res.ok) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '답변 등록';
+            if (typeof showToast === 'function') showToast('답변을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.');
+            return;
+          }
+          if (typeof trackEvent === 'function') trackEvent('mentor_answer_submitted', { questionId: q.id });
+          close();
+          renderList();
+          if (typeof showToast === 'function') showToast('답변을 등록했어요. 크레딧을 받았어요');
+        });
+      }
+    });
+  }
+
+  renderList();
 
   document.addEventListener('MOCK:updated', () => {
-    renderSchoolPicker();
-    tryPreselect();
-    if (activeSchool && !MOCK.schools.some(s => s.id === activeSchool)) {
-      panel.hidden = true;
-      activeSchool = null;
-    }
+    renderList();
   });
+
+  /* --------------------------------------------------- 질문·답변 ↔ 국가별 후기 */
+  /**
+   * 예전엔 국가별 후기(reviews.html)가 따로 탭을 갖고 있었는데, 그 화면도
+   * "Mentor's Step !" 워드마크를 그대로 쓰고 있어서 같은 이름의 탭이 둘로
+   * 보였다. 이제 이 페이지 안의 세그먼티드 토글로 합쳤다 — js/reviews.js는
+   * 그대로 두고(로직 재사용) #reviewsMount만 이 페이지에 옮겨 붙였다.
+   * 홈/준비하기의 "국가별 후기" 카드는 consult.html?mode=reviews로 들어와
+   * 이 토글이 처음부터 후기 쪽을 펴서 보여준다.
+   */
+  const QA_LEDE = "교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요. 질문·답변 모두 이름 없이 올라가요.";
+  const REVIEWS_LEDE = '다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요';
+
+  const modeToggle = document.getElementById('mentorModeToggle');
+  const qaPanel = document.getElementById('mentorQaPanel');
+  const reviewsPanel = document.getElementById('reviewsMount');
+  const ledeEl = document.getElementById('mentorLede');
+
+  function setMode(mode) {
+    const isReviews = mode === 'reviews';
+    qaPanel.hidden = isReviews;
+    reviewsPanel.hidden = !isReviews;
+    ledeEl.textContent = isReviews ? REVIEWS_LEDE : QA_LEDE;
+    modeToggle.querySelectorAll('.mode-toggle__btn').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.mode === mode);
+    });
+  }
+
+  modeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-mode]');
+    if (!btn) return;
+    setMode(btn.dataset.mode);
+  });
+
+  const initialMode = new URLSearchParams(location.search).get('mode') === 'reviews' ? 'reviews' : 'qa';
+  setMode(initialMode);
 })();

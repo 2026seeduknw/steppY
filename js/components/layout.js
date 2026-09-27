@@ -7,7 +7,8 @@
  *
  * 기존 페이지 HTML을 고치지 않기 위해 마운트 지점을 그대로 재사용한다.
  *   #app-nav      → 상단 앱바
- *   #mentor-float → 하단 탭바 (웹 버전의 플로팅 멘토 버튼 자리. 멘토도, "Mentor's Step !"도 탭이 됐다)
+ *   #mentor-float → 하단 탭바 (웹 버전의 플로팅 멘토 버튼 자리. 멘토가 탭이 됐다 —
+ *   국가별 후기는 별도 탭이 아니라 멘토 화면 안의 세그먼티드 토글로 합쳐졌다)
  * 덕분에 각 페이지 컨트롤러(js/home.js 등)와 렌더 타깃 ID는 전혀 건드리지 않는다.
  */
 
@@ -18,8 +19,7 @@ const TAB_ICONS = {
   journal: '<path d="M5.4 3.4h9.2l4 4v13.2H5.4z"/><path d="M8.7 11.4h6.6M8.7 15.1h4.4"/>',
   quest: '<path d="M6.4 21V4.2"/><path d="M6.4 4.6h11.2l-2.4 3.9 2.4 3.9H6.4"/>',
   report: '<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8.2 10.4V7.7a3.8 3.8 0 0 1 7.6 0v2.7"/>',
-  consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>',
-  reviews: '<path d="M12 3.4 20.6 8 12 12.6 3.4 8z"/><path d="M7 10.2v4.6c0 1.5 2.4 3 5 3s5-1.5 5-3v-4.6"/><path d="M20.6 8v6"/>'
+  consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>'
 };
 
 // 웹 버전은 상단 4개 + 플로팅 멘토였다. 앱에서는 멘토를 탭으로 끌어올렸다.
@@ -31,8 +31,7 @@ const APP_TABS = [
   { key: 'journal', label: '기록하기', href: 'journal.html' },
   { key: 'quest', label: '퀘스트', href: 'quest.html' },
   { key: 'report', label: '교환보고서', href: 'report.html' },
-  { key: 'consult', label: '멘토', href: 'consult.html' },
-  { key: 'reviews', label: "Mentor's Step !", href: 'reviews.html' }
+  { key: 'consult', label: '멘토', href: 'consult.html' }
 ];
 
 const PAGE_TITLES = {

@@ -327,6 +327,33 @@
     return out;
   }
 
+  /**
+   * Mentor's Step 질문·답변. mentor_step.sql이 아직 적용 안 된 프로젝트에서는
+   * 두 조회 다 에러와 함께 data:null이 오고, 여기서는 그걸 그냥 빈 배열로
+   * 받아들인다(다른 로더와 같은 방식) — 마이그레이션 전에도 화면이 안 깨진다.
+   */
+  async function loadMentorQuestions() {
+    const [{ data: questions }, { data: answers }] = await Promise.all([
+      supabaseClient.from('mentor_questions')
+        .select('id, author_id, country, school_id, title, body, created_at')
+        .order('created_at', { ascending: false }),
+      supabaseClient.from('mentor_answers')
+        .select('id, question_id, author_id, body, created_at')
+        .order('created_at', { ascending: true })
+    ]);
+    const answersByQuestion = {};
+    (answers || []).forEach(a => {
+      (answersByQuestion[a.question_id] || (answersByQuestion[a.question_id] = [])).push({
+        id: a.id, authorId: a.author_id, body: a.body, createdAt: a.created_at
+      });
+    });
+    return (questions || []).map(q => ({
+      id: q.id, authorId: q.author_id, country: q.country, schoolId: q.school_id,
+      title: q.title, body: q.body, createdAt: q.created_at,
+      answers: answersByQuestion[q.id] || []
+    }));
+  }
+
   async function loadYonseiMajors() {
     const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
@@ -373,8 +400,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments]) => {
+    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -388,6 +415,7 @@
     if (countryPrep.length) MOCK.countryPrep = countryPrep;
     if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
     if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
+    if (mentorQuestions.length) MOCK.mentorQuestions = mentorQuestions;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);

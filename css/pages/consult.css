@@ -1,190 +1,177 @@
 /* ==========================================================================
-   멘토 없는 멘토 상담 — 학교 선택 + 후기 기반 키워드 챗봇
+   Mentor's Step — 공개 질문·답변 게시판
    ========================================================================== */
 
-.help-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--sky-100);
-  color: var(--sky-700);
-  font-size: var(--fs-small);
-  font-weight: 700;
-  vertical-align: middle;
-  cursor: help;
+/* 국가별 후기(예전 reviews.html)가 사실 Mentor's Step의 다른 면일 뿐이라 —
+   따로 탭을 두지 않고 이 페이지 안에서 세그먼티드 토글로 오간다.
+   (credits.css의 .mode-toggle과 같은 모양 — 이 페이지는 credits.css를
+   불러오지 않아 그 기본 규칙을 여기 복제한다. 폭 100% 오버라이드는
+   app.css의 전역 .mode-toggle 규칙을 그대로 물려받는다.) */
+.mentor-mode-shell { padding-top: 0; }
+.mode-toggle { display: inline-flex; gap: 4px; background: var(--sky-50); padding: 4px; border-radius: var(--radius-pill); margin-bottom: var(--space-4); }
+.mode-toggle__btn {
+  border: none; background: transparent; cursor: pointer;
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill);
+  font-size: var(--fs-small); font-weight: 600; color: var(--ink-600);
 }
+.mode-toggle__btn.is-active { background: #fff; color: var(--sky-700); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
-.consult-layout {
+.mentor-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   max-width: 960px;
   margin: 0 auto;
   padding: var(--space-5) 0 var(--space-9);
 }
+/* .mentor-layout가 display:flex를 못박아 두면 [hidden] 속성 기본 스타일보다
+   이 클래스 규칙의 우선순위가 높아 hidden="" 을 줘도 계속 보인다 — 토글로
+   두 패널(#mentorQaPanel/#reviewsMount)을 감출 때 이 규칙이 이긴다. */
+#mentorQaPanel[hidden], #reviewsMount[hidden] { display: none; }
 
-/* 사이트 공통 .card-pad(24px)는 다른 페이지도 쓰므로 손대지 않고, 이 페이지에서만 더 넉넉하게 오버라이드 */
-.consult-layout > .card-pad { padding: var(--space-6); }
-
-#schoolPicker .ss { width: 100%; }
-
-/* ---- 채팅 패널 ---- */
-.chat-panel { display: flex; flex-direction: column; }
-.chat-panel[hidden] { display: none; }
-.chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  max-height: 520px;
-  overflow-y: auto;
-  padding: var(--space-2) 2px;
-}
-
-.chat-message { display: flex; flex-direction: column; }
-.chat-message--user { align-items: flex-end; }
-.chat-message--bot { align-items: stretch; }
-
-/* ---- 유저 메시지: 좁은 우측 버블 (레퍼런스2) ---- */
-.chat-message--user .chat-message__bubble {
-  max-width: 78%;
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  border-bottom-right-radius: var(--radius-sm);
-  background: #84c62c;
-  color: #fff;
-  font-size: var(--fs-body);
-  line-height: 1.6;
-  overflow-wrap: break-word;
-  word-break: keep-all;
-}
-
-/* ---- 봇 메시지: 풀폭 응답 카드 (레퍼런스1 ChatCore) ---- */
-.chat-message--bot .chat-message__row { display: flex; gap: var(--space-3); align-items: flex-start; }
-.chat-message__avatar {
-  flex: 0 0 auto;
-  width: 40px; height: 40px;
-  padding: 4px;
-  box-sizing: border-box;
-  border-radius: 50%;
-  background: var(--sky-100);
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden;
-  font-size: 15px;
-}
-.chat-message__avatar img { width: 100%; height: 100%; object-fit: contain; }
-.chat-message--bot .chat-message__bubble {
-  flex: 1;
-  min-width: 0;
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  border-top-left-radius: var(--radius-sm);
-  background: var(--cloud-0);
-  border: 1px solid var(--line-200);
-  color: var(--ink-900);
-  font-size: var(--fs-body);
-  line-height: 1.65;
-  overflow-wrap: break-word;
-  word-break: keep-all;
-}
-.chat-message__sender {
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--sky-700);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.chat-message--bot .chat-message__bubble p { margin-bottom: var(--space-2); }
-
-.chat-message__meta {
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  color: var(--ink-400);
-  margin-top: 6px;
-}
-.chat-message--user .chat-message__meta { margin-right: 2px; }
-.chat-message--bot .chat-message__meta { margin-left: calc(32px + var(--space-3)); }
-
-/* ---- 인용카드(후기) ---- */
-.chat-message__quote {
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--sky-50);
-  margin-top: var(--space-3);
-}
-.chat-message__quote + .chat-message__quote { margin-top: var(--space-2); }
-.chat-message__quote-meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--sky-700); margin-bottom: 4px; }
-.chat-message__quote-text {
-  font-size: var(--fs-small);
-  color: var(--ink-900);
-  line-height: 1.6;
-  overflow-wrap: break-word;
-  word-break: keep-all;
-}
-
-/* ---- 제안 칩 ---- */
-.chat-suggest-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-3); }
-.chat-suggest-chips .chip {
-  height: 34px;
-  padding: 0 var(--space-4);
-  font-size: var(--fs-small);
-  background: var(--cloud-0);
-  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
-}
-.chat-suggest-chips .chip:hover { background: var(--sky-50); border-color: var(--sky-300); transform: translateY(-1px); }
-
-/* ---- 타이핑 인디케이터 ---- */
-.chat-typing {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px var(--space-1);
-}
-.chat-typing span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--ink-400);
-  animation: chat-typing-bounce 1.2s infinite ease-in-out;
-}
-.chat-typing span:nth-child(2) { animation-delay: 0.15s; }
-.chat-typing span:nth-child(3) { animation-delay: 0.3s; }
-@keyframes chat-typing-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30% { transform: translateY(-4px); opacity: 1; }
-}
-
-/* ---- 입력창(composer) ---- */
-.chat-input-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--line-100);
-}
-.chat-input-row input {
-  flex: 1;
-  height: 50px;
-  padding: 0 var(--space-5);
-  border: 1.5px solid var(--line-200);
+/* ---- 상단 툴바: 크레딧 + 질문하기 ---- */
+.mentor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.mentor-credit {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px var(--space-3);
   border-radius: var(--radius-pill);
   background: var(--sky-50);
-  font-size: var(--fs-body);
+  color: var(--ink-900);
+  font-size: var(--fs-small);
 }
-.chat-input-row input:focus { border-color: var(--sky-500); background: var(--cloud-0); }
-.chat-send-btn {
+.mentor-credit strong { font-family: var(--font-mono); font-size: 1rem; }
+.mentor-credit[hidden] { display: none; }
+
+/* ---- 필터: 즐겨찾기만. 국가는 더 이상 홈에서 거르지 않는다(질문마다
+   옆에 국가·학교를 라벨로 보여줄 뿐) — 국가는 "질문하기"에서 카드로 고른다. */
+.mentor-filters { display: flex; align-items: center; }
+.mentor-filters .toggle-row { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
+
+/* ---- 목록: 카드가 아니라 네이버 카페 같은 게시판 줄글 ----
+   글이 많아지는 화면이라 카드 한 장에 24px 안팎씩 쓰는 여백을 감당하기
+   어렵다 — 제목 줄 + 메타 줄 두 줄, 사이는 가는 실선으로만 나눈다. */
+.mentor-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line-100);
+}
+.mentor-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) 2px;
+  border-bottom: 1px solid var(--line-100);
+  cursor: pointer;
+}
+.mentor-row:active { background: var(--cloud-50); }
+.mentor-row__line { display: flex; align-items: baseline; gap: 6px; }
+.mentor-row__tag { flex: 0 0 auto; font-size: var(--fs-small); font-weight: 700; color: var(--sky-700); }
+.mentor-row__title {
+  flex: 1 1 auto; min-width: 0;
+  font-size: var(--fs-body); color: var(--ink-900);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mentor-row__count { flex: 0 0 auto; font-size: var(--fs-small); font-weight: 700; font-family: var(--font-mono); color: var(--coral-500); }
+.mentor-row__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.mentor-row__meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--ink-400); }
+.mentor-row__fav {
   flex: 0 0 auto;
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  background: var(--sky-500);
-  color: #fff;
+  width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 16px rgba(62, 102, 144, 0.28);
-  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+  color: var(--ink-400);
 }
-.chat-send-btn:hover { background: var(--sky-700); transform: translateY(-1px); }
-.chat-send-btn:active { transform: translateY(0); }
+.mentor-row__fav svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+.mentor-row__fav.is-active { color: var(--coral-500); }
+.mentor-row__fav.is-active svg { fill: currentColor; }
+
+.mentor-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-8) var(--space-4); }
+
+/* ---- 폼 공통 (질문하기 / 답변하기) ---- */
+.mentor-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.mentor-form__field { display: flex; flex-direction: column; gap: 6px; }
+.mentor-form__label { font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.mentor-form input[type="text"],
+.mentor-form select,
+.mentor-form textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1.5px solid var(--line-200);
+  border-radius: var(--radius-md);
+  background: var(--cloud-0);
+  font-size: 16px; /* iOS 자동 확대 방지 */
+  color: var(--ink-900);
+}
+.mentor-form textarea { min-height: 96px; resize: vertical; font-family: inherit; }
+.mentor-form input:focus, .mentor-form select:focus, .mentor-form textarea:focus { border-color: var(--sky-500); }
+.mentor-form__cost { font-size: var(--fs-small); color: var(--ink-600); }
+.mentor-form__cost strong { font-family: var(--font-mono); color: var(--ink-900); }
+.mentor-form #askSchoolPicker .ss { width: 100%; }
+
+/* 국가 필드 — select 대신 카드 선택 시트를 여는 버튼 */
+.mentor-select-trigger {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3);
+  border: 1.5px solid var(--line-200);
+  border-radius: var(--radius-md);
+  background: var(--cloud-0);
+  font-size: 16px; /* iOS 자동 확대 방지 — 다른 입력칸과 동일 */
+  color: var(--ink-900);
+  text-align: left;
+}
+.mentor-select-trigger span:first-child.is-placeholder { color: var(--ink-400); }
+.mentor-select-trigger span:last-child { color: var(--ink-400); font-size: 1.1em; }
+
+/* ---- 국가 선택 카드 — 예전 국가별 후기(reviews.css .review-country-card)를
+   바텀시트 안에서도 쓸 수 있게 3열로 작게 줄인 버전 ---- */
+.mentor-country-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+.mentor-country-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-200);
+  background: var(--cloud-0);
+  text-align: center;
+}
+.mentor-country-card:active { background: var(--cloud-50); }
+.mentor-country-card__flag {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--sky-50);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; line-height: 1;
+}
+.mentor-country-card__name { font-weight: 700; font-size: var(--fs-small); color: var(--ink-900); word-break: keep-all; }
+.mentor-country-card__meta { font-size: var(--fs-micro); color: var(--ink-400); }
+
+.mentor-back {
+  display: inline-flex; align-items: center;
+  background: none; border: none; padding: 0;
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-small); font-weight: 600;
+  color: var(--sky-700); cursor: pointer;
+}
+
+/* ---- 질문 상세 ---- */
+.mentor-detail { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+.mentor-detail .badge { align-self: flex-start; }
+.mentor-detail__title { font-size: var(--fs-h2); font-weight: 800; word-break: keep-all; }
+.mentor-detail__body { font-size: var(--fs-body); line-height: 1.65; color: var(--ink-900); white-space: pre-wrap; word-break: keep-all; }
+.mentor-detail__meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--ink-400); }
+
+.mentor-section-title { font-size: var(--fs-h3); font-weight: 700; margin-bottom: var(--space-3); }
+
+.mentor-related { margin-bottom: var(--space-5); }
+
+.mentor-answers { margin-bottom: var(--space-5); }
+.mentor-answers__empty { font-size: var(--fs-small); color: var(--ink-400); }
+.mentor-answer { padding: var(--space-4); border-radius: var(--radius-md); background: var(--cloud-50); }
+.mentor-answer + .mentor-answer { margin-top: var(--space-2); }
+.mentor-answer__meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--ink-400); margin-bottom: 4px; }
+.mentor-answer__body { font-size: var(--fs-small); line-height: 1.6; color: var(--ink-900); white-space: pre-wrap; word-break: keep-all; }
+
+/* ---- 인용카드(관련 후기) — 예전 키워드 매칭 챗봇에서 쓰던 것을 그대로 재사용 ---- */
+.chat-message__quote { padding: var(--space-4); border-radius: var(--radius-md); background: var(--sky-50); }
+.chat-message__quote + .chat-message__quote { margin-top: var(--space-2); }
+.chat-message__quote-meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--sky-700); margin-bottom: 4px; }
+.chat-message__quote-text { font-size: var(--fs-small); color: var(--ink-900); line-height: 1.6; overflow-wrap: break-word; word-break: keep-all; }

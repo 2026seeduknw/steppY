@@ -22,7 +22,7 @@ const PREPARE_MARKUP = `
         <div class="living-grid" id="livingGrid"></div>
       </section>
 
-      <a class="reviews-cta" href="reviews.html">
+      <a class="reviews-cta" href="consult.html?mode=reviews">
         <div class="reviews-cta__body">
           <span class="reviews-cta__eyebrow">선배 후기</span>
           <h2>파견 국가별 후기 보기</h2>

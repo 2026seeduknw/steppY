@@ -1284,23 +1284,35 @@ body[data-page="journal"][data-theme="film"] {
 }
 
 /* js/diary-en.js가 영어로 바꿔 끼운 글자를 감싸는 자리(.film-en) — 로고와 같은
-   어그로체 볼드를 입힌다. 색·크기는 원래 요소가 정한 값을 그대로 물려받는다
+   어그로체 볼드를 입힌다. 색은 원래 요소가 정한 값을 그대로 물려받는다
    (글꼴만 바꾼다 — .wm-text처럼 색을 직접 들지 않는다).
    !important — 요일·라벨 등 자리마다 font-family를 각자 정해 둔 규칙
-   (예: .diary-weekdays span)이 더 구체적이라, 그냥 두면 이 글꼴이 밀린다. */
+   (예: .diary-weekdays span)이 더 구체적이라, 그냥 두면 이 글꼴이 밀린다.
+   크기는 물려받은 값을 그대로 쓰되 0.75rem을 넘지 않게 자른다 — 좁고 가는
+   Bebas Neue 기준으로 잡아둔 제목 크기(2.3rem 등)를 그대로 물려받으면, 더
+   통통하고 획이 굵은 어그로체에서는 훨씬 커 보인다(RECORD·YESTERDAY·CAMERA·
+   ADD 전부 포함). 이미 작은 라벨(예: 요일 10px)은 0.75rem보다 작으니 min()이
+   원래 크기를 그대로 둔다. */
 body[data-page="journal"][data-theme="film"] .film-en {
   font-family: 'SB Aggro Light', var(--font-display) !important;
   font-weight: 700 !important;
+  font-size: min(1em, 0.75rem);
 }
-body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 2.3rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
-body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 2rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
-body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 1.9rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
-body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { font-size: 2rem; letter-spacing: 0.05em; font-weight: 400; }
-body[data-page="journal"][data-theme="film"] .stampbook__month { font-family: var(--f-title); font-size: 1.15rem; letter-spacing: 0.08em; color: var(--film-amber); text-shadow: var(--film-glow); }
+/* 이 제목들은 필름 테마에서 항상 안에 .film-en(영어로 바꿔 끼운 글자)만 담긴다.
+   그런데 이 font-size는 안쪽 span이 아니라 이 요소 자신의 것이라 line-height:1도
+   이 큰 값 기준으로 계산된다 — 글자는 .film-en의 min()으로 작아졌어도, 보이지
+   않는 줄 상자(line box) 자체는 예전 Bebas Neue 크기(2.3rem 등) 그대로 남아서
+   RECORD가 스트릭 배지보다 아래로 처져 보이고 위아래 여백도 헐렁했다. 원인은
+   같은 값이니 여기서도 0.75rem으로 맞춘다. */
+body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; }
+body[data-page="journal"][data-theme="film"] .stampbook__month { font-family: var(--f-title); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--film-amber); text-shadow: var(--film-glow); }
 body[data-page="journal"][data-theme="film"] .diary-stamp__title, body[data-page="journal"][data-theme="film"] .diary-featured__title { letter-spacing: 0.01em; }
-body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow { font-family: var(--f-title); font-size: 1.05rem; letter-spacing: 0.16em; }
+body[data-page="journal"][data-theme="film"] .diary-hero__eyebrow { font-family: var(--f-title); font-size: 0.75rem; letter-spacing: 0.16em; }
 body[data-page="journal"][data-theme="film"] .diary-write-bar__btn { letter-spacing: 0.08em; }
-body[data-page="journal"][data-theme="film"] .diary-write-bar__btn, body[data-page="journal"][data-theme="film"] .diary-qpop__ans, body[data-page="journal"][data-theme="film"] .diary-qpop__close { font-family: var(--f-title); font-size: 1.2rem; font-weight: 400; }
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn, body[data-page="journal"][data-theme="film"] .diary-qpop__ans, body[data-page="journal"][data-theme="film"] .diary-qpop__close { font-family: var(--f-title); font-size: 0.75rem; font-weight: 400; }
 body[data-page="journal"][data-theme="film"] .diary-week__day span, body[data-page="journal"][data-theme="film"] .diary-weekdays span { letter-spacing: 0.06em; font-size: 10px; }
 
 /* 필름 테마 — 날짜 칩과 달력 사이 구분선 */
@@ -1310,13 +1322,27 @@ body[data-page="journal"][data-theme="film"] .diary-cal-section {
   padding-top: var(--space-5);
 }
 
-/* 필름 테마 — 스트릭: 숫자는 조금 작게, DAY STREAK 글씨는 크게 */
-body[data-page="journal"][data-theme="film"] .diary-streak__num { font-size: 1.25rem; }
-body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 1rem; letter-spacing: 0.08em; margin-bottom: 0; align-self: center; color: var(--diary-text-dim); }
-body[data-page="journal"][data-theme="film"] .diary-streak { gap: 8px; align-items: center; }
-body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 0.8rem; letter-spacing: 0.1em; }
-/* 불꽃 아이콘을 숫자 쪽(오른쪽)으로 붙인다 */
-body[data-page="journal"][data-theme="film"] .diary-streak svg { margin-right: -7px; }
+/* 필름 테마 — 스트릭 배지. 어그로체가 굵고 통통해서 숫자·라벨 다 눈에 띄게
+   작게 잡는다(예전엔 "DAY STREAK 글씨는 크게"였는데, 어그로체로 바뀌면서
+   그 기준이 더 이상 안 맞는다). */
+body[data-page="journal"][data-theme="film"] .diary-streak__num { font-size: 1.05rem; }
+body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 0.65rem; letter-spacing: 0.08em; margin-bottom: 0; align-self: center; color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"] .diary-streak { gap: 5px; align-items: center; }
+body[data-page="journal"][data-theme="film"] .diary-streak__label { font-size: 0.65rem; letter-spacing: 0.1em; }
+/* 불꽃 아이콘을 숫자 쪽(오른쪽)으로 붙인다. 숫자·라벨을 줄인 만큼 아이콘도
+   같이 줄여야 이 배지만 혼자 커 보이지 않는다. */
+body[data-page="journal"][data-theme="film"] .diary-streak svg { width: 19px; height: 19px; margin-right: -6px; }
+
+/* 필름 테마 — 위쪽 여백도 전체적으로 한 단씩 줄인다(어그로체로 글자가
+   작아진 만큼 예전 Bebas Neue 기준 여백은 헐렁해 보인다). */
+body[data-page="journal"][data-theme="film"] .diary-header { padding: var(--space-3) 0 var(--space-2); }
+body[data-page="journal"][data-theme="film"] .diary-hero { padding: var(--space-4); }
+body[data-page="journal"][data-theme="film"] .diary-week { margin-top: var(--space-3); }
+/* "출국일을 입력해 주세요" 줄(.diary-hero--compact.diary-hero--setup) 위 여백.
+   요일 원 줄과의 간격은 이 요소의 padding이 아니라 .journal-layout의 flex
+   gap(--space-4, 21px)에서 온다 — 페이지 전체 섹션 간격이라 거기서 줄이면
+   다른 구간까지 다 좁아진다. 이 구간만 negative margin으로 당겨 온다. */
+body[data-page="journal"][data-theme="film"] #diaryHeroSlot:has(.diary-hero--compact) { margin-top: -10px; }
 
 /* 기록 카드 아래쪽 — 시각을 태그 줄 오른쪽 아래의 작은 칩으로 */
 .diary-ticket-row--tags { position: relative; }
@@ -1457,6 +1483,17 @@ body[data-page="journal"] .wrapup-cover { grid-template-columns: repeat(3, 1fr);
 body[data-page="journal"] .report-entry { flex-wrap: wrap; }
 /* 필름 테마 달력 머리 위 구분선은 위 규칙의 padding-top을 덮지 않게 다시 */
 body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-top: var(--space-5); }
+/* 필름 테마 달력만 양옆 패딩을 되살린다 — 위 규칙(1472줄)이 모바일에서 달력을
+   화면 끝까지 꽉 채우도록 좌우 패딩을 0으로 비우고 weekdays/month에 음수
+   마진으로 바깥까지 밀어내는데, 필름 테마에서는 화면 가장자리에 바로 붙어
+   답답해 보인다. 양옆 여백을 주고, 그만큼 밀어내던 음수 마진도 없앤다.
+   처음엔 --space-4(21px)를 줬더니 7칸으로 나뉜 날짜 칸이 눈에 띄게 작아져서
+   --space-2(10px)로, 그래도 작다고 해서 --space-1(5px)로 다시 줄였다 — 칸
+   사이 gap도 같이 좁혀서 칸 자체 크기를 최대한 키운다. */
+body[data-page="journal"][data-theme="film"] .diary-cal-section { padding-left: var(--space-1); padding-right: var(--space-1); }
+body[data-page="journal"][data-theme="film"] .diary-cal-section .diary-weekdays,
+body[data-page="journal"][data-theme="film"] .diary-cal-section .diary-month { margin-left: 0; margin-right: 0; }
+body[data-page="journal"][data-theme="film"] .diary-month { gap: 3px; }
 
 /* CD는 이 기능의 핵심이라 항상 돈다. '동작 줄이기'를 켠 기기에서도 멈추지 않고 더 천천히 돈다. */
 @media (prefers-reduced-motion: reduce) {
@@ -1593,13 +1630,17 @@ body[data-page="journal"][data-theme="film"][data-tod] .stampbook__stamp { filte
 body[data-page="journal"][data-theme="film"] .diary-write-bar,
 body[data-page="journal"][data-theme="film"] .diary-featured {
   border-top: 1px solid rgba(27, 26, 23, 0.18);
-  padding-top: var(--space-4);
+  padding-top: var(--space-3);
 }
 body[data-page="journal"][data-theme="film"] .diary-write-bar { margin-top: 0; }
 body[data-page="journal"][data-theme="film"] .diary-featured:empty { border-top: 0; padding-top: 0; }
-/* 카메라·ADD 버튼을 위·아래 구분선의 정가운데에 — 위 여백 = 버튼 아래 여백 + 블록 사이 간격(18px) */
-body[data-page="journal"][data-theme="film"] .diary-write-bar { padding-top: 28px; padding-bottom: 10px; }
+/* 카메라·ADD 버튼을 위·아래 구분선 사이에 — 18/6으로 줄였더니 위쪽 줄과 너무
+   붙어서 조금 다시 늘린다(예전 28/10 → 22/8). */
+body[data-page="journal"][data-theme="film"] .diary-write-bar { padding-top: 22px; padding-bottom: 8px; }
 body[data-page="journal"][data-theme="film"] .diary-featured { margin-top: 0; }
+/* 버튼 자체(카메라·ADD) 높이 — 48px min-height는 다른 화면 버튼 기준이라
+   이 자리에서는 위아래로 두툼해 보인다. */
+body[data-page="journal"][data-theme="film"] .diary-write-bar__btn { min-height: 40px; }
 
 /* 기록 제목 글씨 — SUIT(확정). 사용자가 쓴 제목(우표 아래·최근 사진 패널·저장 연출)에만 적용한다.
    큰 화면 제목(RECORD 등)은 Bebas Neue 그대로. */

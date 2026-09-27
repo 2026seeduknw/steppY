@@ -8,15 +8,17 @@
  *   껐다 켠다 — 데이터가 채워지면 true로 바꾸고 다시 빌드하면 끝이다.
  *
  * 켜는 조건
- *   mentorStep  — school_exchange_reports 에 후기 문장이 들어가면 (지금 0건,
- *                 그래서 열어 봐야 빈 챗봇이다)
+ *   mentorStep  — 예전에는 school_exchange_reports 후기 0건이라 껐다(빈 챗봇).
+ *                 이제 consult.html은 후기 챗봇이 아니라 질문·답변 게시판(F6,
+ *                 supabase/mentor_step.sql)이라 질문이 0건이어도 "첫 질문을
+ *                 남겨보세요" 빈 상태가 정상 화면이다 — 다시 켠다.
  *   partnerPromo — 실제 제휴처가 생기고 눌렀을 때 갈 곳이 있으면
  *                 (지금은 클릭 수만 세는 더미 CTA라 "아직 준비 중" 토스트로 끝난다)
  *
  * 이 파일은 layout.js·school-modal.js보다 먼저 실려야 한다.
  */
 const RELEASE = {
-  mentorStep: false,
+  mentorStep: true,
   partnerPromo: false
 };
 

@@ -27,8 +27,11 @@
     query: '', country: '', majors: new Set(), regions: new Set(),
     programs: new Set(), tracks: new Set(),
     commerce: new Set(), climate: new Set(), security: new Set(),
-    qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default'
+    qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default', page: 1
   };
+
+  // 271개를 한 화면에 다 그리면 스크롤이 지나치게 길어진다 — 한 페이지 5개로 끊는다.
+  const PAGE_SIZE = 5;
 
   function uniq(field) { return [...new Set(MOCK.schools.map(s => s[field]).filter(v => v != null))]; }
 
@@ -71,7 +74,7 @@
       selected: [...state.majors],
       multiple: true,
       placeholder: '학과 검색',
-      onChange: (values) => { state.majors = new Set(values); renderGrid(); }
+      onChange: (values) => { state.majors = new Set(values); state.page = 1; renderGrid(); }
     });
     mount.appendChild(select.el);
   }
@@ -85,6 +88,7 @@
     </select>`;
     document.getElementById('countrySelect').addEventListener('change', (e) => {
       state.country = e.target.value;
+      state.page = 1;
       renderGrid();
     });
   }
@@ -97,6 +101,7 @@
         const v = chip.dataset.value;
         if (selectedSet.has(v)) selectedSet.delete(v); else selectedSet.add(v);
         chip.classList.toggle('is-selected');
+        state.page = 1;
         renderGrid();
       });
     });
@@ -137,11 +142,19 @@
     const filtered = sortSchools(MOCK.schools.filter(matchesFilters));
     document.getElementById('resultCount').innerHTML = `<strong>${filtered.length}</strong>개 학교`;
     const grid = document.getElementById('schoolGrid');
+    const pager = document.getElementById('schoolPager');
     if (!filtered.length) {
       grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요. 필터를 조정해보세요.</div>`;
+      if (pager) pager.innerHTML = '';
       return;
     }
-    grid.innerHTML = filtered.map(schoolCardTemplate).join('');
+    // 필터가 바뀌어 결과가 줄어들면 이미 지나가버린 페이지에 남아있을 수 있다 —
+    // 범위를 벗어나면 마지막 페이지로 당겨온다.
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    state.page = Math.min(Math.max(state.page, 1), totalPages);
+    const start = (state.page - 1) * PAGE_SIZE;
+    const pageItems = filtered.slice(start, start + PAGE_SIZE);
+    grid.innerHTML = pageItems.map(schoolCardTemplate).join('');
     grid.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav-toggle-card]')) return;
@@ -158,6 +171,24 @@
         btn.classList.toggle('is-active', active);
       });
     });
+    renderPager(pager, totalPages);
+  }
+
+  function renderPager(pager, totalPages) {
+    if (!pager) return;
+    if (totalPages <= 1) { pager.innerHTML = ''; return; }
+    pager.innerHTML = `
+      <button type="button" class="pager-btn" id="pagerPrev" ${state.page <= 1 ? 'disabled' : ''} aria-label="이전 페이지">‹</button>
+      <span class="pager-status">${state.page} / ${totalPages}</span>
+      <button type="button" class="pager-btn" id="pagerNext" ${state.page >= totalPages ? 'disabled' : ''} aria-label="다음 페이지">›</button>
+    `;
+    const goTo = (page) => {
+      state.page = page;
+      renderGrid();
+      document.getElementById('schoolGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    document.getElementById('pagerPrev').addEventListener('click', () => goTo(state.page - 1));
+    document.getElementById('pagerNext').addEventListener('click', () => goTo(state.page + 1));
   }
 
   function schoolCardTemplate(school) {
@@ -264,20 +295,21 @@
     });
   }
 
-  document.getElementById('searchInput').addEventListener('input', (e) => { state.query = e.target.value; renderGrid(); });
-  document.getElementById('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; renderGrid(); });
-  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; renderGrid(); });
+  document.getElementById('searchInput').addEventListener('input', (e) => { state.query = e.target.value; state.page = 1; renderGrid(); });
+  document.getElementById('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; state.page = 1; renderGrid(); });
+  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; renderGrid(); });
 
   const eligibleToggle = document.getElementById('onlyEligibleToggle');
-  eligibleToggle.addEventListener('click', () => { state.onlyEligible = !state.onlyEligible; eligibleToggle.classList.toggle('is-on'); renderGrid(); });
+  eligibleToggle.addEventListener('click', () => { state.onlyEligible = !state.onlyEligible; eligibleToggle.classList.toggle('is-on'); state.page = 1; renderGrid(); });
   const favToggle = document.getElementById('onlyFavoriteToggle');
-  favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; favToggle.classList.toggle('is-on'); renderGrid(); });
+  favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; favToggle.classList.toggle('is-on'); state.page = 1; renderGrid(); });
 
   document.getElementById('resetFilters').addEventListener('click', () => {
     state.country = ''; state.majors.clear(); state.regions.clear();
     state.programs.clear(); state.tracks.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
+    state.page = 1;
     document.getElementById('qsSelect').value = '';
     eligibleToggle.classList.remove('is-on'); favToggle.classList.remove('is-on');
     renderFilters(); renderGrid();

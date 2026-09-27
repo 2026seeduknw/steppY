@@ -54,7 +54,11 @@ function guestState() {
     programRange: null,
     targetScores: null,
     // 게스트에게는 온보딩을 묻지 않는다 — 답을 저장할 계정이 없다
-    onboardedAt: 'guest'
+    onboardedAt: 'guest',
+    // Mentor's Step — 게스트는 크레딧이 없고(질문·답변은 로그인 전용), 질문
+    // 즐겨찾기도 계정에 묶인 값이라 이 기기에는 저장할 자리가 없다.
+    credits: 0,
+    questionFavorites: []
   };
 }
 
@@ -91,7 +95,9 @@ function emptyState(displayName) {
     journal: [],
     programRange: null,
     targetScores: null,
-    onboardedAt: null
+    onboardedAt: null,
+    credits: 0,
+    questionFavorites: []
   };
 }
 
@@ -140,6 +146,64 @@ const AppState = {
   get profile() { return this.load().profile; },
   isFavorite(schoolId) { return this.load().favorites.includes(schoolId); },
   getWishlist() { return this.load().wishlist; },
+
+  /* -------------------------------------------------------- Mentor's Step */
+
+  getCredits() { return this.isAuthed ? this.load().credits : 0; },
+  isQuestionFavorite(id) { return this.load().questionFavorites.includes(id); },
+
+  toggleQuestionFavorite(id) {
+    const s = this.load();
+    const idx = s.questionFavorites.indexOf(id);
+    const added = idx < 0;
+    if (added) s.questionFavorites.push(id); else s.questionFavorites.splice(idx, 1);
+    this.save();
+    this._push(() => added
+      ? supabaseClient.from('mentor_favorites').insert({ user_id: Auth.userId, question_id: id })
+      : supabaseClient.from('mentor_favorites').delete().eq('user_id', Auth.userId).eq('question_id', id),
+      '질문 즐겨찾기');
+    return added;
+  },
+
+  /**
+   * 질문 등록·답변은 크레딧이 걸려 있어 다른 쓰기처럼 낙관적으로 먼저 화면을
+   * 바꾸고 보지 않는다 — 서버 RPC(ask_question/submit_answer, supabase/mentor_step.sql)가
+   * 잔액을 원자적으로 확인·차감/적립한 "성공한 값"을 받은 뒤에야 로컬 상태를 바꾼다.
+   * 실패(크레딧 부족 등)를 사용자에게 보여줘야 해서 큐에 흘려보내지 않고 직접 await한다.
+   */
+  async askQuestion({ country, schoolId, title, body }) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.rpc('ask_question', {
+      p_country: country, p_school_id: schoolId || null, p_title: title, p_body: body
+    });
+    if (error) return { ok: false, error };
+    const row = Array.isArray(data) ? data[0] : data;
+    const question = {
+      id: row.id, authorId: row.author_id, country: row.country, schoolId: row.school_id,
+      title: row.title, body: row.body, createdAt: row.created_at, answers: []
+    };
+    MOCK.mentorQuestions.unshift(question);
+    this.load().credits -= 10;
+    this.save();
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true, question };
+  },
+
+  async submitAnswer({ questionId, body }) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.rpc('submit_answer', {
+      p_question_id: questionId, p_body: body
+    });
+    if (error) return { ok: false, error };
+    const row = Array.isArray(data) ? data[0] : data;
+    const answer = { id: row.id, authorId: row.author_id, body: row.body, createdAt: row.created_at };
+    const question = MOCK.mentorQuestions.find(q => q.id === questionId);
+    if (question) question.answers.push(answer);
+    this.load().credits += 10;
+    this.save();
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true, answer };
+  },
 
   getConfirmedSchool() {
     const id = this.load().confirmedSchoolId;
@@ -494,12 +558,14 @@ const AppState = {
 
     const uid = Auth.userId;
     // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
-    const [prof, favs, wish, todos, journal] = await Promise.all([
+    const [prof, favs, wish, todos, journal, credits, qFavs] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at').eq('user_id', uid)
+      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at').eq('user_id', uid),
+      supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
+      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid)
     ]);
 
     const next = emptyState(this._displayName());
@@ -524,6 +590,10 @@ const AppState = {
         : null;
     }
     if (favs.data) next.favorites = favs.data.map(r => r.school_id);
+    // mentor_step.sql이 아직 적용되지 않았으면 이 두 조회는 조용히 에러만 나고
+    // data는 null이다 — 그대로 기본값(0, [])으로 남아 화면이 깨지지 않는다.
+    if (credits.data) next.credits = credits.data.balance;
+    if (qFavs.data) next.questionFavorites = qFavs.data.map(r => r.question_id);
     if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
     if (todos.data) {
       next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));
