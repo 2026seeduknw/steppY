@@ -7,7 +7,7 @@
  *
  * 기존 페이지 HTML을 고치지 않기 위해 마운트 지점을 그대로 재사용한다.
  *   #app-nav      → 상단 앱바
- *   #mentor-float → 하단 탭바 (웹 버전의 플로팅 멘토 버튼 자리. 멘토는 탭이 됐다)
+ *   #mentor-float → 하단 탭바 (웹 버전의 플로팅 멘토 버튼 자리. 멘토도, "Mentor's Step !"도 탭이 됐다)
  * 덕분에 각 페이지 컨트롤러(js/home.js 등)와 렌더 타깃 ID는 전혀 건드리지 않는다.
  */
 
@@ -17,7 +17,8 @@ const TAB_ICONS = {
   credits: '<path d="M6.2 2.8h8l4 4v14.4h-12z"/><path d="m9.3 13.2 1.9 1.9 3.8-3.8"/>',
   journal: '<path d="M5.4 3.4h9.2l4 4v13.2H5.4z"/><path d="M8.7 11.4h6.6M8.7 15.1h4.4"/>',
   report: '<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8.2 10.4V7.7a3.8 3.8 0 0 1 7.6 0v2.7"/>',
-  consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>'
+  consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>',
+  reviews: '<path d="M12 3.4 20.6 8 12 12.6 3.4 8z"/><path d="M7 10.2v4.6c0 1.5 2.4 3 5 3s5-1.5 5-3v-4.6"/><path d="M20.6 8v6"/>'
 };
 
 // 웹 버전은 상단 4개 + 플로팅 멘토였다. 앱에서는 멘토를 탭으로 끌어올렸다.
@@ -28,7 +29,8 @@ const APP_TABS = [
   { key: 'credits', label: '학점 인정', href: 'credits.html' },
   { key: 'journal', label: '기록하기', href: 'journal.html' },
   { key: 'report', label: '교환보고서', href: 'report.html' },
-  { key: 'consult', label: '멘토', href: 'consult.html' }
+  { key: 'consult', label: '멘토', href: 'consult.html' },
+  { key: 'reviews', label: "Mentor's Step !", href: 'reviews.html' }
 ];
 
 const PAGE_TITLES = {
@@ -242,29 +244,6 @@ function renderTabBar(activeKey) {
 }
 
 /**
- * "Mentor's Step !" 플로팅 버튼 — 모든 화면 오른쪽 아래에 떠서 국가별 후기
- * (reviews.html)로 보낸다. 웹 버전에 있던 플로팅 멘토 버튼(.mentor-float,
- * #mentor-float가 탭바 자리로 바뀌면서 죽은 CSS로 남아 있었다)의 호버 효과를
- * 그대로 되살려 쓴다 — id만 새로 둬서 탭바 마운트와 겹치지 않는다.
- *
- * consult.html(진짜 "Mentor's Step" 챗봇)과 reviews.html(자기 자신)에는
- * 안 띄운다 — 같은 이름이 그 화면에 또 뜨면 혼란만 준다.
- */
-function renderMentorStepFloat(activeKey) {
-  if (activeKey === 'consult' || activeKey === 'reviews') return;
-  if (document.getElementById('mentorStepFloatBtn')) return;
-  const btn = document.createElement('a');
-  btn.id = 'mentorStepFloatBtn';
-  btn.className = 'mentor-float';
-  btn.href = 'reviews.html';
-  btn.innerHTML = `
-    <span class="mentor-float__icon" aria-hidden="true">🎓</span>
-    <span class="mentor-float__label wm-text">Mentor's Step !</span>
-  `;
-  document.body.appendChild(btn);
-}
-
-/**
  * 학교 찾기 화면의 필터 사이드바를 바텀시트로 옮긴다.
  *
  * 필터 그룹의 컨테이너 id(countryFilters 등)는 그대로 둔 채 .filter-panel 엘리먼트만
@@ -322,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   renderAppBar(page);
   renderTabBar(page);
-  renderMentorStepFloat(page);
   if (page === 'search') mountFilterSheet();
 });
 
