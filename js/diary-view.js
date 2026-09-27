@@ -53,6 +53,8 @@
       dorm: 'https://images.unsplash.com/photo-1632119289059-793dd347950f?w=900&q=75&auto=format&fit=crop',
       eiffel: 'https://images.unsplash.com/photo-1757435755027-91a1a4beb6c5?w=900&q=75&auto=format&fit=crop'
     };
+    P.sunset = 'assets/mock/campus-sunset.webp';   // 어제·오늘 예시 사진(앱에 들어 있는 파일)
+    P.laptop = 'assets/mock/cafe-laptop.webp';
     Object.values(P).forEach(u => { photoUrls[u] = u; });
     const y = now.getFullYear(), m = now.getMonth();
     const at = (day, h, min) => new Date(y, m, day, h, min).toISOString();
@@ -66,7 +68,9 @@
       indila: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/49/58/30/49583018-308b-431d-c691-4a28e78be8cd/14UMGIM01109.rgb.jpg/300x300bb.jpg',
       air: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/d1/f9/26/d1f926e7-e996-7166-3744-0710a82177ac/017046664455.jpg/300x300bb.jpg',
       iu: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/dc/12/fe/dc12fe03-172b-a843-0d96-12819fa05b6c/cover-.jpg/300x300bb.jpg',
-      stromae: 'https://is1-ssl.mzstatic.com/image/thumb/Video5/v4/49/ab/0f/49ab0f2e-9895-b63a-6438-0cf87201f875/13UAAIM09601_1_1.jpg/300x300bb.jpg'
+      stromae: 'https://is1-ssl.mzstatic.com/image/thumb/Video5/v4/49/ab/0f/49ab0f2e-9895-b63a-6438-0cf87201f875/13UAAIM09601_1_1.jpg/300x300bb.jpg',
+      ariana: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/300x300bb.jpg',
+      justice: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/e4/01/62e40187-e672-17e5-f31f-9aee262703a3/mzi.bifzeufu.jpg/300x300bb.jpg'
     };
     const track = (name, artist, art) => Object.assign({ name, artist, art },
       (typeof SongEngine !== 'undefined') ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' });
@@ -85,6 +89,21 @@
         weather: { code: 61, temp: 12 },
         song: track('Formidable', 'Stromae', ART.stromae) })
     ];
+    // 어제·오늘 기록 — 달이 바뀌어도 항상 "어제"와 "오늘"이 되도록 날짜를 지금 기준으로 잡는다.
+    const dayAt = (offset, h, min, o) => {
+      const d = new Date(y, m, now.getDate() + offset);
+      return Object.assign({
+        id: 'guestd' + offset, date: toIso(d), phase: 'abroad', title: '', body: '', photos: [], tags: [],
+        location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null, weather: null,
+        createdAt: new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, min).toISOString()
+      }, o);
+    };
+    guestCache.push(
+      dayAt(-1, 18, 40, { title: '노을 지는 캠퍼스', body: '수업 끝나고 계단 위에서 본 노을. 잔디밭이 다 금빛이었다.', photos: [P.sunset], tags: ['campus', 'neighborhood'],
+        weather: { code: 0, temp: 19 }, song: track('Kiss Me', 'Ariana Grande', ART.ariana) }),
+      dayAt(0, 11, 45, { title: '잔디밭 앞 카페', body: '아이스 라떼 두 잔 놓고 과제하는 오후. 날씨가 너무 좋다.', photos: [P.laptop], tags: ['study', 'food'],
+        weather: { code: 1, temp: 22 }, song: track('D.A.N.C.E.', 'Justice', ART.justice) })
+    );
     return guestCache;
   }
   /** 필름 카메라 날짜 각인 — 2026-09-12 → '26 9 12 */

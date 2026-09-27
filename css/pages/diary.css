@@ -1590,3 +1590,17 @@ body[data-page="journal"][data-theme="film"] .diary-featured:empty { border-top:
 /* 카메라·ADD 버튼을 위·아래 구분선의 정가운데에 — 위 여백 = 버튼 아래 여백 + 블록 사이 간격(18px) */
 body[data-page="journal"][data-theme="film"] .diary-write-bar { padding-top: 28px; padding-bottom: 10px; }
 body[data-page="journal"][data-theme="film"] .diary-featured { margin-top: 0; }
+
+/* 기록 제목 글씨 — SUIT(확정). 사용자가 쓴 제목(우표 아래·최근 사진 패널·저장 연출)에만 적용한다.
+   큰 화면 제목(RECORD 등)은 Bebas Neue 그대로. */
+body[data-page="journal"][data-theme="film"] .diary-featured__title,
+body[data-page="journal"][data-theme="film"] .diary-stamp__title,
+body[data-page="journal"][data-theme="film"] .stamp-fx__cap b,
+body[data-page="journal"][data-theme="film"] .diary-stamp__blank p {
+  font-family: 'SUIT Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-weight: 700; letter-spacing: -0.02em;
+}
+body[data-page="journal"][data-theme="film"] .diary-featured__title { font-size: 1.05rem; }
+/* 최근 사진 패널은 어두운 유리라, 흰 페이지용으로 뒤집힌 글자색이 여기서 안 읽히던 것도 밝게 되돌린다 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__panel .diary-featured__loc { color: rgba(239, 232, 214, 0.78); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__panel .diary-featured__title { color: #f5efe0; }
