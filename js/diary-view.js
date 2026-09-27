@@ -333,65 +333,123 @@
       return;
     }
 
-    const dates = [...new Set(withPhoto.map(e => e.date))].sort().reverse();   // 최신순
+    const allDates = [...new Set(withPhoto.map(e => e.date))].sort().reverse();   // 최신순
+    const dates = allDates.slice(0, 14);                                          // 캐러셀은 최근 14일까지
     const yest = toIso(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
-    const pick = (view.featured && dates.includes(view.featured)) ? view.featured
+    let pick = (view.featured && dates.includes(view.featured)) ? view.featured
       : (dates.includes(yest) ? yest : dates[0]);
-    const idx = dates.indexOf(pick);
-    const list = withPhoto.filter(e => e.date === pick);
-    const e = list[list.length - 1];
-    const url = photoUrl(e.photos.find(p => photoUrl(p)));
-    const prev = swap && featuredLastUrl && featuredLastUrl !== url ? featuredLastUrl : null;
-    featuredLastUrl = url;
-    const heading = e.title || e.body || '';
-    const lt = (e.location && (e.location.city || e.location.country))
-      ? [e.location.city, e.location.country].filter(Boolean).join(', ') : '';
-    const short = (iso) => iso === todayIso ? '오늘' : iso === yest ? '어제' : `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
-    const eyebrow = pick === yest ? '어제의 기록' : pick === todayIso ? '오늘의 기록' : '가장 최근 기록';
-    // 칩은 다섯 개씩 보여주되, 지금 고른 날이 항상 창 안에 들어오게 한다
-    const start = Math.max(0, Math.min(idx - 2, dates.length - 5));
-    const chipDates = dates.slice(start, start + 5);
+    const labelFor = (iso) => iso === todayIso ? '오늘의 기록' : iso === yest ? '어제의 기록'
+      : `${Number(iso.slice(5, 7))}월 ${Number(iso.slice(8, 10))}일`;
+    // 왼쪽이 과거, 오른쪽이 최근 — 어제는 오늘의 왼쪽에 놓인다(달력과 같은 방향)
+    const slides = dates.slice().reverse().map((d, i) => {
+      const list = withPhoto.filter(e => e.date === d);
+      const e = list[list.length - 1];
+      return { d, i, e, url: photoUrl(e.photos.find(p => photoUrl(p))) };
+    });
 
     slot.innerHTML = `
-      ${featuredHead(eyebrow)}
-      <div class="diary-featured__film">
-      <div class="film-bar film-bar--top" aria-hidden="true"></div>
-      <div class="diary-featured__card${prev ? ' has-prev' : ''}" role="button" tabindex="0" aria-label="${esc(short(pick))} 기록 열기"
-           style="background-image:url('${url}')${prev ? `;--prev:url('${prev}')` : ''}">
-        <div class="diary-featured__panel">
-          <div class="diary-featured__top">
-            <p class="diary-featured__title">${esc(heading)}</p>
-            <span class="diary-featured__date" data-film="${filmDate(pick)}">${pick.slice(5).replace('-', '/')}</span>
-          </div>
-          ${lt ? `<p class="diary-featured__loc">📍 ${esc(lt)}</p>` : ''}
-        </div>
+      ${featuredHead(labelFor(pick))}
+      <div class="diary-carousel-wrap">
+      <button type="button" class="diary-carousel__nav diary-carousel__nav--prev" id="featPrev" aria-label="더 이전 사진">‹</button>
+      <button type="button" class="diary-carousel__nav diary-carousel__nav--next" id="featNext" aria-label="더 최근 사진">›</button>
+      <div class="diary-carousel" id="featCarousel" aria-label="최근 사진">
+        <span class="diary-carousel__pad" aria-hidden="true"></span>
+        ${slides.map(s => `
+          <div class="diary-slide" data-date="${s.d}">
+            <div class="diary-featured__film">
+              <div class="diary-featured__card" role="button" tabindex="0" aria-label="${esc(s.d)} 기록 열기">
+                <img class="diary-featured__img" src="${s.url}" alt="${esc(s.e.title || s.e.body || '')}" draggable="false">
+              </div>
+              <div class="film-bar film-bar--bottom" aria-hidden="true"><span>▶ ${allDates.length - allDates.indexOf(s.d)}A</span><span>${filmDate(s.d)}</span></div>
+            </div>
+          </div>`).join('')}
+        <span class="diary-carousel__pad" aria-hidden="true"></span>
       </div>
-      <div class="film-bar film-bar--bottom" aria-hidden="true"><span>▶ ${dates.length - idx}A</span><span>${filmDate(pick)}</span></div>
-      </div>
-      <div class="diary-featured__chips">
-        ${chipDates.map(d => `<button type="button" class="diary-featured__chip${d === pick ? ' is-active' : ''}" data-fdate="${d}">${short(d)}</button>`).join('')}
       </div>`;
 
     wireQuestion(slot);
-    const card = slot.querySelector('.diary-featured__card');
-    const open = () => { view.selected = pick; renderMonth(); openDayModal(pick); };
-    let sx = 0, sy = 0, swiped = false;
-    card.addEventListener('pointerdown', (ev) => { sx = ev.clientX; sy = ev.clientY; swiped = false; });
-    card.addEventListener('pointerup', (ev) => {
-      const dx = ev.clientX - sx, dy = ev.clientY - sy;
-      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-      swiped = true;
-      // 왼쪽으로 밀면 더 이전 날, 오른쪽으로 밀면 더 최근 날
-      const next = dx < 0 ? Math.min(idx + 1, dates.length - 1) : Math.max(idx - 1, 0);
-      if (next !== idx) { view.featured = dates[next]; renderFeatured(true); }
+    const car = slot.querySelector('#featCarousel');
+    const eyebrowEl = slot.querySelector('.diary-featured__eyebrow');
+    const slideEls = [...car.querySelectorAll('.diary-slide')];
+    const pads = car.querySelectorAll('.diary-carousel__pad');
+
+    // 사진을 누르면 그날 기록 팝업
+    slideEls.forEach(sl => {
+      const open = () => { view.selected = sl.dataset.date; renderMonth(); openDayModal(sl.dataset.date); };
+      sl.addEventListener('click', open);
+      sl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') open(); });
     });
-    card.addEventListener('click', (ev) => {
-      if (swiped) { swiped = false; return; }
-      if (!ev.target.closest('[data-fdate]')) open();
+
+    // 넘기는 방법 — 터치는 손가락으로 밀기, 마우스는 사진을 끌거나 양옆 ‹ › 버튼, 트랙패드는 두 손가락 좌우.
+    let goTimer = 0;
+    const goTo = (i) => {
+      const t = slideEls[Math.max(0, Math.min(slideEls.length - 1, i))];
+      const left = t.offsetLeft - (car.clientWidth - t.offsetWidth) / 2;
+      // scroll-snap이 켜져 있으면 부드러운 이동이 중간에 막히는 브라우저가 있어, 이동하는 동안만 끄고 도착 뒤에 다시 켠다
+      car.style.scrollSnapType = 'none';
+      car.scrollTo({ left, behavior: 'smooth' });
+      clearTimeout(goTimer);
+      goTimer = setTimeout(() => { car.scrollLeft = left; car.style.scrollSnapType = ''; }, 450);
+    };
+    const activeIdx = () => Math.max(0, slideEls.findIndex(sl => sl.classList.contains('is-active')));
+    slot.querySelector('#featPrev').addEventListener('click', () => goTo(activeIdx() - 1));   // ‹ 왼쪽 = 더 이전(과거)
+    slot.querySelector('#featNext').addEventListener('click', () => goTo(activeIdx() + 1));   // › 오른쪽 = 더 최근
+    let dragX = 0, dragLeft = 0, dragging = false, dragged = false;
+    car.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
+      dragging = true; dragged = false; dragX = ev.clientX; dragLeft = car.scrollLeft;
     });
-    card.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') open(); });
-    slot.querySelectorAll('[data-fdate]').forEach(btn => {
-      btn.addEventListener('click', () => { view.featured = btn.dataset.fdate; renderFeatured(true); });
+    window.addEventListener('pointermove', (ev) => {
+      if (!dragging || !car.isConnected) return;
+      const dx = ev.clientX - dragX;
+      if (Math.abs(dx) > 5) { dragged = true; car.style.scrollSnapType = 'none'; car.classList.add('is-dragging'); }
+      if (dragged) car.scrollLeft = dragLeft - dx;
+    });
+    window.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      car.classList.remove('is-dragging');
+      if (dragged) {
+        // 놓은 자리에서 가장 가까운 사진으로 부드럽게 맞춘다
+        const mid = car.scrollLeft + car.clientWidth / 2;
+        let bi = 0, bd = Infinity;
+        slideEls.forEach((sl, i) => { const d = Math.abs(sl.offsetLeft + sl.offsetWidth / 2 - mid); if (d < bd) { bd = d; bi = i; } });
+        goTo(bi);
+      }
+    });
+    car.addEventListener('click', (ev) => { if (dragged) { ev.stopPropagation(); ev.preventDefault(); dragged = false; } }, true);
+
+    // 가운데에 온 사진을 따라 제목·활성 표시를 바꾼다. 가운데에 온 사진을 따라 제목·활성 표시만 바꾼다.
+    let scrollTimer = 0;
+    car.addEventListener('scroll', () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        const mid = car.scrollLeft + car.clientWidth / 2;
+        let best = null, bestDist = Infinity;
+        slideEls.forEach(sl => {
+          const dist = Math.abs(sl.offsetLeft + sl.offsetWidth / 2 - mid);
+          if (dist < bestDist) { bestDist = dist; best = sl; }
+        });
+        if (best && best.dataset.date !== view.featured) {
+          view.featured = best.dataset.date;
+          if (eyebrowEl) eyebrowEl.textContent = labelFor(view.featured);
+          slideEls.forEach(sl => sl.classList.toggle('is-active', sl === best));
+        }
+      }, 60);
+    }, { passive: true });
+
+    // 사진 폭은 불러온 뒤에야 정해진다 — 그 뒤에 양끝 여백을 잡아 첫 장이 가운데에 오게 한다
+    car.style.visibility = 'hidden';
+    Promise.all([...car.querySelectorAll('img')].map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve()))).then(() => {
+      if (!car.isConnected) return;
+      const cw = car.clientWidth;
+      pads[0].style.flexBasis = Math.max(0, (cw - slideEls[0].offsetWidth) / 2) + 'px';
+      pads[1].style.flexBasis = Math.max(0, (cw - slideEls[slideEls.length - 1].offsetWidth) / 2) + 'px';
+      const target = slideEls.find(sl => sl.dataset.date === pick) || slideEls[0];
+      car.scrollLeft = target.offsetLeft - (cw - target.offsetWidth) / 2;
+      target.classList.add('is-active');
+      view.featured = target.dataset.date;
+      car.style.visibility = '';
     });
   }
 
@@ -840,12 +898,20 @@
         const img = new Image();
         img.onerror = () => reject(new Error('이미지를 열지 못했어요'));
         img.onload = () => {
+          /*
+           * 사진 비율: 4:3(가로) ~ 3:4(세로) 사이면 그대로 둔다. 16:9처럼 더 납작하거나 9:16처럼 더 길쭉하면
+           * 가운데를 기준으로 4:3(또는 3:4)까지만 잘라 저장한다.
+           */
+          let sx = 0, sy = 0, sw = img.width, sh = img.height;
+          const ratio = sw / sh;
+          if (ratio > 4 / 3) { sw = Math.round(sh * 4 / 3); sx = Math.round((img.width - sw) / 2); }
+          else if (ratio < 3 / 4) { sh = Math.round(sw * 4 / 3); sy = Math.round((img.height - sh) / 2); }
           const maxDim = 900;
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const scale = Math.min(1, maxDim / Math.max(sw, sh));
           const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.width = Math.round(sw * scale);
+          canvas.height = Math.round(sh * scale);
+          canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
           canvas.toBlob(b => b ? resolve(b) : reject(new Error('변환에 실패했어요')), 'image/jpeg', 0.75);
         };
         img.src = reader.result;
@@ -1394,6 +1460,11 @@
     wireChrome();
     renderAll();
     refreshPhotoUrls();
+    // 퀘스트 완료 뒤 "사진 찍기"로 넘어오면(journal.html?add=1) 바로 기록 쓰기 창을 연다
+    if (new URLSearchParams(location.search).get('add') === '1') {
+      history.replaceState(null, '', location.pathname);
+      setTimeout(() => { if (!needLogin()) openEntryModal(); }, 500);
+    }
   }
 
   function unmountDiaryView() {
