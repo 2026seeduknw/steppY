@@ -1775,18 +1775,6 @@ body[data-page="prepare"] .leg-card {
 /* 서버 상태를 받기 전 — 탭 수가 바뀌는 게 보이지 않도록 숨긴다 */
 .tabbar--pending { visibility: hidden; }
 
-/* "Mentor's Step !" 플로팅 버튼 — 탭바가 이미 화면 아래를 쓰고 있어서
-   그 위로 한 칸 띄운다. 탭바와 같은 세로 기준(안전영역 + 여백)을 쓰고
-   탭바 높이·틈만 더한다. */
-.mentor-float {
-  bottom: calc(var(--safe-bottom) + var(--tabbar-gap) + var(--tabbar-h) + var(--space-3));
-  right: var(--space-4);
-  height: 48px;
-  z-index: 65;
-}
-.mentor-float__icon { width: 28px; height: 28px; font-size: 0.9rem; }
-.mentor-float__label { font-size: 0.95rem; }
-
 /* ---- 개인정보처리방침 링크 (계정 시트 / 로그인 화면) ---- */
 .account-sheet__legal { text-align: center; margin-top: var(--space-4); }
 .account-sheet__legal a { font-size: var(--fs-small); color: var(--ink-400); text-decoration: underline; }
