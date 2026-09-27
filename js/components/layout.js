@@ -214,6 +214,8 @@ function renderTabBar(activeKey) {
     // (js/release-flags.js — 데이터가 들어오면 mentorStep을 true로).
     if (tab.key === 'consult' && !RELEASE.mentorStep) return false;
     if (tab.key === 'search' && confirmed) return false;
+    // 퀘스트는 갈 학교를 확정한 뒤에만 탭에 나온다 — 교환 생활에서 해볼 도전이라 가기 전에는 쓸 일이 없다.
+    if (tab.key === 'quest' && !confirmed) return false;
     if (tab.key === 'credits' && departed) return false;
     // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
     // Day 수도 못 세고 남길 것도 마땅치 않다.
