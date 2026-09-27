@@ -1531,3 +1531,62 @@ body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-today { box
 /* 불러오는 자리(스켈레톤) */
 body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__skeleton,
 body[data-page="journal"][data-theme="film"][data-tod] .diary-day.is-loading { background: linear-gradient(100deg, rgba(27, 26, 23, 0.05) 30%, rgba(27, 26, 23, 0.12) 50%, rgba(27, 26, 23, 0.05) 70%) 0 0 / 200% 100%; }
+
+/* ==========================================================================
+   필름 테마 — 팝업(기록 카드 · 기록 쓰기/수정 · 우표첩 · 정리)도 흰 배경.
+   필름 프레임(검은 띠)과 주황 각인은 그대로 두고, 팝업 바탕 위에 직접 놓이는 글씨·칸만 진한 색으로 바꾼다.
+   ========================================================================== */
+body[data-page="journal"][data-theme="film"][data-tod] {
+  --diary-text: #1b1a17; --diary-text-dim: #4d483f; --diary-text-faint: #8a8372;
+  --diary-line: rgba(27, 26, 23, 0.14); --diary-line-strong: rgba(27, 26, 23, 0.30);
+  --diary-surface: #ffffff; --diary-surface-alt: #f3f0e9;
+}
+body[data-page="journal"][data-theme="film"][data-tod] .modal-panel { background: #ffffff; color: #1b1a17; border-color: rgba(27, 26, 23, 0.12); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-day-modal,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-sheet { background: #ffffff; border-color: rgba(27, 26, 23, 0.12); }
+body[data-page="journal"][data-theme="film"][data-tod] .modal-scrim { background: rgba(20, 20, 20, 0.45); }
+body[data-page="journal"][data-theme="film"][data-tod] .modal-close { background: rgba(27, 26, 23, 0.07); color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .modal-close:hover { background: rgba(27, 26, 23, 0.14); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-modal-header h2 { color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .is-date,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-modal-header h2.is-date { color: var(--film-amber-ink); text-shadow: none; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-modal-header__note,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-form__label,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-form__hint { color: var(--diary-text-faint); }
+/* 기록 카드 안 정보 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-row__value,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-text,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-song__title { color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-row__label,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-song__artist { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-song__label { color: var(--film-amber-ink); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-ticket-song__link { background: rgba(27, 26, 23, 0.06); color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-entry__edit-link { background: rgba(27, 26, 23, 0.05); color: #1b1a17; border-color: rgba(27, 26, 23, 0.25); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-entry__edit-link:hover { background: rgba(27, 26, 23, 0.1); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-entry__delete-link { color: var(--diary-text-faint); }
+/* 기록 쓰기·수정 창 */
+body[data-page="journal"][data-theme="film"][data-tod] .diary-form input,
+body[data-page="journal"][data-theme="film"][data-tod] .diary-form textarea { background: #faf8f3; color: #1b1a17; border-color: rgba(27, 26, 23, 0.25); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-form__title { color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-prompt-note { background: rgba(255, 154, 46, 0.14); color: #7a4300; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-photo-picker__add { background: rgba(27, 26, 23, 0.04); border-color: rgba(27, 26, 23, 0.3); color: var(--diary-text-dim); }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-tag-grid { background: rgba(27, 26, 23, 0.04); }
+body[data-page="journal"][data-theme="film"][data-tod] #tagGrid.diary-tag-grid .tag-chip { color: var(--diary-text); border-color: rgba(27, 26, 23, 0.22); background: #ffffff; }
+body[data-page="journal"][data-theme="film"][data-tod] #tagGrid.diary-tag-grid .tag-chip.is-selected { background: var(--film-amber); border-color: var(--film-amber); color: #1a1208; }
+body[data-page="journal"][data-theme="film"][data-tod] .diary-nowplaying-search input { background: #faf8f3; }
+/* 우표첩 · 이번 달 정리 */
+body[data-page="journal"][data-theme="film"][data-tod] .stampbook__month { color: var(--film-amber-ink); text-shadow: none; }
+body[data-page="journal"][data-theme="film"][data-tod] .stampbook__item small { color: var(--diary-text-faint); }
+body[data-page="journal"][data-theme="film"][data-tod] .stampbook__stamp { filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3)); }
+
+/* 필름 테마 — 섹션 사이 구분선: 여정 줄 ↔ 버튼 ↔ 최근 사진 (달력 위 구분선과 같은 굵기·색) */
+body[data-page="journal"][data-theme="film"] .diary-write-bar,
+body[data-page="journal"][data-theme="film"] .diary-featured {
+  border-top: 1px solid rgba(27, 26, 23, 0.18);
+  padding-top: var(--space-4);
+}
+body[data-page="journal"][data-theme="film"] .diary-write-bar { margin-top: 0; }
+body[data-page="journal"][data-theme="film"] .diary-featured:empty { border-top: 0; padding-top: 0; }
+/* 카메라·ADD 버튼을 위·아래 구분선의 정가운데에 — 위 여백 = 버튼 아래 여백 + 블록 사이 간격(18px) */
+body[data-page="journal"][data-theme="film"] .diary-write-bar { padding-top: 28px; padding-bottom: 10px; }
+body[data-page="journal"][data-theme="film"] .diary-featured { margin-top: 0; }

@@ -847,8 +847,8 @@
   /** 서명 URL을 받아 채운 뒤 다시 그린다. 사진 수만큼 왕복하지 않도록 한 번에 묶어 받는다. */
   async function refreshPhotoUrls() {
     const all = entries().flatMap(e => e.photos || []).filter(p => !photoUrls[p]);
-    // 경로가 아니라 주소로 저장된 사진(예시 기록)은 서명 없이 그대로 쓴다
-    all.filter(p => /^https?:\/\//.test(p)).forEach(p => { photoUrls[p] = p; });
+    // 경로가 아니라 주소(또는 앱에 들어 있는 assets/ 파일)로 저장된 사진(예시 기록)은 서명 없이 그대로 쓴다
+    all.filter(p => /^(https?:\/\/|assets\/)/.test(p)).forEach(p => { photoUrls[p] = p; });
     const paths = all.filter(p => !photoUrls[p]);
     if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); return; }
     const map = await AppState.signPhotoPaths(paths);
