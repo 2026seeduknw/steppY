@@ -44,6 +44,7 @@
       note.hidden = true;
     }
 
+    // 근거가 된 학문 분류(matchedTopics) 알약은 화면에서 뺐다 — 파견교의 전공명(큰 글씨)과 점수 줄만 보여준다
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
       const school = schoolDisplay(m.school);
       const isConfirmed = confirmed && m.school === confirmed.id;
@@ -55,8 +56,6 @@
           <span class="match-card__school-name">${school.name}${school.country ? ` · ${school.country}` : ''}</span>
           ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
         </div>
-        ${m.matchedTopics.length ? `
-        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
         <div class="match-card__note">${m.note || ''}</div>
       </div>
     `;

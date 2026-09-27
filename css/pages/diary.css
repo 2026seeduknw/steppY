@@ -1622,3 +1622,76 @@ body[data-page="journal"][data-theme="film"] .diary-featured__empty { height: 20
 
 /* 최근 사진 카드는 사진만 — 제목·장소 설명 패널은 숨긴다(누르면 팝업에서 다 보인다) */
 body[data-page="journal"][data-theme="film"] .diary-featured__panel { display: none; }
+
+/* 상단 앱바 — 기록하기 화면에서는 흰 배경 */
+body[data-page="journal"][data-theme="film"][data-tod] .app-nav {
+  background: rgba(255, 255, 255, 0.94); border-bottom: 1px solid rgba(27, 26, 23, 0.10);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+body[data-page="journal"][data-theme="film"][data-tod] .appbar__title { color: #1b1a17; }
+body[data-page="journal"][data-theme="film"][data-tod] .appbar__brand { color: var(--film-amber-ink); }
+
+/* 최근 사진 — 필름 띠(구멍 줄)는 없애고, 주황 프레임 번호·날짜 글씨만 사진 위 아래쪽에 얹는다 */
+body[data-page="journal"][data-theme="film"] .diary-featured__film {
+  position: relative; background: transparent; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+}
+body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__film { box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); }
+body[data-page="journal"][data-theme="film"] .film-bar--top { display: none; }
+body[data-page="journal"][data-theme="film"] .film-bar--bottom {
+  position: absolute; left: 0; right: 0; bottom: 0; height: auto; z-index: 3; pointer-events: none;
+  padding: 26px 14px 10px; align-items: flex-end;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.5));
+}
+body[data-page="journal"][data-theme="film"] .film-bar--bottom::before { display: none; }
+body[data-page="journal"][data-theme="film"] .film-bar--bottom span { text-shadow: 0 0 6px rgba(0, 0, 0, 0.85), var(--film-glow); font-size: 0.8rem; }
+
+/* ==========================================================================
+   최근 사진 — 사진의 원래 비율 그대로(자르지 않고), 세로 260px 안에서 줄여서 가운데에 보여준다.
+   올릴 때 이미 4:3 ~ 3:4 안으로 맞춰 두므로(resizeImage) 너무 납작하거나 길쭉한 사진은 없다.
+   ========================================================================== */
+body[data-page="journal"][data-theme="glass"] .diary-featured__img { display: none; }
+body[data-page="journal"][data-theme="film"] .diary-featured__film { width: fit-content; max-width: 100%; margin: 0 auto; }
+body[data-page="journal"][data-theme="film"] .diary-featured__card { height: auto; background-image: none !important; background-color: transparent; display: block; }
+body[data-page="journal"][data-theme="film"] .diary-featured__card.has-prev::before { display: none; }
+body[data-page="journal"][data-theme="film"] .diary-featured__img {
+  display: block; width: auto; height: auto; max-width: 100%; max-height: 260px; -webkit-user-drag: none; user-select: none;
+}
+body[data-page="journal"][data-theme="film"] .diary-featured__card.has-prev .diary-featured__img { animation: diary-img-in 420ms ease both; }
+@keyframes diary-img-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ==========================================================================
+   최근 사진 캐러셀 — 날짜 칩은 없애고, 좌우로 밀어 넘긴다(scroll-snap). 사진은 원래 비율 그대로, 세로 360px까지.
+   가운데 사진이 또렷하고 양옆 사진은 살짝 작고 흐리게 비쳐서 더 있다는 걸 알려 준다.
+   ========================================================================== */
+.diary-carousel {
+  display: flex; align-items: center; gap: 12px; margin: 0 calc(var(--space-4) * -1); padding: 6px 0 14px;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.diary-carousel::-webkit-scrollbar { display: none; }
+.diary-carousel__pad { flex: 0 0 0; }
+.diary-slide { flex: 0 0 auto; scroll-snap-align: center; cursor: pointer; opacity: 0.55; transform: scale(0.92); transition: opacity 260ms ease, transform 260ms ease; }
+.diary-slide.is-active { opacity: 1; transform: none; }
+body[data-page="journal"][data-theme] .diary-slide .diary-featured__film { margin: 0; }
+body[data-page="journal"][data-theme] .diary-slide .diary-featured__img { max-height: 360px; max-width: min(340px, 84vw); }
+@media (prefers-reduced-motion: reduce) { .diary-slide { transition: none; } }
+/* 슬라이드 위치(offsetLeft)를 캐러셀 기준으로 재려고 — 가운데 맞춤·현재 사진 추적이 이 값에 기대고 있다 */
+.diary-carousel { position: relative; }
+
+/* 캐러셀 ‹ › 버튼(마우스용) — 터치 기기에서는 밀어서 넘기니 숨긴다. 마우스는 사진을 끌어도 된다. */
+.diary-carousel-wrap { position: relative; }
+.diary-carousel__nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 6; width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid rgba(27, 26, 23, 0.15); background: rgba(255, 255, 255, 0.92); color: #1b1a17;
+  font: inherit; font-size: 1.5rem; line-height: 1; padding: 0 0 3px; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.diary-carousel__nav:hover { background: #fff; }
+.diary-carousel__nav:active { transform: translateY(-50%) scale(0.94); }
+.diary-carousel__nav--prev { left: 4px; }
+.diary-carousel__nav--next { right: 4px; }
+@media (hover: none) { .diary-carousel__nav { display: none; } }
+.diary-carousel { cursor: grab; }
+.diary-carousel.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+.diary-carousel.is-dragging .diary-slide { transition: none; }
+.diary-carousel img { -webkit-user-drag: none; }

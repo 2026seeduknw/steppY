@@ -1,0 +1,96 @@
+/* 퀘스트 페이지 — 다른 앱 화면과 같은 톤: 흰 바탕, 네이비 글자, 헤어라인 카드, 브랜드 키 컬러(민트).
+   앱바·하단 탭바는 앱 공통 스타일 그대로 쓴다(활성 탭 = 민트). */
+
+body[data-page="quest"] { background: #fff; color: var(--ink-900); }
+
+.quest-page { padding-top: var(--space-4); padding-bottom: 140px; }
+
+/* 앱바가 이미 화면 이름을 갖고 있어서 제목은 다시 쓰지 않는다 — 요약 한 줄만 */
+.quest-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+.quest-lede { margin: 0; flex: 1; font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); word-break: keep-all; }
+.quest-total {
+  flex: none; padding: 6px 12px; border-radius: 999px; background: var(--key-100); border: 1px solid var(--key-200);
+  font-size: var(--fs-small); font-weight: 700; color: var(--key-ink); white-space: nowrap;
+}
+.quest-total b { font-size: 1.05rem; font-weight: 800; margin-right: 2px; }
+
+.quest-section { margin: var(--space-6) 0 var(--space-3); font-size: var(--fs-h3, 1.05rem); font-weight: 800; letter-spacing: -0.01em; color: var(--ink-900); }
+
+/* 목표별 로드맵 카드 */
+.quest-roadmap {
+  padding: var(--space-4); margin-top: var(--space-4);
+  background: var(--cloud-0); border: 1px solid var(--line-200); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+}
+.quest-roadmap__head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+.quest-roadmap__title { font-weight: 800; font-size: var(--fs-body); color: var(--ink-900); }
+.quest-roadmap__level { padding: 2px 10px; border-radius: 999px; background: var(--ink-900); color: #fff; font-size: var(--fs-micro); font-weight: 800; }
+.quest-roadmap__remove { margin-left: auto; padding: 6px 8px; border: 0; background: none; color: var(--ink-400); font: inherit; font-size: var(--fs-small); cursor: pointer; }
+.quest-roadmap__remove:hover { color: var(--ink-700); }
+.quest-path { position: relative; width: 220px; height: 384px; margin: 0 auto var(--space-3); }
+.quest-path__line { position: absolute; inset: 0; width: 100%; height: 100%; }
+.quest-node {
+  position: absolute; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-small); font-weight: 800;
+  box-shadow: 0 2px 8px rgba(35, 53, 77, 0.14);
+}
+.quest-node--done { background: var(--key-500); color: var(--key-ink); }
+.quest-node--current {
+  width: 48px; height: 48px; background: #fff; color: var(--ink-900); font-size: 1.2rem;
+  box-shadow: 0 0 0 5px var(--key-200), 0 0 0 6px var(--key-500), 0 3px 10px rgba(35, 53, 77, 0.18); animation: quest-pulse 1.6s ease-in-out infinite;
+}
+.quest-node--upcoming { background: var(--cloud-50); color: var(--ink-400); box-shadow: inset 0 0 0 1.5px var(--line-200); }
+.quest-node--checkpoint { box-shadow: inset 0 0 0 2px var(--key-500), 0 2px 8px rgba(35, 53, 77, 0.14); }
+.quest-node--checkpoint.quest-node--current { box-shadow: 0 0 0 5px var(--key-200), 0 0 0 6px var(--key-500), 0 3px 10px rgba(35, 53, 77, 0.18); }
+@keyframes quest-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .quest-node--current { animation: none; } }
+.quest-roadmap__current { text-align: center; }
+.quest-roadmap__quest { margin: 0 0 var(--space-3); font-size: var(--fs-body); font-weight: 700; line-height: 1.5; color: var(--ink-900); word-break: keep-all; }
+.quest-complete {
+  min-height: 46px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-body); font-weight: 800;
+  background: var(--key-500); color: var(--key-ink); box-shadow: 0 6px 18px rgba(18, 229, 226, 0.32);
+}
+.quest-complete:hover { background: #0ed3d0; }
+.quest-complete:active { transform: scale(0.97); }
+
+/* 목표 고르기 */
+.quest-empty { margin-top: var(--space-4); padding: var(--space-6) var(--space-4); text-align: center; border: 1.5px dashed var(--key-500); border-radius: var(--radius-lg); background: var(--key-100); }
+.quest-empty__title { margin: 0 0 4px; font-size: 1.05rem; font-weight: 800; color: var(--ink-900); }
+.quest-empty__desc { margin: 0; font-size: var(--fs-small); color: var(--ink-700); }
+.quest-goal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+.quest-goal-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); min-height: 96px; padding: var(--space-4) var(--space-2);
+  border: 1px solid var(--line-200); border-radius: var(--radius-lg); background: var(--cloud-0); box-shadow: var(--shadow-card); color: var(--ink-700);
+  font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer; word-break: keep-all; text-align: center;
+}
+.quest-goal-card:hover { border-color: var(--key-500); background: var(--key-100); color: var(--ink-900); }
+.quest-goal-card__icon { font-size: 1.8rem; }
+
+/* 완료 직후 사진 유도 */
+.quest-nudge {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 75; display: flex; align-items: center; gap: var(--space-3);
+  max-width: 88vw; padding: var(--space-3) var(--space-4); border-radius: 999px; background: var(--ink-900); color: #fff;
+  box-shadow: 0 10px 28px rgba(35, 53, 77, 0.35); font-size: var(--fs-small); animation: quest-nudge-in 320ms ease-out both;
+}
+.quest-nudge__actions { display: flex; align-items: center; gap: var(--space-2); }
+.quest-nudge__actions a { padding: 6px 12px; border-radius: 999px; background: var(--key-500); color: var(--key-ink); font-size: var(--fs-micro); font-weight: 800; text-decoration: none; white-space: nowrap; }
+.quest-nudge__actions button { border: 0; background: none; color: var(--ink-400); font: inherit; font-size: var(--fs-small); cursor: pointer; }
+@keyframes quest-nudge-in { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* 배너가 화면 절반 폭으로 찌그러지던 것 — left:50%인 고정 요소는 남은 오른쪽 폭만큼만 커져서 폭을 직접 준다 */
+.quest-nudge { width: max-content; max-width: min(88vw, 360px); border-radius: 22px; }
+.quest-nudge > span { white-space: normal; line-height: 1.4; }
+
+/* 목표 고르기가 맨 위로 왔다 — 위 여백은 줄이고, 아래 로드맵과 간격을 둔다 */
+.quest-section--first { margin-top: var(--space-4); }
+.quest-goal-grid + .quest-roadmap, .quest-goal-grid + .quest-empty { margin-top: var(--space-5); }
+
+/* 목표를 그만할 때 카드가 부드럽게 접히며 사라진다 */
+.quest-roadmap { transition: opacity 200ms ease, transform 200ms ease; }
+.quest-roadmap.is-leaving { opacity: 0; transform: scale(0.96) translateY(-6px); pointer-events: none; }
+
+/* 한 레벨 10칸 — 노드를 조금 줄이고, 난이도 이름과 진행 개수를 머리에 보여준다 */
+.quest-node { width: 36px; height: 36px; }
+.quest-node--current { width: 46px; height: 46px; }
+.quest-roadmap__tier { padding: 2px 9px; border-radius: 999px; background: var(--key-100); border: 1px solid var(--key-200); color: var(--key-ink); font-size: var(--fs-micro); font-weight: 800; }
+.quest-roadmap__count { margin: 0 0 var(--space-2); font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.quest-roadmap__count span { font-weight: 600; color: var(--ink-400); }

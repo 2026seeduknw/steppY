@@ -16,6 +16,7 @@ const TAB_ICONS = {
   search: '<circle cx="11" cy="11" r="6.6"/><path d="m20.4 20.4-4.1-4.1"/>',
   credits: '<path d="M6.2 2.8h8l4 4v14.4h-12z"/><path d="m9.3 13.2 1.9 1.9 3.8-3.8"/>',
   journal: '<path d="M5.4 3.4h9.2l4 4v13.2H5.4z"/><path d="M8.7 11.4h6.6M8.7 15.1h4.4"/>',
+  quest: '<path d="M6.4 21V4.2"/><path d="M6.4 4.6h11.2l-2.4 3.9 2.4 3.9H6.4"/>',
   report: '<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8.2 10.4V7.7a3.8 3.8 0 0 1 7.6 0v2.7"/>',
   consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>',
   reviews: '<path d="M12 3.4 20.6 8 12 12.6 3.4 8z"/><path d="M7 10.2v4.6c0 1.5 2.4 3 5 3s5-1.5 5-3v-4.6"/><path d="M20.6 8v6"/>'
@@ -28,6 +29,7 @@ const APP_TABS = [
   { key: 'search', label: '학교 찾기', href: 'search.html' },
   { key: 'credits', label: '학점 인정', href: 'credits.html' },
   { key: 'journal', label: '기록하기', href: 'journal.html' },
+  { key: 'quest', label: '퀘스트', href: 'quest.html' },
   { key: 'report', label: '교환보고서', href: 'report.html' },
   { key: 'consult', label: '멘토', href: 'consult.html' },
   { key: 'reviews', label: "Mentor's Step !", href: 'reviews.html' }
@@ -40,6 +42,7 @@ const PAGE_TITLES = {
   credits: '학점 인정',
   'major-matching': '전공 매칭',
   journal: '기록하기',
+  quest: '퀘스트',
   report: '교환보고서',
   consult: "Mentor's Step",
   reviews: '국가별 후기'
