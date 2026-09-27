@@ -39,7 +39,8 @@ const PAGE_TITLES = {
   'major-matching': '전공 매칭',
   journal: '기록하기',
   report: '교환보고서',
-  consult: "Mentor's Step"
+  consult: "Mentor's Step",
+  reviews: '국가별 후기'
 };
 
 /** 학교를 확정하면 "홈" 탭의 라벨·목적지가 교환 준비하기로 통째로 바뀐다(탭은 5개 유지). */
@@ -241,6 +242,29 @@ function renderTabBar(activeKey) {
 }
 
 /**
+ * "Mentor's Step !" 플로팅 버튼 — 모든 화면 오른쪽 아래에 떠서 국가별 후기
+ * (reviews.html)로 보낸다. 웹 버전에 있던 플로팅 멘토 버튼(.mentor-float,
+ * #mentor-float가 탭바 자리로 바뀌면서 죽은 CSS로 남아 있었다)의 호버 효과를
+ * 그대로 되살려 쓴다 — id만 새로 둬서 탭바 마운트와 겹치지 않는다.
+ *
+ * consult.html(진짜 "Mentor's Step" 챗봇)과 reviews.html(자기 자신)에는
+ * 안 띄운다 — 같은 이름이 그 화면에 또 뜨면 혼란만 준다.
+ */
+function renderMentorStepFloat(activeKey) {
+  if (activeKey === 'consult' || activeKey === 'reviews') return;
+  if (document.getElementById('mentorStepFloatBtn')) return;
+  const btn = document.createElement('a');
+  btn.id = 'mentorStepFloatBtn';
+  btn.className = 'mentor-float';
+  btn.href = 'reviews.html';
+  btn.innerHTML = `
+    <span class="mentor-float__icon" aria-hidden="true">🎓</span>
+    <span class="mentor-float__label wm-text">Mentor's Step !</span>
+  `;
+  document.body.appendChild(btn);
+}
+
+/**
  * 학교 찾기 화면의 필터 사이드바를 바텀시트로 옮긴다.
  *
  * 필터 그룹의 컨테이너 id(countryFilters 등)는 그대로 둔 채 .filter-panel 엘리먼트만
@@ -298,6 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   renderAppBar(page);
   renderTabBar(page);
+  renderMentorStepFloat(page);
   if (page === 'search') mountFilterSheet();
 });
 

@@ -3,45 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>교환 준비하기 — steppY</title>
+<title>국가별 후기 — steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/pages/prepare.css">
+<link rel="stylesheet" href="css/pages/reviews.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
-<body data-page="prepare">
+<body data-page="reviews">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell prepare-hero" id="prepareHero"></div>
+<div class="page-shell home-hero">
+  <h1><span class="wm-text">Mentor's Step !</span></h1>
+  <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
+</div>
 
-<div class="page-shell prepare-grid">
-  <div class="prepare-main">
-    <div id="targetMajorCard"></div>
-
-    <section class="card card-pad" id="todoCard"></section>
-
-    <section class="card card-pad" id="checklistSection">
-      <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
-      <div class="checklist" id="checklistList"></div>
-    </section>
-
-    <section class="card card-pad" id="livingSection">
-      <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
-      <div class="living-grid" id="livingGrid"></div>
-    </section>
-
-    <a class="reviews-cta" href="reviews.html">
-      <div class="reviews-cta__body">
-        <span class="reviews-cta__eyebrow">선배 후기</span>
-        <h2>파견 국가별 후기 보기</h2>
-        <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
-      </div>
-      <span class="reviews-cta__arrow" aria-hidden="true">→</span>
-    </a>
-  </div>
+<div class="page-shell">
+  <div id="reviewsMount"></div>
 </div>
 
 <div id="mentor-float"></div>
@@ -70,8 +50,8 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
-<script src="js/components/target-major.js"></script>
 <script src="js/components/prepare-view.js"></script>
-<script src="js/prepare.js"></script>
+<script src="js/components/target-major.js"></script>
+<script src="js/reviews.js"></script>
 </body>
 </html>

@@ -21,6 +21,15 @@ const PREPARE_MARKUP = `
         <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
         <div class="living-grid" id="livingGrid"></div>
       </section>
+
+      <a class="reviews-cta" href="reviews.html">
+        <div class="reviews-cta__body">
+          <span class="reviews-cta__eyebrow">선배 후기</span>
+          <h2>파견 국가별 후기 보기</h2>
+          <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
+        </div>
+        <span class="reviews-cta__arrow" aria-hidden="true">→</span>
+      </a>
     </div>
   </div>
 `;

@@ -234,7 +234,7 @@
         <label class="score-prompt__field">
           <span>학점</span>
           <input type="number" step="0.01" min="0" max="4.5" data-decimals="2" name="gpa"
-                 value="${filled ? p.gpa : ''}" placeholder="3.62">
+                 value="${filled ? p.gpa : ''}" placeholder="3.2">
         </label>
         <label class="score-prompt__field">
           <span>어학</span>

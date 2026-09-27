@@ -462,24 +462,23 @@ body[data-page="credits"]::before {
   margin-bottom: var(--space-3);
 }
 
-/* 제목 안에서 알파벳 구간만 바뀐 SVG.
-   세로 자: viewBox 1300 단위 중 대문자가 700, 베이스라인이 위에서 1000.
-
-   크기는 **한글 글자 높이**에 맞춘다 — 라틴 캡 높이(Pretendard 기준 0.707em)에
-   맞추면 옆의 한글(0.803em)보다 작아 보여서 로고 글씨체 쪽이 주눅 든다.
-     height = 0.803 / (700/1300) ≈ 1.49em
-     베이스라인 아래로 남는 300/1300 을 내려 앉힌다 → 1.49 × 0.2308 ≈ 0.344em */
+/* 제목 안에서 알파벳 구간만 바뀌는 자리 — 로고 전용 패스 아틀라스 대신
+   SB 어그로(샌드박스, MIT 라이선스) 볼드를 쓴다. 어느 제목에 얹히든 같은 모양이
+   나오도록 색·테두리를 이 클래스 하나에 다 넣는다(부모에 기대지 않는다). */
+@font-face {
+  font-family: 'SB Aggro Light';
+  src: url('../assets/fonts/SBAggroLight.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
 .wm-text {
-  height: 1.49em;
-  width: auto;
-  vertical-align: -0.344em;
-  display: inline-block;   /* 줄이 길면 한글 구간과 따로 흐른다 */
-  /* 패스가 scale(0.1) 안이라 여기 적은 값의 1/10 이 사용자 좌표 두께다.
-     paint-order 로 절반이 글자 안쪽에 묻힌다. 옆 한글의 -webkit-text-stroke
-     0.014em 과 같은 굵기가 되도록 맞춘 값(22px 기준 약 0.3px). */
-  stroke: var(--key-ink);
-  stroke-width: 240;
-  stroke-linejoin: round;
+  font-family: 'SB Aggro Light', var(--font-display);
+  font-weight: 700;
+  color: var(--key-500);
+  /* 흰 바탕에서 맨몸 키 컬러는 1.6:1 이라 흐리다 — 네이비 테두리를
+     머리카락 두께로 한 겹 두른다. paint-order 가 없으면 테두리가 획
+     가운데를 파고들어 글자가 도리어 얇아진다. */
+  -webkit-text-stroke: 0.028em var(--key-ink);
   paint-order: stroke fill;
 }
 .info-panel__text { font-size: var(--fs-small); color: var(--ink-700); margin-bottom: var(--space-2); }
