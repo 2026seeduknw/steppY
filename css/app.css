@@ -848,7 +848,9 @@ body[data-page="auth"] {
   flex: 1; min-width: 0;
   display: flex; align-items: baseline; gap: var(--space-2);
 }
-.todo-pill__count { font-family: var(--font-mono); line-height: 1.1; color: var(--ink-900); }
+/* 베이스라인 정렬만으로는 숫자가 "To-Do" 글자보다 살짝 위로 떠 보인다(로고
+   글씨체의 세로 메트릭 차이) — 살짝 내려 카드 세로 중앙에 맞춘다. */
+.todo-pill__count { position: relative; top: 3px; font-family: var(--font-mono); line-height: 1.1; color: var(--ink-900); }
 .todo-pill__count strong { font-size: 1.5rem; font-weight: 800; }
 .todo-pill__count span { font-size: var(--fs-body); color: var(--ink-400); }
 /* To-Do 만 하늘색 로고 글씨체 대신 원래 남색으로 되돌린다 — 배경(--sky-100)이
