@@ -106,8 +106,9 @@
     if (!isFilm() || !root) return;
     const scope = root.nodeType === 1 || root.nodeType === 11 ? root : root.parentNode;
     if (!scope) return;
-    // 사용자가 쓴 글이 담기는 자리는 건드리지 않는다
-    const skip = (n) => n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style');
+    // 사용자가 쓴 글이 담기는 자리는 건드리지 않는다. .film-en은 이미 바꿔 끼운
+    // 자리라 다시 훑지 않는다(무한 반복 방지 겸 낭비 방지).
+    const skip = (n) => n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -115,7 +116,22 @@
       const p = n.parentElement;
       if (!p || skip(p)) return;
       const out = translate(n.nodeValue, p);
-      if (out != null && out !== n.nodeValue.trim()) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), out);
+      if (out == null || out === n.nodeValue.trim()) return;
+      // 로고와 같은 어그로체 볼드를 입히기 위해 바뀐 글자만 <span class="film-en">로
+      // 감싼다 — 앞뒤에 남는 공백/개행은 그대로 텍스트 노드로 둔다.
+      const raw = n.nodeValue;
+      const trimmed = raw.trim();
+      const start = raw.indexOf(trimmed);
+      const before = raw.slice(0, start);
+      const after = raw.slice(start + trimmed.length);
+      const span = document.createElement('span');
+      span.className = 'film-en';
+      span.textContent = out;
+      const frag = document.createDocumentFragment();
+      if (before) frag.appendChild(document.createTextNode(before));
+      frag.appendChild(span);
+      if (after) frag.appendChild(document.createTextNode(after));
+      n.parentNode.replaceChild(frag, n);
     });
     const els = scope.querySelectorAll ? scope.querySelectorAll('[aria-label],[placeholder],[title]') : [];
     els.forEach((el) => {

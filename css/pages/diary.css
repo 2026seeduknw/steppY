@@ -1282,6 +1282,16 @@ body[data-page="journal"][data-theme="film"] {
   --f-title: 'Bebas Neue', 'MaruBuriBold', 'MaruBuri', var(--font-display);
   --diary-font-ticket: var(--f-title); --diary-font-display: var(--f-title);
 }
+
+/* js/diary-en.js가 영어로 바꿔 끼운 글자를 감싸는 자리(.film-en) — 로고와 같은
+   어그로체 볼드를 입힌다. 색·크기는 원래 요소가 정한 값을 그대로 물려받는다
+   (글꼴만 바꾼다 — .wm-text처럼 색을 직접 들지 않는다).
+   !important — 요일·라벨 등 자리마다 font-family를 각자 정해 둔 규칙
+   (예: .diary-weekdays span)이 더 구체적이라, 그냥 두면 이 글꼴이 밀린다. */
+body[data-page="journal"][data-theme="film"] .film-en {
+  font-family: 'SB Aggro Light', var(--font-display) !important;
+  font-weight: 700 !important;
+}
 body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 2.3rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
 body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 2rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
 body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 1.9rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
