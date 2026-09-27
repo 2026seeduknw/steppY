@@ -1604,3 +1604,21 @@ body[data-page="journal"][data-theme="film"] .diary-featured__title { font-size:
 /* 최근 사진 패널은 어두운 유리라, 흰 페이지용으로 뒤집힌 글자색이 여기서 안 읽히던 것도 밝게 되돌린다 */
 body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__panel .diary-featured__loc { color: rgba(239, 232, 214, 0.78); }
 body[data-page="journal"][data-theme="film"][data-tod] .diary-featured__panel .diary-featured__title { color: #f5efe0; }
+
+/* 하단 탭바 — 기록하기 화면에서는 흰 배경 */
+body[data-page="journal"][data-theme="film"][data-tod] .tabbar {
+  background: rgba(255, 255, 255, 0.94); border: 1px solid rgba(27, 26, 23, 0.12);
+  box-shadow: 0 10px 30px rgba(27, 26, 23, 0.18);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+body[data-page="journal"][data-theme="film"][data-tod] .tabbar__item { color: #6b6455; }
+body[data-page="journal"][data-theme="film"][data-tod] .tabbar__item:not(.is-active):active { background: rgba(27, 26, 23, 0.07); }
+body[data-page="journal"][data-theme="film"][data-tod] .tabbar__item.is-active { background: var(--film-amber); color: #141210; }
+
+/* 최근 사진 카드 높이 — 스크롤을 너무 먹어서 400px → 260px */
+body[data-page="journal"][data-theme="film"] .diary-featured__card,
+body[data-page="journal"][data-theme="film"] .diary-featured__skeleton { height: 260px; }
+body[data-page="journal"][data-theme="film"] .diary-featured__empty { height: 200px; }
+
+/* 최근 사진 카드는 사진만 — 제목·장소 설명 패널은 숨긴다(누르면 팝업에서 다 보인다) */
+body[data-page="journal"][data-theme="film"] .diary-featured__panel { display: none; }
