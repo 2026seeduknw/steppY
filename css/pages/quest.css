@@ -5,16 +5,19 @@ body[data-page="quest"] { background: #fff; color: var(--ink-900); }
 
 .quest-page { padding-top: var(--space-4); padding-bottom: 140px; }
 
-/* 앱바가 이미 화면 이름을 갖고 있어서 제목은 다시 쓰지 않는다 — 요약 한 줄만 */
-.quest-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
-.quest-lede { margin: 0; flex: 1; font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); word-break: keep-all; }
+/* 앱바가 이미 화면 이름을 갖고 있어서 제목은 다시 쓰지 않는다.
+   완료 배지는 "목표 고르기/추가하기" 제목과 같은 줄에 둔다(.quest-section-row) —
+   맨 위에 혼자 떠 있던 걸 그 옆으로 내렸다. 다만 더 고를 목표가 하나도 없으면
+   그 제목 자체가 안 뜨니, 그때만 이 자리(.quest-head)에 배지 혼자 남는다. */
+.quest-head { display: flex; align-items: center; justify-content: flex-start; margin-bottom: var(--space-2); }
 .quest-total {
   flex: none; padding: 6px 12px; border-radius: 999px; background: var(--key-100); border: 1px solid var(--key-200);
   font-size: var(--fs-small); font-weight: 700; color: var(--key-ink); white-space: nowrap;
 }
 .quest-total b { font-size: 1.05rem; font-weight: 800; margin-right: 2px; }
 
-.quest-section { margin: var(--space-6) 0 var(--space-3); font-size: var(--fs-h3, 1.05rem); font-weight: 800; letter-spacing: -0.01em; color: var(--ink-900); }
+.quest-section { margin: 0; font-size: var(--fs-h3, 1.05rem); font-weight: 800; letter-spacing: -0.01em; color: var(--ink-900); }
+.quest-section-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-6) 0 var(--space-3); }
 
 /* 목표별 로드맵 카드 */
 .quest-roadmap {
@@ -43,10 +46,19 @@ body[data-page="quest"] { background: #fff; color: var(--ink-900); }
 .quest-node--checkpoint.quest-node--current { box-shadow: 0 0 0 5px var(--key-200), 0 0 0 6px var(--key-500), 0 3px 10px rgba(35, 53, 77, 0.18); }
 @keyframes quest-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { .quest-node--current { animation: none; } }
-.quest-roadmap__current { text-align: center; }
-.quest-roadmap__quest { margin: 0 0 var(--space-3); font-size: var(--fs-body); font-weight: 700; line-height: 1.5; color: var(--ink-900); word-break: keep-all; }
+/* 지금 할 일 — 예전엔 구불구불한 경로(384px) 맨 아래에 있어서 스크롤해야
+   보였다. 경로 위로 올리고(js/quest.js roadmapHtml) 카드처럼 눈에 띄게 만든다. */
+.quest-roadmap__current {
+  text-align: center;
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--key-100);
+  border: 1.5px solid var(--key-200);
+  border-radius: var(--radius-lg);
+}
+.quest-roadmap__quest { margin: 0 0 var(--space-3); font-size: 1.05rem; font-weight: 700; line-height: 1.5; color: var(--ink-900); word-break: keep-all; }
 .quest-complete {
-  min-height: 46px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-body); font-weight: 800;
+  width: 100%; min-height: 48px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-size: var(--fs-body); font-weight: 800;
   background: var(--key-500); color: var(--key-ink); box-shadow: 0 6px 18px rgba(18, 229, 226, 0.32);
 }
 .quest-complete:hover { background: #0ed3d0; }
@@ -81,7 +93,7 @@ body[data-page="quest"] { background: #fff; color: var(--ink-900); }
 .quest-nudge > span { white-space: normal; line-height: 1.4; }
 
 /* 목표 고르기가 맨 위로 왔다 — 위 여백은 줄이고, 아래 로드맵과 간격을 둔다 */
-.quest-section--first { margin-top: var(--space-4); }
+.quest-section-row--first { margin-top: var(--space-4); }
 .quest-goal-grid + .quest-roadmap, .quest-goal-grid + .quest-empty { margin-top: var(--space-5); }
 
 /* 목표를 그만할 때 카드가 부드럽게 접히며 사라진다 */

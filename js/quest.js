@@ -79,18 +79,18 @@
           <span class="quest-roadmap__tier">${allDone ? '전부 완료' : tierOf(progress)}</span>
           <button type="button" class="quest-roadmap__remove" data-remove-goal="${goalId}" aria-label="${esc(info.ko)} 그만하기" title="그만하기">✕</button>
         </div>
+        <div class="quest-roadmap__current">
+          ${allDone
+            ? `<p class="quest-roadmap__quest">🏆 ${esc(info.ko)} 퀘스트 ${TOTAL}개를 모두 깼어요!</p>`
+            : `<p class="quest-roadmap__quest">${esc(current)}</p>
+               <button type="button" class="quest-complete" data-complete-goal="${goalId}">완료하기</button>`}
+        </div>
         <p class="quest-roadmap__count">${allDone ? `${TOTAL} / ${TOTAL}` : `${progress % PER_LEVEL} / ${PER_LEVEL}`} <span>· 전체 ${Math.min(progress, TOTAL)} / ${TOTAL}</span></p>
         <div class="quest-path" style="height:${PATH_H}px">
           <svg class="quest-path__line" viewBox="0 0 200 ${PATH_H}" preserveAspectRatio="none" aria-hidden="true">
             <path d="${pathD}" fill="none" stroke="#cbd6e5" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 14"/>
           </svg>
           ${nodes}
-        </div>
-        <div class="quest-roadmap__current">
-          ${allDone
-            ? `<p class="quest-roadmap__quest">🏆 ${esc(info.ko)} 퀘스트 ${TOTAL}개를 모두 깼어요!</p>`
-            : `<p class="quest-roadmap__quest">${esc(current)}</p>
-               <button type="button" class="quest-complete" data-complete-goal="${goalId}">완료하기</button>`}
         </div>
       </section>`;
   }
@@ -101,13 +101,13 @@
     const available = QUEST_GOALS.filter(g => !state.goals.includes(g.id));
 
     root.innerHTML = `
-      <div class="quest-head">
-        <p class="quest-lede">완료할 때마다 다음 칸이 열려요. 날짜는 상관없어요 — 내 속도대로 해요.</p>
-        <span class="quest-total"><b>${total}</b> 완료</span>
-      </div>
+      ${!available.length ? `<div class="quest-head"><span class="quest-total"><b>${total}</b> 완료</span></div>` : ''}
 
       ${available.length ? `
-        <h2 class="quest-section quest-section--first">${state.goals.length ? '목표 추가하기' : '목표 고르기'}</h2>
+        <div class="quest-section-row quest-section-row--first">
+          <h2 class="quest-section quest-section--first">${state.goals.length ? '목표 추가하기' : '목표 고르기'}</h2>
+          <span class="quest-total"><b>${total}</b> 완료</span>
+        </div>
         <div class="quest-goal-grid">
           ${available.map(g => `<button type="button" class="quest-goal-card" data-add-goal="${g.id}"><span class="quest-goal-card__icon" aria-hidden="true">${g.icon}</span><span>${esc(g.ko)}</span></button>`).join('')}
         </div>` : ''}
