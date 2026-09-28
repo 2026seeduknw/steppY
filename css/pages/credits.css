@@ -129,3 +129,35 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   cursor: default;
   pointer-events: none;
 }
+
+/* ---- 전공 미선택 안내 팝업 (js/credits.js showMajorNeededPopup) ----
+   앱의 모달은 전부 app.css에서 화면 아래에 꽉 차게 붙는 시트로 통일돼 있는데
+   (.modal-scrim{align-items:flex-end}, .modal-panel{width:100%;height:94vh;
+   transform:translateY(100%)}), 이 안내는 그 흐름을 끊고 가운데 작게 떠야 한다.
+   .modal-panel 단독 클래스와 같은 우선순위라 app.css(더 뒤에 로드)에 늘 진다 —
+   #id + 클래스 두 개로 명시도를 올려서 이긴다. */
+#majorNeededScrim { align-items: center; }
+#majorNeededScrim .modal-panel.major-needed-popup {
+  width: min(320px, 84vw);
+  max-width: min(320px, 84vw);
+  height: auto;
+  max-height: 80vh;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  text-align: center;
+  transform: translateY(16px) scale(0.98);
+}
+#majorNeededScrim.is-open .modal-panel.major-needed-popup { transform: translateY(0) scale(1); }
+.major-needed-popup__text {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink-900);
+  margin-bottom: var(--space-4);
+}
+.major-needed-popup__login {
+  display: inline-block;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--sky-700);
+}

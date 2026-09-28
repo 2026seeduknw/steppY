@@ -116,6 +116,30 @@
     });
   }
 
+  /**
+   * 전공 미선택 안내 — 토스트(화면 아래, 2.2초 뒤 자동으로 사라짐)로는 "로그인하고
+   * 전공부터 채워야 한다"는 다음 행동까지 안내하기 좁고, 읽기 전에 사라질 수도
+   * 있다. 화면 가운데 뜨는 작은 팝업으로 바꾸고, 유저가 직접 닫거나(✕/바깥 클릭/ESC —
+   * wireModalDismiss) 로그인 화면으로 넘어갈 수 있게 한다.
+   */
+  function showMajorNeededPopup() {
+    let scrim = document.getElementById('majorNeededScrim');
+    if (!scrim) {
+      scrim = document.createElement('div');
+      scrim.id = 'majorNeededScrim';
+      scrim.className = 'modal-scrim';
+      document.body.appendChild(scrim);
+      scrim.innerHTML = `
+        <div class="modal-panel major-needed-popup">
+          <button type="button" class="modal-close" data-modal-close aria-label="닫기">✕</button>
+          <p class="major-needed-popup__text">먼저 내 전공을 선택하면 전공 매칭 카드로 바로 갈 수 있어요.</p>
+          <a class="major-needed-popup__login" href="auth.html">로그인하기 →</a>
+        </div>`;
+      wireModalDismiss(scrim);
+    }
+    openModal(scrim);
+  }
+
   /** 과목 카드의 주제 칩 → "전공 매칭 찾기"의 같은 학교·같은 전공(주제) 카드로 이동. */
   function jumpToMajorMatch(schoolId, topic) {
     trackEvent('credits_topic_jump', { school: schoolId, topic });
@@ -124,7 +148,7 @@
     // 보인다 — 건너뛸 땐 "이 학교의 이 전공"이 최우선이라 필터를 푼다.
     selectedCountry = ''; selectedRegion = ''; selectedRelevance = '';
     renderMatches();
-    if (!selectedMajor) { showToast('먼저 내 전공을 선택하면 전공 매칭 카드로 바로 갈 수 있어요.'); return; }
+    if (!selectedMajor) { showMajorNeededPopup(); return; }
     const target = MOCK.majorMatches.find(m => m.school === schoolId && m.homeMajor === selectedMajor &&
       ((m.matchedTopics || []).includes(topic) || m.targetMajor === topic));
     if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
