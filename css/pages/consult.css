@@ -64,7 +64,7 @@
   padding-bottom: 2px;
 }
 .country-filter::-webkit-scrollbar { display: none; }
-.country-filter .chip { flex: 0 0 auto; }
+.country-filter .chip { flex: 0 0 auto; padding-left: var(--space-3); padding-right: var(--space-3); }
 .mentor-filters .toggle-row { flex: 0 0 auto; align-self: flex-start; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
 
 /* ---- 목록: 카드가 아니라 네이버 카페 같은 게시판 줄글 ----

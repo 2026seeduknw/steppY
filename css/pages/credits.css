@@ -75,7 +75,11 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   margin-bottom: var(--space-3);
 }
 .country-filter::-webkit-scrollbar { display: none; }
-.country-filter .chip { flex: 0 0 auto; }
+.country-filter .chip { flex: 0 0 auto; padding-left: var(--space-3); padding-right: var(--space-3); }
+/* 대륙을 고르면 그 밑에 뜨는 국가 상세 줄 — 대륙 칩보다 한 단 작고, 살짝 눌러서
+   "그 대륙에 속한 목록"이라는 걸 보여준다. */
+.country-filter--sub { margin-top: -4px; margin-bottom: var(--space-3); padding-left: 2px; }
+.country-filter--sub .chip { border-color: var(--line-100); }
 
 .match-card__country {
   display: inline-flex;
@@ -104,7 +108,7 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-size: var(--fs-micro);
   color: var(--ink-600);
 }
-.relevance-filter .chip { height: 28px; padding: 0 var(--space-3); font-size: var(--fs-micro); }
+.relevance-filter .chip { min-height: 28px; padding: 5px var(--space-3); font-size: var(--fs-micro); }
 .relevance-filter .chip[disabled] {
   opacity: 0.4;
   cursor: default;

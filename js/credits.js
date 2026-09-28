@@ -10,8 +10,15 @@
   // 확정 학교에서 신청한 전공(현지 학과명). 연세 전공과는 다른 값이라 따로 둔다.
   let selectedTargetMajor = AppState.profile.targetMajor || '';
   let selectedCountry = '';   // '' = 전체
+  let selectedRegion = '';    // '' = 전체 대륙. 국가를 안 골라도 이 값만으로 거를 수 있다.
   let selectedRelevance = '';  // '' = 전체 | 'high' | 'mid' | 'low'
   let mode = 'course'; // 'course' | 'major'
+
+  // Mentor's Step(js/consult.js)와 같은 대륙 묶음 — 국가가 많아(최대 30여 개) 한 줄에
+  // 다 늘어놓으면 칩이 너무 많아 보인다. 대륙으로 먼저 좁히고, 그 안에서 국가를 고른다.
+  const REGION_ICON = { '미주': '🌎', '유럽': '🌍', '아시아/오세아니아': '🌏', '기타': '🌐' };
+  // 칩 글자는 영어로 보여준다 — data-region 값(필터링 키)은 그대로 한글이다.
+  const REGION_LABEL_EN = { '미주': 'Americas', '유럽': 'Europe', '아시아/오세아니아': 'Asia/Oceania', '기타': 'Other' };
 
   function renderMajorFilter() {
     const mount = document.getElementById('majorFilterMount');
@@ -165,7 +172,30 @@
     });
     return [...seen.entries()]
       .sort((a, b) => a[0].localeCompare(b[0], 'ko'))
-      .map(([country, en]) => ({ country, flag: countryFlag(en) }));
+      // country는 필터링 키(schoolDisplay().country와 맞춰야 해서 한글 그대로),
+      // 칩에 보이는 글자는 countryEn(영어 국가명) — 둘을 분리해 값은 안 건드리고 표시만 바꾼다.
+      .map(([country, en]) => ({ country, countryEn: en || country, flag: countryFlag(en) }));
+  }
+
+  /** 국가 한글명 → 대륙. MOCK.schools에서 같은 국가명을 쓰는 아무 학교나 찾아 그 region을 읽는다. */
+  function regionOf(countryKo) {
+    const school = MOCK.schools.find(s => s.country === countryKo);
+    return (school && school.region) || '기타';
+  }
+
+  /** 국가 목록을 대륙별로 묶는다. 대륙 칩 자체도 "이 대륙 전체"로 고를 수 있어야 해서
+   *  국가 수까지 같이 들고 있는다(칩에 몇 개국인지 보여주려는 게 아니라, 이 대륙만으로도
+   *  결과가 있다는 걸 렌더 전에 확인하기 위해서다). */
+  function regionOptions(options) {
+    const map = new Map();
+    options.forEach(o => {
+      const region = regionOf(o.country);
+      if (!map.has(region)) map.set(region, []);
+      map.get(region).push(o);
+    });
+    return [...map.entries()]
+      .map(([region, countries]) => ({ region, countries }))
+      .sort((a, b) => b.countries.length - a.countries.length);
   }
 
   function renderCountryFilter(matches) {
@@ -176,18 +206,46 @@
     // 고를 수 있는 국가가 하나뿐이면 필터가 하는 일이 없다
     if (options.length < 2) { mount.innerHTML = ''; return; }
 
-    // 전공을 바꿔서 지금 고른 국가에 결과가 없어지면 선택을 푼다
+    const regions = regionOptions(options);
+    // 전공을 바꿔서 지금 고른 국가/대륙에 결과가 없어지면 선택을 푼다
     if (selectedCountry && !options.some(o => o.country === selectedCountry)) selectedCountry = '';
+    if (selectedRegion && !regions.some(r => r.region === selectedRegion)) { selectedRegion = ''; selectedCountry = ''; }
+
+    // 대륙이 하나뿐이면(예: 결과가 전부 유럽) 대륙 줄도 필터가 할 일이 없다 — 국가 줄만 보여준다
+    const showRegionRow = regions.length > 1;
+    const activeRegion = regions.find(r => r.region === selectedRegion);
+    const subOptions = activeRegion ? activeRegion.countries : (showRegionRow ? null : options);
 
     mount.innerHTML = `
-      <div class="country-filter" role="group" aria-label="국가 필터">
-        <button type="button" class="chip${selectedCountry === '' ? ' is-selected' : ''}" data-country="">전체</button>
-        ${options.map(o => `
-          <button type="button" class="chip${selectedCountry === o.country ? ' is-selected' : ''}" data-country="${o.country}">
-            ${o.flag ? o.flag + ' ' : ''}${o.country}
+      ${showRegionRow ? `
+      <div class="country-filter" role="group" aria-label="대륙 필터">
+        <button type="button" class="chip${selectedRegion === '' ? ' is-selected' : ''}" data-region="">All</button>
+        ${regions.map(r => `
+          <button type="button" class="chip${selectedRegion === r.region ? ' is-selected' : ''}" data-region="${r.region}">
+            ${REGION_ICON[r.region] || '🌐'} ${REGION_LABEL_EN[r.region] || r.region}
           </button>`).join('')}
-      </div>`;
+      </div>` : ''}
+      ${subOptions ? `
+      <div class="country-filter country-filter--sub" role="group" aria-label="국가 필터">
+        <button type="button" class="chip chip--sm${selectedCountry === '' ? ' is-selected' : ''}" data-country="">${activeRegion ? `All ${REGION_LABEL_EN[activeRegion.region] || activeRegion.region}` : 'All'}</button>
+        ${subOptions.map(o => `
+          <button type="button" class="chip chip--sm${selectedCountry === o.country ? ' is-selected' : ''}" data-country="${o.country}">
+            ${o.flag ? o.flag + ' ' : ''}${o.countryEn}
+          </button>`).join('')}
+      </div>` : ''}`;
 
+    // 대륙 칩 — 누르면 그 대륙 전체로 거르는 동시에 밑에 국가 줄이 열린다. 이미 열려 있는
+    // 대륙을 다시 누르면 전체로 되돌아간다(Americas만 보고 싶은 사람도, 다시 접고 싶은
+    // 사람도 있을 수 있어서 한 번 더 누르면 닫히게 했다).
+    mount.querySelectorAll('[data-region]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const region = btn.dataset.region;
+        selectedRegion = (selectedRegion === region) ? '' : region;
+        selectedCountry = '';
+        trackEvent('credits_region_filter', { region: selectedRegion || 'all', mode });
+        renderMatches();
+      });
+    });
     mount.querySelectorAll('[data-country]').forEach(btn => {
       btn.addEventListener('click', () => {
         selectedCountry = btn.dataset.country;
@@ -198,8 +256,9 @@
   }
 
   function byCountry(matches) {
-    if (!selectedCountry) return matches;
-    return matches.filter(m => schoolDisplay(m.school).country === selectedCountry);
+    if (selectedCountry) return matches.filter(m => schoolDisplay(m.school).country === selectedCountry);
+    if (selectedRegion) return matches.filter(m => regionOf(schoolDisplay(m.school).country) === selectedRegion);
+    return matches;
   }
 
   /** targetCourse 원본 문자열 끝에 "(대학명)"이 그대로 붙어 있고, 이게 실제 캠퍼스명과

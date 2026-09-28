@@ -267,7 +267,7 @@ body.is-sheet-open { overflow: hidden; }
 .app-sheet .filter-group .ss,
 .app-sheet .filter-group .sort-select { width: 100%; }
 /* 손가락으로 누를 수 있는 최소치는 지키되(30px), 기본 칩보다 여백을 덜 준다 */
-.app-sheet .filter-chip-list .chip { height: 30px; padding: 0 11px; font-size: var(--fs-small); }
+.app-sheet .filter-chip-list .chip { min-height: 30px; padding: 5px 11px; font-size: var(--fs-small); }
 .app-sheet .filter-chip-list { gap: 5px; }
 /* 토글 줄도 제목 없이 한 칸씩 — 라벨이 길면 스위치가 밀려나므로 줄인다 */
 .app-sheet .filter-group--half .toggle-row { gap: var(--space-2); }
@@ -297,7 +297,7 @@ body.is-sheet-open { overflow: hidden; }
 .btn--sm { height: 36px; border-radius: 10px; }
 .btn:active { transform: scale(0.98); }
 
-.chip { height: 34px; }
+.chip { min-height: 34px; }
 .badge { height: 22px; }
 
 /* 입력 요소는 16px 미만이면 iOS가 포커스 시 화면을 확대한다 */
@@ -1032,7 +1032,7 @@ body[data-page="onboarding"] {
 }
 .ob__form .ss { width: 100%; }
 .ob__chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ob__chips .chip { height: 32px; padding: 0 var(--space-3); font-size: var(--fs-small); }
+.ob__chips .chip { min-height: 32px; padding: 6px var(--space-3); font-size: var(--fs-small); }
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
 .ob__hint { font-size: var(--fs-micro); color: var(--ink-400); line-height: 1.5; word-break: keep-all; }
 

@@ -1328,7 +1328,11 @@ body[data-page="journal"][data-theme="film"] .film-en {
    RECORD가 스트릭 배지보다 아래로 처져 보이고 위아래 여백도 헐렁했다. 원인은
    같은 값이니 여기서도 0.75rem으로 맞춘다. */
 body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
-body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
+/* 달력 월 제목(26.SEP)은 다른 작은 라벨들과 같은 0.75rem 상한을 적용하지 않는다 —
+   더 키워달라는 요청으로, 안쪽 .film-en도 같이 올려야 한다(그대로 두면 위 공통
+   규칙의 min(1em, 0.75rem)에 걸려 글자가 다시 0.75rem으로 눌린다). */
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 1.1rem; letter-spacing: 0.03em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title .film-en { font-size: 1.1rem; }
 body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
 body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; }
 body[data-page="journal"][data-theme="film"] .stampbook__month { font-family: var(--f-title); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--film-amber); text-shadow: var(--film-glow); }
