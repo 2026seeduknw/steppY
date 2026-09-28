@@ -27,10 +27,30 @@
   // TODO(출시 전): 20 * 60 * 1000 (20분) 으로 되돌릴 것.
   //   지금은 UI 를 잡는 중이라 열 때마다 보이도록 0 으로 둔다.
   const QUIET = 0;
+  // js/auth.js 가 로그인/이메일 인증 성공 시 세워 두고, 사용자가 직접 로그아웃할
+  // 때만 지우는 값. 세션 만료와는 무관하다 — "로그인해 본 적 있는 사람"인지만 본다.
+  const LOGIN_KEY = 'steppy:has-logged-in';
   const root = document.getElementById('introSplash');
   if (!root || typeof SPLASH_LETTERS === 'undefined') return;
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  let hasLoggedInBefore = false;
+  try { hasLoggedInBefore = localStorage.getItem(LOGIN_KEY) === '1'; } catch (e) { /* 사생활 모드 */ }
+
+  /* 로그인해 본 적 있는 사람에게는 마케팅 랜딩(글자가 제목 자리로 낙하하는
+     전체 연출)을 다시 보여줄 필요가 없다. 글자가 흩어져 등장하는 부분만
+     짧게 보여주고, 제자리로 떨어져 앉는 모션 없이 곧장 홈으로 보낸다. */
+  if (hasLoggedInBefore) {
+    if (reduced) { location.replace('home.html'); return; }
+    runShortSplash();
+    return;
+  }
+
+  /* ---- 아래는 처음 방문자(또는 아직 로그인해 본 적 없는 사람)용 전체 스플래시 ---- */
   let recent = false;
   try {
     const last = Number(localStorage.getItem(KEY) || 0);
@@ -59,10 +79,6 @@
     dropDur: 1330        // 글자 하나가 낙하하는 데 걸리는 시간
   };
   const LAST = TL.hold + TL.dropStagger * (SPLASH_LETTERS.length - 1) + TL.dropDur;
-
-  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
   /**
    * 제자리로 가는 곡선.
@@ -273,4 +289,103 @@
   // 기다리기 싫은 사람은 아무 데나 누르면 건너뛴다
   addEventListener('pointerdown', finish, { once: true });
   addEventListener('keydown', finish, { once: true });
+
+  /**
+   * 짧은 버전 — 로그인해 본 적 있는 사람용.
+   *
+   * 위 전체 스플래시의 "등장" 단계(글자가 흩어진 자리에 하나씩 나타나는 것)만
+   * 그대로 재생한다. 목표(제목 자리)를 재는 hero/bang 요소도, 거기로 떨어져
+   * 앉는 낙하·스쿼시 모션도 필요 없다 — 잠깐 머물다 곧장 home.html 로 넘어간다.
+   */
+  function runShortSplash() {
+    document.documentElement.classList.add('is-splashing', 'is-splash-lock');
+    const stage = root.querySelector('.splash__stage');
+
+    const SHORT = { enterStagger: 110, enterDur: 500, hold: 550 };
+    const FADE_DUR = 260;
+    const enterEnd = SHORT.enterStagger * (SPLASH_LETTERS.length - 1) + SHORT.enterDur;
+    const LAST = enterEnd + SHORT.hold;
+
+    const LW = Math.min(innerWidth * 0.80, 560);
+    const LH = LW / SPLASH_LAYOUT_RATIO;
+    stage.style.width = LW + 'px';
+    stage.style.height = LH + 'px';
+
+    const nodes = SPLASH_LETTERS.map((d, i) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', '#sp-' + i);
+      el.appendChild(use);
+      el.setAttribute('class', 'splash__letter');
+      el.style.width = (d.sw * LW) + 'px';
+      stage.appendChild(el);
+      return { el, d };
+    });
+
+    let starts = [], raf = 0, t0 = 0, done = false;
+
+    function measureStarts() {
+      const sr = stage.getBoundingClientRect();
+      starts = nodes.map(({ el, d }) => {
+        const r = el.getBoundingClientRect();
+        return { cx: sr.left + d.sx * LW + r.width / 2,
+                 cy: sr.top + d.sy * LH + r.height / 2,
+                 w: r.width, h: r.height };
+      });
+    }
+
+    function unlockScroll() {
+      document.documentElement.classList.remove('is-splash-lock');
+    }
+
+    function goHome() {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      location.replace('home.html');
+    }
+
+    function frame(now) {
+      if (!t0) t0 = now;
+      const ms = now - t0;
+      if (ms > 300) unlockScroll();
+      if (ms < enterEnd) measureStarts();
+
+      nodes.forEach(({ el, d }, i) => {
+        const s = starts[i];
+        if (!s) return;
+        const eE = easeOutCubic(clamp01((ms - i * SHORT.enterStagger) / SHORT.enterDur));
+        el.style.opacity = String(eE);
+        // 위쪽에서 살짝 떠 내려오며 등장하는 것은 전체 스플래시와 같은 연출이다 —
+        // 다만 여기서는 그 뒤로 낙하 단계가 없으므로 이 자리에 그대로 머문다.
+        const cy = s.cy + (1 - eE) * -70;
+        const sc = 0.88 + 0.12 * eE;
+        const rot = d.angle + (1 - eE) * (i % 2 ? 8 : -8);
+        const tx = s.cx - s.w / 2;
+        const ty = cy - s.h + (s.h * sc) / 2;
+        el.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotate(${rot}deg) scale(${sc})`;
+      });
+
+      const fadeFrom = LAST - FADE_DUR;
+      const veil = 1 - easeInOutCubic(clamp01((ms - fadeFrom) / FADE_DUR));
+      root.style.backgroundColor = 'rgba(255,255,255,' + veil.toFixed(3) + ')';
+
+      if (ms >= LAST) { goHome(); return; }
+      raf = requestAnimationFrame(frame);
+    }
+
+    function boot() {
+      measureStarts();
+      // 글자는 지금까지 문서 흐름에 놓여 있었다. 좌표를 다 쟀으니 화면 기준으로 띄운다.
+      nodes.forEach(({ el }) => { el.style.position = 'fixed'; el.style.left = '0'; el.style.top = '0'; });
+      raf = requestAnimationFrame(frame);
+    }
+
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(boot);
+    else boot();
+
+    // 기다리기 싫은 사람은 아무 데나 누르면 바로 홈으로
+    addEventListener('pointerdown', goHome, { once: true });
+    addEventListener('keydown', goHome, { once: true });
+  }
 })();
