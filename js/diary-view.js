@@ -1017,7 +1017,9 @@
         <form class="diary-form" id="entryForm">
           <div class="diary-photo-picker" id="photoPicker">
             <label class="diary-photo-picker__add">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="diary-photo-picker__add-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
               <input type="file" accept="image/*" multiple id="photoInput" style="display:none;">
             </label>
             <label class="diary-photo-picker__add diary-photo-picker__camera" aria-label="바로 사진 찍기">
@@ -1026,7 +1028,7 @@
             </label>
           </div>
           <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
-          <p class="diary-form__hint" id="photoHint" hidden>사진을 누르면 대표 사진(우표에 크게 나오는 사진)이 돼요</p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요 — 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
           <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
@@ -1117,40 +1119,69 @@
     });
   }
 
+  // 뒤로 갈수록 살짝 더 기울고 더 밀린다 — 우표 카드 뒷장(.diary-stamp-back)과 같은 말투.
+  const PHOTO_PEEK_OFFSETS = [{ rot: -6, x: -6, y: 5 }, { rot: 7, x: 7, y: 7 }];
+
+  /**
+   * 사진을 낱장 썸네일로 늘어놓는 대신, 그날 찍은 사진을 한 장씩 넘겨보는 작은 더미로
+   * 보여준다(맨 앞이 우표 대표 사진). 뒤에 최대 2장만 살짝 겹쳐 보이고, 나머지는
+   * 왼쪽 위 "+N"으로만 표시 — 몇 장이든 오른쪽 아래 ⟳를 눌러 순서대로 넘길 수 있다.
+   */
   function renderPhotoPicker(scrim) {
     const picker = scrim.querySelector('#photoPicker');
-    const addBtn = picker.querySelector('.diary-photo-picker__add');   // 썸네일은 첫 번째 추가 버튼 앞에 끼운다
-    picker.querySelectorAll('.diary-photo-thumb').forEach(el => el.remove());
-    pendingPhotos.forEach((p, i) => {
-      const div = document.createElement('div');
-      div.className = 'diary-photo-thumb' + (i === 0 ? ' is-cover' : '');
-      div.innerHTML = `<img src="${p.url}" alt="" ${i > 0 ? `data-cover="${i}" role="button" tabindex="0"` : ''}>${i === 0 ? '<span class="diary-photo-thumb__cover">대표</span>' : ''}<button type="button" data-remove="${i}" aria-label="사진 빼기">✕</button>`;
-      picker.insertBefore(div, addBtn);
-    });
+    const addBtn = picker.querySelector('.diary-photo-picker__add');   // 더미는 첫 번째 추가 버튼 앞에 끼운다
+    const oldStack = picker.querySelector('.diary-photo-stack');
+    if (oldStack) oldStack.remove();
+
+    if (pendingPhotos.length) {
+      const stack = document.createElement('div');
+      stack.className = 'diary-photo-stack';
+      const peeks = pendingPhotos.slice(1, 3);
+      stack.innerHTML = `
+        ${peeks.map((p, k) => {
+          const o = PHOTO_PEEK_OFFSETS[k];
+          return `<div class="diary-photo-stack__peek" style="transform:rotate(${o.rot}deg) translate(${o.x}px, ${o.y}px); z-index:${2 - k};"><img src="${p.url}" alt=""></div>`;
+        }).join('')}
+        <div class="diary-photo-stack__front">
+          <img src="${pendingPhotos[0].url}" alt="">
+          <span class="diary-photo-thumb__cover">대표</span>
+          <button type="button" class="diary-photo-stack__remove" aria-label="사진 빼기">✕</button>
+        </div>
+        ${pendingPhotos.length > 3 ? `<span class="diary-photo-stack__more">+${pendingPhotos.length - 3}</span>` : ''}
+        ${pendingPhotos.length > 1 ? `<button type="button" class="diary-photo-stack__flip" aria-label="다음 사진 보기" title="다음 사진 보기">⟳</button>` : ''}
+      `;
+      picker.insertBefore(stack, addBtn);
+      stack.querySelector('.diary-photo-stack__remove').addEventListener('click', () => {
+        pendingPhotos.shift();
+        renderPhotoPicker(scrim);
+      });
+      const flipBtn = stack.querySelector('.diary-photo-stack__flip');
+      if (flipBtn) flipBtn.addEventListener('click', () => {
+        pendingPhotos.push(pendingPhotos.shift());
+        renderPhotoPicker(scrim);
+      });
+    }
+
     const hint = scrim.querySelector('#photoHint');
     if (hint) hint.hidden = pendingPhotos.length < 2;
+
+    // 무료 한도를 다 썼으면 "+" 자리를 코인 아이콘으로 바꿔 크레딧을 써야 더 올릴 수
+    // 있다는 걸 누르기 전에 미리 알려준다(js/state.js AppState.freePhotoUploadsLeft).
+    const left = AppState.freePhotoUploadsLeft();
+    const locked = Number.isFinite(left) && left <= 0;
+    addBtn.classList.toggle('diary-photo-picker__add--credit', locked);
+    const addIcon = addBtn.querySelector('.diary-photo-picker__add-icon');
+    addIcon.innerHTML = locked
+      ? `<span class="diary-photo-picker__add-coin" aria-hidden="true">🪙</span><span class="diary-photo-picker__add-label">크레딧</span>`
+      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+
     const quota = scrim.querySelector('#photoQuota');
     if (quota) {
-      const left = AppState.freePhotoUploadsLeft();
       quota.hidden = !Number.isFinite(left);   // 프리미엄(Infinity)이면 아예 감춘다
       quota.textContent = left > 0
         ? `오늘 무료 사진 ${left}장 남음 · 프리미엄이면 무제한`
-        : '오늘 무료 사진을 다 썼어요 · 프리미엄이면 무제한으로 올릴 수 있어요';
+        : '오늘 무료 사진을 다 썼어요 · 크레딧을 쓰거나 프리미엄이면 더 올릴 수 있어요';
     }
-    picker.querySelectorAll('[data-remove]').forEach(btn => {
-      btn.addEventListener('click', () => { pendingPhotos.splice(Number(btn.dataset.remove), 1); renderPhotoPicker(scrim); });
-    });
-    // 누른 사진을 맨 앞으로 — 앞의 사진이 우표의 대표 사진이다
-    picker.querySelectorAll('[data-cover]').forEach(img => {
-      const pick = () => {
-        const [chosen] = pendingPhotos.splice(Number(img.dataset.cover), 1);
-        pendingPhotos.unshift(chosen);
-        renderPhotoPicker(scrim);
-        showToast('대표 사진으로 바꿨어요');
-      };
-      img.addEventListener('click', pick);
-      img.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') pick(); });
-    });
   }
 
   function requestLocation() {

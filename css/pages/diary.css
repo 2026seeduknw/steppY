@@ -145,12 +145,24 @@
 .diary-fab--edit:hover { color: var(--diary-text); }
 @media (max-width: 640px) { .diary-fab-bar { bottom: var(--space-4); gap: var(--space-4); } .diary-fab--camera { width: 62px; height: 62px; } }
 .diary-form { display: flex; flex-direction: column; gap: var(--space-4); }
-.diary-photo-picker { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.diary-photo-picker { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: flex-start; }
 .diary-photo-picker__add { width: 88px; height: 88px; border-radius: var(--radius-md); border: 1.5px dashed var(--diary-line-strong); display: flex; align-items: center; justify-content: center; color: var(--diary-text-faint); font-size: 1.5rem; cursor: pointer; flex-shrink: 0; }
 .diary-photo-picker__add:hover { border-color: var(--diary-accent); color: var(--diary-accent); }
-.diary-photo-thumb { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
-.diary-photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
-.diary-photo-thumb button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--diary-text); color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
+/* 무료 한도(하루 3장)를 다 쓰면 "+"가 코인 라벨로 바뀐다(js/diary-view.js renderPhotoPicker) */
+.diary-photo-picker__add--credit { flex-direction: column; gap: 2px; border-style: solid; border-color: var(--diary-accent); color: var(--diary-accent); }
+.diary-photo-picker__add-coin { font-size: 1.3rem; line-height: 1; }
+.diary-photo-picker__add-label { font-size: var(--fs-micro); font-weight: 700; }
+
+/* ---- 사진 더미 — 낱장 썸네일 대신 뒤에 최대 2장만 살짝 겹쳐 보이고, ⟳로 넘겨본다 ---- */
+.diary-photo-stack { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
+.diary-photo-stack__peek { position: absolute; inset: 0; border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.18); pointer-events: none; }
+.diary-photo-stack__peek img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.diary-photo-stack__front { position: relative; z-index: 3; width: 100%; height: 100%; border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
+.diary-photo-stack__front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.diary-photo-stack__remove { position: absolute; top: -6px; right: -6px; z-index: 4; width: 22px; height: 22px; border-radius: 50%; background: var(--diary-text); color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; border: none; }
+.diary-photo-stack__more { position: absolute; top: -6px; left: -6px; z-index: 5; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.diary-photo-stack__flip { position: absolute; right: -8px; bottom: -8px; z-index: 5; width: 26px; height: 26px; border-radius: 50%; background: var(--diary-accent); color: #fff; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; border: 2px solid var(--diary-surface); cursor: pointer; }
+.diary-photo-stack__flip:active { transform: scale(0.92); }
 /* 16px 미만이면 iOS가 포커스 때 화면을 확대한다(css/app.css의 같은 규칙 참고) — 실제
    입력값 크기는 16px로 두고, 화면에 커 보이던 건 아래 placeholder만 따로 줄인다. */
 .diary-form textarea { width: 100%; min-height: 84px; padding: var(--space-3); border: 1.5px solid var(--diary-line-strong); border-radius: var(--radius-md); font-size: 16px; font-family: var(--font-body); resize: vertical; background: var(--diary-surface); color: var(--diary-text); }
@@ -1015,10 +1027,7 @@ button.diary-lp::after { z-index: 2; }
 .diary-entry__edit-link { padding: 8px 14px; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.6); font: inherit; font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); cursor: pointer; }
 .diary-entry__edit-link:hover { background: #fff; }
 
-/* 대표 사진 */
-.diary-photo-thumb { position: relative; }
-.diary-photo-thumb img[data-cover] { cursor: pointer; }
-.diary-photo-thumb.is-cover { box-shadow: 0 0 0 2px var(--ink-900); border-radius: var(--radius-md); }
+/* 대표 사진 라벨 — .diary-photo-stack__front(위) 안에 쓴다 */
 .diary-photo-thumb__cover { position: absolute; left: 4px; bottom: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--ink-900); color: #fff; font-size: 10px; font-weight: 700; pointer-events: none; }
 
 /* 스켈레톤 — 사진 주소를 받는 동안 같은 크기의 자리를 흐릿하게 */
