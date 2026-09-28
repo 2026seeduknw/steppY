@@ -260,7 +260,7 @@
             </label>
             <label class="mentor-form__field">
               <span class="mentor-form__label">내용</span>
-              <textarea name="body" required placeholder="상황을 조금 더 적어주면 답변받기 쉬워요"></textarea>
+              <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
             </label>
             <div class="mentor-form__cost">질문 등록에 <strong>🪙 ${ASK_COST}</strong> 크레딧이 필요해요 · 내 크레딧 <strong id="askBalance">${AppState.getCredits()}</strong></div>
             <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>

@@ -77,6 +77,18 @@
     return list.slice().sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  // 귀국 후(DEPARTURE_PHASES.AFTER)에는 "출국 전(한국)" 기록과 "파견 중" 기록이 한 달력에
+  // 섞인다 — 귀국 전까지는 매일 "지금 국면"만 쓰니 섞일 일이 없었지만, 돌아온 뒤 둘을
+  // 오가며 보고 싶을 때는 칩으로 걸러야 한다(renderPhaseToggle). 캘린더·최근 사진 캐러셀만
+  // 이 필터를 따른다 — 연속 기록·이번 주 스트립은 "그날 뭔가 남겼는지"라는 습관 지표라
+  // 어느 국면 기록이든 항상 전부 센다.
+  let phaseFilter = 'all';   // 'all' | 'prepare' | 'abroad'
+  function visibleEntries() {
+    const list = entries();
+    if (phaseFilter === 'all') return list;
+    return list.filter(e => (e.phase || departurePhaseFor(e.date)) === phaseFilter);
+  }
+
   /*
    * 둘러보기(로그인 전)에는 저장할 계정이 없어서 기록이 비어 보인다. 화면이 어떤 모양인지
    * 알 수 있도록 이번 달에 예시 기록을 깔아 보여준다. 읽기 전용이고 어디에도 저장되지 않는다.
@@ -182,6 +194,7 @@
     <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
 
     <div id="diaryHeroSlot"></div>
+    <div id="diaryPhaseToggle" hidden></div>
 
     <div class="diary-write-bar">
       <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="0" aria-label="바로 사진 찍어 기록하기">
@@ -271,6 +284,37 @@
       </div>`;
   }
 
+  /**
+   * 귀국 후에만 뜨는 국면 필터 — 돌아오기 전까지는 달력에 "출국 전" 기록과
+   * "파견 중" 기록이 섞일 일이 없지만(그날그날 지금 국면만 쓰니까), 귀국 후에는
+   * 둘 다 쌓여 있어서 한쪽만 골라 보고 싶을 때가 있다.
+   */
+  function renderPhaseToggle() {
+    const mount = root.querySelector('#diaryPhaseToggle');
+    if (!mount) return;
+    const info = departureInfo();
+    if (!info.hasRange || info.phase !== DEPARTURE_PHASES.AFTER) {
+      mount.hidden = true;
+      mount.innerHTML = '';
+      return;
+    }
+    mount.hidden = false;
+    const OPTIONS = [{ key: 'all', label: '전체' }, { key: 'prepare', label: '출국 전' }, { key: 'abroad', label: '파견 중' }];
+    mount.innerHTML = `
+      <div class="diary-phase-toggle" role="group" aria-label="기록 국면 필터">
+        ${OPTIONS.map(o => `<button type="button" class="diary-phase-toggle__btn${phaseFilter === o.key ? ' is-active' : ''}" data-phase="${o.key}">${o.label}</button>`).join('')}
+      </div>`;
+    mount.querySelectorAll('[data-phase]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (phaseFilter === btn.dataset.phase) return;
+        phaseFilter = btn.dataset.phase;
+        renderPhaseToggle();
+        renderFeatured();
+        renderMonth();
+      });
+    });
+  }
+
   /* --------------------------------------------------------------- 연속 기록 */
 
   function renderStreak() {
@@ -349,23 +393,26 @@
     const slot = root && root.querySelector('#diaryFeaturedSlot');
     if (!slot) return;
 
-    if (!entries().length) {
+    if (!visibleEntries().length) {
+      // 출국 전에는 "떠나기 전 기록"을 왜 남기는지가 안 와닿는다 — 교환 가서도
+      // 다시 볼 수 있다는 걸 먼저 말해준다(departureInfo, js/components/departure.js).
+      const isBefore = departureInfo().phase === DEPARTURE_PHASES.BEFORE;
       slot.innerHTML = `
         ${featuredHead('첫 우표')}
         <button type="button" class="diary-featured__empty" id="emptyStamp">
-          <span class="diary-featured__empty-icon" aria-hidden="true">✉️</span>
-          <b>첫 기록을 남겨보세요</b>
-          <span>사진 한 장이면 첫 우표가 붙어요</span>
+          <span class="diary-featured__empty-icon" aria-hidden="true">${isBefore ? '🇰🇷' : '✉️'}</span>
+          <b>${isBefore ? '한국에서의 추억을 남겨보아요' : '첫 기록을 남겨보세요'}</b>
+          <span>${isBefore ? '지금 남긴 기록은 교환 가서도 다시 볼 수 있어요' : '사진 한 장이면 첫 우표가 붙어요'}</span>
         </button>`;
       slot.querySelector('#emptyStamp').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
       wireQuestion(slot);
       return;
     }
 
-    const withPhoto = entries().filter(e => (e.photos || []).some(p => photoUrl(p)));
+    const withPhoto = visibleEntries().filter(e => (e.photos || []).some(p => photoUrl(p)));
     if (!withPhoto.length) {
       // 사진 주소를 받는 중이면 빈 칸 대신 같은 크기의 자리를 먼저 보여준다
-      slot.innerHTML = entries().some(photosLoading)
+      slot.innerHTML = visibleEntries().some(photosLoading)
         ? `${featuredHead('가장 최근 기록')}<div class="diary-featured__skeleton" aria-label="사진 불러오는 중"></div>` : '';
       if (slot.innerHTML) wireQuestion(slot);
       return;
@@ -605,7 +652,7 @@
 
   function byDate() {
     const map = {};
-    entries().forEach(e => { (map[e.date] = map[e.date] || []).push(e); });
+    visibleEntries().forEach(e => { (map[e.date] = map[e.date] || []).push(e); });
     return map;
   }
 
@@ -1537,6 +1584,7 @@
 
   function renderAll() {
     renderHero();
+    renderPhaseToggle();
     renderStreak();
     renderFeatured();
     renderMonth();

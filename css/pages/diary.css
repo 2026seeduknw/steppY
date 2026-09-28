@@ -306,6 +306,26 @@
   font-size: var(--fs-small); font-weight: 700; color: var(--diary-accent);
 }
 
+/* 귀국 후에만 뜨는 국면 필터(js/diary-view.js renderPhaseToggle) — 전체/출국 전/파견 중 */
+.diary-phase-toggle {
+  display: flex; gap: 4px;
+  margin-top: var(--space-3);
+  padding: 4px;
+  background: var(--diary-surface-alt);
+  border-radius: var(--radius-pill);
+}
+.diary-phase-toggle__btn {
+  flex: 1 1 0;
+  height: 32px;
+  border: none; background: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small); font-weight: 600;
+  color: var(--diary-text-dim);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.diary-phase-toggle__btn.is-active { background: var(--diary-surface); color: var(--diary-text); box-shadow: 0 2px 6px rgba(35,42,61,0.12); }
+
 /* 가운데 안내는 좌우 날짜와 같은 줄에 두면 402px에서 폭 0으로 눌린다.
    flex:1이라 끝까지 줄어들 수 있어서, 아예 한 줄 아래로 내렸다. */
 .diary-hero__sub {
