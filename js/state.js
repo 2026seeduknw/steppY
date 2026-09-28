@@ -29,6 +29,9 @@
 const STORAGE_KEY = 'steppy_guest_state_v2';
 const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 
+/** 비프리미엄 사용자가 하루에 무료로 올릴 수 있는 사진 수(BM: 나머지는 프리미엄). */
+const FREE_PHOTO_DAILY_LIMIT = 3;
+
 /**
  * 로그인하지 않은 방문자의 초기 상태.
  *
@@ -85,7 +88,9 @@ function emptyState(displayName) {
       languageTests: [],
       // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다
       exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1 },
-      targetScoreSimUsed: false
+      targetScoreSimUsed: false,
+      // null(또는 지난 시각)이면 비프리미엄. supabase/premium.sql의 profiles.premium_until.
+      premiumUntil: null
     },
     favorites: [],
     wishlist: {},
@@ -151,6 +156,38 @@ const AppState = {
 
   getCredits() { return this.isAuthed ? this.load().credits : 0; },
   isQuestionFavorite(id) { return this.load().questionFavorites.includes(id); },
+
+  /* --------------------------------------------------------------- BM(프리미엄/크레딧 가격) */
+
+  /** 프리미엄 구독 중인지. premiumUntil이 없거나 이미 지났으면 false. */
+  isPremium() {
+    const until = this.profile.premiumUntil;
+    return !!until && new Date(until).getTime() > Date.now();
+  },
+  /** 크레딧 구매 가격표 — DB(supabase/premium.sql)가 채워지면 그 값, 아니면 mock-data.js의 자리표시자. */
+  getCreditPackages() { return MOCK.creditPackages || []; },
+  getPremiumPlans() { return MOCK.premiumPlans || []; },
+
+  /**
+   * 사진 하루 3장 무료 한도. 크레딧과 달리 돈이 걸린 조작(잔액 위변조)이
+   * 아니라 "그날 몇 장 더 올리느냐"일 뿐이라, 서버 RPC 없이 기기별
+   * localStorage 카운터로 가볍게 막는다. 프리미엄이면 무제한.
+   */
+  freePhotoUploadsLeft() {
+    if (this.isPremium()) return Infinity;
+    return Math.max(0, FREE_PHOTO_DAILY_LIMIT - this._todayPhotoCount());
+  },
+  recordPhotoUpload() {
+    if (this.isPremium()) return;
+    try { localStorage.setItem(this._photoCountKey(), String(this._todayPhotoCount() + 1)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
+  },
+  _photoCountKey() {
+    const uid = (this.isAuthed && typeof Auth !== 'undefined') ? Auth.userId : 'guest';
+    return `steppy_photo_uploads_${uid}_${todayISO()}`;
+  },
+  _todayPhotoCount() {
+    try { return Number(localStorage.getItem(this._photoCountKey())) || 0; } catch (e) { return 0; }
+  },
 
   toggleQuestionFavorite(id) {
     const s = this.load();
@@ -579,7 +616,9 @@ const AppState = {
         gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
         languageTests: p.language_tests || [],
         exchangeTerm: p.exchange_term || next.profile.exchangeTerm,
-        targetScoreSimUsed: false
+        targetScoreSimUsed: false,
+        // premium.sql이 아직 적용되지 않았으면 이 컬럼이 없어 p.premium_until은 그냥 undefined다.
+        premiumUntil: p.premium_until || null
       };
       next.confirmedSchoolId = p.confirmed_school_id || null;
       next.targetScores = p.target_scores || null;

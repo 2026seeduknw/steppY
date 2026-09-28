@@ -113,6 +113,22 @@ MOCK.schoolReviews = {};
 MOCK.mentorQuestions = [];
 
 /* ---------------------------------------------------------------------
+ * BM 가격표 — Supabase credit_packages/premium_plans 테이블(supabase/premium.sql)
+ * 에서 채워짐. 마이그레이션 전(또는 네트워크 실패)에는 이 자리표시자 가격이
+ * 그대로 보인다 — DB 값과 동일하게 맞춰뒀다. 실제 금액은 PG 연동 시점에
+ * DB 쪽만 바꾸면 된다(여기 값은 화면이 잠깐이라도 비어 보이지 않게 하는 fallback).
+ * ------------------------------------------------------------------- */
+MOCK.creditPackages = [
+  { id: 'credit_100', credits: 100, priceKrw: 1200, label: '100 크레딧' },
+  { id: 'credit_300', credits: 300, priceKrw: 3300, label: '300 크레딧' },
+  { id: 'credit_600', credits: 600, priceKrw: 6000, label: '600 크레딧' },
+  { id: 'credit_1500', credits: 1500, priceKrw: 13500, label: '1500 크레딧' }
+];
+MOCK.premiumPlans = [
+  { id: 'premium_1m', days: 30, priceKrw: 4900, label: '프리미엄 1개월' }
+];
+
+/* ---------------------------------------------------------------------
  * 학교별 지원 서류 목록 — Supabase school_documents 테이블(999행, 실제
  * 학교 id 기준)에서 채워짐.
  * ------------------------------------------------------------------- */

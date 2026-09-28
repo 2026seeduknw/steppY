@@ -987,6 +987,7 @@
               <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
             </label>
           </div>
+          <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
           <p class="diary-form__hint" id="photoHint" hidden>사진을 누르면 대표 사진(우표에 크게 나오는 사진)이 돼요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
@@ -1093,6 +1094,14 @@
     });
     const hint = scrim.querySelector('#photoHint');
     if (hint) hint.hidden = pendingPhotos.length < 2;
+    const quota = scrim.querySelector('#photoQuota');
+    if (quota) {
+      const left = AppState.freePhotoUploadsLeft();
+      quota.hidden = !Number.isFinite(left);   // 프리미엄(Infinity)이면 아예 감춘다
+      quota.textContent = left > 0
+        ? `오늘 무료 사진 ${left}장 남음 · 프리미엄이면 무제한`
+        : '오늘 무료 사진을 다 썼어요 · 프리미엄이면 무제한으로 올릴 수 있어요';
+    }
     picker.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => { pendingPhotos.splice(Number(btn.dataset.remove), 1); renderPhotoPicker(scrim); });
     });
@@ -1149,7 +1158,11 @@
         const files = Array.from(e.target.files || []);
         input.value = '';
         for (const file of files) {
-          try { await addPendingPhoto(file); }
+          if (AppState.freePhotoUploadsLeft() <= 0) {
+            showToast('오늘 무료 사진은 3장까지예요 · 프리미엄이면 무제한으로 올릴 수 있어요');
+            break;
+          }
+          try { await addPendingPhoto(file); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);

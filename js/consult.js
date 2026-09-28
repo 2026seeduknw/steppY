@@ -211,6 +211,7 @@
     renderList();
   });
   askOpenBtn.addEventListener('click', openAskSheet);
+  creditWrap.addEventListener('click', openCreditInfoSheet);
 
   /* ---------------------------------------------------------- 바텀시트 공통 */
 
@@ -321,6 +322,48 @@
         });
       }
     });
+  }
+
+  /**
+   * 크레딧 배지를 누르면 뜨는 가격표. supabase/premium.sql이 아직 PG(결제대행사)와
+   * 연결되지 않아 "구매" 버튼은 아직 아무 결제도 진행하지 않는다 — 가격표 자체를
+   * 먼저 노출해 두고, 실제 결제는 PG를 정한 뒤 이 버튼에 연결한다.
+   */
+  function openCreditInfoSheet() {
+    const packages = AppState.getCreditPackages();
+    const plans = AppState.getPremiumPlans();
+    const won = (n) => `₩${n.toLocaleString('ko-KR')}`;
+    const html = `
+      <div class="app-sheet__scrim" data-close></div>
+      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="크레딧 · 프리미엄">
+        <div class="app-sheet__grip" data-close></div>
+        <div class="app-sheet__head"><h2>크레딧 · 프리미엄</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
+        <div class="app-sheet__body">
+          <p class="mentor-credit-sheet__balance">내 크레딧 <strong>🪙 ${AppState.getCredits()}</strong></p>
+
+          <span class="mentor-section-title">크레딧 구매</span>
+          <div class="mentor-price-list">
+            ${packages.map(p => `
+              <div class="mentor-price-row">
+                <span class="mentor-price-row__label">🪙 ${p.label}</span>
+                <span class="mentor-price-row__price">${won(p.priceKrw)}</span>
+                <button type="button" class="btn btn--ghost btn--sm" disabled>결제 준비 중</button>
+              </div>`).join('')}
+          </div>
+
+          <span class="mentor-section-title">프리미엄 — 사진 무제한 업로드 · 광고 제거 · 크레딧 증정</span>
+          <div class="mentor-price-list">
+            ${plans.map(p => `
+              <div class="mentor-price-row">
+                <span class="mentor-price-row__label">${p.label}</span>
+                <span class="mentor-price-row__price">${won(p.priceKrw)}</span>
+                <button type="button" class="btn btn--ghost btn--sm" disabled>결제 준비 중</button>
+              </div>`).join('')}
+          </div>
+          <p class="mentor-form__cost">결제 수단은 아직 준비 중이에요 · 곧 연결할게요</p>
+        </div>
+      </div>`;
+    openSheet(html);
   }
 
   /**

@@ -354,6 +354,22 @@
     }));
   }
 
+  /**
+   * BM 가격표(supabase/premium.sql). 누구나 읽을 수 있는 참고 데이터라
+   * 다른 로더와 똑같이 다룬다 — 마이그레이션 전이면 조용히 빈 배열이 오고
+   * mock-data.js의 자리표시자 가격이 그대로 남는다.
+   */
+  async function loadCreditCatalog() {
+    const [{ data: packages }, { data: plans }] = await Promise.all([
+      supabaseClient.from('credit_packages').select('*').order('sort_order'),
+      supabaseClient.from('premium_plans').select('*').order('sort_order')
+    ]);
+    return {
+      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, priceKrw: p.price_krw, label: p.label })),
+      premiumPlans: (plans || []).map(p => ({ id: p.id, days: p.days, priceKrw: p.price_krw, label: p.label }))
+    };
+  }
+
   async function loadYonseiMajors() {
     const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
@@ -400,8 +416,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions]) => {
+    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions(), loadCreditCatalog()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions, creditCatalog]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -416,6 +432,8 @@
     if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
     if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
     if (mentorQuestions.length) MOCK.mentorQuestions = mentorQuestions;
+    if (creditCatalog.creditPackages.length) MOCK.creditPackages = creditCatalog.creditPackages;
+    if (creditCatalog.premiumPlans.length) MOCK.premiumPlans = creditCatalog.premiumPlans;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);
