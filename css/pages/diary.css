@@ -151,7 +151,7 @@
 .diary-photo-thumb { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
 .diary-photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
 .diary-photo-thumb button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--diary-text); color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
-.diary-form textarea { width: 100%; min-height: 84px; padding: var(--space-3); border: 1.5px solid var(--diary-line-strong); border-radius: var(--radius-md); font-size: var(--fs-body); font-family: var(--font-body); resize: vertical; background: var(--diary-surface); color: var(--diary-text); }
+.diary-form textarea { width: 100%; min-height: 84px; padding: var(--space-3); border: 1.5px solid var(--diary-line-strong); border-radius: var(--radius-md); font-size: var(--fs-small); font-family: var(--font-body); resize: vertical; background: var(--diary-surface); color: var(--diary-text); }
 .diary-form textarea::placeholder { color: var(--diary-text-faint); }
 .diary-tag-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); background: var(--diary-surface-alt); border-radius: var(--radius-md); padding: var(--space-3); }
 .diary-location-note { font-size: var(--fs-micro); color: var(--diary-text-faint); display: flex; align-items: center; gap: 4px; }
@@ -270,7 +270,7 @@
 
 .diary-form__title {
   width: 100%; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-sm);
-  padding: 9px 11px; font-family: inherit; font-size: var(--fs-body); font-weight: 700;
+  padding: 9px 11px; font-family: inherit; font-size: var(--fs-small); font-weight: 700;
   color: var(--diary-text); background: var(--diary-surface);
 }
 .diary-form__title::placeholder { font-weight: 400; color: var(--diary-text-faint); }
