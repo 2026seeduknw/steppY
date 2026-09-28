@@ -58,6 +58,17 @@
       .join(' · ');
   }
 
+  // 이 카드 저 카드 다 이 길이를 넘어가면 카드 하나가 화면 두어 개 높이를 먹는다 —
+  // 짧은 note는 그대로, 긴 note만 두 줄로 접고 "더보기"를 붙인다.
+  const NOTE_CLAMP_THRESHOLD = 90;
+  function noteBlock(text) {
+    if (!text) return '';
+    const isLong = text.length > NOTE_CLAMP_THRESHOLD;
+    return `
+      <div class="match-card__note${isLong ? ' is-clamped' : ''}">${text}</div>
+      ${isLong ? '<button type="button" class="match-card__note-toggle" data-note-toggle>더보기</button>' : ''}`;
+  }
+
   function schoolDisplay(schoolId) {
     const school = MOCK.schools.find(s => s.id === schoolId);
     return {
@@ -71,15 +82,58 @@
     };
   }
 
-  /** 매칭 카드를 누르면 그 학교 상세가 열린다. 목록이 자주 다시 그려지므로 위임. */
+  /**
+   * 매칭 카드 클릭 — 예전엔 카드 아무 데나 눌러도 학교가 열렸는데, 그러면 전공/주제
+   * 칩을 누르려다 학교가 열리는 일이 잦았다. 이제 학교 상세는 학교 이름(로고+이름) 줄만
+   * 열고, 주제 칩은 "전공 매칭 찾기" 쪽의 같은 학교·같은 전공 카드로 건너뛴다.
+   * 목록이 자주 다시 그려지므로 위임.
+   */
   function wireMatchCardTaps() {
     const list = document.getElementById('matchList');
     if (!list || list.dataset.tapWired) return;
     list.dataset.tapWired = 'true';
     list.addEventListener('click', (e) => {
-      const card = e.target.closest('[data-open-school]');
-      if (!card) return;
-      openSchoolModal(card.dataset.openSchool, { onChange: renderMatches });
+      // note는 카드 원본 데이터(course_matches.note)가 단위 환산까지 설명하는
+      // 완성된 문장이라 길다 — 카드를 다 채우지 않도록 접어 두고 눌러서 편다.
+      const toggle = e.target.closest('[data-note-toggle]');
+      if (toggle) {
+        e.stopPropagation();
+        const note = toggle.previousElementSibling;
+        const clamped = note.classList.toggle('is-clamped');
+        toggle.textContent = clamped ? '더보기' : '접기';
+        return;
+      }
+      const chip = e.target.closest('[data-topic-jump]');
+      if (chip) {
+        e.stopPropagation();
+        const schoolId = chip.closest('.match-card').dataset.school;
+        jumpToMajorMatch(schoolId, chip.textContent.trim());
+        return;
+      }
+      const school = e.target.closest('[data-open-school]');
+      if (!school) return;
+      openSchoolModal(school.dataset.openSchool, { onChange: renderMatches });
+    });
+  }
+
+  /** 과목 카드의 주제 칩 → "전공 매칭 찾기"의 같은 학교·같은 전공(주제) 카드로 이동. */
+  function jumpToMajorMatch(schoolId, topic) {
+    trackEvent('credits_topic_jump', { school: schoolId, topic });
+    if (mode !== 'major') { mode = 'major'; applyModeUI(); }
+    // 이전 탭에서 걸어둔 국가/관련도 필터가 이 학교를 걸러내면 카드를 못 찾은 것처럼
+    // 보인다 — 건너뛸 땐 "이 학교의 이 전공"이 최우선이라 필터를 푼다.
+    selectedCountry = ''; selectedRegion = ''; selectedRelevance = '';
+    renderMatches();
+    if (!selectedMajor) { showToast('먼저 내 전공을 선택하면 전공 매칭 카드로 바로 갈 수 있어요.'); return; }
+    const target = MOCK.majorMatches.find(m => m.school === schoolId && m.homeMajor === selectedMajor &&
+      ((m.matchedTopics || []).includes(topic) || m.targetMajor === topic));
+    if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-match-id="${CSS.escape(String(target.id))}"]`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('is-jumped');
+      setTimeout(() => el.classList.remove('is-jumped'), 1600);
     });
   }
 
@@ -321,20 +375,20 @@
     document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
       const school = schoolDisplay(m.school);
       return `
-      <div class="card match-card${school.exists ? ' card--interactive' : ''}"
-           ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
+      <div class="card match-card" data-school="${m.school}">
         <div class="match-card__head">
           <h3 class="match-card__headline">${stripSchoolSuffix(m.targetCourse)}</h3>
           ${relevanceBadge(m.similarity)}
         </div>
-        <div class="match-card__school">
+        <div class="match-card__school${school.exists ? ' match-card__school--clickable' : ''}"
+             ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
           <span class="match-card__school-name">${school.name}</span>
           ${countryTag(school)}
         </div>
         ${m.matchedTopics.length ? `
-        <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
-        <div class="match-card__note">${formatNote(m.note)}</div>
+        <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${t}</button>`).join('')}</div>` : ''}
+        ${noteBlock(formatNote(m.note))}
       </div>
     `;
     }).join('') : `<p class="info-panel__text">${
@@ -375,20 +429,20 @@
       const school = schoolDisplay(m.school);
       // 목록이 전부 확정 학교라 따로 표시할 것이 없다
       return `
-      <div class="card match-card${school.exists ? ' card--interactive' : ''}"
-           ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
+      <div class="card match-card" data-school="${m.school}" data-match-id="${m.id}">
         <div class="match-card__head">
           <h3 class="match-card__headline">${m.targetMajor}</h3>
           ${relevanceBadge(m.similarity)}
         </div>
-        <div class="match-card__school">
+        <div class="match-card__school${school.exists ? ' match-card__school--clickable' : ''}"
+             ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
           ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
           <span class="match-card__school-name">${school.name}</span>
           ${countryTag(school)}
         </div>
         ${m.matchedTopics.length ? `
         <div class="match-card__topics">${m.matchedTopics.map(t => `<span class="chip">${t}</span>`).join('')}</div>` : ''}
-        <div class="match-card__note">${m.note || ''}</div>
+        ${noteBlock(m.note || '')}
       </div>
     `;
     }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
