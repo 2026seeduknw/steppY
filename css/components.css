@@ -672,7 +672,7 @@ body[data-page="credits"]::before {
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-sm);
   background: var(--cloud-0);
-  font-size: var(--fs-body);
+  font-size: var(--fs-small);
   color: var(--ink-900);
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out);

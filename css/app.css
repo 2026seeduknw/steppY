@@ -300,12 +300,14 @@ body.is-sheet-open { overflow: hidden; }
 .chip { min-height: 34px; }
 .badge { height: 22px; }
 
-/* 입력 요소는 16px 미만이면 iOS가 포커스 시 화면을 확대한다 */
+/* 입력 요소는 16px 미만이면 iOS가 포커스 시 화면을 확대한다. .ss__trigger는 여기서 뺐다 —
+   실제 타이핑 캐럿이 생기는 건 패널 안의 .ss__search뿐이고, 트리거는 누르면 패널만
+   여는 버튼이라 이 확대 버그와 무관하다. */
 .field input, .field select,
 .search-input, .sort-select,
 .sim-banner__field input,
 .cal-add-form input, .cal-add-form select,
-.ss__trigger, .ss__search,
+.ss__search,
 .chat-input-row input { font-size: 16px; }
 .field input, .field select { height: 46px; border-radius: 10px; }
 
@@ -526,7 +528,7 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
    모드 토글·전공 검색·리포트 버튼이 화면 가장자리에 붙는다. 같은 여백을 다시 쓴다. */
 .credits-grid { padding: 0 var(--space-4) var(--space-6); }
 /* 두 모드 전환은 앱의 세그먼티드 컨트롤 관습대로 폭을 꽉 채운다 */
-.mode-toggle { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: var(--space-4); }
+.mode-toggle { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: var(--space-3); }
 .mode-toggle__btn { padding: var(--space-2) var(--space-2); }
 .credits-grid .section-title { flex-direction: column; align-items: stretch; gap: var(--space-2); }
 .section-title__actions { flex-wrap: wrap; width: 100%; gap: var(--space-2); }
