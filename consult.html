@@ -9,7 +9,6 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/consult.css">
-<link rel="stylesheet" href="css/pages/reviews.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body data-page="consult">
@@ -21,13 +20,6 @@
   <p class="page-lede" id="mentorLede">교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요. 질문·답변 모두 이름 없이 올라가요.</p>
 </div>
 
-<div class="page-shell mentor-mode-shell">
-  <div class="mode-toggle" id="mentorModeToggle">
-    <button type="button" class="mode-toggle__btn is-active" data-mode="qa">질문·답변</button>
-    <button type="button" class="mode-toggle__btn" data-mode="reviews">국가별 후기</button>
-  </div>
-</div>
-
 <div class="page-shell mentor-layout" id="mentorQaPanel">
   <div class="mentor-toolbar">
     <div class="mentor-credit" id="mentorCredit" hidden>
@@ -37,6 +29,7 @@
   </div>
 
   <div class="mentor-filters">
+    <div class="country-filter" id="mentorCountryFilter" role="group" aria-label="국가 필터"></div>
     <div class="toggle-row toggle-row--tight">
       <span>즐겨찾기만</span>
       <button type="button" class="toggle-switch" id="mentorFavToggle"></button>
@@ -45,8 +38,6 @@
 
   <div class="mentor-list" id="mentorList"></div>
 </div>
-
-<div class="page-shell" id="reviewsMount" hidden></div>
 
 <div id="mentor-float"></div>
 
@@ -67,11 +58,7 @@
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/searchable-select.js"></script>
-<script src="js/components/eligibility.js"></script>
-<script src="js/wordmark-text.js"></script>
-<script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
-<script src="js/reviews.js"></script>
 <script src="js/consult.js"></script>
 </body>
 </html>
