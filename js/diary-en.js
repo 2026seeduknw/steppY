@@ -6,10 +6,9 @@
  * (MutationObserver). 그래서 원본 한국어 코드는 그대로이고, 유리 테마(?theme=glass)에서는
  * 아무것도 바꾸지 않는다.
  *
- * 바꾸는 것: 화면 이름·라벨·버튼·요일·달 이름·태그 이름·안내 문구. 기록 쓰기/수정 창(폼)의
- *   라벨·placeholder·태그 칩·버튼도 포함한다.
- * 바꾸지 않는 것: 사용자가 실제로 입력한 값(제목·본문·검색어) — input/textarea의 value는
- *   text 노드가 아니라 애초에 훑지 않는다. 도시·나라 이름 같은 데이터도 그대로 둔다.
+ * 바꾸는 것: 화면 이름·라벨·버튼·요일·달 이름·안내 문구.
+ * 바꾸지 않는 것: 사용자가 쓴 제목·내용, 도시·나라 이름 같은 데이터, 그리고 기록 쓰기/수정
+ *   창(한글 그대로) — 단 그 안의 태그 칩(오늘 뭘 했나요 그리드)만 예외로 영어로 보여준다.
  *   → 글자 전체가 사전의 한국어와 정확히 같을 때만 바꾼다(부분 치환은 아래 패턴에 한정).
  */
 (function () {
@@ -40,9 +39,6 @@
     '사진 빼기': 'REMOVE PHOTO', '대표': 'COVER',
     '기록을 저장했어요': 'ENTRY SAVED', '기록을 수정했어요': 'ENTRY UPDATED', '대표 사진으로 바꿨어요': 'COVER PHOTO SET',
     '사진 또는 글 중 하나는 있어야 해요': 'ADD A PHOTO OR A NOTE',
-    // BM: 사진 하루 3장 무료 한도(js/state.js AppState.freePhotoUploadsLeft)
-    '오늘 무료 사진을 다 썼어요 · 프리미엄이면 무제한으로 올릴 수 있어요': 'OUT OF FREE PHOTOS TODAY · GO PREMIUM FOR UNLIMITED',
-    '오늘 무료 사진은 3장까지예요 · 프리미엄이면 무제한으로 올릴 수 있어요': 'ONLY 3 FREE PHOTOS TODAY · GO PREMIUM FOR UNLIMITED',
     '오늘의 순간을 기록해보세요': 'CAPTURE TODAY',
     '이 날짜엔 아직 기록이 없어요': 'NOTHING RECORDED THIS DAY',
     '이 기록을 삭제할까요? 되돌릴 수 없어요.': 'DELETE THIS ENTRY?',
@@ -78,8 +74,7 @@
     [/^(\d{4}-\d{2}-\d{2}) 출국$/, (m) => `DEPARTS ${m[1]}`],
     [/^(\d+)일 연속$/, (m) => `${m[1]} DAY STREAK`],
     [/^💭 오늘의 질문$/, () => "💭 TODAY'S QUESTION"],
-    [/^(\d+)개$/, (m) => `${m[1]}`],
-    [/^오늘 무료 사진 (\d+)장 남음 · 프리미엄이면 무제한$/, (m) => `${m[1]} FREE PHOTOS LEFT · PREMIUM = UNLIMITED`]
+    [/^(\d+)개$/, (m) => `${m[1]}`]
   ];
   const EMOJI_PREFIX = /^([\p{Extended_Pictographic}️‍]+)\s+(.+)$/u;
 
@@ -113,8 +108,12 @@
     const scope = root.nodeType === 1 || root.nodeType === 11 ? root : root.parentNode;
     if (!scope) return;
     // 사용자가 쓴 글이 담기는 자리는 건드리지 않는다. .film-en은 이미 바꿔 끼운
-    // 자리라 다시 훑지 않는다(무한 반복 방지 겸 낭비 방지).
-    const skip = (n) => n.closest && n.closest('.diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
+    // 자리라 다시 훑지 않는다(무한 반복 방지 겸 낭비 방지). 기록 쓰기/수정 창은
+    // 통째로 한글 그대로 두되, 그 안의 태그 칩(#tagGrid)만 예외로 번역한다.
+    const skip = (n) => {
+      if (n.closest && n.closest('#tagGrid')) return false;
+      return n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
+    };
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -141,6 +140,8 @@
     });
     const els = scope.querySelectorAll ? scope.querySelectorAll('[aria-label],[placeholder],[title]') : [];
     els.forEach((el) => {
+      // 태그 칩엔 placeholder가 없어 예외가 필요 없다 — 기록 창은 한글 그대로.
+      if (el.closest && el.closest('#entryModalScrim')) return;
       ATTRS.forEach((a) => {
         const v = el.getAttribute(a);
         if (!v) return;

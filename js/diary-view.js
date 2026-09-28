@@ -29,6 +29,44 @@
   let lastStreak = null;
   let root = null;
 
+  /**
+   * 태그 칩(EVERYDAY_TAGS, js/report-categories.js) 15개를 그대로 늘어놓으면 카드가
+   * 너무 많아 보여서, 여기서만(UI 표시용) 5개 묶음으로 접었다 편다. 저장되는 값은
+   * 여전히 EVERYDAY_TAGS의 원래 id다 — 묶음은 report-categories.js의 cats(보고서 항목)와
+   * 무관하게 "일상적으로 같이 떠오르는 일" 기준으로 묶었을 뿐, 데이터·보고서 집계
+   * 로직(categoriesOfTags)은 그대로 둔다.
+   */
+  const TAG_GROUPS = [
+    { emoji: '🍽️', ko: '밥·생활',    ids: ['food', 'dorm', 'shopping'] },
+    { emoji: '📚', ko: '학업',       ids: ['class', 'study', 'language'] },
+    { emoji: '🏫', ko: '캠퍼스·사람', ids: ['campus', 'event', 'friends'] },
+    { emoji: '🌆', ko: '동네·이동',  ids: ['neighborhood', 'transit', 'trip'] },
+    { emoji: '🙋', ko: '도움·서류',  ids: ['admin', 'help', 'tip'] }
+  ];
+
+  function tagChipTemplate(t, selected) {
+    return `<button type="button" class="tag-chip${selected ? ' is-selected' : ''}" data-tag="${t.id}" style="--chip-color:${(CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93'}" aria-pressed="${selected}"><span class="tag-chip__emoji" aria-hidden="true">${t.emoji}</span>${t.ko}</button>`;
+  }
+
+  /** editTags가 있으면(수정) 이미 고른 태그가 든 묶음을 펼친 채로 그린다. */
+  function tagGroupsTemplate(editTags) {
+    return TAG_GROUPS.map(g => {
+      const items = g.ids.map(id => EVERYDAY_MAP[id]).filter(Boolean);
+      const open = !!(editTags && items.some(t => editTags.includes(t.id)));
+      return `
+        <div class="tag-group${open ? ' is-open' : ''}" data-group>
+          <button type="button" class="tag-group__head" data-group-toggle aria-expanded="${open}">
+            <span class="tag-group__emoji" aria-hidden="true">${g.emoji}</span>
+            <span class="tag-group__label">${g.ko}</span>
+            <span class="tag-group__caret" aria-hidden="true">⌄</span>
+          </button>
+          <div class="tag-group__body"${open ? '' : ' hidden'}>
+            ${items.map(t => tagChipTemplate(t, !!(editTags && editTags.includes(t.id)))).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
   function toIso(d) {
     const pad = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -995,7 +1033,7 @@
           <div>
             <span class="diary-form__label">오늘 뭘 했나요? (여러 개 골라도 돼요)</span>
             <div class="diary-tag-grid" id="tagGrid">
-              ${EVERYDAY_TAGS.map(t => `<button type="button" class="tag-chip" data-tag="${t.id}" style="--chip-color:${(CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93'}" aria-pressed="false"><span class="tag-chip__emoji" aria-hidden="true">${t.emoji}</span>${t.ko}</button>`).join('')}
+              ${tagGroupsTemplate(edit ? edit.tags : null)}
             </div>
             <p class="diary-form__hint">고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요</p>
           </div>
@@ -1017,10 +1055,7 @@
       const form = scrim.querySelector('#entryForm');
       form.querySelector('[name=title]').value = edit.title || '';
       form.querySelector('[name=caption]').value = edit.body || '';
-      (edit.tags || []).forEach(t => {
-        const chip = scrim.querySelector(`#tagGrid [data-tag="${t}"]`);
-        if (chip) { chip.classList.add('is-selected'); chip.setAttribute('aria-pressed', 'true'); }
-      });
+      // 태그 선택·묶음 펼침은 tagGroupsTemplate(edit.tags)가 이미 그려서 처리했다.
     }
     renderPhotoPicker(scrim);
     renderNowPlayingPicker(scrim);
@@ -1145,11 +1180,24 @@
 
   function wireEntryForm(scrim) {
     const grid = scrim.querySelector('#tagGrid');
-    grid.querySelectorAll('.tag-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const on = btn.classList.toggle('is-selected');
-        btn.setAttribute('aria-pressed', String(on));
-      });
+    // 위임 클릭 하나로 묶음 펼치기/접기와 태그 고르기를 같이 받는다 — 묶음을 펼칠 때마다
+    // 안의 칩이 새로 생기는 게 아니라(이미 DOM에 있고 hidden만 바뀐다) 위임이 아니어도
+    // 되지만, 두 종류 버튼을 한 리스너로 묶어 두는 편이 더 단순하다.
+    grid.addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-group-toggle]');
+      if (toggle) {
+        const group = toggle.closest('.tag-group');
+        const body = group.querySelector('.tag-group__body');
+        const open = group.classList.toggle('is-open');
+        body.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        return;
+      }
+      const chip = e.target.closest('.tag-chip');
+      if (chip) {
+        const on = chip.classList.toggle('is-selected');
+        chip.setAttribute('aria-pressed', String(on));
+      }
     });
 
     ['#photoInput', '#cameraInput'].forEach((sel) => {
