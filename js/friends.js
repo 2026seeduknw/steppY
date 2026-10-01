@@ -606,5 +606,35 @@ const Friends = (function () {
     if (t.dataset.openFriends !== undefined) openManager();
   }
 
-  return { openManager, mountTimeline, reloadTimeline, refreshBadges };
+  /**
+   * 홈의 "친구들" 줄 — 친구가 공개한 최근 기록 중 사진이 있는 것. RLS가 친구의 공개 기록만 돌려주므로
+   * 내 것(user_id = 나)만 빼면 된다. 이름·학교는 list_friends RPC로, 사진 주소는 서명 URL로 받는다.
+   * 결과: { posts: [{ who, school, city, cap, url, info }] } — info는 확대 화면에 그대로 쓴다.
+   */
+  async function recentPosts(limit = 12) {
+    if (!AppState.isAuthed || !me()) return { posts: [] };
+    const [listRes, res] = await Promise.all([
+      api.list(),
+      supabaseClient.from('user_journal')
+        .select('id, user_id, entry_date, title, body, photos, location, song, now_playing, weather, created_at')
+        .neq('user_id', me()).order('created_at', { ascending: false }).limit(limit)
+    ]);
+    if (res.error) return { posts: [] };
+    const friends = {};
+    if (listRes.ok) (listRes.data || []).filter(r => r.direction === 'friend').forEach(r => { friends[r.user_id] = r; });
+    const rows = (res.data || []).filter(r => Array.isArray(r.photos) && r.photos.length && friends[r.user_id]);
+    const urls = await AppState.signPhotoPaths(rows.map(r => r.photos[0]));
+    const posts = rows.filter(r => urls[r.photos[0]]).map(r => {
+      const f = friends[r.user_id];
+      const entry = { date: r.entry_date, createdAt: r.created_at, title: r.title || '', body: r.body || '', location: r.location, weather: r.weather, song: r.song, nowPlaying: r.now_playing };
+      const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(entry) : { cap: entry.title, date: entry.date, place: null, weather: null, song: null };
+      const school = f.school_name ? [f.school_name, f.school_city || f.school_country].filter(Boolean).join(' · ') : '';
+      info.who = f.name; info.school = school;
+      const loc = r.location || {};
+      return { who: f.name, school, city: loc.city || loc.country || '', cap: entry.title || entry.body, url: urls[r.photos[0]], info };
+    });
+    return { posts };
+  }
+
+  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts };
 })();

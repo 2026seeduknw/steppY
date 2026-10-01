@@ -583,6 +583,8 @@ const AppState = {
           // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
           entry.tempId = entry.id;
           entry.id = res.data.id;
+          // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
+          document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
           entry.createdAt = res.data.created_at;
           this.save();
           document.dispatchEvent(new CustomEvent('MOCK:updated'));

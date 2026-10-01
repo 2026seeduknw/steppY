@@ -202,10 +202,12 @@
 
     <section class="ft-timeline" id="friendTimeline" hidden></section>
 
-    <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
+    <div class="arc-title">
+      <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
+      <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
+    </div>
 
-    <div id="diaryHeroSlot"></div>
-    <div id="diaryPhaseToggle" hidden></div>
+    <section class="diary-featured" id="diaryFeaturedSlot"></section>
 
     <div class="diary-write-bar">
       <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="0" aria-label="바로 사진 찍어 기록하기">
@@ -219,7 +221,20 @@
       </button>
     </div>
 
-    <section class="diary-featured" id="diaryFeaturedSlot"></section>
+    <section class="arc-sec-home" id="archiveFoldersSec">
+      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Folders</span><button type="button" class="arc-edit" id="archiveEdit">꾸미기</button></div>
+      <div class="arc-grid" id="archiveFolders"></div>
+    </section>
+
+    <section class="arc-sec-home" id="archiveFriendsSec">
+      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><span class="arc-sec-home__hint">친구들은 지금 어디서 뭘 할까요?</span></div>
+      <div id="archiveFriends"></div>
+    </section>
+
+    <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
+
+    <div id="diaryHeroSlot"></div>
+    <div id="diaryPhaseToggle" hidden></div>
 
     <section class="diary-cal-section">
       <div class="diary-cal-nav">
@@ -1191,13 +1206,14 @@
     // 경로가 아니라 주소(또는 앱에 들어 있는 assets/ 파일)로 저장된 사진(예시 기록)은 서명 없이 그대로 쓴다
     all.filter(p => /^(https?:\/\/|assets\/)/.test(p)).forEach(p => { photoUrls[p] = p; });
     const paths = all.filter(p => !photoUrls[p]);
-    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); return; }
+    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); renderArchive(); return; }
     const map = await AppState.signPhotoPaths(paths);
     Object.assign(photoUrls, map);
     paths.forEach(p => { if (!map[p]) photoFailed.add(p); });
     renderFeatured();
     renderMonth();
     renderSide();
+    renderArchive();
   }
 
   /* --------------------------------------------------------------- 기록 모달 */
@@ -1846,7 +1862,13 @@
     return true;
   }
 
+  function renderArchive() {
+    if (typeof DiaryArchive === 'undefined' || !root) return;
+    DiaryArchive.render(root, { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin() });
+  }
+
   function renderAll() {
+    renderArchive();
     renderHero();
     renderPhaseToggle();
     renderStreak();
