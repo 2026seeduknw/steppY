@@ -43,6 +43,13 @@ const PAYWALL_REASON = {
   menu:    null
 };
 
+// 결제가 꺼진 빌드(RELEASE.payments=false)에서 쓰는 문구 — 충전·프리미엄 대신 무료로 얻는 길을 알려 준다
+const PAYWALL_REASON_FREE = {
+  photo:   { desc: '내일 다시 3장을 올릴 수 있어요.' },
+  match:   { desc: '질문에 답변하면 크레딧을 받아 더 볼 수 있어요.' },
+  credits: { desc: '질문에 답변하면 크레딧을 받을 수 있어요.' }
+};
+
 const PREMIUM_BENEFITS = [
   ['📸', '기록하기 사진 무제한'],
   ['🪙', `매달 ${BM.PREMIUM_MONTHLY_CREDITS} 크레딧 (구독 중에만 사용)`],
@@ -59,7 +66,9 @@ function openPaywall({ reason = 'menu', need = 0 } = {}) {
   const authed = AppState.isAuthed;
   const premium = AppState.isPremium();
   const balance = AppState.getCredits();
-  const ctx = PAYWALL_REASON[reason];
+  const payOn = !!RELEASE.payments;
+  const base_ctx = PAYWALL_REASON[reason];
+  const ctx = base_ctx && !payOn ? Object.assign({}, base_ctx, PAYWALL_REASON_FREE[reason]) : base_ctx;
   const short = need > 0 ? Math.max(0, need - balance) : 0;
   // 한 달 값으로 나눠서 "월 ₩X"로 보여줘야 긴 요금제가 싸다는 게 한눈에 보인다
   const monthly = (p) => Math.round(p.priceKrw / Math.max(1, Math.round(p.days / 30)));
@@ -105,7 +114,7 @@ function openPaywall({ reason = 'menu', need = 0 } = {}) {
           <span class="paywall__quick-note">${balance < BM.PHOTO_EXTRA_COST ? '크레딧 부족' : '바로 사용'}</span>
         </button>` : ''}
 
-        <section class="paywall__premium${premium ? ' is-active' : ''}">
+        ${payOn || premium ? `<section class="paywall__premium${premium ? ' is-active' : ''}">
           <div class="paywall__premium-head">
             <span class="paywall__premium-title">
               <svg class="paywall__crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 7.5 7 11l5-7 5 7 4.5-3.5L19.5 18h-15z"/><rect x="4.5" y="19.3" width="15" height="2.2" rx="1.1"/></svg>
@@ -132,9 +141,9 @@ function openPaywall({ reason = 'menu', need = 0 } = {}) {
           <button type="button" class="btn btn--accent btn--block paywall__cta" data-buy="premium" ${authed ? '' : 'disabled'}>
             ${premium ? '프리미엄 기간 늘리기' : '프리미엄 시작하기'}
           </button>
-        </section>
+        </section>` : ''}
 
-        <section class="paywall__credits">
+        ${payOn ? `<section class="paywall__credits">
           <p class="paywall__section-title">크레딧 충전</p>
           <div class="paywall__options paywall__options--grid" role="radiogroup" aria-label="크레딧 패키지">
             ${packages.map(p => `
@@ -146,7 +155,7 @@ function openPaywall({ reason = 'menu', need = 0 } = {}) {
               </button>`).join('')}
           </div>
           <button type="button" class="btn btn--primary btn--block paywall__cta" data-buy="credits" ${authed ? '' : 'disabled'}>크레딧 충전하기</button>
-        </section>
+        </section>` : ''}
 
         <details class="paywall__uses">
           <summary>크레딧은 어디에 쓰나요?</summary>
@@ -158,9 +167,9 @@ function openPaywall({ reason = 'menu', need = 0 } = {}) {
           </ul>
         </details>
 
-        <p class="paywall__foot">${Payments.isReady()
+        ${payOn ? `<p class="paywall__foot">${Payments.isReady()
           ? '결제가 끝나면 바로 반영돼요.'
-          : '결제 수단을 연결하는 중이에요 · 곧 열어둘게요'}</p>
+          : '결제 수단을 연결하는 중이에요 · 곧 열어둘게요'}</p>` : ''}
       </div>
     </div>`;
 

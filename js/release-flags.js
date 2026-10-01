@@ -14,12 +14,17 @@
  *                 남겨보세요" 빈 상태가 정상 화면이다 — 다시 켠다.
  *   partnerPromo — 실제 제휴처가 생기고 눌렀을 때 갈 곳이 있으면
  *                 (지금은 클릭 수만 세는 더미 CTA라 "아직 준비 중" 토스트로 끝난다)
+ *   payments     — 결제 수단(Apple IAP 등)이 연결되고 App Store Connect에 상품이
+ *                 등록돼 심사까지 통과했을 때. 꺼져 있으면 결제창에서 프리미엄
+ *                 구독·크레딧 충전 영역만 걷어낸다 — 무료 크레딧을 쓰는 흐름
+ *                 (질문·매칭·사진 한 장 더)은 그대로 남는다.
  *
  * 이 파일은 layout.js·school-modal.js보다 먼저 실려야 한다.
  */
 const RELEASE = {
   mentorStep: true,
-  partnerPromo: false
+  partnerPromo: false,
+  payments: true
 };
 
 /**
