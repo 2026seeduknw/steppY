@@ -400,6 +400,7 @@
     if (n < 2) return;
     const badge = card.querySelector('.diary-stack__count');
     const order = imgs.map((_, i) => i);   // order[0]이 맨 위 사진
+    sl._topIndex = () => order[0];          // 눌렀을 때 맨 위 사진부터 확대한다
     const place = () => {
       order.forEach((idx, pos) => imgs[idx].style.setProperty('--pos', pos));
       badge.textContent = `${order[0] + 1} / ${n}`;
@@ -518,9 +519,9 @@
     const slides = dates.slice().reverse().map((d, i) => {
       const list = withPhoto.filter(e => e.date === d)
         .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
-      const urls = [];
-      list.forEach(e => (e.photos || []).forEach(p => { const u = photoUrl(p); if (u && !urls.includes(u)) urls.push(u); }));
-      return { d, i, e: list[list.length - 1], urls };
+      const urls = [], ents = [];   // ents[i] = urls[i] 사진이 속한 기록(확대 화면의 위치·날씨·노래용)
+      list.forEach(e => (e.photos || []).forEach(p => { const u = photoUrl(p); if (u && !urls.includes(u)) { urls.push(u); ents.push(e); } }));
+      return { d, i, e: list[list.length - 1], urls, ents };
     });
 
     slot.innerHTML = `
@@ -568,7 +569,19 @@
     slideEls.forEach(sl => {
       wireStack(sl, nav);
       // 사진을 쓸어 넘긴 직후의 클릭은 "기록 열기"로 치지 않는다
-      const open = () => { if (Date.now() < (sl._noClickUntil || 0)) return; view.selected = sl.dataset.date; renderMonth(); openDayModal(sl.dataset.date); };
+      const open = () => {
+        if (Date.now() < (sl._noClickUntil || 0)) return;
+        // 사진을 누르면 살짝 커지고 뒤는 블러, 빈 자리에 위치·날씨·노래(js/diary-archive.js). 더미는 맨 위 사진부터.
+        if (typeof DiaryArchive !== 'undefined' && DiaryArchive.openPhotos) {
+          const sd = slides[slideEls.indexOf(sl)];
+          const thumbs = [...sl.querySelectorAll('.diary-featured__img')];
+          if (sd && thumbs.length) {
+            DiaryArchive.openPhotos(sd.urls.map((u, i) => ({ url: u, info: DiaryArchive.infoOf(sd.ents[i]) })), sl._topIndex ? sl._topIndex() : 0, thumbs);
+            return;
+          }
+        }
+        view.selected = sl.dataset.date; renderMonth(); openDayModal(sl.dataset.date);
+      };
       sl.addEventListener('click', open);
       sl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') open(); });
     });
@@ -1001,7 +1014,17 @@
         const current = () => (track && track.clientWidth ? Math.round(track.scrollLeft / track.clientWidth) : 0);
         wrap.classList.add('is-clickable');
         // 누르면 지금 보고 있는 사진부터 크게 연다
-        wrap.addEventListener('click', () => openPhotoLightbox(urls, current()));
+        wrap.addEventListener('click', () => {
+          if (typeof DiaryArchive !== 'undefined' && DiaryArchive.openPhotos) {
+            const thumbs = [...wrap.querySelectorAll('img.diary-entry__photo-single')];
+            if (thumbs.length === urls.length) {
+              const info = DiaryArchive.infoOf(entry);
+              DiaryArchive.openPhotos(urls.map(u => ({ url: u, info })), current(), thumbs);
+              return;
+            }
+          }
+          openPhotoLightbox(urls, current());
+        });
         if (track) {
           const count = wrap.querySelector('[data-photo-count]');
           const prev = wrap.querySelector('[data-photo-prev]');

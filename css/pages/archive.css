@@ -117,7 +117,7 @@
 .arc-pick__item.is-on b { background: var(--diary-accent); color: var(--diary-surface); border-color: var(--diary-accent); }
 
 /* ---- 사진 확대: 살짝 커지고, 뒤는 블러, 빈 자리에 위치·날씨·노래 ---- */
-.arc-lb { position: fixed; inset: 0; z-index: 100; color: #f4f0e6; }
+.arc-lb { position: fixed; inset: 0; z-index: 300; color: #f4f0e6; }
 .arc-lb[hidden] { display: none; }
 .arc-lb__bg { position: absolute; inset: 0; opacity: 0; transition: opacity 320ms ease; background: rgba(16, 15, 13, 0.5); -webkit-backdrop-filter: blur(22px) saturate(0.9); backdrop-filter: blur(22px) saturate(0.9); }
 .arc-lb.is-on .arc-lb__bg { opacity: 1; }

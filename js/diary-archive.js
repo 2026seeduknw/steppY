@@ -563,5 +563,6 @@
     q('.arc-lb__nav--next').disabled = lbIndex >= lbCtx.shots.length - 1;
   }
 
-  global.DiaryArchive = { render, refresh, infoOf };
+  /** 다른 화면(최근 사진 캐러셀·날짜 팝업)에서 같은 확대 화면을 쓴다. shots = [{ url, info }], thumbs = 눌린 사진 요소들 */
+  global.DiaryArchive = { render, refresh, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs) };
 })(window);
