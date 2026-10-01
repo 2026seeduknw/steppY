@@ -415,6 +415,13 @@
       document.getElementById('matchList').innerHTML = `<div class="info-panel"><p class="info-panel__text">${html}</p></div>`;
     };
 
+    // 학교를 확정해 뒀는데 학교 목록이 아직 안 왔으면(getConfirmedSchool이 잠깐 null) 기다린다 —
+    // 안 그러면 1~2초 동안 다른 학교 과목이 학교 id 그대로 섞여 보였다.
+    if (!confirmed && AppState.load().confirmedSchoolId) {
+      showPanel('학점 인정 과목을 불러오는 중이에요…');
+      return;
+    }
+
     // 과목 매칭은 11만 행이 넘어 처음에 다 받지 않는다(data-source.js의 ensureCourseMatches).
     // 학교도 전공도 정하지 않았으면 보여줄 범위가 없어 먼저 전공을 고르게 한다.
     if (!confirmed && !selectedMajor) {
