@@ -160,6 +160,113 @@ function wirePrepCardToggle(section, key) {
 
 const CHECK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
+/* 비자 서류 — 크롤러(exchange-doc-crawler)가 대사관·이민청 등 공식 출처에서만 모은 국가별
+   목록(visa_requirements / visa_documents). 서류 이름은 크롤러의 표준 분류를 한글로 옮긴다
+   (원문 표기는 국가마다 영어·폴란드어 등으로 섞여 있다). */
+const VISA_DOC_KO = {
+  PASSPORT: '여권', PHOTO: '증명사진', VISA_APPLICATION_FORM: '비자 신청서',
+  ENROLLMENT_CERTIFICATE: '입학 허가서', FINANCIAL_PROOF: '재정 증명', BANK_STATEMENT: '은행 잔고 증명',
+  INSURANCE: '보험 증명', ACCOMMODATION_PROOF: '숙소 증명', MEDICAL_CERTIFICATE: '건강진단서',
+  POLICE_CLEARANCE_CERTIFICATE: '범죄경력 증명서', FLIGHT_ITINERARY: '항공권(왕복)', COPY_OF_ID: '신분증 사본'
+};
+const VISA_SOURCE_KO = { EMBASSY_CONSULATE_SEOUL: '주한 대사관', NATIONAL_IMMIGRATION_AUTHORITY: '이민 당국' };
+
+/**
+ * 파견교 지원 서류 — 학교마다 다른 서류는 크롤링이 불안정해서 앱이 정리하지 않는다
+ * (exchange-doc-crawler: 263개교 중 152개만 찾았고 자동 확정 0건). 대부분 공통인 3종만
+ * 보여주고, 나머지는 연세대 OIA 학교 정보·Factsheet·학교 공식 사이트에서 직접 확인하게 한다.
+ * OIA 공지는 연세대가 준 원본 엑셀(Notice from OIA) 문구 그대로다.
+ */
+function applicationDocsHtml() {
+  const school = AppState.getConfirmedSchool();
+  if (!school) return '';
+  const l = school.links || {};
+  const links = [
+    l.oia && ['연세대 OIA 학교 정보', l.oia],
+    l.factsheet && ['파견교 Factsheet', l.factsheet],
+    l.website && ['파견교 공식 사이트', l.website]
+  ].filter(Boolean);
+  return `
+    <div class="app-docs">
+      <p class="app-docs__title">파견교 지원 서류</p>
+      <p class="app-docs__desc">대부분의 파견교가 공통으로 요구하는 서류예요.</p>
+      <ul class="living-docs"><li>성적증명서</li><li>어학 성적표</li><li>여권 사본</li></ul>
+      <p class="app-docs__desc">학교마다 추가 서류가 있을 수 있어요. 지원 전에 아래 공식 안내에서 꼭 확인하세요.</p>
+      ${school.oiaNotice ? `<p class="app-docs__notice"><b>OIA 안내</b> ${prepEsc(school.oiaNotice)}</p>` : ''}
+      ${links.length ? `<div class="app-docs__links">${links.map(([label, url]) =>
+        `<a href="${prepEsc(url)}" target="_blank" rel="noopener">${label} ↗</a>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+/** 체크리스트 항목의 출처 줄 — 고정 출처는 그대로, 학교·국가에 따라 달라지는 출처는 확정 학교 기준으로. */
+function checklistSourceHtml(item) {
+  const school = AppState.getConfirmedSchool();
+  let links = [];
+  let checked = item.checkedAt ? `${String(item.checkedAt).slice(0, 7).replace('-', '.')} 확인` : '';
+  if (item.sources && item.sources.length) {
+    links = item.sources.map(src => src.url
+      ? `<a href="${prepEsc(src.url)}" target="_blank" rel="noopener">${prepEsc(src.label)}</a>`
+      : prepEsc(src.label));
+  } else if (item.dynamicSource === 'insurance' && school) {
+    const c = MOCK.countryPrep.find(x => x.countryEn === school.countryEn);
+    if (c && c.insuranceSource) links = [prepSourceLinks(c.insuranceSource)];
+    if (c && c.surveyDate) checked = `${String(c.surveyDate).slice(0, 7).replace('-', '.')} 조사`;
+  } else if (item.dynamicSource === 'school' && school) {
+    const l = school.links || {};
+    links = [
+      l.oia && `<a href="${prepEsc(l.oia)}" target="_blank" rel="noopener">연세대 OIA 학교 정보</a>`,
+      l.website && `<a href="${prepEsc(l.website)}" target="_blank" rel="noopener">파견교 공식 사이트</a>`
+    ].filter(Boolean);
+  }
+  // 비자는 위 서류 박스가 출처 링크를 이미 보여준다. 출처가 없는 항목은 줄을 아예 두지 않는다.
+  if (!links.length) return '';
+  return `<p class="step-item__source">출처 · ${links.join(', ')}${checked ? ` · ${checked}` : ''}</p>`;
+}
+
+/** 기숙사 — 연세대 OIA 원본 엑셀의 기숙사 보장 여부·안내 문구가 있으면 그대로 보여준다. */
+function housingInfoHtml() {
+  const school = AppState.getConfirmedSchool();
+  const h = school && school.housing;
+  if (!h || (!h.guaranteed && !h.info)) return '';
+  const label = { Yes: '보장', No: '보장 안 됨', Partial: '일부 보장' }[h.guaranteed] || h.guaranteed;
+  // 안내 칸에 주소만 들어 있는 학교가 있다 — 그대로 늘어놓지 않고 링크로 바꾼다
+  const info = h.info ? prepEsc(h.info).replace(/https?:\/\/[^\s<]+/g,
+    (u) => `<a href="${u}" target="_blank" rel="noopener">파견교 기숙사 안내 ↗</a>`) : '';
+  return `<p class="step-item__housing">${label ? `<b>OIA 자료 · 기숙사 ${prepEsc(label)}</b> ` : ''}${info}</p>`;
+}
+
+function visaDocsHtml() {
+  const school = AppState.getConfirmedSchool();
+  const v = school && MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
+  if (!v) return '';
+  const country = school.country || school.countryEn;
+  const sources = (v.sources || []).filter(s => s && s.url).map(s => {
+    let host = s.url;
+    try { host = new URL(s.url).hostname.replace(/^www\./, ''); } catch (e) { /* 그대로 */ }
+    return `<a href="${prepEsc(s.url)}" target="_blank" rel="noopener">${VISA_SOURCE_KO[s.kind] || '공식 안내'} · ${prepEsc(host)}</a>`;
+  });
+  if (v.status === 'excluded') {
+    return `<div class="visa-docs"><p class="visa-docs__note">${prepEsc(v.statusLabelKo || '국가가 정해지면 그 나라 기준으로 확인하세요')}</p></div>`;
+  }
+  // 같은 종류가 여러 이름으로 잡힌 경우(Passport / 여권)는 한 번만
+  const seen = new Set();
+  const docs = (v.documents || []).filter(d => {
+    const key = d.standardType || d.rawName;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map(d => VISA_DOC_KO[d.standardType] || d.rawName);
+  return `
+    <div class="visa-docs">
+      <p class="visa-docs__title">${prepEsc(country)} 학생비자 서류</p>
+      ${docs.length
+        ? `<ul class="living-docs">${docs.map(x => `<li>${prepEsc(x)}</li>`).join('')}</ul>
+           <p class="visa-docs__note">공식 안내에서 자동으로 모은 목록이라 빠진 서류가 있을 수 있어요. 신청 전에 아래 공식 안내를 꼭 확인하세요.</p>`
+        : `<p class="visa-docs__note">아직 서류 목록을 정리하지 못했어요. 아래 공식 안내에서 확인하세요.</p>`}
+      ${sources.length ? `<p class="visa-docs__sources">${sources.join('')}</p>` : ''}
+    </div>`;
+}
+
 /**
  * 비자 및 서류 — 단계형(스텝퍼). 동그라미를 눌러 끝낸 단계를 표시하면 맨 위
  * 진행 바가 그만큼 차오르고, 오른쪽 위 퍼센트가 따라 오른다. 제목 줄을 누르면
@@ -188,21 +295,27 @@ function renderPrepareChecklist() {
           <li class="step-item" data-id="${item.id}">
             <button type="button" class="step-item__dot" data-toggle-done aria-label="${item.title} 완료 표시">${CHECK_SVG}</button>
             <div class="step-item__main">
-              <!-- "Step N"은 순서대로 해야 한다는 뜻으로 읽혀서 뺐다 — 기준은 마감(D-day)이다 -->
-              <button type="button" class="step-item__row" data-toggle-expand aria-expanded="false">
-                <span class="step-item__title">${item.title}</span>
-                <span class="step-item__due">${item.dueOffset}</span>
-              </button>
+              <!-- "Step N"은 순서대로 해야 한다는 뜻으로 읽혀서 뺐다. 마감(D-day)도 근거가 없어 지금은 비어 있다 -->
+              <div class="step-item__head">
+                <button type="button" class="step-item__row" data-toggle-expand aria-expanded="false">
+                  <span class="step-item__title">${item.title}</span>
+                  ${item.dueOffset ? `<span class="step-item__due">${item.dueOffset}</span>` : ''}
+                </button>
+                ${todoAddBtnHtml(item)}
+              </div>
               <div class="step-item__detail">
                 <p>${item.detail}</p>
+                ${item.id === 'visa' ? visaDocsHtml() : ''}
                 ${item.id === 'flight' && AppState.getProgramRange() ? `
                 <p class="step-item__departure">출국일 <b>${AppState.getProgramRange().start}</b>
                   <button type="button" class="step-item__departure-edit" data-edit-departure>수정</button></p>` : ''}
-                <p class="step-item__source">출처 · ${item.source} (최종 업데이트 ${item.updatedAt})</p>
+                ${item.dynamicSource === 'school' ? housingInfoHtml() : ''}
+                ${checklistSourceHtml(item)}
               </div>
             </div>
           </li>`).join('')}
       </ol>
+      ${applicationDocsHtml()}
     </div>`;
 
   const list = section.querySelector('#checklistList');
@@ -234,6 +347,12 @@ function renderPrepareChecklist() {
       return;
     }
     if (e.target.closest('[data-edit-departure]')) { openDeparturePrompt(); return; }
+    if (e.target.closest('[data-add-todo]')) {
+      const it = items.find(x => x.id === item.dataset.id);
+      if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+      if (it) openTodoAddPrompt(it.title);
+      return;
+    }
     const row = e.target.closest('[data-toggle-expand]');
     if (row) {
       // 항공권은 출국일이 있어야 고를 수 있다 — 아직 없으면 설명 대신 바로 입력 창을 띄운다
@@ -309,6 +428,56 @@ function prepSourceLinks(raw) {
  * 칸으로 나눠 보여준다. 예전엔 원문 칸을 한 줄로 이어 붙여서 조사 메모가
  * 그대로 노출됐다. 문장은 화면용으로 다듬은 *_ko가 있으면 그걸 쓴다(data-source.js).
  */
+/** 체크리스트 항목을 To-Do로 — 이미 같은 제목이 있으면 ✓로 보여주고 다시 추가하지 않게 한다. */
+function todoAddBtnHtml(item) {
+  const added = AppState.isAuthed && AppState.getTodos().some(t => t.title === item.title);
+  return added
+    ? `<span class="step-item__add is-added" aria-label="To-Do에 추가됨" title="To-Do에 추가됨">✓</span>`
+    : `<button type="button" class="step-item__add" data-add-todo aria-label="${item.title} To-Do에 추가" title="To-Do에 추가">+</button>`;
+}
+
+/**
+ * To-Do 추가 팝업 — 제목은 체크리스트 항목 이름으로 채워 두고 고칠 수 있다.
+ * 기한은 선택: 앱이 정해 줄 근거가 없어서(처리 기간이 나라·사람마다 다름) 아는 사람만 넣는다.
+ * 기한 없는 할 일은 supabase/todos_optional_date.sql이 적용돼야 서버에 저장된다.
+ */
+function openTodoAddPrompt(title) {
+  let scrim = document.getElementById('todoAddScrim');
+  const firstTime = !scrim;
+  if (firstTime) {
+    scrim = document.createElement('div');
+    scrim.id = 'todoAddScrim';
+    scrim.className = 'modal-scrim';
+    document.body.appendChild(scrim);
+  }
+  const tags = ['서류', '지원', '어학', '기타'];
+  scrim.innerHTML = `
+    <form class="modal-panel departure-prompt todo-add-prompt" role="dialog" aria-modal="true" aria-labelledby="todoAddTitle">
+      <button type="button" class="modal-close" data-modal-close aria-label="닫기">✕</button>
+      <h2 class="departure-prompt__title" id="todoAddTitle">To-Do에 추가하기</h2>
+      <label class="departure-prompt__field">할 일<input type="text" name="title" value="${prepEsc(title)}" required maxlength="80"></label>
+      <label class="departure-prompt__field departure-prompt__field--sub">기한 (선택)<input type="date" name="date"></label>
+      <label class="departure-prompt__field departure-prompt__field--sub">분류
+        <select name="tag">${tags.map(t => `<option${t === '서류' ? ' selected' : ''}>${t}</option>`).join('')}</select>
+      </label>
+      <button type="submit" class="btn btn--primary btn--block">추가하기</button>
+    </form>`;
+  if (firstTime) wireModalDismiss(scrim); else wireModalCloseButtons(scrim);
+  openModal(scrim);
+  const form = scrim.querySelector('form');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const t = String(fd.get('title') || '').trim();
+    if (!t) return;
+    AppState.addTodo({ title: t, date: fd.get('date') || null, tag: fd.get('tag') });
+    closeModal(scrim);
+    if (typeof renderTodoCard === 'function') renderTodoCard(document.getElementById('todoCard'));
+    renderPrepareChecklist();
+    showToast('To-Do에 추가했어요');
+  });
+}
+
 function renderPrepareLiving() {
   const confirmed = AppState.getConfirmedSchool();
   const c = confirmed && MOCK.countryPrep.find(x => x.countryEn === confirmed.countryEn);

@@ -154,6 +154,9 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .step-item.is-expanded .step-item__detail { display: block; }
 .step-item__detail p { margin: 0; }
 .step-item__source { margin-top: var(--space-2) !important; font-size: var(--fs-micro); color: var(--ink-400); font-family: var(--font-mono); }
+.step-item__source a { color: var(--ink-400); text-decoration: underline; }
+.step-item__housing { margin-top: var(--space-2) !important; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-700); }
+.step-item__housing b { color: var(--ink-900); }
 
 /* ---- 생활 정보 카드 ---- */
 .living-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
@@ -213,8 +216,9 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 
 /* 항공권 예약 → 출국일 입력 팝업(화면 가운데).
    app.css의 .modal-panel(바텀시트)을 이기려고 #id + 클래스 두 개로 명시도를 올린다. */
-#departurePromptScrim { align-items: center; }
-#departurePromptScrim .modal-panel.departure-prompt {
+#departurePromptScrim, #todoAddScrim { align-items: center; }
+#departurePromptScrim .modal-panel.departure-prompt,
+#todoAddScrim .modal-panel.departure-prompt {
   width: min(340px, 86vw); max-width: min(340px, 86vw);
   height: auto; max-height: 86vh;
   border-radius: var(--radius-lg);
@@ -223,7 +227,8 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   text-align: center;
   transform: translateY(16px) scale(0.98);
 }
-#departurePromptScrim.is-open .modal-panel.departure-prompt { transform: translateY(0) scale(1); }
+#departurePromptScrim.is-open .modal-panel.departure-prompt,
+#todoAddScrim.is-open .modal-panel.departure-prompt { transform: translateY(0) scale(1); }
 .departure-prompt__icon { margin: 0; font-size: 1.8rem; }
 .departure-prompt__title { margin: 0; font-size: var(--fs-h3); font-weight: 800; color: var(--ink-900); }
 .departure-prompt__desc { margin: 0 0 var(--space-1); font-size: var(--fs-small); color: var(--ink-600); line-height: 1.5; }
@@ -242,3 +247,44 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .step-item__departure { margin-top: var(--space-2) !important; font-size: var(--fs-small); color: var(--ink-700); }
 .step-item__departure b { font-family: var(--font-mono); color: var(--ink-900); }
 .step-item__departure-edit { margin-left: 6px; border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--sky-700); text-decoration: underline; cursor: pointer; }
+
+/* 학생비자 신청 → 국가별 비자 서류(공식 출처) */
+.visa-docs { margin-top: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); background: var(--cloud-50); display: flex; flex-direction: column; gap: var(--space-2); }
+.visa-docs .visa-docs__title { margin: 0 !important; font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.visa-docs__note { margin: 0 !important; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-600); }
+.visa-docs__sources { margin: 0 !important; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-micro); }
+.visa-docs__sources a { color: var(--sky-700); text-decoration: underline; word-break: break-all; }
+
+/* 체크리스트 아래 — 파견교 지원 서류(공통 3종 + 공식 링크) */
+.app-docs { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--line-100); display: flex; flex-direction: column; gap: var(--space-2); }
+.app-docs .app-docs__title { margin: 0; font-size: var(--fs-body); font-weight: 800; color: var(--ink-900); }
+.app-docs__desc { margin: 0; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-700); word-break: keep-all; }
+.app-docs__notice { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--cloud-50); font-size: var(--fs-small); line-height: 1.55; color: var(--ink-700); white-space: pre-line; }
+.app-docs__notice b { margin-right: 4px; color: var(--ink-900); }
+.app-docs__links { display: flex; flex-wrap: wrap; gap: 6px; }
+.app-docs__links a {
+  padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-200); background: var(--cloud-0);
+  font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); text-decoration: none;
+}
+.step-item__housing a { color: var(--sky-700); font-weight: 700; text-decoration: underline; }
+
+/* 체크리스트 항목 → To-Do 추가 (+) */
+.step-item__head { display: flex; align-items: center; gap: var(--space-2); }
+.step-item__head .step-item__row { flex: 1; min-width: 0; }
+.step-item__add {
+  flex: none; width: 28px; height: 28px; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: none; color: var(--ink-400); font-size: 1.25rem; font-weight: 500; line-height: 1; cursor: pointer;
+}
+.step-item__add:hover { background: var(--cloud-50); color: var(--ink-600); }
+.step-item__add.is-added { color: var(--ink-300, var(--ink-400)); font-size: 0.9rem; cursor: default; background: none; }
+/* 팝업 입력칸 — 출국일 팝업처럼 강조할 칸이 아니라서 회색 테두리·보통 굵기.
+   글자 크기는 16px 아래로 내리지 않는다(iPhone이 입력할 때 화면을 확대해 버린다). */
+.todo-add-prompt .departure-prompt__field input,
+.todo-add-prompt .departure-prompt__field select {
+  height: 42px; border-color: var(--line-200); font-weight: 500;
+}
+.todo-add-prompt .departure-prompt__field select {
+  padding: 0 var(--space-3); border: 1.5px solid var(--line-200); border-radius: var(--radius-md);
+  background: var(--cloud-0); color: var(--ink-900); font-family: inherit; font-size: 16px;
+}

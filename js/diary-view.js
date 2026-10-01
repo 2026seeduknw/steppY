@@ -786,9 +786,18 @@
     } else if (!urls.length) {
       photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p>${lpHtml(lpTrack)}</div>`;
     } else {
+      // 여러 장이면 한 장씩 옆으로 넘겨 본다(스와이프 + ‹ › 버튼). 넘길 수 있다는 걸
+      // 위 숫자(1 / 3)로 알려준다.
+      const multi = urls.length > 1;
       photo = `<div class="diary-entry__photo-wrap">
-        <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
-        ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
+        ${multi ? `
+        <div class="diary-photo-track" data-photo-track>
+          ${urls.map((u, k) => `<img class="diary-entry__photo-single" src="${u}" alt="${alt} (${k + 1}/${urls.length})"${k ? ' loading="lazy"' : ''} draggable="false">`).join('')}
+        </div>
+        <span class="diary-entry__photo-more" data-photo-count>1 / ${urls.length}</span>
+        <button type="button" class="diary-photo-nav diary-photo-nav--prev" data-photo-prev aria-label="이전 사진" hidden>‹</button>
+        <button type="button" class="diary-photo-nav diary-photo-nav--next" data-photo-next aria-label="다음 사진">›</button>`
+        : `<img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">`}
         ${city0 ? `<div class="diary-postmark diary-postmark--film" aria-hidden="true"><b data-film="${filmDate(e.date)}">${e.date.slice(5).replace('-', '.')}</b><span>${esc(city0)}</span></div>` : ''}
         ${lpHtml(lpTrack)}
       </div>`;
@@ -892,10 +901,31 @@
       const wrap = el.querySelector('.diary-entry__photo-wrap');
       const urls = (entry.photos || []).map(photoUrl).filter(Boolean);
       if (wrap && urls.length) {
+        const track = wrap.querySelector('[data-photo-track]');
+        const current = () => (track && track.clientWidth ? Math.round(track.scrollLeft / track.clientWidth) : 0);
         wrap.classList.add('is-clickable');
-        wrap.addEventListener('click', (ev) => {
-          openPhotoLightbox(urls, 0);
-        });
+        // 누르면 지금 보고 있는 사진부터 크게 연다
+        wrap.addEventListener('click', () => openPhotoLightbox(urls, current()));
+        if (track) {
+          const count = wrap.querySelector('[data-photo-count]');
+          const prev = wrap.querySelector('[data-photo-prev]');
+          const next = wrap.querySelector('[data-photo-next]');
+          let ticking = false;
+          const sync = () => {
+            ticking = false;
+            const i = current();
+            count.textContent = `${i + 1} / ${urls.length}`;
+            prev.hidden = i <= 0;
+            next.hidden = i >= urls.length - 1;
+          };
+          track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(sync); } }, { passive: true });
+          const go = (d) => (ev) => {
+            ev.stopPropagation();
+            track.scrollTo({ left: (current() + d) * track.clientWidth, behavior: 'smooth' });
+          };
+          prev.addEventListener('click', go(-1));
+          next.addEventListener('click', go(1));
+        }
       }
     });
     container.querySelectorAll('[data-preview]').forEach(btn => {

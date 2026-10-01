@@ -27,7 +27,7 @@ function computeEligibility(profile, school) {
   // 못 하는 이유를 늘어놓는 대신 "무엇이 되면 되는지"로 적는다. 숫자는 같지만
   // 사용자가 다음에 할 일이 문장 안에 들어온다.
   const needs = [];
-  if (!gpaOk) needs.push(`GPA ${school.gpaCut}`);
+  if (!gpaOk) needs.push(`GPA ${formatGpa(school.gpaCut) || school.gpaCut}`);
   if (!langOk) needs.push(`${school.langTest.type} ${school.langTest.cut}`);
   return { status: 'warn', label: '기준 미달', detail: `${needs.join(' · ')}부터 지원할 수 있어요` };
 }

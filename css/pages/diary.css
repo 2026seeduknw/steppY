@@ -514,6 +514,23 @@
 }
 .diary-entry--stamp .diary-entry__photo-wrap { position: relative; inset: auto; aspect-ratio: 4/5; overflow: hidden; }
 .diary-entry__photo-wrap.is-clickable { cursor: zoom-in; }
+/* 하루에 여러 장 — 우표 안에서 옆으로 한 장씩 넘긴다 */
+.diary-photo-track {
+  display: flex; width: 100%; height: 100%;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.diary-photo-track::-webkit-scrollbar { display: none; }
+.diary-photo-track > img { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.diary-photo-nav {
+  position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
+  width: 32px; height: 32px; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(12, 11, 10, 0.5); color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer;
+}
+.diary-photo-nav--prev { left: 8px; }
+.diary-photo-nav--next { right: 8px; }
+.diary-photo-nav[hidden] { display: none; }
 .diary-stamp__blank { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; padding: var(--space-4); background: var(--diary-surface-alt, #EEF2FA); }
 .diary-stamp__blank p { margin: 0; font-family: var(--diary-font-ticket); font-weight: 700; font-size: 1rem; line-height: 1.5; color: var(--diary-text); text-align: center; }
 .diary-stamp__cap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 10px 2px 14px; }
@@ -1793,3 +1810,25 @@ body[data-page="journal"][data-theme] .diary-slide .diary-featured__img { max-he
 .diary-carousel.is-dragging { cursor: grabbing; scroll-snap-type: none; }
 .diary-carousel.is-dragging .diary-slide { transition: none; }
 .diary-carousel img { -webkit-user-drag: none; }
+
+/* ==========================================================================
+   사용자가 직접 쓴 글은 기기 기본 글씨체(iPhone이면 SF Pro + Apple SD 산돌고딕 Neo)로.
+   쓰는 칸(제목·내용)과, 저장된 뒤 보이는 자리(제목·본문·리포트)를 같은 글씨체로 맞춘다 —
+   쓸 때와 볼 때 모양이 달라 "내 글"처럼 안 보이던 것을 없앤다. 화면 장식(라벨·날짜·
+   버튼)은 테마 글씨체 그대로. 필름 테마 규칙(명시도 0,3,1)을 이기도록 [data-theme] 짝도 둔다.
+   ========================================================================== */
+body[data-page="journal"] { --f-user: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, 'Malgun Gothic', sans-serif; }
+body[data-page="journal"] .diary-form .diary-form__title,
+body[data-page="journal"] .diary-form textarea,
+body[data-page="journal"] .diary-ticket-text,
+body[data-page="journal"] .diary-stamp__blank p,
+body[data-page="journal"] .diary-stamp__title,
+body[data-page="journal"] .diary-featured__title,
+body[data-page="journal"] .report-entry__caption,
+body[data-page="journal"][data-theme] .diary-form .diary-form__title,
+body[data-page="journal"][data-theme] .diary-form textarea,
+body[data-page="journal"][data-theme] .diary-ticket-text,
+body[data-page="journal"][data-theme] .diary-stamp__blank p,
+body[data-page="journal"][data-theme] .diary-stamp__title,
+body[data-page="journal"][data-theme] .diary-featured__title,
+body[data-page="journal"][data-theme] .report-entry__caption { font-family: var(--f-user); letter-spacing: normal; }

@@ -331,7 +331,7 @@ function schoolModalTemplate(school, opts = {}) {
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
             <span class="badge badge--neutral">${quotaLabel(school)}</span>
-            <span class="badge badge--amber">GPA ${school.gpaCut}↑</span>
+            <span class="badge badge--amber">GPA ${formatGpa(school.gpaCut) || school.gpaCut}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
           ${extraInfoBadgesHtml(school)}

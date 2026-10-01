@@ -1034,6 +1034,7 @@ body[data-page="onboarding"] {
 .ob__row { display: flex; gap: 10px; }
 .ob__row > input { flex: 1; min-width: 0; }
 .ob__row > select { flex: 0 0 116px; }
+.ob__suffix { flex: none; align-self: center; font-size: var(--fs-body); font-weight: 700; color: var(--ink-400); padding: 0 4px; }
 .ob__row--score[hidden] { display: none; }
 .ob__form input,
 .ob__form select {

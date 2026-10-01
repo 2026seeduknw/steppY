@@ -54,7 +54,8 @@
       <h2 class="ob__label">학점 <span class="ob__req">필수</span></h2>
       <div class="ob__row">
         <input type="number" inputmode="decimal" step="0.01" min="0" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
-        <select id="obScale" aria-label="학점 기준"></select>
+        <!-- 연세대는 4.3 만점 하나뿐이라 고르게 하지 않는다 -->
+        <span class="ob__suffix" aria-label="4.3 만점">/ 4.3</span>
       </div>
     </section>
 

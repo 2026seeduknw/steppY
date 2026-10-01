@@ -205,6 +205,9 @@
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
+        // 지원 서류 안내용 — 학교별 서류는 크롤링하지 않고 이 공식 링크로 직접 확인하게 한다
+        links: { website: s.website || null, factsheet: s.factsheet_url || null, oia: s.detail_link || null },
+        oiaNotice: s.notice_from_oia || '',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
       };
     });
@@ -213,8 +216,8 @@
   async function loadChecklist() {
     const { data } = await supabaseClient.from('checklist_items').select('*').order('sort_order');
     return (data || []).map(c => ({
-      id: c.id, title: c.title, done: false, dueOffset: c.due_offset,
-      source: c.source, updatedAt: c.updated_at || '확인 필요', detail: c.detail
+      id: c.id, title: c.title, done: false, detail: c.detail,
+      sources: c.source ? [{ label: c.source }] : [], checkedAt: c.updated_at || null
     }));
   }
 

@@ -4,17 +4,6 @@
 const LANG_TEST_TYPES = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
 const SEASONS = ['봄학기', '여름학기', '가을학기', '겨울학기'];
 
-/**
- * 학점 표시 — 소수점 둘째 자리까지 쓰되 의미 없는 0은 붙이지 않는다.
- *   4.3 → "4.3"   3.6 → "3.6"   3.62 → "3.62"
- * 예전에는 toFixed(2)로 고정해서 만점 4.3이 "4.30 / 4.3"으로 나왔다.
- * 입력은 그대로 0.01 단위를 받는다 — 표시만 다듬는 것이다.
- */
-function formatGpa(v) {
-  if (v == null || Number.isNaN(Number(v))) return '';
-  return String(Number(Number(v).toFixed(2)));
-}
-
 function renderProfileCard(mount) {
   mount.innerHTML = profileViewTemplate();
   mount.querySelector('[data-edit-profile]').addEventListener('click', () => {

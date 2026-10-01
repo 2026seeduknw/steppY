@@ -95,6 +95,18 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/**
+ * 학점 표시 — 소수점 아래 첫째 자리는 늘 보이고, 둘째 자리는 있을 때만.
+ *   4 → "4.0"   4.3 → "4.3"   3.62 → "3.62"   3.60 → "3.6"
+ * 정수로 떨어지면 "4"처럼 보여 만점(4.3)과 나란히 놓였을 때 어색했다.
+ * 입력은 그대로 0.01 단위를 받는다 — 표시만 다듬는 것이다.
+ */
+function formatGpa(v) {
+  if (v == null || v === '' || Number.isNaN(Number(v))) return '';
+  const cents = Math.round(Number(v) * 100);   // 1.1*10 같은 부동소수 오차를 피하려고 정수로 본다
+  return (cents % 10 === 0 ? (cents / 100).toFixed(1) : (cents / 100).toFixed(2));
+}
+
 function emptyState(displayName) {
   return {
     profile: {
@@ -332,7 +344,11 @@ const AppState = {
     const s = this.load();
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
     const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
-    return base.concat(s.customTodos).sort((a, b) => a.date.localeCompare(b.date));
+    // 기한 없는 할 일(체크리스트에서 옮겨 온 것 등)은 맨 뒤로
+    return base.concat(s.customTodos).sort((a, b) => {
+      if (!a.date || !b.date) return a.date ? -1 : b.date ? 1 : 0;
+      return a.date.localeCompare(b.date);
+    });
   },
 
   /**
@@ -438,14 +454,14 @@ const AppState = {
     const s = this.load();
     // 서버가 uuid를 돌려주기 전까지 쓸 임시 id. 응답이 오면 아래에서 바꿔치기한다.
     const tempId = 'ct' + Date.now();
-    const item = { id: tempId, title, date, tag: tag || '기타', done: false };
+    const item = { id: tempId, title, date: date || null, tag: tag || '기타', done: false };
     s.customTodos.push(item);
     this.save();
 
     if (this.isAuthed) {
       this._push(async () => {
         const res = await supabaseClient.from('user_todos')
-          .insert({ user_id: Auth.userId, title, due_date: date, tag: item.tag, done: false })
+          .insert({ user_id: Auth.userId, title, due_date: item.date, tag: item.tag, done: false })
           .select('id')
           .single();
         // 이후 toggleTodo가 서버 행을 찾을 수 있도록 실제 id로 교체

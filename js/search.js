@@ -209,7 +209,7 @@
         <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
         <div class="school-card__stats">
-          <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${school.gpaCut}</div></div>
+          <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${formatGpa(school.gpaCut) || school.gpaCut}</div></div>
           <div><div class="school-card__stat-label">${school.langTest.type}</div><div class="school-card__stat-value">${school.langTest.cut}</div></div>
         </div>
       </button>
