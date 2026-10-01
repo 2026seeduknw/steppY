@@ -191,6 +191,17 @@
       </div>
     </header>
 
+    <div class="diary-tabs" role="tablist" aria-label="기록 보기">
+      <button type="button" class="diary-tabs__tab is-active" role="tab" aria-selected="true" data-tab="mine">내 기록</button>
+      <button type="button" class="diary-tabs__tab" role="tab" aria-selected="false" data-tab="timeline">타임라인</button>
+      <button type="button" class="diary-tabs__friends" id="friendsBtn" aria-label="친구 관리">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 14c2 .6 3.5 2.3 3.5 5"/></svg>
+        <span class="diary-tabs__badge" data-friends-badge hidden>0</span>
+      </button>
+    </div>
+
+    <section class="ft-timeline" id="friendTimeline" hidden></section>
+
     <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
 
     <div id="diaryHeroSlot"></div>
@@ -1127,6 +1138,10 @@
             <span class="diary-form__label">그때 듣던 노래 (선택)</span>
             <div id="nowPlayingPicker"></div>
           </div>
+          <label class="diary-share">
+            <input type="checkbox" name="share" ${!edit || edit.visibility === 'friends' ? 'checked' : ''}>
+            <span class="diary-share__text"><b>친구에게 공개</b><small>친구 목록에 있는 분들이 사진·글·위치·노래를 볼 수 있어요. 끄면 나만 봐요.</small></span>
+          </label>
           ${edit ? '' : '<span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>'}
           <input type="hidden" name="date" value="${targetDate}">
           <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
@@ -1286,11 +1301,12 @@
       try {
         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ko`);
         const data = await res.json();
-        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null, lat: latitude, lng: longitude };
+        // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
+        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null };
         if (note) note.textContent = `📍 ${[pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') || '위치 확인됨'}`;
       } catch (err) {
-        pendingLocation = { country: null, city: null, countryCode: null, lat: latitude, lng: longitude };
-        if (note) note.textContent = '📍 위치는 저장했지만 지명 변환에 실패했어요';
+        pendingLocation = null;
+        if (note) note.textContent = '📍 지명을 확인하지 못했어요';
       }
     }, () => {
       pendingLocation = null;
@@ -1349,6 +1365,7 @@
       const tags = Array.from(grid.querySelectorAll('.tag-chip.is-selected')).map(b => b.dataset.tag);
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
+      const visibility = fd.get('share') ? 'friends' : 'private';
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
 
       // 수정 — 위치·날씨·오늘의 노래는 그대로 두고 글·태그·사진·그때 듣던 노래만 바꾼다
@@ -1365,7 +1382,8 @@
           title, body,
           photos: pendingPhotos.map(p => p.path),
           tags: [...tags, ...editKeepTags.filter(t => !tags.includes(t))],
-          nowPlaying: nextNP
+          nowPlaying: nextNP,
+          visibility
         });
         editingEntry = null;
         pendingPhotos = [];
@@ -1388,7 +1406,7 @@
         date, phase: departurePhaseFor(date), title, body,
         photos: pendingPhotos.map(p => p.path),
         tags, location: pendingLocation,
-        nowPlaying, weather: pendingWeather
+        nowPlaying, weather: pendingWeather, visibility
       });
       const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;
       const fxCity = pendingLocation && (pendingLocation.city || pendingLocation.country);
@@ -1618,8 +1636,35 @@
       e.target.value = '';
       if (file) openEntryModal(file);
     });
+    wireTabs();
     root.querySelector('#openWrapup').addEventListener('click', openWrapupModal);
     root.querySelector('#openReport').addEventListener('click', openReportModal);
+  }
+
+  /** 내 기록 ↔ 친구 타임라인. 타임라인은 보일 때마다 새로 읽는다(친구가 방금 올렸을 수 있다). */
+  function wireTabs() {
+    const slot = root.querySelector('#friendTimeline');
+    let mounted = false;
+    root.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const timeline = btn.dataset.tab === 'timeline';
+        root.classList.toggle('is-timeline', timeline);
+        slot.hidden = !timeline;
+        root.querySelectorAll('[data-tab]').forEach(b => {
+          const on = b === btn;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', String(on));
+        });
+        if (!timeline) return;
+        if (!mounted) { mounted = true; Friends.mountTimeline(slot); }
+        else Friends.reloadTimeline();
+      });
+    });
+    root.querySelector('#friendsBtn').addEventListener('click', () => {
+      if (needLogin()) return;
+      Friends.openManager();
+    });
+    Friends.refreshBadges();
   }
 
   /** 둘러보기에는 남길 계정이 없다 — 로그인해야 저장된다. 로그인 화면으로 갈지 묻고, 갔으면 true. */

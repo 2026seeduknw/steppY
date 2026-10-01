@@ -533,7 +533,7 @@ const AppState = {
 
   /* -------------------------------------------------------- 기록하기 */
 
-  addJournalEntry({ date, phase, title, body, photos, tags, location, nowPlaying, weather }) {
+  addJournalEntry({ date, phase, title, body, photos, tags, location, nowPlaying, weather, visibility }) {
     const s = this.load();
     // addTodo와 같은 방식 — 서버 uuid가 오기 전까지 쓸 임시 id
     const tempId = 'j' + Date.now();
@@ -550,6 +550,8 @@ const AppState = {
       song: null,
       nowPlaying: nowPlaying || null,
       weather: weather || null,
+      // 새 기록은 친구 공개가 기본이다(supabase/friends.sql). 쓰는 창에서 끄면 'private'.
+      visibility: visibility === 'private' ? 'private' : 'friends',
       createdAt: new Date().toISOString()
     };
     s.journal.push(entry);
@@ -568,7 +570,8 @@ const AppState = {
             tags: entry.tags,
             location: entry.location,
             now_playing: entry.nowPlaying,
-            weather: entry.weather
+            weather: entry.weather,
+            visibility: entry.visibility
           })
           .select('id, created_at')
           .single();
@@ -631,6 +634,7 @@ const AppState = {
         photos: entry.photos || [],
         tags: entry.tags || [],
         now_playing: entry.nowPlaying || null,
+        visibility: entry.visibility === 'friends' ? 'friends' : 'private',
         updated_at: new Date().toISOString()
       })
       .eq('id', entry.id).eq('user_id', Auth.userId), '기록 수정');
@@ -694,13 +698,22 @@ const AppState = {
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at').eq('user_id', uid),
+      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, visibility, created_at').eq('user_id', uid),
       supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
       supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid),
       supabaseClient.from('match_unlocks').select('list_key, steps').eq('user_id', uid),
       // 기한 있는 크레딧(가입 보너스·프리미엄 증정)까지 더한 잔액 — bm_unlocks.sql
       supabaseClient.rpc('my_credit_total')
     ]);
+
+    // friends.sql(visibility 컬럼)을 아직 안 돌린 서버면 위 조회가 통째로 실패한다 —
+    // 기록이 사라진 것처럼 보이지 않게 컬럼 없이 한 번 더 읽는다.
+    if (journal.error) {
+      const fallback = await supabaseClient.from('user_journal')
+        .select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at')
+        .eq('user_id', uid);
+      journal.data = fallback.data;
+    }
 
     const next = emptyState(this._displayName());
     const p = prof.data;
@@ -757,6 +770,8 @@ const AppState = {
         song: r.song || null,
         nowPlaying: r.now_playing || null,
         weather: r.weather || null,
+        // friends.sql 이전에 쓴 기록·SQL 미적용 환경은 비공개로 본다
+        visibility: r.visibility === 'friends' ? 'friends' : 'private',
         createdAt: r.created_at
       }));
     }
