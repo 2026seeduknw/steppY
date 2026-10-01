@@ -151,8 +151,10 @@
     selectedCountry = ''; selectedRegion = ''; selectedRelevance = '';
     renderMatches();
     if (!selectedMajor) { showMajorNeededPopup(); return; }
-    const target = MOCK.majorMatches.find(m => m.school === schoolId && m.homeMajor === selectedMajor &&
-      ((m.matchedTopics || []).includes(topic) || m.targetMajor === topic));
+    // 학점 인정 과목은 관련 학과 여러 곳에서 오지만 전공 매칭 카드는 학교당 대표 학과 하나라,
+    // 칩의 학과와 정확히 맞는 카드가 없으면 그 학교·그 전공 카드로 간다
+    const sameSchool = MOCK.majorMatches.filter(m => m.school === schoolId && m.homeMajor === selectedMajor);
+    const target = sameSchool.find(m => (m.matchedTopics || []).includes(topic) || m.targetMajor === topic) || sameSchool[0];
     if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
     requestAnimationFrame(() => {
       const el = document.querySelector(`[data-match-id="${CSS.escape(String(target.id))}"]`);
@@ -460,24 +462,9 @@
         matches = matches.filter(m => m.homeMajor === selectedMajor);
       }
 
-      // 같은 학교·같은 내 전공이라도 후보 학과(현지 학과)가 둘 이상으로 갈리는 경우에만
-      // 신청 전공으로 좁히게 한다 — 보통은 전공당 학과가 하나라 이 단계를 안 거친다.
-      const targetOptions = [...new Set(matches.flatMap(m => m.matchedTopics || []))];
-      if (!selectedTargetMajor && matches.length && targetOptions.length > 1) {
-        renderRelevanceFilter([]);
-        renderCountryFilter([]);
-        note.hidden = true;
-        document.getElementById('matchList').innerHTML = `
-          <div class="info-panel">
-            <p class="info-panel__text">
-              ${confirmed.nameKo || confirmed.name}에서 <strong>신청한 전공</strong>을 알려 주시면
-              그 전공 과목만 모아서 보여드려요.
-            </p>
-            <a class="btn btn--primary btn--sm" href="home.html">홈에서 신청 전공 고르기</a>
-          </div>`;
-        return;
-      }
-
+      // 내 전공과 관련된 현지 학과가 여러 곳이면 그 과목을 다 보여준다(카드마다 학과명이 붙는다).
+      // 신청 전공(현지 학과)을 홈에서 골라 두었으면 아래 byTargetMajor가 그 학과로 좁힌다 — 먼저
+      // 고르라고 막아 세우지는 않는다(예전엔 이 단계 때문에 확정 학교에서 과목이 안 뜬다고 느꼈다).
       note.hidden = false;
       note.textContent = selectedTargetMajor
         ? `확정하신 ${confirmed.nameKo || confirmed.name} · ${selectedTargetMajor} 기준이에요.`
