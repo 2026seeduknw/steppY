@@ -28,6 +28,12 @@
   const creditWrap = document.getElementById('mentorCredit');
   const creditNum = document.getElementById('mentorCreditNum');
   const askOpenBtn = document.getElementById('askOpenBtn');
+  const pinsEl = document.getElementById('mentorPins');
+
+  // 상단 고정 글 — 운영자가 mentor_pins 테이블(supabase/mentor_pins.sql)에 직접 넣는다.
+  // 테이블이 없거나 읽지 못하면 조용히 비워 둔다(게시판은 그대로 보인다).
+  const PIN_KIND = { notice: '공지', report: '교환보고서', column: '칼럼' };
+  let pins = [];
 
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -203,8 +209,44 @@
     openAskSheetImpl();
   }
 
+  /** 고정 글 한 줄 — 일반 글과 같은 두 줄 틀이되, 종류 배지와 옅은 배경으로 구분한다. */
+  function pinRowTemplate(p) {
+    return `
+      <button type="button" class="mentor-row mentor-row--pin" data-open-pin="${escapeHtml(p.id)}">
+        <div class="mentor-row__line">
+          <span class="mentor-pin__badge mentor-pin__badge--${escapeHtml(p.kind)}">${PIN_KIND[p.kind] || '공지'}</span>
+          <span class="mentor-row__title mentor-pin__title">${escapeHtml(p.title)}</span>
+        </div>
+        <div class="mentor-row__foot">
+          <span class="mentor-row__meta">${escapeHtml(p.author_label || '운영진')} · ${timeAgo(p.created_at)}</span>
+        </div>
+      </button>`;
+  }
+
+  function renderPins() {
+    // 즐겨찾기만 모아 볼 때는 고정 글을 접어 둔다 — 내가 찜한 글만 보이는 화면이라서
+    if (!pins.length || state.onlyFavorite) { pinsEl.hidden = true; pinsEl.innerHTML = ''; return; }
+    pinsEl.hidden = false;
+    pinsEl.innerHTML = pins.map(pinRowTemplate).join('');
+    pinsEl.querySelectorAll('[data-open-pin]').forEach(el => {
+      el.addEventListener('click', () => openPinPage(el.dataset.openPin));
+    });
+  }
+
+  async function loadPins() {
+    try {
+      const res = await supabaseClient.from('mentor_pins')
+        .select('id, kind, title, body, author_label, created_at')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+      pins = res.error ? [] : (res.data || []);
+    } catch (e) { pins = []; }
+    renderPins();
+  }
+
   function renderList() {
     renderCreditBadge();
+    renderPins();
     const items = filteredQuestions();
     if (!items.length) {
       listEl.innerHTML = `
@@ -540,8 +582,44 @@
     }
   }
 
+  /** 고정 글 상세 — 질문 상세와 같은 전체 화면 레이어. 답변 입력은 없다. */
+  function openPinPage(id) {
+    const p = pins.find(x => x.id === id);
+    if (!p) return;
+    const page = document.createElement('div');
+    page.className = 'mentor-page';
+    page.setAttribute('role', 'dialog');
+    page.setAttribute('aria-modal', 'true');
+    page.setAttribute('aria-label', PIN_KIND[p.kind] || '공지');
+    page.innerHTML = `
+      <div class="mentor-page__head">
+        <button type="button" class="mentor-page__back" data-page-close>← 뒤로</button>
+      </div>
+      <div class="mentor-page__body">
+        <div class="mentor-detail">
+          <div class="mentor-detail__tags">
+            <span class="mentor-pin__badge mentor-pin__badge--${escapeHtml(p.kind)}">${PIN_KIND[p.kind] || '공지'}</span>
+          </div>
+          <h3 class="mentor-detail__title">${escapeHtml(p.title)}</h3>
+          <p class="mentor-detail__body">${escapeHtml(p.body)}</p>
+          <div class="mentor-detail__meta">${escapeHtml(p.author_label || '운영진')} · ${timeAgo(p.created_at)}</div>
+        </div>
+      </div>`;
+    document.body.appendChild(page);
+    document.body.classList.add('is-sheet-open');
+    requestAnimationFrame(() => page.classList.add('is-open'));
+    const close = () => {
+      page.classList.remove('is-open');
+      document.body.classList.remove('is-sheet-open');
+      setTimeout(() => page.remove(), 300);
+    };
+    page.addEventListener('click', (e) => { if (e.target.closest('[data-page-close]')) close(); });
+    if (typeof trackEvent === 'function') trackEvent('mentor_pin_open', { kind: p.kind });
+  }
+
   renderCountryFilter();
   renderList();
+  loadPins();
 
   document.addEventListener('MOCK:updated', () => {
     renderCountryFilter();
