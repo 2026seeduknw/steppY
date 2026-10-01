@@ -145,14 +145,30 @@
 .diary-fab--edit:hover { color: var(--diary-text); }
 @media (max-width: 640px) { .diary-fab-bar { bottom: var(--space-4); gap: var(--space-4); } .diary-fab--camera { width: 62px; height: 62px; } }
 .diary-form { display: flex; flex-direction: column; gap: var(--space-4); }
-.diary-photo-picker { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.diary-photo-picker { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: flex-start; }
 .diary-photo-picker__add { width: 88px; height: 88px; border-radius: var(--radius-md); border: 1.5px dashed var(--diary-line-strong); display: flex; align-items: center; justify-content: center; color: var(--diary-text-faint); font-size: 1.5rem; cursor: pointer; flex-shrink: 0; }
 .diary-photo-picker__add:hover { border-color: var(--diary-accent); color: var(--diary-accent); }
-.diary-photo-thumb { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
-.diary-photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
-.diary-photo-thumb button { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--diary-text); color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
-.diary-form textarea { width: 100%; min-height: 84px; padding: var(--space-3); border: 1.5px solid var(--diary-line-strong); border-radius: var(--radius-md); font-size: var(--fs-body); font-family: var(--font-body); resize: vertical; background: var(--diary-surface); color: var(--diary-text); }
-.diary-form textarea::placeholder { color: var(--diary-text-faint); }
+/* 무료 한도(하루 3장)를 다 쓰면 "+"가 코인 라벨로 바뀐다(js/diary-view.js renderPhotoPicker) */
+.diary-photo-picker__add--credit { flex-direction: column; gap: 2px; border-style: solid; border-color: var(--diary-accent); color: var(--diary-accent); }
+.diary-photo-picker__add-coin { font-size: 1.3rem; line-height: 1; }
+.diary-photo-picker__add-label { font-size: var(--fs-micro); font-weight: 700; }
+
+/* ---- 사진 더미 — 낱장 썸네일 대신 뒤에 최대 2장만 살짝 겹쳐 보이고, ⟳로 넘겨본다 ---- */
+.diary-photo-stack { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
+.diary-photo-stack__peek { position: absolute; inset: 0; border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.18); pointer-events: none; }
+.diary-photo-stack__peek img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.diary-photo-stack__front { position: relative; z-index: 3; width: 100%; height: 100%; border-radius: var(--radius-md); overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.22); }
+.diary-photo-stack__front img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.diary-photo-stack__remove { position: absolute; top: -6px; right: -6px; z-index: 4; width: 22px; height: 22px; border-radius: 50%; background: var(--diary-text); color: #fff; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; border: none; }
+.diary-photo-stack__more { position: absolute; top: -6px; left: -6px; z-index: 5; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.diary-photo-stack__flip { position: absolute; right: -8px; bottom: -8px; z-index: 5; width: 26px; height: 26px; border-radius: 50%; background: var(--diary-accent); color: #fff; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; border: 2px solid var(--diary-surface); cursor: pointer; }
+.diary-photo-stack__flip:active { transform: scale(0.92); }
+/* 16px 미만이면 iOS가 포커스 때 화면을 확대한다(css/app.css의 같은 규칙 참고) — 실제
+   입력값 크기는 16px로 두고, 화면에 커 보이던 건 아래 placeholder만 따로 줄인다. */
+.diary-form textarea { width: 100%; min-height: 84px; padding: var(--space-3); border: 1.5px solid var(--diary-line-strong); border-radius: var(--radius-md); font-size: 16px; font-family: var(--font-body); resize: vertical; background: var(--diary-surface); color: var(--diary-text); }
+.diary-form textarea::placeholder,
+.diary-form__title::placeholder,
+#nowPlayingInput::placeholder { color: var(--diary-text-faint); font-size: var(--fs-small); }
 .diary-tag-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); background: var(--diary-surface-alt); border-radius: var(--radius-md); padding: var(--space-3); }
 .diary-location-note { font-size: var(--fs-micro); color: var(--diary-text-faint); display: flex; align-items: center; gap: 4px; }
 .diary-form__label { display: block; margin-bottom: var(--space-2); font-size: var(--fs-small); font-weight: 700; color: var(--diary-text-dim); }
@@ -270,7 +286,7 @@
 
 .diary-form__title {
   width: 100%; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-sm);
-  padding: 9px 11px; font-family: inherit; font-size: var(--fs-body); font-weight: 700;
+  padding: 9px 11px; font-family: inherit; font-size: 16px; font-weight: 700;
   color: var(--diary-text); background: var(--diary-surface);
 }
 .diary-form__title::placeholder { font-weight: 400; color: var(--diary-text-faint); }
@@ -289,6 +305,26 @@
   display: inline-block; margin-top: var(--space-2);
   font-size: var(--fs-small); font-weight: 700; color: var(--diary-accent);
 }
+
+/* 귀국 후에만 뜨는 국면 필터(js/diary-view.js renderPhaseToggle) — 전체/출국 전/파견 중 */
+.diary-phase-toggle {
+  display: flex; gap: 4px;
+  margin-top: var(--space-3);
+  padding: 4px;
+  background: var(--diary-surface-alt);
+  border-radius: var(--radius-pill);
+}
+.diary-phase-toggle__btn {
+  flex: 1 1 0;
+  height: 32px;
+  border: none; background: none;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-small); font-weight: 600;
+  color: var(--diary-text-dim);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.diary-phase-toggle__btn.is-active { background: var(--diary-surface); color: var(--diary-text); box-shadow: 0 2px 6px rgba(35,42,61,0.12); }
 
 /* 가운데 안내는 좌우 날짜와 같은 줄에 두면 402px에서 폭 0으로 눌린다.
    flex:1이라 끝까지 줄어들 수 있어서, 아예 한 줄 아래로 내렸다. */
@@ -370,7 +406,7 @@
   padding: var(--space-3);
   border: 1px solid var(--line-200);
   border-radius: var(--radius-md);
-  font-size: var(--fs-small);
+  font-size: 16px;   /* iOS 자동 확대 방지 — 커 보이던 건 ::placeholder만 줄인다 */
   background: var(--cloud-0);
 }
 .diary-nowplaying-results {
@@ -478,6 +514,23 @@
 }
 .diary-entry--stamp .diary-entry__photo-wrap { position: relative; inset: auto; aspect-ratio: 4/5; overflow: hidden; }
 .diary-entry__photo-wrap.is-clickable { cursor: zoom-in; }
+/* 하루에 여러 장 — 우표 안에서 옆으로 한 장씩 넘긴다 */
+.diary-photo-track {
+  display: flex; width: 100%; height: 100%;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.diary-photo-track::-webkit-scrollbar { display: none; }
+.diary-photo-track > img { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.diary-photo-nav {
+  position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
+  width: 32px; height: 32px; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(12, 11, 10, 0.5); color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer;
+}
+.diary-photo-nav--prev { left: 8px; }
+.diary-photo-nav--next { right: 8px; }
+.diary-photo-nav[hidden] { display: none; }
 .diary-stamp__blank { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; padding: var(--space-4); background: var(--diary-surface-alt, #EEF2FA); }
 .diary-stamp__blank p { margin: 0; font-family: var(--diary-font-ticket); font-weight: 700; font-size: 1rem; line-height: 1.5; color: var(--diary-text); text-align: center; }
 .diary-stamp__cap { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 10px 2px 14px; }
@@ -907,15 +960,25 @@ body[data-page="journal"] .diary-cal-section { margin-top: 0; }
 /* 칩 ↔ 질문 ↔ 달력 사이를 넉넉하게 */
 .diary-prompt { margin-top: 10px; margin-bottom: 14px; }
 
-/* 태그 고르기 — 손가락으로 누르기 편하게 큰 버튼 3열 */
-#tagGrid.diary-tag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-#tagGrid.diary-tag-grid .tag-chip {
-  height: auto; min-height: 52px; padding: 8px 6px; flex-direction: column; justify-content: center; gap: 2px;
-  font-size: var(--fs-small); font-weight: 700; text-align: center; white-space: normal; line-height: 1.25; border-radius: 16px;
+/* 태그 고르기 — 15개를 카드로 늘어놓으면 너무 많아 보여서, 5개 묶음(js/diary-view.js
+   TAG_GROUPS)을 목록으로 접어 두고 눌러야 그 안의 칩이 펼쳐진다. */
+#tagGrid.diary-tag-grid { display: flex; flex-direction: column; gap: 2px; }
+.tag-group + .tag-group { border-top: 1px solid var(--diary-line-strong); }
+.tag-group__head {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 10px 4px; border: none; background: none; text-align: left; cursor: pointer;
+  border-radius: var(--radius-sm);
 }
-#tagGrid.diary-tag-grid .tag-chip__emoji { font-size: 1.15rem; line-height: 1; }
-#tagGrid.diary-tag-grid .tag-chip.is-selected { background: var(--ink-900); border-color: var(--ink-900); color: #fff; }
+.tag-group__head:hover { background: rgba(0,0,0,0.03); }
+.tag-group__emoji { flex: 0 0 auto; font-size: 1.05rem; line-height: 1; }
+.tag-group__label { flex: 1 1 auto; font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); }
+.tag-group__caret { flex: 0 0 auto; font-size: 0.65rem; color: var(--diary-text-faint); transition: transform var(--dur-fast) var(--ease-out); }
+.tag-group.is-open .tag-group__caret { transform: rotate(180deg); }
+.tag-group__body { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 4px 10px 30px; }
+.tag-group__body[hidden] { display: none; }
 .diary-form__hint { margin: 8px 2px 0; font-size: var(--fs-micro); color: var(--diary-text-faint); }
+/* BM: 하루 무료 사진 3장 한도 안내(js/state.js AppState.freePhotoUploadsLeft) */
+.diary-photo-picker__quota { margin: 8px 2px 0; font-size: var(--fs-micro); color: var(--diary-text-faint); }
 
 /* ==========================================================================
    최근 사진 카드 테두리 — 반투명 유리 액자 + 안쪽 흰 선 + 은은한 색 번짐 그림자
@@ -1001,10 +1064,7 @@ button.diary-lp::after { z-index: 2; }
 .diary-entry__edit-link { padding: 8px 14px; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.6); font: inherit; font-size: var(--fs-small); font-weight: 700; color: var(--diary-text); cursor: pointer; }
 .diary-entry__edit-link:hover { background: #fff; }
 
-/* 대표 사진 */
-.diary-photo-thumb { position: relative; }
-.diary-photo-thumb img[data-cover] { cursor: pointer; }
-.diary-photo-thumb.is-cover { box-shadow: 0 0 0 2px var(--ink-900); border-radius: var(--radius-md); }
+/* 대표 사진 라벨 — .diary-photo-stack__front(위) 안에 쓴다 */
 .diary-photo-thumb__cover { position: absolute; left: 4px; bottom: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--ink-900); color: #fff; font-size: 10px; font-weight: 700; pointer-events: none; }
 
 /* 스켈레톤 — 사진 주소를 받는 동안 같은 크기의 자리를 흐릿하게 */
@@ -1305,7 +1365,11 @@ body[data-page="journal"][data-theme="film"] .film-en {
    RECORD가 스트릭 배지보다 아래로 처져 보이고 위아래 여백도 헐렁했다. 원인은
    같은 값이니 여기서도 0.75rem으로 맞춘다. */
 body[data-page="journal"][data-theme="film"] .diary-header__title { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
-body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; line-height: 1; }
+/* 달력 월 제목(26.SEP)은 다른 작은 라벨들과 같은 0.75rem 상한을 적용하지 않는다 —
+   더 키워달라는 요청으로, 안쪽 .film-en도 같이 올려야 한다(그대로 두면 위 공통
+   규칙의 min(1em, 0.75rem)에 걸려 글자가 다시 0.75rem으로 눌린다). */
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title { font-size: 1.1rem; letter-spacing: 0.03em; font-weight: 400; line-height: 1; }
+body[data-page="journal"][data-theme="film"] .diary-cal-nav__title .film-en { font-size: 1.1rem; }
 body[data-page="journal"][data-theme="film"] .diary-featured__head .diary-featured__eyebrow { font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 400; line-height: 1; }
 body[data-page="journal"][data-theme="film"] .diary-modal-header h2 { font-size: 0.75rem; letter-spacing: 0.05em; font-weight: 400; }
 body[data-page="journal"][data-theme="film"] .stampbook__month { font-family: var(--f-title); font-size: 0.75rem; letter-spacing: 0.08em; color: var(--film-amber); text-shadow: var(--film-glow); }
@@ -1746,3 +1810,25 @@ body[data-page="journal"][data-theme] .diary-slide .diary-featured__img { max-he
 .diary-carousel.is-dragging { cursor: grabbing; scroll-snap-type: none; }
 .diary-carousel.is-dragging .diary-slide { transition: none; }
 .diary-carousel img { -webkit-user-drag: none; }
+
+/* ==========================================================================
+   사용자가 직접 쓴 글은 기기 기본 글씨체(iPhone이면 SF Pro + Apple SD 산돌고딕 Neo)로.
+   쓰는 칸(제목·내용)과, 저장된 뒤 보이는 자리(제목·본문·리포트)를 같은 글씨체로 맞춘다 —
+   쓸 때와 볼 때 모양이 달라 "내 글"처럼 안 보이던 것을 없앤다. 화면 장식(라벨·날짜·
+   버튼)은 테마 글씨체 그대로. 필름 테마 규칙(명시도 0,3,1)을 이기도록 [data-theme] 짝도 둔다.
+   ========================================================================== */
+body[data-page="journal"] { --f-user: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, 'Malgun Gothic', sans-serif; }
+body[data-page="journal"] .diary-form .diary-form__title,
+body[data-page="journal"] .diary-form textarea,
+body[data-page="journal"] .diary-ticket-text,
+body[data-page="journal"] .diary-stamp__blank p,
+body[data-page="journal"] .diary-stamp__title,
+body[data-page="journal"] .diary-featured__title,
+body[data-page="journal"] .report-entry__caption,
+body[data-page="journal"][data-theme] .diary-form .diary-form__title,
+body[data-page="journal"][data-theme] .diary-form textarea,
+body[data-page="journal"][data-theme] .diary-ticket-text,
+body[data-page="journal"][data-theme] .diary-stamp__blank p,
+body[data-page="journal"][data-theme] .diary-stamp__title,
+body[data-page="journal"][data-theme] .diary-featured__title,
+body[data-page="journal"][data-theme] .report-entry__caption { font-family: var(--f-user); letter-spacing: normal; }

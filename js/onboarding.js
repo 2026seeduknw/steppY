@@ -21,7 +21,8 @@
   const SEASONS = ['봄학기', '여름학기', '가을학기', '겨울학기'];
   const LANG_TESTS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
   const LANG_NONE = '__none__';   // "아직 없어요"
-  const GPA_SCALES = [4.3, 4.5, 4.0];
+  // 연세대 학점은 4.3 만점 하나라 기준을 고르게 하지 않는다
+  const GPA_SCALE = 4.3;
   const THIS_YEAR = new Date().getFullYear();
 
   // 입력값을 모아뒀다가 마지막에 한 번에 저장한다 — 중간에 이탈하면
@@ -32,7 +33,7 @@
     name: '',
     major: null,
     gpa: null,
-    gpaScale: 4.3,
+    gpaScale: GPA_SCALE,
     // 어학은 기본이 "아직 없어요". 교환을 준비하기 시작한 시점에는 아직 시험을
     // 안 본 사람이 더 많고, 그 사람들이 아무것도 건드리지 않아도 넘어가야 한다.
     langType: LANG_NONE,
@@ -48,7 +49,6 @@
     next: document.getElementById('obNext'),
     majorMount: document.getElementById('obMajorMount'),
     gpa: document.getElementById('obGpa'),
-    scale: document.getElementById('obScale'),
     langChips: document.getElementById('obLangChips'),
     scoreRow: document.getElementById('obScoreRow'),
     langScore: document.getElementById('obLangScore'),
@@ -89,12 +89,6 @@
     const none = draft.langType === LANG_NONE;
     el.scoreRow.hidden = none;
     if (none) { draft.langScore = null; el.langScore.value = ''; }
-  }
-
-  function renderScale() {
-    el.scale.innerHTML = GPA_SCALES
-      // 4.0은 그냥 찍으면 "4 만점"이 된다 — 만점 표기는 소수점 한 자리로 고정한다
-      .map(v => `<option value="${v}" ${v === draft.gpaScale ? 'selected' : ''}>${v.toFixed(1)} 만점</option>`).join('');
   }
 
   function renderYear() {
@@ -209,7 +203,6 @@
     draft.gpa = el.gpa.value === '' ? null : roundDecimals(el.gpa.value, 2);
     clearError();
   });
-  el.scale.addEventListener('change', e => { draft.gpaScale = parseFloat(e.target.value); });
   el.langScore.addEventListener('input', e => {
     draft.langScore = e.target.value === '' ? null : e.target.value;
     clearError();
@@ -241,7 +234,6 @@
 
   Auth.init().then(() => {
     if (!Auth.isAuthed) { location.replace('auth.html'); return; }
-    renderScale();
     renderYear();
     renderSeasons();
     renderLangChips();

@@ -52,7 +52,8 @@ function renderTodoCard(mount, options) {
 }
 
 function todoCardTemplate(adding, expanded) {
-  const todos = AppState.getTodos().slice(0, 4);
+  // 예전엔 앞의 4개만 보여서, 새로 추가한(특히 기한이 늦거나 없는) 할 일이 목록에 안 나타났다
+  const todos = AppState.getTodos();
   const total = todos.length;
   const remaining = todos.filter(t => !t.done).length;
   const done = total - remaining;
@@ -89,7 +90,7 @@ function todoCardTemplate(adding, expanded) {
             <button class="todo-item__check" data-todo-check="${t.id}" aria-label="완료 처리">${t.done ? '✓' : ''}</button>
             <div class="todo-item__body">
               <span class="todo-item__title">${t.title}</span>
-              <span class="todo-item__meta">${t.date} · ${t.tag}</span>
+              <span class="todo-item__meta">${t.date || '기한 없음'} · ${t.tag}</span>
             </div>
           </li>`).join('')}
       </ul>

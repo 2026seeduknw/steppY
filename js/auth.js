@@ -16,6 +16,14 @@
 /** 가입 가능한 메일 도메인. 서버(auth.users의 enforce_yonsei_email 트리거)와 같은 규칙. */
 const ALLOWED_EMAIL_DOMAIN = '@yonsei.ac.kr';
 
+/**
+ * "로그인해 본 적이 있다"는 표시. 지금 세션이 살아 있는지(isAuthed)와는 다르다 —
+ * 토큰이 만료되어 세션이 끊겨도 이 값은 남아서, 다음에 앱을 열었을 때
+ * 마케팅 랜딩(js/intro-splash.js)을 다시 보여주지 않는 데 쓰인다.
+ * 사용자가 **직접** 로그아웃을 눌렀을 때만 지운다(signOut 참고).
+ */
+const HAS_LOGGED_IN_KEY = 'steppy:has-logged-in';
+
 const Auth = {
   session: null,
   _ready: null,
@@ -73,6 +81,11 @@ const Auth = {
           const before = this.session && this.session.user.id;
           const after = session && session.user.id;
           this.session = session || null;
+          // 수동 로그인뿐 아니라 이메일 인증 링크로 돌아와 세션이 생기는 경우도
+          // 여기로 들어온다 — "로그인해 본 적 있음"은 그 경로도 포함해야 한다.
+          if (session) {
+            try { localStorage.setItem(HAS_LOGGED_IN_KEY, '1'); } catch (e) { /* 사생활 모드 */ }
+          }
           if (before !== after) document.dispatchEvent(new CustomEvent('auth:changed'));
         });
         return this.session;
@@ -112,6 +125,8 @@ const Auth = {
   async signOut() {
     await supabaseClient.auth.signOut();
     this.session = null;
+    // 사용자가 직접 누른 로그아웃이므로 여기서만 "로그인해 본 적" 표시를 지운다.
+    try { localStorage.removeItem(HAS_LOGGED_IN_KEY); } catch (e) { /* 사생활 모드 */ }
   },
 
   /**
@@ -139,6 +154,7 @@ const Auth = {
     // 남은 일은 이 기기의 토큰을 버리는 것뿐이므로 local 스코프로 끝낸다.
     await supabaseClient.auth.signOut({ scope: 'local' }).catch(() => {});
     this.session = null;
+    try { localStorage.removeItem(HAS_LOGGED_IN_KEY); } catch (e) { /* 사생활 모드 */ }
   },
 
   /** Supabase 오류 코드를 사용자에게 보여줄 한국어 문장으로 바꾼다. */

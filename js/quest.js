@@ -49,8 +49,38 @@
 
   // 듀오링고 유닛 경로처럼 지그재그로 굽이치는 점선 도로 위에 노드 10개를 얹는다(한 레벨 = 10칸)
   const NODE_X = [100, 152, 100, 48];          // 좌우로 굽이치는 4칸 주기
-  const NODE_GAP = 74;
-  const PATH_H = 40 + NODE_GAP * (PER_LEVEL - 1) + 40;
+  const NODE_GAP = 58;
+  const PATH_H = 36 + NODE_GAP * (PER_LEVEL - 1) + 36;
+  // 카드 하나가 다 보여줄 필요는 없다 — 이 높이만큼만 보이고 나머지는 안에서 스크롤한다
+  const PATH_VIEW_H = 240;
+
+  // .quest-path 는 viewBox 폭 200을 실제 220px 상자에 그린다 — 각도·간격을
+  // 화면에 보이는 비율 그대로 계산하려고 x축에만 이 배율을 곱려 픽셀로 바꾼다.
+  const PATH_SCALE_X = 220 / 200;
+
+  // 지나온 칸(0..pos-1 → pos)마다 발자국을 두 개씩 남긴다. 걸어온 방향으로
+  // 발끝이 향하도록 그 칸의 기울기만큼 돌리고, 좌우 발처럼 번갈아 살짝 벗어난다.
+  function footprintsHtml(NX, NY, pos) {
+    if (pos <= 0) return '';
+    let out = '', n = 0;
+    for (let i = 0; i < pos; i++) {
+      const x0 = NX[i], y0 = NY[i], x1 = NX[i + 1], y1 = NY[i + 1];
+      const pdx = (x1 - x0) * PATH_SCALE_X, pdy = y1 - y0;
+      const len = Math.hypot(pdx, pdy) || 1;
+      const angle = Math.atan2(pdy, pdx) * 180 / Math.PI;
+      const nx = -pdy / len, ny = pdx / len;   // 진행 방향에 수직인 단위벡터(화면 px 기준)
+      for (let s = 1; s <= 2; s++, n++) {
+        const t = s / 3;
+        const x = x0 + (x1 - x0) * t;
+        const y = y0 + (y1 - y0) * t;
+        const off = 7 * (n % 2 === 0 ? 1 : -1);
+        const fx = x + (nx * off) / PATH_SCALE_X;
+        const fy = y + ny * off;
+        out += `<span class="quest-footprint" style="left:${(fx / 2).toFixed(2)}%; top:${fy.toFixed(1)}px; transform: translate(-50%, -50%) rotate(${angle.toFixed(1)}deg);"></span>`;
+      }
+    }
+    return out;
+  }
 
   function roadmapHtml(goalId, state) {
     const info = QUEST_GOALS.find(g => g.id === goalId);
@@ -60,7 +90,7 @@
     const level = levelOf(progress);
     const pos = posInLevel(progress);
     const NX = Array.from({ length: PER_LEVEL }, (_, i) => NODE_X[i % NODE_X.length]);
-    const NY = Array.from({ length: PER_LEVEL }, (_, i) => 40 + i * NODE_GAP);
+    const NY = Array.from({ length: PER_LEVEL }, (_, i) => 36 + i * NODE_GAP);
     const pathD = NX.map((x, i) => i === 0 ? `M${x},${NY[i]}` : `Q${(NX[i - 1] + x) / 2},${(NY[i - 1] + NY[i]) / 2} ${x},${NY[i]}`).join(' ');
     const nodes = NX.map((x, i) => {
       let cls = 'quest-node--upcoming';
@@ -79,18 +109,21 @@
           <span class="quest-roadmap__tier">${allDone ? '전부 완료' : tierOf(progress)}</span>
           <button type="button" class="quest-roadmap__remove" data-remove-goal="${goalId}" aria-label="${esc(info.ko)} 그만하기" title="그만하기">✕</button>
         </div>
-        <p class="quest-roadmap__count">${allDone ? `${TOTAL} / ${TOTAL}` : `${progress % PER_LEVEL} / ${PER_LEVEL}`} <span>· 전체 ${Math.min(progress, TOTAL)} / ${TOTAL}</span></p>
-        <div class="quest-path" style="height:${PATH_H}px">
-          <svg class="quest-path__line" viewBox="0 0 200 ${PATH_H}" preserveAspectRatio="none" aria-hidden="true">
-            <path d="${pathD}" fill="none" stroke="#cbd6e5" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 14"/>
-          </svg>
-          ${nodes}
-        </div>
         <div class="quest-roadmap__current">
           ${allDone
             ? `<p class="quest-roadmap__quest">🏆 ${esc(info.ko)} 퀘스트 ${TOTAL}개를 모두 깼어요!</p>`
             : `<p class="quest-roadmap__quest">${esc(current)}</p>
                <button type="button" class="quest-complete" data-complete-goal="${goalId}">완료하기</button>`}
+        </div>
+        <p class="quest-roadmap__count">${allDone ? `${TOTAL} / ${TOTAL}` : `${progress % PER_LEVEL} / ${PER_LEVEL}`} <span>· 전체 ${Math.min(progress, TOTAL)} / ${TOTAL}</span></p>
+        <div class="quest-path-view" style="max-height:${PATH_VIEW_H}px" data-path-view>
+          <div class="quest-path" style="height:${PATH_H}px">
+            <svg class="quest-path__line" viewBox="0 0 200 ${PATH_H}" preserveAspectRatio="none" aria-hidden="true">
+              <path d="${pathD}" fill="none" stroke="#cbd6e5" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 14"/>
+            </svg>
+            ${footprintsHtml(NX, NY, pos)}
+            ${nodes}
+          </div>
         </div>
       </section>`;
   }
@@ -101,13 +134,18 @@
     const available = QUEST_GOALS.filter(g => !state.goals.includes(g.id));
 
     root.innerHTML = `
-      <div class="quest-head">
-        <p class="quest-lede">완료할 때마다 다음 칸이 열려요. 날짜는 상관없어요 — 내 속도대로 해요.</p>
-        <span class="quest-total"><b>${total}</b> 완료</span>
+      <div class="quest-page-head">
+        <h2 class="quest-page-title brand-head" data-wordmark="">Quest !</h2>
+        <p class="quest-page-desc">현지 적응에 도움이 되는 작은 도전들을 하나씩 깨보세요.</p>
       </div>
 
+      ${!available.length ? `<div class="quest-head"><span class="quest-total"><b>${total}</b> 완료</span></div>` : ''}
+
       ${available.length ? `
-        <h2 class="quest-section quest-section--first">${state.goals.length ? '목표 추가하기' : '목표 고르기'}</h2>
+        <div class="quest-section-row quest-section-row--first">
+          <h2 class="quest-section quest-section--first">${state.goals.length ? '목표 추가하기' : '목표 고르기'}</h2>
+          <span class="quest-total"><b>${total}</b> 완료</span>
+        </div>
         <div class="quest-goal-grid">
           ${available.map(g => `<button type="button" class="quest-goal-card" data-add-goal="${g.id}"><span class="quest-goal-card__icon" aria-hidden="true">${g.icon}</span><span>${esc(g.ko)}</span></button>`).join('')}
         </div>` : ''}
@@ -116,6 +154,15 @@
         ? state.goals.map(g => roadmapHtml(g, state)).join('')
         : `<div class="quest-empty"><p class="quest-empty__title">아직 시작한 목표가 없어요</p><p class="quest-empty__desc">위에서 하나 골라 첫 퀘스트를 시작해 보세요.</p></div>`}
     `;
+
+    if (typeof paintWordmarkText === 'function') paintWordmarkText(root);
+
+    // 열었을 때 지금 할 일이 바로 보이도록, 각 로드맵 안에서만 현재 위치로 스크롤한다
+    // (페이지 전체가 아니라 이 작은 창 안에서만 — scrollIntoView 는 조상까지 끌고 간다)
+    root.querySelectorAll('[data-path-view]').forEach(view => {
+      const current = view.querySelector('.quest-node--current');
+      if (current) view.scrollTop = Math.max(0, current.offsetTop - view.clientHeight / 2 + current.offsetHeight / 2);
+    });
 
     root.querySelectorAll('[data-add-goal]').forEach(btn => btn.addEventListener('click', () => {
       const s = load();

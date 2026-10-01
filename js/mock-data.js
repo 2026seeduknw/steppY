@@ -51,31 +51,45 @@ MOCK.schools = [];
 MOCK.visaRequirements = {};
 
 /* ---------------------------------------------------------------------
- * 비자·서류 체크리스트 (F4) — Supabase checklist_items 테이블(school_id 없이
- * 공통 항목)에서 채워지지만, 아직 실제로 채워 넣은 원본 자료가 없어 테이블이
- * 비어 있다. 학교마다 다른 실제 서류 요건 데이터가 아니라 일반적인 교환학생
- * 출국 준비 흐름을 보여주는 데모 콘텐츠 — Supabase에는 넣지 않고 여기 로컬
- * mock으로만 유지한다(진짜 서류 요건인 것처럼 보이면 안 되므로).
+ * 비자·서류 체크리스트 (F4) — 학교와 무관하게 누구에게나 같은 준비 항목.
+ * 문구는 아래 sources의 공식 안내에 있는 내용만 옮겼다(2026-10 확인).
+ * 마감(D-day)은 근거가 없어 두지 않는다 — 처리 기간은 문구에 적고, 언제
+ * 시작할지는 학생이 출국일에 맞춰 정한다.
+ *
+ * dynamicSource가 있는 항목은 출처를 확정 학교 기준으로 화면에서 붙인다
+ * (js/components/prepare-view.js):
+ *   'visa'      파견국 주한 대사관·이민 당국 (visa_requirements, exchange-doc-crawler)
+ *   'insurance' 국가별 보험 조사 자료 (country_prep)
+ *   'school'    파견교 공식 사이트·OIA 학교 정보 (schools)
+ * Supabase checklist_items 테이블은 비어 있어 이 목록이 쓰인다.
  * ------------------------------------------------------------------- */
 MOCK.checklist = [
-  { id: 'passport', title: '여권 유효기간 확인', done: false, dueOffset: 'D-90',
-    detail: '출국일 기준으로 6개월 이상 유효기간이 남아있어야 해요. 얼마 안 남았다면 지금 바로 재발급을 신청하세요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' },
-  { id: 'visa', title: '학생비자 신청', done: false, dueOffset: 'D-75',
-    detail: '파견 국가 영사관/대사관에 학생비자를 신청하세요. 국가별로 필요 서류와 처리 기간이 크게 다르니 학교 위치 확정 직후 바로 시작하는 게 안전해요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' },
-  { id: 'transcript', title: '재학·성적증명서 발급', done: false, dueOffset: 'D-60',
-    detail: '학교 포털에서 영문 재학증명서와 성적증명서를 발급받아 파견교 제출용으로 준비하세요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' },
-  { id: 'insurance', title: '해외여행자보험 가입', done: false, dueOffset: 'D-45',
-    detail: '파견 기간 전체를 커버하는 보험에 가입하세요. 파견교가 자체 보험(SHIP 등)을 요구하기도 하니 F4의 생활 준비 카드도 함께 확인하세요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' },
-  { id: 'flight', title: '항공권 예약', done: false, dueOffset: 'D-30',
-    detail: '오리엔테이션·기숙사 입주 일정에 맞춰 출국편을 예약하세요. 귀국편은 학기 종료일 확정 후 예약해도 늦지 않아요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' },
-  { id: 'housing', title: '기숙사·숙소 신청', done: false, dueOffset: 'D-21',
-    detail: '파견교 housing 포털에서 기숙사를 신청하거나, 직접 숙소를 구한다면 계약서를 미리 확인하세요.',
-    source: 'steppY 가이드', updatedAt: '2026-01-01' }
+  { id: 'passport', title: '여권 유효기간 확인', done: false,
+    detail: '입국할 때 요구하는 여권 잔여 유효기간은 나라마다 다르지만, 대체로 최종 여행일 기준 3~6개월이에요. 재발급은 정부24에서 온라인으로도 신청할 수 있고, 처리 기간은 근무일 기준 통상 8일이에요(성수기에는 늦어질 수 있어요).',
+    sources: [
+      { label: '외교부 여권안내', url: 'https://www.passport.go.kr/home/kor/contents.do?menuPos=7' },
+      { label: '정부24 여권 발급', url: 'https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001' },
+      { label: '주스페인 대사관 · 여권 잔여 유효기간 안내', url: 'https://esp.mofa.go.kr/es-ko/brd/m_8086/view.do?seq=1327825' }
+    ],
+    checkedAt: '2026-10' },
+  { id: 'visa', title: '학생비자 신청', done: false,
+    detail: '파견 국가의 주한 대사관·이민 당국 안내에 따라 학생비자를 신청해요. 필요한 서류와 처리 기간은 나라마다 달라요.',
+    dynamicSource: 'visa' },
+  { id: 'transcript', title: '재학·성적증명서 발급', done: false,
+    detail: '국문·영문 재학증명서와 성적증명서를 발급받을 수 있어요. 학사포탈에 로그인해 인터넷으로 바로 출력하면 무료이고, 백양누리 무인발급기나 언더우드관 B101호 종합서비스센터 창구(평일 9:00~17:20)에서도 받을 수 있어요(재학생 500원). 우편 발송도 되고, 해외는 EMS로 미국 기준 보통 3~5일 걸려요.',
+    sources: [
+      { label: '연세대 인터넷 증명 발급', url: 'https://www.yonsei.ac.kr/sc/405/subview.do' },
+      { label: '연세대 FAQ · 증명서', url: 'https://www.yonsei.ac.kr/sc/302/subview.do' }
+    ],
+    checkedAt: '2026-10' },
+  { id: 'insurance', title: '해외여행자보험 가입', done: false,
+    detail: '파견 국가와 파견교가 요구하는 보험 조건을 확인하고 가입해요. 국가별 보험 정보는 아래 "생활 준비 — 준비물"의 보험 카드에 있어요.',
+    dynamicSource: 'insurance' },
+  { id: 'flight', title: '항공권 예약', done: false,
+    detail: '파견교 오리엔테이션과 기숙사 입주 일정을 확인한 뒤 출국편을 예약해요.' },
+  { id: 'housing', title: '기숙사·숙소 신청', done: false,
+    detail: '기숙사 보장 여부와 신청 방법은 학교마다 달라요. 파견교 공식 사이트와 OIA 학교 정보에서 확인하세요.',
+    dynamicSource: 'school' }
 ];
 
 /* ---------------------------------------------------------------------
@@ -111,6 +125,24 @@ MOCK.schoolReviews = {};
  * submitAnswer가 이 배열에 직접 끼워 넣는다(js/state.js).
  * ------------------------------------------------------------------- */
 MOCK.mentorQuestions = [];
+
+/* ---------------------------------------------------------------------
+ * BM 가격표 — Supabase credit_packages/premium_plans 테이블(supabase/premium.sql)
+ * 에서 채워짐. 마이그레이션 전(또는 네트워크 실패)에는 이 자리표시자 가격이
+ * 그대로 보인다 — DB 값과 동일하게 맞춰뒀다. 실제 금액은 PG 연동 시점에
+ * DB 쪽만 바꾸면 된다(여기 값은 화면이 잠깐이라도 비어 보이지 않게 하는 fallback).
+ * ------------------------------------------------------------------- */
+// credits는 보너스를 포함한 총 지급량, bonus는 그중 덤으로 얹은 양(화면 표시용)
+MOCK.creditPackages = [
+  { id: 'credit_100',  credits: 100,  bonus: 0,   priceKrw: 1100,  label: '100 크레딧' },
+  { id: 'credit_330',  credits: 330,  bonus: 30,  priceKrw: 3300,  label: '330 크레딧' },
+  { id: 'credit_600',  credits: 600,  bonus: 100, priceKrw: 5500,  label: '600 크레딧' },
+  { id: 'credit_1300', credits: 1300, bonus: 300, priceKrw: 11000, label: '1300 크레딧' }
+];
+MOCK.premiumPlans = [
+  { id: 'premium_1m', days: 30,  priceKrw: 4400,  label: '프리미엄 1개월' },
+  { id: 'premium_6m', days: 180, priceKrw: 22000, label: '프리미엄 6개월' }
+];
 
 /* ---------------------------------------------------------------------
  * 학교별 지원 서류 목록 — Supabase school_documents 테이블(999행, 실제

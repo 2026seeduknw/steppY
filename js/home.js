@@ -45,6 +45,21 @@
    * 보기도 전에 폼부터 만나는 순서였다 — 홈을 먼저 보여주고 여기서 부른다.
    * 채워지면 버튼은 스스로 사라진다.
    */
+  /** 인사 오른쪽 — 내 크레딧과 요금제. 누르면 결제창(js/components/paywall.js). */
+  function renderWallet() {
+    const btn = document.getElementById('homeWallet');
+    if (!btn) return;
+    btn.hidden = !AppState.isAuthed;
+    if (btn.hidden) return;
+    document.getElementById('homeWalletCredits').textContent = AppState.getCredits().toLocaleString('ko-KR');
+    const premium = AppState.isPremium();
+    btn.classList.toggle('is-premium', premium);
+    document.getElementById('homeWalletPlan').textContent = premium ? '프리미엄' : '일반';
+  }
+  const walletBtn = document.getElementById('homeWallet');
+  if (walletBtn) walletBtn.addEventListener('click', () => openPaywall({ reason: 'menu' }));
+  document.addEventListener('credits:changed', renderWallet);
+
   function renderProfileCta() {
     const cta = document.getElementById('profileCta');
     if (!cta) return;
@@ -54,6 +69,7 @@
 
   function renderAll() {
     renderGreeting();
+    renderWallet();
     renderProfileCta();
     // 기본 정보(프로필)는 앱바 계정 시트로 옮겼다 — 홈에서는 보여주지 않는다
     renderTodoCard(document.getElementById('todoCard'));

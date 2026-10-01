@@ -109,6 +109,12 @@ function openAccountSheet() {
         <div class="account-sheet">
           <p class="account-sheet__label">로그인 계정</p>
           <p class="account-sheet__email">${Auth.email || ''}</p>
+          ${typeof openPaywall === 'function' ? `
+          <button type="button" class="account-sheet__wallet" id="accountWalletBtn">
+            <span class="account-sheet__wallet-coin">🪙 <strong>${AppState.getCredits()}</strong></span>
+            <span class="account-sheet__wallet-plan">${AppState.isPremium() ? '프리미엄 이용 중' : '프리미엄 알아보기'}</span>
+            <span aria-hidden="true">›</span>
+          </button>` : ''}
           <section class="card card-pad account-sheet__profile" id="accountProfileCard"></section>
           <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
 
@@ -155,6 +161,8 @@ function openAccountSheet() {
     setTimeout(() => sheet.remove(), 300);
   };
   sheet.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+  const walletBtn = sheet.querySelector('#accountWalletBtn');
+  if (walletBtn) walletBtn.addEventListener('click', () => { close(); openPaywall({ reason: 'menu' }); });
   sheet.querySelector('#signOutBtn').addEventListener('click', async () => {
     await Auth.signOut();
     close();

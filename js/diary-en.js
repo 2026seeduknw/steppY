@@ -6,8 +6,9 @@
  * (MutationObserver). 그래서 원본 한국어 코드는 그대로이고, 유리 테마(?theme=glass)에서는
  * 아무것도 바꾸지 않는다.
  *
- * 바꾸는 것: 화면 이름·라벨·버튼·요일·달 이름·태그 이름·안내 문구.
- * 바꾸지 않는 것: 사용자가 쓴 제목·내용, 도시·나라 이름 같은 데이터, 그리고 기록 쓰기/수정 창(한글 그대로).
+ * 바꾸는 것: 화면 이름·라벨·버튼·요일·달 이름·안내 문구.
+ * 바꾸지 않는 것: 사용자가 쓴 제목·내용, 도시·나라 이름 같은 데이터, 그리고 기록 쓰기/수정
+ *   창(한글 그대로) — 단 그 안의 태그 칩(오늘 뭘 했나요 그리드)만 예외로 영어로 보여준다.
  *   → 글자 전체가 사전의 한국어와 정확히 같을 때만 바꾼다(부분 치환은 아래 패턴에 한정).
  */
 (function () {
@@ -107,8 +108,12 @@
     const scope = root.nodeType === 1 || root.nodeType === 11 ? root : root.parentNode;
     if (!scope) return;
     // 사용자가 쓴 글이 담기는 자리는 건드리지 않는다. .film-en은 이미 바꿔 끼운
-    // 자리라 다시 훑지 않는다(무한 반복 방지 겸 낭비 방지).
-    const skip = (n) => n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
+    // 자리라 다시 훑지 않는다(무한 반복 방지 겸 낭비 방지). 기록 쓰기/수정 창은
+    // 통째로 한글 그대로 두되, 그 안의 태그 칩(#tagGrid)만 예외로 번역한다.
+    const skip = (n) => {
+      if (n.closest && n.closest('#tagGrid')) return false;
+      return n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
+    };
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -135,7 +140,8 @@
     });
     const els = scope.querySelectorAll ? scope.querySelectorAll('[aria-label],[placeholder],[title]') : [];
     els.forEach((el) => {
-      if (el.closest && el.closest('#entryModalScrim')) return;   // 기록 창은 한글 그대로
+      // 태그 칩엔 placeholder가 없어 예외가 필요 없다 — 기록 창은 한글 그대로.
+      if (el.closest && el.closest('#entryModalScrim')) return;
       ATTRS.forEach((a) => {
         const v = el.getAttribute(a);
         if (!v) return;

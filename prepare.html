@@ -23,17 +23,11 @@
 
     <section class="card card-pad" id="todoCard"></section>
 
-    <section class="card card-pad" id="checklistSection">
-      <div class="section-title"><div><h2>비자 및 서류 체크리스트</h2></div></div>
-      <div class="checklist" id="checklistList"></div>
-    </section>
+    <!-- 안쪽(머리줄·열고 닫기·진행 바)은 js/components/prepare-view.js가 그린다 -->
+    <section class="card card-pad prep-card" id="checklistSection"></section>
+    <section class="card card-pad prep-card" id="livingSection"></section>
 
-    <section class="card card-pad" id="livingSection">
-      <div class="section-title"><div><h2>생활 준비 — 준비물</h2></div></div>
-      <div class="living-grid" id="livingGrid"></div>
-    </section>
-
-    <a class="reviews-cta" href="consult.html?mode=reviews">
+    <a class="reviews-cta" href="consult.html">
       <div class="reviews-cta__body">
         <span class="reviews-cta__eyebrow">선배 후기</span>
         <h2>파견 국가별 후기 보기</h2>
@@ -62,6 +56,7 @@
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
+<script src="js/components/paywall.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>

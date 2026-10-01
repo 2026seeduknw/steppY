@@ -96,3 +96,21 @@ body[data-page="home"] #greeting {
 
 /* ---- 여정 단계 ---- */
 .journey-bar { padding-bottom: var(--space-4); }
+
+/* 인사 한 줄 + 오른쪽 내 크레딧·요금제 (누르면 결제창). 상자 없이 글자만,
+   인사("~님")와 세로 가운데를 맞춘다 — 그래서 h1 의 위아래 여백을 줄 쪽으로 옮긴다. */
+.home-hero__row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-1);
+}
+.home-hero__row #greeting { min-width: 0; margin: 0; }
+.home-wallet {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 0 4px 6px; border: 0; background: none;
+  font: inherit; cursor: pointer; white-space: nowrap;
+}
+.home-wallet[hidden] { display: none; }
+.home-wallet__coin { font-size: var(--fs-body); color: var(--ink-900); }
+.home-wallet__coin strong { font-family: var(--font-mono); font-weight: 800; }
+.home-wallet__plan { font-size: var(--fs-small); font-weight: 700; color: var(--ink-400); }
+.home-wallet.is-premium .home-wallet__plan { color: var(--key-ink); }

@@ -2,19 +2,14 @@
    Mentor's Step — 공개 질문·답변 게시판
    ========================================================================== */
 
-/* 국가별 후기(예전 reviews.html)가 사실 Mentor's Step의 다른 면일 뿐이라 —
-   따로 탭을 두지 않고 이 페이지 안에서 세그먼티드 토글로 오간다.
-   (credits.css의 .mode-toggle과 같은 모양 — 이 페이지는 credits.css를
-   불러오지 않아 그 기본 규칙을 여기 복제한다. 폭 100% 오버라이드는
-   app.css의 전역 .mode-toggle 규칙을 그대로 물려받는다.) */
-.mentor-mode-shell { padding-top: 0; }
-.mode-toggle { display: inline-flex; gap: 4px; background: var(--sky-50); padding: 4px; border-radius: var(--radius-pill); margin-bottom: var(--space-4); }
-.mode-toggle__btn {
-  border: none; background: transparent; cursor: pointer;
-  padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill);
-  font-size: var(--fs-small); font-weight: 600; color: var(--ink-600);
+/* .app-sheet__body(css/app.css)는 좌우 패딩이 0이다 — 필터 시트처럼 안에서
+   패딩을 직접 관리하는 화면도 있어서다. 여기 시트들(질문하기/질문 상세/
+   국가 선택)은 내용을 직접 넣기만 해서 화면 가장자리에 글자가 붙어 있었다
+   — 헤더(.app-sheet__head)와 같은 var(--space-5)로 맞춘다. */
+.app-sheet--mentor .app-sheet__body,
+.app-sheet--mentor-picker .app-sheet__body {
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
-.mode-toggle__btn.is-active { background: #fff; color: var(--sky-700); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
 .mentor-layout {
   display: flex;
@@ -24,28 +19,52 @@
   margin: 0 auto;
   padding: var(--space-5) 0 var(--space-9);
 }
-/* .mentor-layout가 display:flex를 못박아 두면 [hidden] 속성 기본 스타일보다
-   이 클래스 규칙의 우선순위가 높아 hidden="" 을 줘도 계속 보인다 — 토글로
-   두 패널(#mentorQaPanel/#reviewsMount)을 감출 때 이 규칙이 이긴다. */
-#mentorQaPanel[hidden], #reviewsMount[hidden] { display: none; }
 
 /* ---- 상단 툴바: 크레딧 + 질문하기 ---- */
 .mentor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+/* 이 버튼만 기본 .btn(44px)을 그대로 쓰면 칩·본문 글자에 비해 혼자 커 보인다 */
+.mentor-toolbar .btn { height: 36px; padding: 0 var(--space-4); font-size: var(--fs-small); }
 .mentor-credit {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px var(--space-3);
+  padding: 7px var(--space-3);
+  border: none;
   border-radius: var(--radius-pill);
   background: var(--sky-50);
   color: var(--ink-900);
+  font: inherit;
   font-size: var(--fs-small);
+  cursor: pointer;
 }
-.mentor-credit strong { font-family: var(--font-mono); font-size: 1rem; }
+.mentor-credit strong { font-family: var(--font-mono); font-size: 0.9rem; }
 .mentor-credit[hidden] { display: none; }
 
-/* ---- 필터: 즐겨찾기만. 국가는 더 이상 홈에서 거르지 않는다(질문마다
-   옆에 국가·학교를 라벨로 보여줄 뿐) — 국가는 "질문하기"에서 카드로 고른다. */
-.mentor-filters { display: flex; align-items: center; }
-.mentor-filters .toggle-row { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
+/* ---- 필터: 국가 칩 한 줄(위, 가로 스크롤) + 즐겨찾기만(아래) ----
+   대륙→국가로 파고드는 별도 화면 대신, 학점 인정(js/credits.js)과 같은
+   가로 스크롤 칩으로 목록 위에 항상 떠 있게 한다 — 눌러 바로 그 자리에서
+   거를 수 있어야 "필터"답다. 이 페이지는 credits.css를 불러오지 않아
+   .country-filter 기본 규칙을 여기 복제한다. */
+.mentor-filters { display: flex; flex-direction: column; gap: var(--space-2); }
+.country-filter {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.country-filter::-webkit-scrollbar { display: none; }
+.country-filter .chip { flex: 0 0 auto; padding-left: var(--space-3); padding-right: var(--space-3); }
+/* 별표한 국가 — 맨 앞 대륙 줄에서 바로 고르는 칩 */
+.chip--fav .chip__star { color: var(--coral-500); margin-right: 3px; }
+/* 대륙 안 국가 칩: 알약 하나에 [국가 고르기][☆] 두 버튼 */
+.country-filter .country-chip { display: inline-flex; align-items: center; padding: 0; gap: 0; }
+.country-chip__pick, .country-chip__star {
+  border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+  align-self: stretch; display: flex; align-items: center;
+}
+.country-chip__pick { padding: 0 6px 0 var(--space-3); }
+.country-chip__star { padding: 0 var(--space-2) 0 4px; color: var(--ink-400); font-size: 0.95em; }
+.country-chip__star.is-on { color: var(--coral-500); }
+.mentor-filters .toggle-row { flex: 0 0 auto; align-self: flex-start; display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
 
 /* ---- 목록: 카드가 아니라 네이버 카페 같은 게시판 줄글 ----
    글이 많아지는 화면이라 카드 한 장에 24px 안팎씩 쓰는 여백을 감당하기
@@ -68,7 +87,7 @@
 .mentor-row__tag { flex: 0 0 auto; font-size: var(--fs-small); font-weight: 700; color: var(--sky-700); }
 .mentor-row__title {
   flex: 1 1 auto; min-width: 0;
-  font-size: var(--fs-body); color: var(--ink-900);
+  font-size: var(--fs-small); color: var(--ink-900);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mentor-row__count { flex: 0 0 auto; font-size: var(--fs-small); font-weight: 700; font-family: var(--font-mono); color: var(--coral-500); }
@@ -152,14 +171,57 @@
   color: var(--sky-700); cursor: pointer;
 }
 
-/* ---- 질문 상세 ---- */
+/* ---- 질문 상세 — 시트도 모달도 아니라 뷰포트 전체를 덮는 새 창처럼 뜬다.
+   모달(.modal-panel, 94vh)은 위쪽에 뒷화면이 살짝 비치고 "아래서 올라오는
+   패널" 느낌이 남아서, 아예 화면 전체(position:fixed; inset:0)를 덮는
+   별도 레이어로 바꿨다 — 오른쪽에서 밀고 들어와 진짜 화면 전환처럼 보인다.
+   상태 바/홈 인디케이터는 안전영역(--safe-top/--safe-bottom)으로 피한다. */
+.mentor-page {
+  position: fixed; inset: 0; z-index: 105;
+  background: var(--cloud-0);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.mentor-page.is-open { transform: translateX(0); }
+.mentor-page__head {
+  flex: 0 0 auto;
+  display: flex; align-items: center;
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--line-100);
+}
+.mentor-page__back {
+  display: inline-flex; align-items: center;
+  background: none; border: none;
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  font-size: var(--fs-small); font-weight: 700; color: var(--ink-900);
+  cursor: pointer;
+}
+.mentor-page__body {
+  flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: var(--space-4) var(--space-5) calc(var(--safe-bottom) + var(--space-6));
+}
+
+/* 국가는 국기 하나만(동그란 판 위, 다른 아이콘 자리와 같은 규칙), 학교는
+   그 옆에 별개 칩으로 — 예전엔 "국가 · 학교"를 한 배지에 텍스트로 붙여
+   썼는데, 국기가 이름보다 한눈에 더 빨리 읽힌다. */
+.mentor-detail__tags { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.mentor-detail__flag {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--sky-50);
+  font-size: 1rem; line-height: 1;
+}
+.mentor-detail__school { color: var(--ink-700); }
+
 .mentor-detail { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
 .mentor-detail .badge { align-self: flex-start; }
-.mentor-detail__title { font-size: var(--fs-h2); font-weight: 800; word-break: keep-all; }
-.mentor-detail__body { font-size: var(--fs-body); line-height: 1.65; color: var(--ink-900); white-space: pre-wrap; word-break: keep-all; }
+.mentor-detail__title { font-size: 1.05rem; font-weight: 800; word-break: keep-all; }
+.mentor-detail__body { font-size: var(--fs-small); line-height: 1.65; color: var(--ink-900); white-space: pre-wrap; word-break: keep-all; }
 .mentor-detail__meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--ink-400); }
 
-.mentor-section-title { font-size: var(--fs-h3); font-weight: 700; margin-bottom: var(--space-3); }
+.mentor-section-title { font-size: var(--fs-small); font-weight: 700; margin-bottom: var(--space-3); }
 
 .mentor-related { margin-bottom: var(--space-5); }
 

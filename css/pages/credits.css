@@ -43,13 +43,28 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   word-break: keep-all;
   margin-bottom: 6px;
 }
-.match-card__school { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.match-card__school-logo { width: 18px; height: 18px; object-fit: contain; border-radius: 3px; flex: 0 0 auto; }
+.match-card__school { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; width: fit-content; border-radius: var(--radius-sm); }
+/* 학교 상세는 이제 이 줄(로고+이름)만 눌러야 열린다 — 카드 전체를 누르면 주제
+   칩을 누르려다 학교가 열리는 일이 잦았다. */
+.match-card__school--clickable { cursor: pointer; }
+.match-card__school--clickable:hover .match-card__school-name { text-decoration: underline; }
+.match-card__school--clickable:active { opacity: 0.7; }
+/* 로고 원본 비율이 정사각(문장)만이 아니라 UC 캠퍼스들처럼 가로로 긴 워드마크도
+   있다 — 18x18 정사각으로 강제하면 가로 12:1 워드마크가 세로 1~2px로 짜부라져
+   안 보이다시피 했다. height만 고정하고 width는 비율대로 늘어나게 하되 너무
+   길어지지 않게 max-width로 막는다. */
+.match-card__school-logo { height: 20px; width: auto; max-width: 64px; object-fit: contain; border-radius: 3px; flex: 0 0 auto; }
 .match-card__school-name { font-size: var(--fs-small); font-weight: 500; color: var(--ink-600); }
 
 
 .match-card__topics { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--space-3) 0; }
 .match-card__note { font-size: var(--fs-small); color: var(--ink-600); background: var(--sky-50); padding: var(--space-3); border-radius: var(--radius-sm); }
+/* course_matches.note는 학점 환산 방식까지 설명하는 완성된 문장이라 길다 — 긴 것만
+   두 줄로 접어 카드가 늘어지지 않게 한다(js/credits.js noteBlock). */
+.match-card__note.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.match-card__note-toggle { margin-top: 6px; border: none; background: none; padding: 0; font-size: var(--fs-micro); font-weight: 700; color: var(--sky-700); cursor: pointer; }
+/* 과목 카드의 주제 칩에서 건너뛰어 온 전공 매칭 카드를 잠깐 표시해준다(js/credits.js jumpToMajorMatch) */
+.match-card.is-jumped { outline: 2px solid var(--sky-500); outline-offset: 2px; transition: outline-color 1.4s var(--ease-out); }
 
 .summary-banner {
   display: flex; align-items: center; justify-content: space-between;
@@ -75,7 +90,11 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   margin-bottom: var(--space-3);
 }
 .country-filter::-webkit-scrollbar { display: none; }
-.country-filter .chip { flex: 0 0 auto; }
+.country-filter .chip { flex: 0 0 auto; padding-left: var(--space-3); padding-right: var(--space-3); }
+/* 대륙을 고르면 그 밑에 뜨는 국가 상세 줄 — 대륙 칩보다 한 단 작고, 살짝 눌러서
+   "그 대륙에 속한 목록"이라는 걸 보여준다. */
+.country-filter--sub { margin-top: -4px; margin-bottom: var(--space-3); padding-left: 2px; }
+.country-filter--sub .chip { border-color: var(--line-100); }
 
 .match-card__country {
   display: inline-flex;
@@ -104,9 +123,52 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-size: var(--fs-micro);
   color: var(--ink-600);
 }
-.relevance-filter .chip { height: 28px; padding: 0 var(--space-3); font-size: var(--fs-micro); }
+.relevance-filter .chip { min-height: 28px; padding: 5px var(--space-3); font-size: var(--fs-micro); }
 .relevance-filter .chip[disabled] {
   opacity: 0.4;
   cursor: default;
   pointer-events: none;
 }
+
+/* ---- 전공 미선택 안내 팝업 (js/credits.js showMajorNeededPopup) ----
+   앱의 모달은 전부 app.css에서 화면 아래에 꽉 차게 붙는 시트로 통일돼 있는데
+   (.modal-scrim{align-items:flex-end}, .modal-panel{width:100%;height:94vh;
+   transform:translateY(100%)}), 이 안내는 그 흐름을 끊고 가운데 작게 떠야 한다.
+   .modal-panel 단독 클래스와 같은 우선순위라 app.css(더 뒤에 로드)에 늘 진다 —
+   #id + 클래스 두 개로 명시도를 올려서 이긴다. */
+#majorNeededScrim { align-items: center; }
+#majorNeededScrim .modal-panel.major-needed-popup {
+  width: min(320px, 84vw);
+  max-width: min(320px, 84vw);
+  height: auto;
+  max-height: 80vh;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  text-align: center;
+  transform: translateY(16px) scale(0.98);
+}
+#majorNeededScrim.is-open .modal-panel.major-needed-popup { transform: translateY(0) scale(1); }
+.major-needed-popup__text {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink-900);
+  margin-bottom: var(--space-4);
+}
+.major-needed-popup__login {
+  display: inline-block;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--sky-700);
+}
+
+/* 처음 3개 다음에 붙는 잠금 줄 — 카드와 같은 폭, 점선으로 "더 있다"를 보여준다 */
+.match-lock {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-3); margin-top: var(--space-2);
+  border: 1.5px dashed var(--line-200); border-radius: var(--radius-lg);
+  background: var(--cloud-50);
+}
+.match-lock__text { margin: 0; font-size: var(--fs-small); color: var(--ink-700); }
+.match-lock__text b { color: var(--ink-900); }
+.match-lock__btn { flex: none; white-space: nowrap; text-decoration: none; }

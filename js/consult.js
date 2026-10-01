@@ -17,12 +17,13 @@
 (function () {
   AppState.load();
 
-  const ASK_COST = 10;
-  const ANSWER_REWARD = 10;
+  const ASK_COST = BM.ASK_COST;
+  const ANSWER_REWARD = BM.ANSWER_REWARD;
 
-  const state = { onlyFavorite: false };
+  const state = { region: null, country: '', onlyFavorite: false };
 
   const listEl = document.getElementById('mentorList');
+  const countryFilterMount = document.getElementById('mentorCountryFilter');
   const favToggle = document.getElementById('mentorFavToggle');
   const creditWrap = document.getElementById('mentorCredit');
   const creditNum = document.getElementById('mentorCreditNum');
@@ -84,11 +85,90 @@
     creditNum.textContent = AppState.getCredits();
   }
 
-  // 홈에서는 국가 상관없이 모든 질문을 보여준다 — 국가/학교는 각 줄 옆에
-  // 라벨로만 보여주고, 필터로 거르지 않는다. 국가는 질문을 "올릴 때"만
-  // (카드로) 고른다.
+  /**
+   * 국가 필터 — 목록 위 칩 한 줄, 가로 스크롤. 예전 국가별 후기(js/reviews.js)와
+   * 같은 순서로 고른다: 먼저 대륙 칩, 그중 하나를 누르면 그 대륙의 국가 칩으로
+   * 바뀐다("← 대륙" 칩으로 되돌아갈 수 있다) — 32개국을 한 줄에 다 늘어놓지
+   * 않고 먼저 좁힌 뒤 고르게 한다. 실제로 목록을 거르는 건 국가를 골랐을 때뿐이고,
+   * 대륙은 그 목록을 좁히는 중간 단계일 뿐이다(눌러도 아래 글은 안 걸러짐).
+   */
+  function renderCountryFilter() {
+    if (!countryFilterMount) return;
+    const regions = buildCountryRegions();
+
+    // 별표한 국가는 대륙을 거치지 않고 맨 앞에서 바로 고른다
+    const allCountries = regions.flatMap(r => r.countries);
+    const favs = AppState.getFavoriteCountries()
+      .map(name => allCountries.find(c => c.country === name))
+      .filter(Boolean);
+
+    if (!state.region) {
+      countryFilterMount.innerHTML = `
+        <button type="button" class="chip${state.country === '' ? ' is-selected' : ''}" data-region="">전체</button>
+        ${favs.map(c => `
+          <button type="button" class="chip chip--fav${state.country === c.country ? ' is-selected' : ''}" data-country="${escapeHtml(c.country)}">
+            <span class="chip__star" aria-hidden="true">★</span>${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
+          </button>`).join('')}
+        ${regions.map(r => `
+          <button type="button" class="chip" data-region="${r.region}">${REGION_ICON[r.region] || '🌐'} ${REGION_LABEL_EN[r.region] || r.region}</button>
+        `).join('')}`;
+    } else {
+      const region = regions.find(r => r.region === state.region);
+      // 국가 칩마다 오른쪽에 별 — 한 알약 안에 "고르기"와 "별표" 버튼 두 개를 나란히 둔다
+      countryFilterMount.innerHTML = `
+        <button type="button" class="chip" data-region-back>← ${REGION_LABEL_EN[state.region] || state.region}</button>
+        ${(region ? region.countries : []).map(c => {
+          const fav = AppState.isCountryFavorite(c.country);
+          return `
+          <span class="chip country-chip${state.country === c.country ? ' is-selected' : ''}">
+            <button type="button" class="country-chip__pick" data-country="${escapeHtml(c.country)}">
+              ${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
+            </button>
+            <button type="button" class="country-chip__star${fav ? ' is-on' : ''}" data-country-fav="${escapeHtml(c.country)}"
+                    aria-pressed="${fav}" aria-label="${escapeHtml(c.country)} 즐겨찾기">${fav ? '★' : '☆'}</button>
+          </span>`;
+        }).join('')}`;
+    }
+
+    countryFilterMount.querySelectorAll('[data-country-fav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+        const on = AppState.toggleCountryFavorite(btn.dataset.countryFav);
+        btn.classList.toggle('is-on', on);
+        btn.textContent = on ? '★' : '☆';
+        btn.setAttribute('aria-pressed', String(on));
+        if (typeof showToast === 'function') showToast(on ? '즐겨찾기한 국가는 맨 앞에서 바로 고를 수 있어요' : '국가 즐겨찾기를 뺐어요');
+      });
+    });
+
+    countryFilterMount.querySelectorAll('[data-region]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.region = btn.dataset.region || null;
+        state.country = '';
+        renderCountryFilter();
+        renderList();
+      });
+    });
+    countryFilterMount.querySelectorAll('[data-region-back]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.region = null;
+        state.country = '';
+        renderCountryFilter();
+        renderList();
+      });
+    });
+    countryFilterMount.querySelectorAll('[data-country]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.country = btn.dataset.country;
+        renderCountryFilter();
+        renderList();
+      });
+    });
+  }
+
   function filteredQuestions() {
     return MOCK.mentorQuestions.filter(q => {
+      if (state.country && q.country !== state.country) return false;
       if (state.onlyFavorite && !AppState.isQuestionFavorite(q.id)) return false;
       return true;
     });
@@ -160,6 +240,8 @@
     renderList();
   });
   askOpenBtn.addEventListener('click', openAskSheet);
+  creditWrap.addEventListener('click', () => openPaywall({ reason: 'menu' }));
+  document.addEventListener('credits:changed', renderCreditBadge);
 
   /* ---------------------------------------------------------- 바텀시트 공통 */
 
@@ -208,7 +290,7 @@
             </label>
             <label class="mentor-form__field">
               <span class="mentor-form__label">내용</span>
-              <textarea name="body" required placeholder="상황을 조금 더 적어주면 답변받기 쉬워요"></textarea>
+              <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
             </label>
             <div class="mentor-form__cost">질문 등록에 <strong>🪙 ${ASK_COST}</strong> 크레딧이 필요해요 · 내 크레딧 <strong id="askBalance">${AppState.getCredits()}</strong></div>
             <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>
@@ -251,7 +333,8 @@
           }
           if (!title || !body) return;
           if (AppState.getCredits() < ASK_COST) {
-            if (typeof showToast === 'function') showToast('크레딧이 부족해요.');
+            // 쓴 글은 그대로 두고 결제창을 위에 겹쳐 연다 — 충전하고 돌아와 바로 등록할 수 있게
+            openPaywall({ reason: 'credits', need: ASK_COST });
             return;
           }
           submitBtn.disabled = true;
@@ -369,105 +452,99 @@
       </div>`;
   }
 
+  /** 학교 국가(한글) 기준으로 국기를 찾는다 — 질문에는 country만 있고
+   *  countryEn은 없어서, 그 나라 학교 아무거나 하나 찾아 countryEn을 빌린다. */
+  function countryFlagFor(countryKo) {
+    const school = MOCK.schools.find(s => s.country === countryKo);
+    return school ? countryFlag(school.countryEn) : '';
+  }
+
+  /**
+   * 질문 상세는 바텀시트도, 모달도 아니라 진짜 새 창(전체 화면)처럼 뜨게 한다 —
+   * 모달(.modal-scrim/.modal-panel)은 94vh라도 위쪽에 뒷화면이 살짝 비치고
+   * 아래서 올라오는 느낌이 남아서, 아예 뷰포트 전체를 덮는 별도 레이어로
+   * 바꿨다. 뒤로가기는 아이콘 하나가 아니라 "← 뒤로" 글자로 분명하게 뒀다.
+   */
   function openQuestionSheet(id) {
     const q = MOCK.mentorQuestions.find(x => x.id === id);
     if (!q) return;
     const sName = q.schoolId ? schoolName(q.schoolId) : null;
-    const tagLabel = sName ? `${q.country} · ${sName}` : q.country;
+    const flag = countryFlagFor(q.country) || '🌍';
     const isOwn = AppState.isAuthed && typeof Auth !== 'undefined' && q.authorId === Auth.userId;
-    const html = `
-      <div class="app-sheet__scrim" data-close></div>
-      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="질문 상세">
-        <div class="app-sheet__grip" data-close></div>
-        <div class="app-sheet__head"><h2>질문</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
-        <div class="app-sheet__body">
-          <div class="mentor-detail">
-            <span class="badge badge--neutral">${escapeHtml(tagLabel)}</span>
-            <h3 class="mentor-detail__title">${escapeHtml(q.title)}</h3>
-            <p class="mentor-detail__body">${escapeHtml(q.body)}</p>
-            <div class="mentor-detail__meta">${timeAgo(q.createdAt)}</div>
+
+    const page = document.createElement('div');
+    page.className = 'mentor-page';
+    page.setAttribute('role', 'dialog');
+    page.setAttribute('aria-modal', 'true');
+    page.setAttribute('aria-label', '질문 상세');
+    page.innerHTML = `
+      <div class="mentor-page__head">
+        <button type="button" class="mentor-page__back" data-page-close>← 뒤로</button>
+      </div>
+      <div class="mentor-page__body">
+        <div class="mentor-detail">
+          <div class="mentor-detail__tags">
+            <span class="mentor-detail__flag" title="${escapeHtml(q.country)}" aria-label="${escapeHtml(q.country)}">${flag}</span>
+            ${sName ? `<span class="chip chip--sm mentor-detail__school">${escapeHtml(sName)}</span>` : ''}
           </div>
-          ${relatedReviewsHtml(q)}
-          <div class="mentor-answers">
-            <h3 class="mentor-section-title">답변 ${q.answers.length}개</h3>
-            <div id="mentorAnswerList">${q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="mentor-answers__empty">아직 답변이 없어요.</p>'}</div>
-          </div>
-          ${isOwn ? '' : `
-          <form class="mentor-form mentor-answer-form" id="answerForm">
-            <textarea name="body" required placeholder="아는 만큼 도와주세요"></textarea>
-            <div class="mentor-form__cost">답변을 등록하면 <strong>🪙 +${ANSWER_REWARD}</strong> 크레딧을 받아요</div>
-            <button type="submit" class="btn btn--accent btn--block" id="answerSubmitBtn">답변 등록</button>
-          </form>`}
+          <h3 class="mentor-detail__title">${escapeHtml(q.title)}</h3>
+          <p class="mentor-detail__body">${escapeHtml(q.body)}</p>
+          <div class="mentor-detail__meta">${timeAgo(q.createdAt)}</div>
         </div>
+        ${relatedReviewsHtml(q)}
+        <div class="mentor-answers">
+          <h3 class="mentor-section-title">답변 ${q.answers.length}개</h3>
+          <div id="mentorAnswerList">${q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="mentor-answers__empty">아직 답변이 없어요.</p>'}</div>
+        </div>
+        ${isOwn ? '' : `
+        <form class="mentor-form mentor-answer-form" id="answerForm">
+          <textarea name="body" required placeholder="아는 만큼 도와주세요"></textarea>
+          <div class="mentor-form__cost">답변을 등록하면 <strong>🪙 +${ANSWER_REWARD}</strong> 크레딧을 받아요</div>
+          <button type="submit" class="btn btn--accent btn--block" id="answerSubmitBtn">답변 등록</button>
+        </form>`}
       </div>`;
-    openSheet(html, {
-      onOpen: (sheet, close) => {
-        const form = sheet.querySelector('#answerForm');
-        if (!form) return;
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
-          const fd = new FormData(form);
-          const body = (fd.get('body') || '').trim();
-          if (!body) return;
-          const submitBtn = sheet.querySelector('#answerSubmitBtn');
-          submitBtn.disabled = true;
-          submitBtn.textContent = '등록 중…';
-          const res = await AppState.submitAnswer({ questionId: q.id, body });
-          if (!res.ok) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '답변 등록';
-            if (typeof showToast === 'function') showToast('답변을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.');
-            return;
-          }
-          if (typeof trackEvent === 'function') trackEvent('mentor_answer_submitted', { questionId: q.id });
-          close();
-          renderList();
-          if (typeof showToast === 'function') showToast('답변을 등록했어요. 크레딧을 받았어요');
-        });
-      }
-    });
+    document.body.appendChild(page);
+    document.body.classList.add('is-sheet-open');
+    requestAnimationFrame(() => page.classList.add('is-open'));
+
+    const close = () => {
+      page.classList.remove('is-open');
+      document.body.classList.remove('is-sheet-open');
+      setTimeout(() => page.remove(), 300);
+    };
+    page.addEventListener('click', (e) => { if (e.target.closest('[data-page-close]')) close(); });
+
+    const form = page.querySelector('#answerForm');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+        const fd = new FormData(form);
+        const body = (fd.get('body') || '').trim();
+        if (!body) return;
+        const submitBtn = page.querySelector('#answerSubmitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '등록 중…';
+        const res = await AppState.submitAnswer({ questionId: q.id, body });
+        if (!res.ok) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '답변 등록';
+          if (typeof showToast === 'function') showToast('답변을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        if (typeof trackEvent === 'function') trackEvent('mentor_answer_submitted', { questionId: q.id });
+        close();
+        renderList();
+        if (typeof showToast === 'function') showToast('답변을 등록했어요. 크레딧을 받았어요');
+      });
+    }
   }
 
+  renderCountryFilter();
   renderList();
 
   document.addEventListener('MOCK:updated', () => {
+    renderCountryFilter();
     renderList();
   });
-
-  /* --------------------------------------------------- 질문·답변 ↔ 국가별 후기 */
-  /**
-   * 예전엔 국가별 후기(reviews.html)가 따로 탭을 갖고 있었는데, 그 화면도
-   * "Mentor's Step !" 워드마크를 그대로 쓰고 있어서 같은 이름의 탭이 둘로
-   * 보였다. 이제 이 페이지 안의 세그먼티드 토글로 합쳤다 — js/reviews.js는
-   * 그대로 두고(로직 재사용) #reviewsMount만 이 페이지에 옮겨 붙였다.
-   * 홈/준비하기의 "국가별 후기" 카드는 consult.html?mode=reviews로 들어와
-   * 이 토글이 처음부터 후기 쪽을 펴서 보여준다.
-   */
-  const QA_LEDE = "교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요. 질문·답변 모두 이름 없이 올라가요.";
-  const REVIEWS_LEDE = '다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요';
-
-  const modeToggle = document.getElementById('mentorModeToggle');
-  const qaPanel = document.getElementById('mentorQaPanel');
-  const reviewsPanel = document.getElementById('reviewsMount');
-  const ledeEl = document.getElementById('mentorLede');
-
-  function setMode(mode) {
-    const isReviews = mode === 'reviews';
-    qaPanel.hidden = isReviews;
-    reviewsPanel.hidden = !isReviews;
-    ledeEl.textContent = isReviews ? REVIEWS_LEDE : QA_LEDE;
-    modeToggle.querySelectorAll('.mode-toggle__btn').forEach(btn => {
-      btn.classList.toggle('is-active', btn.dataset.mode === mode);
-    });
-  }
-
-  modeToggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-mode]');
-    if (!btn) return;
-    setMode(btn.dataset.mode);
-  });
-
-  const initialMode = new URLSearchParams(location.search).get('mode') === 'reviews' ? 'reviews' : 'qa';
-  setMode(initialMode);
 })();

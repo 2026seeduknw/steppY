@@ -29,6 +29,26 @@
 const STORAGE_KEY = 'steppy_guest_state_v2';
 const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 
+/** 비프리미엄 사용자가 하루에 무료로 올릴 수 있는 사진 수(BM: 나머지는 프리미엄). */
+const FREE_PHOTO_DAILY_LIMIT = 3;
+
+/**
+ * 크레딧 배분(BM 1단계). 서버 RPC(supabase/mentor_step.sql, bm_unlocks.sql)에도 같은
+ * 값이 박혀 있다 — 화면에 보여주는 숫자일 뿐이고 실제 차감은 서버 값이 기준이다.
+ * 여기를 바꾸면 SQL 쪽 상수도 같이 바꿔야 한다.
+ */
+const BM = {
+  ASK_COST: 10,              // 멘토 질문 1건
+  ANSWER_REWARD: 10,         // 답변 등록
+  PHOTO_EXTRA_COST: 5,       // 하루 무료 3장을 넘긴 사진 1장
+  MATCH_FREE: 3,             // 매칭 목록에서 무료로 보이는 개수
+  MATCH_UNLOCK_STEP: 3,      // 한 번 풀 때 더 보이는 개수
+  MATCH_UNLOCK_COST: 10,     // 한 번 푸는 데 드는 크레딧
+  SIGNUP_BONUS: 50,          // 가입 보너스(30일 유효)
+  SIGNUP_BONUS_DAYS: 30,
+  PREMIUM_MONTHLY_CREDITS: 100
+};
+
 /**
  * 로그인하지 않은 방문자의 초기 상태.
  *
@@ -58,7 +78,9 @@ function guestState() {
     // Mentor's Step — 게스트는 크레딧이 없고(질문·답변은 로그인 전용), 질문
     // 즐겨찾기도 계정에 묶인 값이라 이 기기에는 저장할 자리가 없다.
     credits: 0,
-    questionFavorites: []
+    questionFavorites: [],
+    favoriteCountries: [],
+    matchUnlocks: {}
   };
 }
 
@@ -73,6 +95,18 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/**
+ * 학점 표시 — 소수점 아래 첫째 자리는 늘 보이고, 둘째 자리는 있을 때만.
+ *   4 → "4.0"   4.3 → "4.3"   3.62 → "3.62"   3.60 → "3.6"
+ * 정수로 떨어지면 "4"처럼 보여 만점(4.3)과 나란히 놓였을 때 어색했다.
+ * 입력은 그대로 0.01 단위를 받는다 — 표시만 다듬는 것이다.
+ */
+function formatGpa(v) {
+  if (v == null || v === '' || Number.isNaN(Number(v))) return '';
+  const cents = Math.round(Number(v) * 100);   // 1.1*10 같은 부동소수 오차를 피하려고 정수로 본다
+  return (cents % 10 === 0 ? (cents / 100).toFixed(1) : (cents / 100).toFixed(2));
+}
+
 function emptyState(displayName) {
   return {
     profile: {
@@ -85,7 +119,9 @@ function emptyState(displayName) {
       languageTests: [],
       // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다
       exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1 },
-      targetScoreSimUsed: false
+      targetScoreSimUsed: false,
+      // null(또는 지난 시각)이면 비프리미엄. supabase/premium.sql의 profiles.premium_until.
+      premiumUntil: null
     },
     favorites: [],
     wishlist: {},
@@ -97,7 +133,11 @@ function emptyState(displayName) {
     targetScores: null,
     onboardedAt: null,
     credits: 0,
-    questionFavorites: []
+    questionFavorites: [],
+    // Mentor's Step에서 별표한 국가(한글 국가명) — profiles.favorite_countries
+    favoriteCountries: [],
+    // 매칭 목록별로 크레딧을 써서 푼 횟수 { listKey: 횟수 } — supabase/bm_unlocks.sql의 match_unlocks
+    matchUnlocks: {}
   };
 }
 
@@ -151,6 +191,93 @@ const AppState = {
 
   getCredits() { return this.isAuthed ? this.load().credits : 0; },
   isQuestionFavorite(id) { return this.load().questionFavorites.includes(id); },
+  getFavoriteCountries() { return this.isAuthed ? this.load().favoriteCountries : []; },
+  isCountryFavorite(country) { return this.getFavoriteCountries().includes(country); },
+
+  /** 국가 별표 켜기/끄기. 몇 개 안 되는 짧은 목록이라 profiles 한 칸에 배열로 통째로 쓴다. */
+  toggleCountryFavorite(country) {
+    const s = this.load();
+    const list = s.favoriteCountries || (s.favoriteCountries = []);
+    const idx = list.indexOf(country);
+    const added = idx < 0;
+    if (added) list.push(country); else list.splice(idx, 1);
+    const next = list.slice();
+    this._push(() => supabaseClient.from('profiles')
+      .upsert({ id: Auth.userId, favorite_countries: next }), '국가 즐겨찾기');
+    return added;
+  },
+
+  /* --------------------------------------------------------------- BM(프리미엄/크레딧 가격) */
+
+  /** 프리미엄 구독 중인지. premiumUntil이 없거나 이미 지났으면 false. */
+  isPremium() {
+    const until = this.profile.premiumUntil;
+    return !!until && new Date(until).getTime() > Date.now();
+  },
+  /** 크레딧 구매 가격표 — DB(supabase/premium.sql)가 채워지면 그 값, 아니면 mock-data.js의 자리표시자. */
+  getCreditPackages() { return MOCK.creditPackages || []; },
+  getPremiumPlans() { return MOCK.premiumPlans || []; },
+
+  /**
+   * 사진 하루 3장 무료 한도. 크레딧과 달리 돈이 걸린 조작(잔액 위변조)이
+   * 아니라 "그날 몇 장 더 올리느냐"일 뿐이라, 서버 RPC 없이 기기별
+   * localStorage 카운터로 가볍게 막는다. 프리미엄이면 무제한.
+   */
+  freePhotoUploadsLeft() {
+    if (this.isPremium()) return Infinity;
+    return Math.max(0, FREE_PHOTO_DAILY_LIMIT + this._todayExtraPhotos() - this._todayPhotoCount());
+  },
+  recordPhotoUpload() {
+    if (this.isPremium()) return;
+    try { localStorage.setItem(this._photoCountKey(), String(this._todayPhotoCount() + 1)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
+  },
+  _photoCountKey() {
+    const uid = (this.isAuthed && typeof Auth !== 'undefined') ? Auth.userId : 'guest';
+    return `steppy_photo_uploads_${uid}_${todayISO()}`;
+  },
+  _todayPhotoCount() {
+    try { return Number(localStorage.getItem(this._photoCountKey())) || 0; } catch (e) { return 0; }
+  },
+  _todayExtraPhotos() {
+    try { return Number(localStorage.getItem(this._photoCountKey() + '_extra')) || 0; } catch (e) { return 0; }
+  },
+
+  /**
+   * 크레딧으로 오늘 사진 1장을 더 올릴 수 있게 한다. 차감은 서버(spend_photo_credit)가
+   * 잔액을 확인해서 하고, 성공했을 때만 오늘 한도를 1 늘린다 — 한도 자체는 무료 3장과
+   * 같은 기기별 카운터라 돈이 걸린 부분(차감)만 서버에 맡긴다.
+   */
+  async buyExtraPhoto() {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.rpc('spend_photo_credit');
+    if (error) return { ok: false, error };
+    this.load().credits = typeof data === 'number' ? data : this.load().credits - BM.PHOTO_EXTRA_COST;
+    try { localStorage.setItem(this._photoCountKey() + '_extra', String(this._todayExtraPhotos() + 1)); } catch (e) { /* 무시 */ }
+    document.dispatchEvent(new CustomEvent('credits:changed'));
+    return { ok: true };
+  },
+
+  /* ---------------------------------------------- 매칭 목록 잠금(처음 3개 무료) */
+
+  /** 이 목록에서 지금 보여줄 수 있는 개수. 게스트는 늘 무료 개수만. */
+  visibleMatchCount(listKey) {
+    const steps = this.isAuthed ? (this.load().matchUnlocks[listKey] || 0) : 0;
+    return BM.MATCH_FREE + steps * BM.MATCH_UNLOCK_STEP;
+  },
+
+  /** 크레딧을 써서 이 목록을 3개 더 연다. 잔액 확인·차감·기록은 서버가 한 번에 한다. */
+  async unlockMatches(listKey) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.rpc('unlock_match_list', { p_list_key: listKey });
+    if (error) return { ok: false, error };
+    const row = Array.isArray(data) ? data[0] : data;
+    const s = this.load();
+    s.matchUnlocks[listKey] = row ? row.steps : (s.matchUnlocks[listKey] || 0) + 1;
+    if (row && typeof row.balance === 'number') s.credits = row.balance;
+    else s.credits -= BM.MATCH_UNLOCK_COST;
+    document.dispatchEvent(new CustomEvent('credits:changed'));
+    return { ok: true };
+  },
 
   toggleQuestionFavorite(id) {
     const s = this.load();
@@ -183,7 +310,7 @@ const AppState = {
       title: row.title, body: row.body, createdAt: row.created_at, answers: []
     };
     MOCK.mentorQuestions.unshift(question);
-    this.load().credits -= 10;
+    this.load().credits -= BM.ASK_COST;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, question };
@@ -199,7 +326,7 @@ const AppState = {
     const answer = { id: row.id, authorId: row.author_id, body: row.body, createdAt: row.created_at };
     const question = MOCK.mentorQuestions.find(q => q.id === questionId);
     if (question) question.answers.push(answer);
-    this.load().credits += 10;
+    this.load().credits += BM.ANSWER_REWARD;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, answer };
@@ -217,7 +344,11 @@ const AppState = {
     const s = this.load();
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
     const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
-    return base.concat(s.customTodos).sort((a, b) => a.date.localeCompare(b.date));
+    // 기한 없는 할 일(체크리스트에서 옮겨 온 것 등)은 맨 뒤로
+    return base.concat(s.customTodos).sort((a, b) => {
+      if (!a.date || !b.date) return a.date ? -1 : b.date ? 1 : 0;
+      return a.date.localeCompare(b.date);
+    });
   },
 
   /**
@@ -323,14 +454,14 @@ const AppState = {
     const s = this.load();
     // 서버가 uuid를 돌려주기 전까지 쓸 임시 id. 응답이 오면 아래에서 바꿔치기한다.
     const tempId = 'ct' + Date.now();
-    const item = { id: tempId, title, date, tag: tag || '기타', done: false };
+    const item = { id: tempId, title, date: date || null, tag: tag || '기타', done: false };
     s.customTodos.push(item);
     this.save();
 
     if (this.isAuthed) {
       this._push(async () => {
         const res = await supabaseClient.from('user_todos')
-          .insert({ user_id: Auth.userId, title, due_date: date, tag: item.tag, done: false })
+          .insert({ user_id: Auth.userId, title, due_date: item.date, tag: item.tag, done: false })
           .select('id')
           .single();
         // 이후 toggleTodo가 서버 행을 찾을 수 있도록 실제 id로 교체
@@ -558,14 +689,17 @@ const AppState = {
 
     const uid = Auth.userId;
     // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
-    const [prof, favs, wish, todos, journal, credits, qFavs] = await Promise.all([
+    const [prof, favs, wish, todos, journal, credits, qFavs, unlocks, creditTotal] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
       supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at').eq('user_id', uid),
       supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
-      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid)
+      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid),
+      supabaseClient.from('match_unlocks').select('list_key, steps').eq('user_id', uid),
+      // 기한 있는 크레딧(가입 보너스·프리미엄 증정)까지 더한 잔액 — bm_unlocks.sql
+      supabaseClient.rpc('my_credit_total')
     ]);
 
     const next = emptyState(this._displayName());
@@ -579,11 +713,15 @@ const AppState = {
         gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
         languageTests: p.language_tests || [],
         exchangeTerm: p.exchange_term || next.profile.exchangeTerm,
-        targetScoreSimUsed: false
+        targetScoreSimUsed: false,
+        // premium.sql이 아직 적용되지 않았으면 이 컬럼이 없어 p.premium_until은 그냥 undefined다.
+        premiumUntil: p.premium_until || null
       };
       next.confirmedSchoolId = p.confirmed_school_id || null;
       next.targetScores = p.target_scores || null;
       next.onboardedAt = p.onboarded_at || null;
+      // mentor_country_favorites.sql 전이면 컬럼이 없어 undefined → 빈 목록
+      next.favoriteCountries = Array.isArray(p.favorite_countries) ? p.favorite_countries : [];
       // 둘 다 있어야 Day N을 셀 수 있다. 하나만 있으면 없는 것으로 친다.
       next.programRange = (p.program_start && p.program_end)
         ? { start: p.program_start, end: p.program_end }
@@ -593,7 +731,11 @@ const AppState = {
     // mentor_step.sql이 아직 적용되지 않았으면 이 두 조회는 조용히 에러만 나고
     // data는 null이다 — 그대로 기본값(0, [])으로 남아 화면이 깨지지 않는다.
     if (credits.data) next.credits = credits.data.balance;
+    // bm_unlocks.sql 전에는 이 RPC가 없어 에러 → 위의 기한 없는 잔액 그대로 쓴다
+    if (!creditTotal.error && typeof creditTotal.data === 'number') next.credits = creditTotal.data;
     if (qFavs.data) next.questionFavorites = qFavs.data.map(r => r.question_id);
+    // bm_unlocks.sql 전이면 에러만 나고 빈 객체로 남는다 — 목록은 무료 3개만 보인다.
+    if (unlocks.data) unlocks.data.forEach(r => { next.matchUnlocks[r.list_key] = r.steps; });
     if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
     if (todos.data) {
       next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));

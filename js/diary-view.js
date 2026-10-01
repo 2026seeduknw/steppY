@@ -29,6 +29,44 @@
   let lastStreak = null;
   let root = null;
 
+  /**
+   * 태그 칩(EVERYDAY_TAGS, js/report-categories.js) 15개를 그대로 늘어놓으면 카드가
+   * 너무 많아 보여서, 여기서만(UI 표시용) 5개 묶음으로 접었다 편다. 저장되는 값은
+   * 여전히 EVERYDAY_TAGS의 원래 id다 — 묶음은 report-categories.js의 cats(보고서 항목)와
+   * 무관하게 "일상적으로 같이 떠오르는 일" 기준으로 묶었을 뿐, 데이터·보고서 집계
+   * 로직(categoriesOfTags)은 그대로 둔다.
+   */
+  const TAG_GROUPS = [
+    { emoji: '🍽️', ko: '밥·생활',    ids: ['food', 'dorm', 'shopping'] },
+    { emoji: '📚', ko: '학업',       ids: ['class', 'study', 'language'] },
+    { emoji: '🏫', ko: '캠퍼스·사람', ids: ['campus', 'event', 'friends'] },
+    { emoji: '🌆', ko: '동네·이동',  ids: ['neighborhood', 'transit', 'trip'] },
+    { emoji: '🙋', ko: '도움·서류',  ids: ['admin', 'help', 'tip'] }
+  ];
+
+  function tagChipTemplate(t, selected) {
+    return `<button type="button" class="tag-chip${selected ? ' is-selected' : ''}" data-tag="${t.id}" style="--chip-color:${(CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93'}" aria-pressed="${selected}"><span class="tag-chip__emoji" aria-hidden="true">${t.emoji}</span>${t.ko}</button>`;
+  }
+
+  /** editTags가 있으면(수정) 이미 고른 태그가 든 묶음을 펼친 채로 그린다. */
+  function tagGroupsTemplate(editTags) {
+    return TAG_GROUPS.map(g => {
+      const items = g.ids.map(id => EVERYDAY_MAP[id]).filter(Boolean);
+      const open = !!(editTags && items.some(t => editTags.includes(t.id)));
+      return `
+        <div class="tag-group${open ? ' is-open' : ''}" data-group>
+          <button type="button" class="tag-group__head" data-group-toggle aria-expanded="${open}">
+            <span class="tag-group__emoji" aria-hidden="true">${g.emoji}</span>
+            <span class="tag-group__label">${g.ko}</span>
+            <span class="tag-group__caret" aria-hidden="true">⌄</span>
+          </button>
+          <div class="tag-group__body"${open ? '' : ' hidden'}>
+            ${items.map(t => tagChipTemplate(t, !!(editTags && editTags.includes(t.id)))).join('')}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
   function toIso(d) {
     const pad = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -37,6 +75,18 @@
   function entries() {
     const list = AppState.isAuthed ? AppState.getJournal() : guestSample();
     return list.slice().sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  // 귀국 후(DEPARTURE_PHASES.AFTER)에는 "출국 전(한국)" 기록과 "파견 중" 기록이 한 달력에
+  // 섞인다 — 귀국 전까지는 매일 "지금 국면"만 쓰니 섞일 일이 없었지만, 돌아온 뒤 둘을
+  // 오가며 보고 싶을 때는 칩으로 걸러야 한다(renderPhaseToggle). 캘린더·최근 사진 캐러셀만
+  // 이 필터를 따른다 — 연속 기록·이번 주 스트립은 "그날 뭔가 남겼는지"라는 습관 지표라
+  // 어느 국면 기록이든 항상 전부 센다.
+  let phaseFilter = 'all';   // 'all' | 'prepare' | 'abroad'
+  function visibleEntries() {
+    const list = entries();
+    if (phaseFilter === 'all') return list;
+    return list.filter(e => (e.phase || departurePhaseFor(e.date)) === phaseFilter);
   }
 
   /*
@@ -144,6 +194,7 @@
     <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
 
     <div id="diaryHeroSlot"></div>
+    <div id="diaryPhaseToggle" hidden></div>
 
     <div class="diary-write-bar">
       <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="0" aria-label="바로 사진 찍어 기록하기">
@@ -233,6 +284,37 @@
       </div>`;
   }
 
+  /**
+   * 귀국 후에만 뜨는 국면 필터 — 돌아오기 전까지는 달력에 "출국 전" 기록과
+   * "파견 중" 기록이 섞일 일이 없지만(그날그날 지금 국면만 쓰니까), 귀국 후에는
+   * 둘 다 쌓여 있어서 한쪽만 골라 보고 싶을 때가 있다.
+   */
+  function renderPhaseToggle() {
+    const mount = root.querySelector('#diaryPhaseToggle');
+    if (!mount) return;
+    const info = departureInfo();
+    if (!info.hasRange || info.phase !== DEPARTURE_PHASES.AFTER) {
+      mount.hidden = true;
+      mount.innerHTML = '';
+      return;
+    }
+    mount.hidden = false;
+    const OPTIONS = [{ key: 'all', label: '전체' }, { key: 'prepare', label: '출국 전' }, { key: 'abroad', label: '파견 중' }];
+    mount.innerHTML = `
+      <div class="diary-phase-toggle" role="group" aria-label="기록 국면 필터">
+        ${OPTIONS.map(o => `<button type="button" class="diary-phase-toggle__btn${phaseFilter === o.key ? ' is-active' : ''}" data-phase="${o.key}">${o.label}</button>`).join('')}
+      </div>`;
+    mount.querySelectorAll('[data-phase]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (phaseFilter === btn.dataset.phase) return;
+        phaseFilter = btn.dataset.phase;
+        renderPhaseToggle();
+        renderFeatured();
+        renderMonth();
+      });
+    });
+  }
+
   /* --------------------------------------------------------------- 연속 기록 */
 
   function renderStreak() {
@@ -311,23 +393,26 @@
     const slot = root && root.querySelector('#diaryFeaturedSlot');
     if (!slot) return;
 
-    if (!entries().length) {
+    if (!visibleEntries().length) {
+      // 출국 전에는 "떠나기 전 기록"을 왜 남기는지가 안 와닿는다 — 교환 가서도
+      // 다시 볼 수 있다는 걸 먼저 말해준다(departureInfo, js/components/departure.js).
+      const isBefore = departureInfo().phase === DEPARTURE_PHASES.BEFORE;
       slot.innerHTML = `
         ${featuredHead('첫 우표')}
         <button type="button" class="diary-featured__empty" id="emptyStamp">
-          <span class="diary-featured__empty-icon" aria-hidden="true">✉️</span>
-          <b>첫 기록을 남겨보세요</b>
-          <span>사진 한 장이면 첫 우표가 붙어요</span>
+          <span class="diary-featured__empty-icon" aria-hidden="true">${isBefore ? '🇰🇷' : '✉️'}</span>
+          <b>${isBefore ? '한국에서의 추억을 남겨보아요' : '첫 기록을 남겨보세요'}</b>
+          <span>${isBefore ? '지금 남긴 기록은 교환 가서도 다시 볼 수 있어요' : '사진 한 장이면 첫 우표가 붙어요'}</span>
         </button>`;
       slot.querySelector('#emptyStamp').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
       wireQuestion(slot);
       return;
     }
 
-    const withPhoto = entries().filter(e => (e.photos || []).some(p => photoUrl(p)));
+    const withPhoto = visibleEntries().filter(e => (e.photos || []).some(p => photoUrl(p)));
     if (!withPhoto.length) {
       // 사진 주소를 받는 중이면 빈 칸 대신 같은 크기의 자리를 먼저 보여준다
-      slot.innerHTML = entries().some(photosLoading)
+      slot.innerHTML = visibleEntries().some(photosLoading)
         ? `${featuredHead('가장 최근 기록')}<div class="diary-featured__skeleton" aria-label="사진 불러오는 중"></div>` : '';
       if (slot.innerHTML) wireQuestion(slot);
       return;
@@ -567,7 +652,7 @@
 
   function byDate() {
     const map = {};
-    entries().forEach(e => { (map[e.date] = map[e.date] || []).push(e); });
+    visibleEntries().forEach(e => { (map[e.date] = map[e.date] || []).push(e); });
     return map;
   }
 
@@ -701,9 +786,18 @@
     } else if (!urls.length) {
       photo = `<div class="diary-stamp__blank"><p>${esc(e.body || e.title || '')}</p>${lpHtml(lpTrack)}</div>`;
     } else {
+      // 여러 장이면 한 장씩 옆으로 넘겨 본다(스와이프 + ‹ › 버튼). 넘길 수 있다는 걸
+      // 위 숫자(1 / 3)로 알려준다.
+      const multi = urls.length > 1;
       photo = `<div class="diary-entry__photo-wrap">
-        <img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">
-        ${urls.length > 1 ? `<span class="diary-entry__photo-more">+${urls.length - 1}</span>` : ''}
+        ${multi ? `
+        <div class="diary-photo-track" data-photo-track>
+          ${urls.map((u, k) => `<img class="diary-entry__photo-single" src="${u}" alt="${alt} (${k + 1}/${urls.length})"${k ? ' loading="lazy"' : ''} draggable="false">`).join('')}
+        </div>
+        <span class="diary-entry__photo-more" data-photo-count>1 / ${urls.length}</span>
+        <button type="button" class="diary-photo-nav diary-photo-nav--prev" data-photo-prev aria-label="이전 사진" hidden>‹</button>
+        <button type="button" class="diary-photo-nav diary-photo-nav--next" data-photo-next aria-label="다음 사진">›</button>`
+        : `<img class="diary-entry__photo-single" src="${urls[0]}" alt="${alt}">`}
         ${city0 ? `<div class="diary-postmark diary-postmark--film" aria-hidden="true"><b data-film="${filmDate(e.date)}">${e.date.slice(5).replace('-', '.')}</b><span>${esc(city0)}</span></div>` : ''}
         ${lpHtml(lpTrack)}
       </div>`;
@@ -807,10 +901,31 @@
       const wrap = el.querySelector('.diary-entry__photo-wrap');
       const urls = (entry.photos || []).map(photoUrl).filter(Boolean);
       if (wrap && urls.length) {
+        const track = wrap.querySelector('[data-photo-track]');
+        const current = () => (track && track.clientWidth ? Math.round(track.scrollLeft / track.clientWidth) : 0);
         wrap.classList.add('is-clickable');
-        wrap.addEventListener('click', (ev) => {
-          openPhotoLightbox(urls, 0);
-        });
+        // 누르면 지금 보고 있는 사진부터 크게 연다
+        wrap.addEventListener('click', () => openPhotoLightbox(urls, current()));
+        if (track) {
+          const count = wrap.querySelector('[data-photo-count]');
+          const prev = wrap.querySelector('[data-photo-prev]');
+          const next = wrap.querySelector('[data-photo-next]');
+          let ticking = false;
+          const sync = () => {
+            ticking = false;
+            const i = current();
+            count.textContent = `${i + 1} / ${urls.length}`;
+            prev.hidden = i <= 0;
+            next.hidden = i >= urls.length - 1;
+          };
+          track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(sync); } }, { passive: true });
+          const go = (d) => (ev) => {
+            ev.stopPropagation();
+            track.scrollTo({ left: (current() + d) * track.clientWidth, behavior: 'smooth' });
+          };
+          prev.addEventListener('click', go(-1));
+          next.addEventListener('click', go(1));
+        }
       }
     });
     container.querySelectorAll('[data-preview]').forEach(btn => {
@@ -946,6 +1061,13 @@
 
   /* --------------------------------------------------------------- 기록 모달 */
 
+  // 결제창에서 크레딧으로 1장을 더 샀으면 쓰기 창의 "크레딧" 버튼을 다시 "+"로 돌린다.
+  // 쓰기 창은 열 때마다 새로 그려지므로 리스너는 여기서 한 번만 단다.
+  document.addEventListener('credits:changed', () => {
+    const s = document.getElementById('entryModalScrim');
+    if (s && s.classList.contains('is-open') && s.querySelector('.diary-photo-picker')) renderPhotoPicker(s);
+  });
+
   function ensureScrim(id) {
     let scrim = document.getElementById(id);
     if (!scrim) {
@@ -979,7 +1101,9 @@
         <form class="diary-form" id="entryForm">
           <div class="diary-photo-picker" id="photoPicker">
             <label class="diary-photo-picker__add">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="diary-photo-picker__add-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </span>
               <input type="file" accept="image/*" multiple id="photoInput" style="display:none;">
             </label>
             <label class="diary-photo-picker__add diary-photo-picker__camera" aria-label="바로 사진 찍기">
@@ -987,14 +1111,15 @@
               <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
             </label>
           </div>
-          <p class="diary-form__hint" id="photoHint" hidden>사진을 누르면 대표 사진(우표에 크게 나오는 사진)이 돼요</p>
+          <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요 — 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
           <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
           <div>
             <span class="diary-form__label">오늘 뭘 했나요? (여러 개 골라도 돼요)</span>
             <div class="diary-tag-grid" id="tagGrid">
-              ${EVERYDAY_TAGS.map(t => `<button type="button" class="tag-chip" data-tag="${t.id}" style="--chip-color:${(CATEGORY_MAP[t.cats[0]] || {}).color || '#4E6B93'}" aria-pressed="false"><span class="tag-chip__emoji" aria-hidden="true">${t.emoji}</span>${t.ko}</button>`).join('')}
+              ${tagGroupsTemplate(edit ? edit.tags : null)}
             </div>
             <p class="diary-form__hint">고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요</p>
           </div>
@@ -1016,19 +1141,21 @@
       const form = scrim.querySelector('#entryForm');
       form.querySelector('[name=title]').value = edit.title || '';
       form.querySelector('[name=caption]').value = edit.body || '';
-      (edit.tags || []).forEach(t => {
-        const chip = scrim.querySelector(`#tagGrid [data-tag="${t}"]`);
-        if (chip) { chip.classList.add('is-selected'); chip.setAttribute('aria-pressed', 'true'); }
-      });
+      // 태그 선택·묶음 펼침은 tagGroupsTemplate(edit.tags)가 이미 그려서 처리했다.
     }
     renderPhotoPicker(scrim);
     renderNowPlayingPicker(scrim);
     if (!edit) requestLocation();
 
     if (initialFile) {
-      addPendingPhoto(initialFile)
-        .then(() => renderPhotoPicker(scrim))
-        .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
+      // 메인 화면 카메라로 바로 찍은 사진도 하루 무료 한도에 똑같이 센다
+      if (AppState.freePhotoUploadsLeft() <= 0) {
+        openPaywall({ reason: 'photo' });
+      } else {
+        addPendingPhoto(initialFile)
+          .then(() => { AppState.recordPhotoUpload(); renderPhotoPicker(scrim); })
+          .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
+      }
     }
   }
 
@@ -1081,32 +1208,69 @@
     });
   }
 
+  // 뒤로 갈수록 살짝 더 기울고 더 밀린다 — 우표 카드 뒷장(.diary-stamp-back)과 같은 말투.
+  const PHOTO_PEEK_OFFSETS = [{ rot: -6, x: -6, y: 5 }, { rot: 7, x: 7, y: 7 }];
+
+  /**
+   * 사진을 낱장 썸네일로 늘어놓는 대신, 그날 찍은 사진을 한 장씩 넘겨보는 작은 더미로
+   * 보여준다(맨 앞이 우표 대표 사진). 뒤에 최대 2장만 살짝 겹쳐 보이고, 나머지는
+   * 왼쪽 위 "+N"으로만 표시 — 몇 장이든 오른쪽 아래 ⟳를 눌러 순서대로 넘길 수 있다.
+   */
   function renderPhotoPicker(scrim) {
     const picker = scrim.querySelector('#photoPicker');
-    const addBtn = picker.querySelector('.diary-photo-picker__add');   // 썸네일은 첫 번째 추가 버튼 앞에 끼운다
-    picker.querySelectorAll('.diary-photo-thumb').forEach(el => el.remove());
-    pendingPhotos.forEach((p, i) => {
-      const div = document.createElement('div');
-      div.className = 'diary-photo-thumb' + (i === 0 ? ' is-cover' : '');
-      div.innerHTML = `<img src="${p.url}" alt="" ${i > 0 ? `data-cover="${i}" role="button" tabindex="0"` : ''}>${i === 0 ? '<span class="diary-photo-thumb__cover">대표</span>' : ''}<button type="button" data-remove="${i}" aria-label="사진 빼기">✕</button>`;
-      picker.insertBefore(div, addBtn);
-    });
+    const addBtn = picker.querySelector('.diary-photo-picker__add');   // 더미는 첫 번째 추가 버튼 앞에 끼운다
+    const oldStack = picker.querySelector('.diary-photo-stack');
+    if (oldStack) oldStack.remove();
+
+    if (pendingPhotos.length) {
+      const stack = document.createElement('div');
+      stack.className = 'diary-photo-stack';
+      const peeks = pendingPhotos.slice(1, 3);
+      stack.innerHTML = `
+        ${peeks.map((p, k) => {
+          const o = PHOTO_PEEK_OFFSETS[k];
+          return `<div class="diary-photo-stack__peek" style="transform:rotate(${o.rot}deg) translate(${o.x}px, ${o.y}px); z-index:${2 - k};"><img src="${p.url}" alt=""></div>`;
+        }).join('')}
+        <div class="diary-photo-stack__front">
+          <img src="${pendingPhotos[0].url}" alt="">
+          <span class="diary-photo-thumb__cover">대표</span>
+          <button type="button" class="diary-photo-stack__remove" aria-label="사진 빼기">✕</button>
+        </div>
+        ${pendingPhotos.length > 3 ? `<span class="diary-photo-stack__more">+${pendingPhotos.length - 3}</span>` : ''}
+        ${pendingPhotos.length > 1 ? `<button type="button" class="diary-photo-stack__flip" aria-label="다음 사진 보기" title="다음 사진 보기">⟳</button>` : ''}
+      `;
+      picker.insertBefore(stack, addBtn);
+      stack.querySelector('.diary-photo-stack__remove').addEventListener('click', () => {
+        pendingPhotos.shift();
+        renderPhotoPicker(scrim);
+      });
+      const flipBtn = stack.querySelector('.diary-photo-stack__flip');
+      if (flipBtn) flipBtn.addEventListener('click', () => {
+        pendingPhotos.push(pendingPhotos.shift());
+        renderPhotoPicker(scrim);
+      });
+    }
+
     const hint = scrim.querySelector('#photoHint');
     if (hint) hint.hidden = pendingPhotos.length < 2;
-    picker.querySelectorAll('[data-remove]').forEach(btn => {
-      btn.addEventListener('click', () => { pendingPhotos.splice(Number(btn.dataset.remove), 1); renderPhotoPicker(scrim); });
-    });
-    // 누른 사진을 맨 앞으로 — 앞의 사진이 우표의 대표 사진이다
-    picker.querySelectorAll('[data-cover]').forEach(img => {
-      const pick = () => {
-        const [chosen] = pendingPhotos.splice(Number(img.dataset.cover), 1);
-        pendingPhotos.unshift(chosen);
-        renderPhotoPicker(scrim);
-        showToast('대표 사진으로 바꿨어요');
-      };
-      img.addEventListener('click', pick);
-      img.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') pick(); });
-    });
+
+    // 무료 한도를 다 썼으면 "+" 자리를 코인 아이콘으로 바꿔 크레딧을 써야 더 올릴 수
+    // 있다는 걸 누르기 전에 미리 알려준다(js/state.js AppState.freePhotoUploadsLeft).
+    const left = AppState.freePhotoUploadsLeft();
+    const locked = Number.isFinite(left) && left <= 0;
+    addBtn.classList.toggle('diary-photo-picker__add--credit', locked);
+    const addIcon = addBtn.querySelector('.diary-photo-picker__add-icon');
+    addIcon.innerHTML = locked
+      ? `<span class="diary-photo-picker__add-coin" aria-hidden="true">🪙</span><span class="diary-photo-picker__add-label">크레딧</span>`
+      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+
+    const quota = scrim.querySelector('#photoQuota');
+    if (quota) {
+      quota.hidden = !Number.isFinite(left);   // 프리미엄(Infinity)이면 아예 감춘다
+      quota.textContent = left > 0
+        ? `오늘 무료 사진 ${left}장 남음 · 프리미엄이면 무제한`
+        : '오늘 무료 사진을 다 썼어요 · 크레딧을 쓰거나 프리미엄이면 더 올릴 수 있어요';
+    }
   }
 
   /*
@@ -1173,23 +1337,45 @@
 
   function wireEntryForm(scrim) {
     const grid = scrim.querySelector('#tagGrid');
-    grid.querySelectorAll('.tag-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const on = btn.classList.toggle('is-selected');
-        btn.setAttribute('aria-pressed', String(on));
-      });
+    // 위임 클릭 하나로 묶음 펼치기/접기와 태그 고르기를 같이 받는다 — 묶음을 펼칠 때마다
+    // 안의 칩이 새로 생기는 게 아니라(이미 DOM에 있고 hidden만 바뀐다) 위임이 아니어도
+    // 되지만, 두 종류 버튼을 한 리스너로 묶어 두는 편이 더 단순하다.
+    grid.addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-group-toggle]');
+      if (toggle) {
+        const group = toggle.closest('.tag-group');
+        const body = group.querySelector('.tag-group__body');
+        const open = group.classList.toggle('is-open');
+        body.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        return;
+      }
+      const chip = e.target.closest('.tag-chip');
+      if (chip) {
+        const on = chip.classList.toggle('is-selected');
+        chip.setAttribute('aria-pressed', String(on));
+      }
     });
 
     ['#photoInput', '#cameraInput'].forEach((sel) => {
       const input = scrim.querySelector(sel);
+      // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
+      input.closest('label').addEventListener('click', (e) => {
+        if (AppState.freePhotoUploadsLeft() > 0) return;
+        e.preventDefault();
+        openPaywall({ reason: 'photo' });
+      });
       input.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         input.value = '';
+        let blocked = false;
         for (const file of files) {
-          try { await addPendingPhoto(file); }
+          if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
+          try { await addPendingPhoto(file); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);
+        if (blocked) openPaywall({ reason: 'photo' });
       });
     });
 
@@ -1482,6 +1668,7 @@
 
   function renderAll() {
     renderHero();
+    renderPhaseToggle();
     renderStreak();
     renderFeatured();
     renderMonth();

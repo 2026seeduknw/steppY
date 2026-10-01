@@ -205,6 +205,9 @@
         commerceLevel: s.commerce_score >= 66 ? 'high' : s.commerce_score >= 33 ? 'medium' : s.commerce_score != null ? 'low' : undefined,
         climateType: c ? climateTypeFromTemps(c) : undefined,
         officialLink: s.website || s.detail_link || s.factsheet_url || '#',
+        // 지원 서류 안내용 — 학교별 서류는 크롤링하지 않고 이 공식 링크로 직접 확인하게 한다
+        links: { website: s.website || null, factsheet: s.factsheet_url || null, oia: s.detail_link || null },
+        oiaNotice: s.notice_from_oia || '',
         mapNote: [s.country_ko, s.city].filter(Boolean).join(' · ') || s.admission_notes || ''
       };
     });
@@ -213,8 +216,8 @@
   async function loadChecklist() {
     const { data } = await supabaseClient.from('checklist_items').select('*').order('sort_order');
     return (data || []).map(c => ({
-      id: c.id, title: c.title, done: false, dueOffset: c.due_offset,
-      source: c.source, updatedAt: c.updated_at || '확인 필요', detail: c.detail
+      id: c.id, title: c.title, done: false, detail: c.detail,
+      sources: c.source ? [{ label: c.source }] : [], checkedAt: c.updated_at || null
     }));
   }
 
@@ -234,11 +237,19 @@
    *  그대로 country_en으로 반환하고, 확정 학교 국가로 찾는 건 화면 쪽(prepare-view.js)에서 처리. */
   async function loadCountryPrep() {
     const { data } = await supabaseClient.from('country_prep').select('*');
+    // *_ko는 화면용으로 다듬은 문장(supabase/country_prep_ko.sql). 아직 안 채워졌으면
+    // 원문으로 떨어진다 — 서류는 원문 쉼표로 나눠 같은 목록 모양으로 맞춘다.
+    const pick = (c, f) => c[`${f}_ko`] || c[f];
+    const docs = (c) => (Array.isArray(c.account_docs_ko) && c.account_docs_ko.length)
+      ? c.account_docs_ko
+      : String(c.account_docs || '').split(/\s*,\s*/).filter(Boolean);
     return (data || []).map(c => ({
       countryEn: c.country_en, countryKo: c.country_ko,
-      telecomRecommend: c.telecom_recommend, telecomPrice: c.telecom_price, telecomNote: c.telecom_note,
-      insurance: c.insurance, insurancePrice: c.insurance_price, insuranceNote: c.insurance_note,
-      bankRecommend: c.bank_recommend, accountDocs: c.account_docs
+      telecomRecommend: pick(c, 'telecom_recommend'), telecomPrice: pick(c, 'telecom_price'), telecomNote: pick(c, 'telecom_note'),
+      insurance: pick(c, 'insurance'), insurancePrice: pick(c, 'insurance_price'), insuranceNote: pick(c, 'insurance_note'),
+      bankRecommend: pick(c, 'bank_recommend'), accountDocs: docs(c),
+      telecomSource: c.telecom_source, insuranceSource: c.insurance_source, bankSource: c.bank_note_source,
+      surveyDate: c.survey_date
     }));
   }
 
@@ -354,6 +365,22 @@
     }));
   }
 
+  /**
+   * BM 가격표(supabase/premium.sql). 누구나 읽을 수 있는 참고 데이터라
+   * 다른 로더와 똑같이 다룬다 — 마이그레이션 전이면 조용히 빈 배열이 오고
+   * mock-data.js의 자리표시자 가격이 그대로 남는다.
+   */
+  async function loadCreditCatalog() {
+    const [{ data: packages }, { data: plans }] = await Promise.all([
+      supabaseClient.from('credit_packages').select('*').order('sort_order'),
+      supabaseClient.from('premium_plans').select('*').order('sort_order')
+    ]);
+    return {
+      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, bonus: p.bonus || 0, priceKrw: p.price_krw, label: p.label })),
+      premiumPlans: (plans || []).map(p => ({ id: p.id, days: p.days, priceKrw: p.price_krw, label: p.label }))
+    };
+  }
+
   async function loadYonseiMajors() {
     const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
@@ -400,8 +427,8 @@
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
     loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions]) => {
+    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions(), loadCreditCatalog()
+  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions, creditCatalog]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
@@ -416,6 +443,8 @@
     if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
     if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
     if (mentorQuestions.length) MOCK.mentorQuestions = mentorQuestions;
+    if (creditCatalog.creditPackages.length) MOCK.creditPackages = creditCatalog.creditPackages;
+    if (creditCatalog.premiumPlans.length) MOCK.premiumPlans = creditCatalog.premiumPlans;
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   }).catch(err => {
     console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);

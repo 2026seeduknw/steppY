@@ -225,15 +225,21 @@ body[data-page="credits"]::before {
 .fav-btn svg { width: 18px; height: 18px; stroke: var(--ink-600); fill: none; transition: fill var(--dur-fast), stroke var(--dur-fast); }
 .fav-btn.is-active svg { fill: var(--coral-500); stroke: var(--coral-500); }
 
-/* ---- Filter chip ---- */
+/* ---- Filter chip ----
+   height가 아니라 min-height다 — 국가/전공명처럼 긴 글자가 두 줄로 넘어갈 때
+   고정 height는 둘째 줄을 밀어내거나 알약 모양을 길쭉한 타원으로 늘어뜨린다.
+   min-height + 위아래 패딩이면 한 줄일 땐 예전과 같은 높이로 보이고, 두 줄이면
+   그 패딩을 지키며 자연스럽게 늘어난다. */
 .chip {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 var(--space-4);
+  min-height: 28px;
+  padding: 5px var(--space-3);
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--line-200);
-  font-size: var(--fs-small);
+  font-size: var(--fs-micro);
+  line-height: 1.3;
+  text-align: center;
   color: var(--ink-600);
   background: var(--cloud-0);
   transition: all var(--dur-fast) var(--ease-out);
@@ -666,7 +672,7 @@ body[data-page="credits"]::before {
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-sm);
   background: var(--cloud-0);
-  font-size: var(--fs-body);
+  font-size: var(--fs-small);
   color: var(--ink-900);
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out);
@@ -773,7 +779,7 @@ body[data-page="credits"]::before {
 .major-match__score { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--sky-500); white-space: nowrap; }
 .major-match__topics { margin-top: 6px; }
 .major-match__note { margin-top: 6px; font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.55; }
-.chip--sm { height: 22px; padding: 0 8px; font-size: var(--fs-micro); }
+.chip--sm { min-height: 22px; padding: 4px 8px; font-size: var(--fs-micro); }
 
 /* ---- 학교 상세 ③ 점수 근거 한 줄 ---- */
 .score-row__evidence {
