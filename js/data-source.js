@@ -29,6 +29,34 @@
 (function () {
   if (typeof SUPABASE_CONFIGURED === 'undefined' || !SUPABASE_CONFIGURED) return;
 
+  /**
+   * Supabase REST는 기본적으로 한 번에 최대 1000행만 돌려준다(.select('*')에 .range()가
+   * 없으면 조용히 1000행에서 잘린다). course_matches(21000+행)·major_matches(2600+행)·
+   * nearby_spots(1000+행)처럼 1000행을 넘는 테이블은 이걸 모르고 그냥 .select('*')만 쓰면
+   * 뒷부분 데이터가 화면에 아예 안 뜬다(예: 전공 id가 큰 쪽은 통째로 빠짐) — 에러도 안 나서
+   * 알아채기 어렵다. 모든 로더가 이 헬퍼로 .range() 페이지네이션을 돌려 전체 행을 받는다.
+   * order는 테이블마다 기존 정렬 기준 뒤에 고유 열(대개 id)을 붙여, 페이지 경계에서 행이
+   * 중복되거나 빠지지 않게 한다(.range()는 안정적인 정렬 없이는 페이지가 밀릴 수 있다).
+   */
+  async function fetchAll(table, { columns = '*', order = [], filter } = {}) {
+    const PAGE = 1000;
+    let from = 0;
+    let out = [];
+    for (;;) {
+      let q = supabaseClient.from(table).select(columns);
+      if (filter) q = filter(q);
+      order.forEach(([col, opts]) => { q = opts ? q.order(col, opts) : q.order(col); });
+      q = q.range(from, from + PAGE - 1);
+      const { data, error } = await q;
+      if (error) { console.error('fetchAll failed:', table, error); break; }
+      if (!data || !data.length) break;
+      out = out.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return out;
+  }
+
   const SECURITY_TEXT = {
     high: '치안 양호 — Numbeo·GPI·외교부 여행경보 종합 기준',
     medium: '치안 보통 — Numbeo·GPI·외교부 여행경보 종합 기준',
@@ -125,12 +153,12 @@
   }
 
   async function loadSchools() {
-    const [{ data: schools, error }, { data: climateRows }, { data: basisRows }] = await Promise.all([
-      supabaseClient.from('schools').select('*'),
-      supabaseClient.from('climate_staging').select('*'),
-      supabaseClient.from('school_livability_score_basis').select('*')
+    const [schools, climateRows, basisRows] = await Promise.all([
+      fetchAll('schools', { order: [['id']] }),
+      fetchAll('climate_staging', { order: [['university']] }),
+      fetchAll('school_livability_score_basis', { order: [['school_id']] })
     ]);
-    if (error || !schools) throw error || new Error('schools fetch failed');
+    if (!schools.length) throw new Error('schools fetch failed');
     const climateBySchool = {};
     (climateRows || []).forEach(c => { if (c.school_id) climateBySchool[c.school_id] = c; });
     const basisBySchool = {};
@@ -214,7 +242,7 @@
   }
 
   async function loadChecklist() {
-    const { data } = await supabaseClient.from('checklist_items').select('*').order('sort_order');
+    const data = await fetchAll('checklist_items', { order: [['sort_order'], ['id']] });
     return (data || []).map(c => ({
       id: c.id, title: c.title, done: false, detail: c.detail,
       sources: c.source ? [{ label: c.source }] : [], checkedAt: c.updated_at || null
@@ -222,12 +250,12 @@
   }
 
   async function loadScholarships() {
-    const { data } = await supabaseClient.from('scholarships').select('*').order('sort_order');
+    const data = await fetchAll('scholarships', { order: [['sort_order'], ['id']] });
     return (data || []).map(s => ({ name: s.name, amount: s.amount, eligibility: s.eligibility }));
   }
 
   async function loadLivingPrep() {
-    const { data } = await supabaseClient.from('living_prep').select('*');
+    const data = await fetchAll('living_prep', { order: [['key']] });
     const out = {};
     (data || []).forEach(d => { out[d.key] = { title: d.title, summary: d.summary, caution: d.caution }; });
     return out;
@@ -236,7 +264,7 @@
   /** 국가별 통신사/보험/계좌 실데이터(32개국). 학교별이 아니라 국가별이라 원본
    *  그대로 country_en으로 반환하고, 확정 학교 국가로 찾는 건 화면 쪽(prepare-view.js)에서 처리. */
   async function loadCountryPrep() {
-    const { data } = await supabaseClient.from('country_prep').select('*');
+    const data = await fetchAll('country_prep', { order: [['id']] });
     // *_ko는 화면용으로 다듬은 문장(supabase/country_prep_ko.sql). 아직 안 채워졌으면
     // 원문으로 떨어진다 — 서류는 원문 쉼표로 나눠 같은 목록 모양으로 맞춘다.
     const pick = (c, f) => c[`${f}_ko`] || c[f];
@@ -254,7 +282,7 @@
   }
 
   async function loadCourseMatches() {
-    const { data } = await supabaseClient.from('course_matches').select('*');
+    const data = await fetchAll('course_matches', { order: [['id']] });
     // home_course는 연세대 "전공명"을 그대로 담고 있음(과목명 단위 아님) — homeMajor로도 노출해
     // credits.js의 전공 필터가 실 데이터에서도 동작하게 한다.
     return (data || []).map(m => ({
@@ -264,11 +292,7 @@
   }
 
   async function loadMajorMatches() {
-    const { data } = await supabaseClient
-      .from('major_matches')
-      .select('*')
-      .order('korean_major_id')
-      .order('rank');
+    const data = await fetchAll('major_matches', { order: [['korean_major_id'], ['rank'], ['id']] });
     return (data || []).map(m => ({
       id: m.id, koreanMajorId: m.korean_major_id, homeMajor: m.home_major, school: m.school_id,
       targetMajor: m.target_major, similarity: m.similarity, semanticScore: m.semantic_score,
@@ -277,12 +301,12 @@
   }
 
   async function loadTips() {
-    const { data } = await supabaseClient.from('tips').select('*');
+    const data = await fetchAll('tips', { order: [['id']] });
     return (data || []).map(t => ({ school: t.school_id, title: t.title, summary: t.summary }));
   }
 
   async function loadNearbySpots() {
-    const { data } = await supabaseClient.from('nearby_spots').select('*');
+    const data = await fetchAll('nearby_spots', { order: [['id']] });
     return (data || []).map(s => ({ school: s.school_id, title: s.title, summary: s.summary }));
   }
 
@@ -311,10 +335,11 @@
   }
 
   async function loadSchoolExchangeReports() {
-    const { data } = await supabaseClient
-      .from('school_exchange_reports')
-      .select('school_id, semester, title, overview, surroundings, housing_food, academics, international_support, campus_facilities, cultural_adaptation, tips')
-      .not('school_id', 'is', null);
+    const data = await fetchAll('school_exchange_reports', {
+      columns: 'report_id, school_id, semester, title, overview, surroundings, housing_food, academics, international_support, campus_facilities, cultural_adaptation, tips',
+      order: [['report_id']],
+      filter: q => q.not('school_id', 'is', null)
+    });
     const out = {};
     (data || []).forEach(r => {
       const author = r.semester ? `${r.semester} 파견 후기` : (r.title || '선배 후기');
@@ -344,13 +369,15 @@
    * 받아들인다(다른 로더와 같은 방식) — 마이그레이션 전에도 화면이 안 깨진다.
    */
   async function loadMentorQuestions() {
-    const [{ data: questions }, { data: answers }] = await Promise.all([
-      supabaseClient.from('mentor_questions')
-        .select('id, author_id, country, school_id, title, body, created_at')
-        .order('created_at', { ascending: false }),
-      supabaseClient.from('mentor_answers')
-        .select('id, question_id, author_id, body, created_at')
-        .order('created_at', { ascending: true })
+    const [questions, answers] = await Promise.all([
+      fetchAll('mentor_questions', {
+        columns: 'id, author_id, country, school_id, title, body, created_at',
+        order: [['created_at', { ascending: false }], ['id']]
+      }),
+      fetchAll('mentor_answers', {
+        columns: 'id, question_id, author_id, body, created_at',
+        order: [['created_at', { ascending: true }], ['id']]
+      })
     ]);
     const answersByQuestion = {};
     (answers || []).forEach(a => {
@@ -371,9 +398,9 @@
    * mock-data.js의 자리표시자 가격이 그대로 남는다.
    */
   async function loadCreditCatalog() {
-    const [{ data: packages }, { data: plans }] = await Promise.all([
-      supabaseClient.from('credit_packages').select('*').order('sort_order'),
-      supabaseClient.from('premium_plans').select('*').order('sort_order')
+    const [packages, plans] = await Promise.all([
+      fetchAll('credit_packages', { order: [['sort_order'], ['id']] }),
+      fetchAll('premium_plans', { order: [['sort_order'], ['id']] })
     ]);
     return {
       creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, bonus: p.bonus || 0, priceKrw: p.price_krw, label: p.label })),
@@ -382,17 +409,17 @@
   }
 
   async function loadYonseiMajors() {
-    const { data } = await supabaseClient.from('yonsei_majors').select('*').order('sort_order');
+    const data = await fetchAll('yonsei_majors', { order: [['sort_order'], ['id']] });
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
   }
 
   /** 학교별 지원 서류 목록 (exchange-doc-crawler가 채운 school_documents 테이블, 999행).
    *  document_type: 'baseline'(공식 확인) | 'hint'(참고용, 미검증). */
   async function loadSchoolDocuments() {
-    const { data } = await supabaseClient
-      .from('school_documents')
-      .select('school_id, document_name, document_type, sort_order, source_url')
-      .order('sort_order');
+    const data = await fetchAll('school_documents', {
+      columns: 'id, school_id, document_name, document_type, sort_order, source_url',
+      order: [['sort_order'], ['id']]
+    });
     const out = {};
     (data || []).forEach(d => {
       (out[d.school_id] || (out[d.school_id] = [])).push({ name: d.document_name, type: d.document_type, sourceUrl: d.source_url });
@@ -403,9 +430,9 @@
   /** 국가별 비자 서류 정보 (exchange-doc-crawler가 채운 visa_requirements/visa_documents 테이블).
    *  status: 'available'(자동추출된 서류 있음) | 'preparing'(서비스 준비중) | 'excluded'(다국가 컨소시엄 프로그램) */
   async function loadVisaRequirements() {
-    const [{ data: reqs }, { data: docs }] = await Promise.all([
-      supabaseClient.from('visa_requirements').select('*'),
-      supabaseClient.from('visa_documents').select('*')
+    const [reqs, docs] = await Promise.all([
+      fetchAll('visa_requirements', { order: [['id']] }),
+      fetchAll('visa_documents', { order: [['id']] })
     ]);
     const docsByCountry = {};
     (docs || []).forEach(d => {
