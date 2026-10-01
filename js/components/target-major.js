@@ -20,6 +20,18 @@ function renderTargetMajorCard(mount) {
   const confirmed = AppState.getConfirmedSchool();
   if (!confirmed) { mount.innerHTML = ''; return; }
 
+  // 과목 매칭은 처음에 다 받지 않는다 — 확정 학교의 조각이 아직 없으면 받아 오고, 도착하면
+  // 아래 'courseMatches:updated' 리스너가 이 카드를 다시 그린다
+  if (typeof ensureCourseMatches === 'function' && !isCourseMatchesLoaded({ school: confirmed.id })) {
+    ensureCourseMatches({ school: confirmed.id });
+    mount.innerHTML = `
+      <section class="target-major target-major--empty">
+        <span class="target-major__eyebrow">신청 전공</span>
+        <p class="target-major__desc">${confirmed.nameKo || confirmed.name}의 학과 목록을 불러오는 중이에요…</p>
+      </section>`;
+    return;
+  }
+
   const options = targetMajorOptions(confirmed.id);
   const selected = AppState.profile.targetMajor || '';
 
@@ -75,3 +87,8 @@ function renderTargetMajorCard(mount) {
     selectMount.appendChild(select.el);
   }
 }
+
+document.addEventListener('courseMatches:updated', () => {
+  const mount = document.getElementById('targetMajorCard');
+  if (mount) renderTargetMajorCard(mount);
+});

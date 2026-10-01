@@ -1418,10 +1418,37 @@
     }
   }
 
+  /*
+   * GPS(위치 권한)가 없거나 지명 변환에 실패해도 노래 추천은 끊기면 안 된다 — 확정한
+   * 학교의 나라를 이미 알고 있으니 그걸 대신 쓴다. recommendSongFor()가 countryCode
+   * 하나만 있으면 돌아가므로, 이걸로 "위치 거부 = 노래 안 뜸" 문제가 없어진다.
+   * country-flags.js의 COUNTRY_ISO2(영문 국가명 → ISO 코드)를 그대로 재사용한다.
+   */
+  function schoolFallbackLocation() {
+    const school = typeof AppState !== 'undefined' ? AppState.getConfirmedSchool() : null;
+    if (!school) return null;
+    const iso2 = (typeof COUNTRY_ISO2 !== 'undefined' && school.countryEn) ? COUNTRY_ISO2[school.countryEn] : null;
+    if (!iso2) return null;
+    return { country: school.country || school.countryEn, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
+  }
+
   function requestLocation() {
     const note = document.getElementById('locationNote');
     pendingWeather = null;
-    if (!navigator.geolocation) { if (note) note.textContent = '📍 위치 정보를 사용할 수 없어요'; return; }
+    const fallback = (reason) => {
+      const fb = schoolFallbackLocation();
+      if (fb) {
+        pendingLocation = fb;
+        if (fb.lat && fb.lng && typeof SongEngine !== 'undefined') {
+          SongEngine.fetchWeather(fb.lat, fb.lng).then(w => { pendingWeather = w; }).catch(() => {});
+        }
+        if (note) note.textContent = `📍 ${reason} — 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
+      } else {
+        pendingLocation = null;
+        if (note) note.textContent = `📍 ${reason} (위치 없이 저장돼요)`;
+      }
+    };
+    if (!navigator.geolocation) { fallback('위치 정보를 사용할 수 없어요'); return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude, longitude } = pos.coords;
       // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
@@ -1432,16 +1459,31 @@
         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ko`);
         const data = await res.json();
         // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
-        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null };
-        if (note) note.textContent = `📍 ${[pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') || '위치 확인됨'}`;
+        // (날씨는 위에서 GPS 값으로 이미 받아 두었고, 저장 직전에 stripCoords가 한 번 더 거른다)
+        if (data.countryCode) {
+          pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode };
+          if (note) note.textContent = `📍 ${[pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') || '위치 확인됨'}`;
+        } else {
+          // GPS는 받았는데 나라를 못 읽은 경우 — 노래 추천에 쓰는 countryCode는 학교 나라로 채운다.
+          const fb = schoolFallbackLocation();
+          pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
+          if (note) note.textContent = fb
+            ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
+            : '📍 지명을 확인하지 못했어요';
+        }
       } catch (err) {
-        pendingLocation = null;
-        if (note) note.textContent = '📍 지명을 확인하지 못했어요';
+        const fb = schoolFallbackLocation();
+        pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
+        if (note) note.textContent = fb
+          ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
+          : '📍 지명을 확인하지 못했어요';
       }
-    }, () => {
-      pendingLocation = null;
-      if (note) note.textContent = '📍 위치 권한이 거부됐어요 (위치 없이 저장돼요)';
-    }, { timeout: 8000 });
+    }, () => fallback('위치 권한이 거부됐어요'), { timeout: 8000 });
+  }
+
+  /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
+  function stripCoords(loc) {
+    return loc ? { country: loc.country || null, city: loc.city || null, countryCode: loc.countryCode || null } : null;
   }
 
   function wireEntryForm(scrim) {
@@ -1535,7 +1577,7 @@
       const entry = AppState.addJournalEntry({
         date, phase: departurePhaseFor(date), title, body,
         photos: pendingPhotos.map(p => p.path),
-        tags, location: pendingLocation,
+        tags, location: stripCoords(pendingLocation),
         nowPlaying, weather: pendingWeather, visibility
       });
       const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;
