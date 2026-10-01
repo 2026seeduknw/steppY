@@ -38,7 +38,7 @@
    * order는 테이블마다 기존 정렬 기준 뒤에 고유 열(대개 id)을 붙여, 페이지 경계에서 행이
    * 중복되거나 빠지지 않게 한다(.range()는 안정적인 정렬 없이는 페이지가 밀릴 수 있다).
    */
-  async function fetchAll(table, { columns = '*', order = [], filter } = {}) {
+  async function fetchAll(table, { columns = '*', order = [], filter, strict = false } = {}) {
     const PAGE = 1000;
     let from = 0;
     let out = [];
@@ -48,7 +48,11 @@
       order.forEach(([col, opts]) => { q = opts ? q.order(col, opts) : q.order(col); });
       q = q.range(from, from + PAGE - 1);
       const { data, error } = await q;
-      if (error) { console.error('fetchAll failed:', table, error); break; }
+      if (error) {
+        console.error('fetchAll failed:', table, error);
+        if (strict) throw error;
+        break;
+      }
       if (!data || !data.length) break;
       out = out.concat(data);
       if (data.length < PAGE) break;
@@ -281,15 +285,58 @@
     }));
   }
 
-  async function loadCourseMatches() {
-    const data = await fetchAll('course_matches', { order: [['id']] });
-    // home_course는 연세대 "전공명"을 그대로 담고 있음(과목명 단위 아님) — homeMajor로도 노출해
-    // credits.js의 전공 필터가 실 데이터에서도 동작하게 한다.
-    return (data || []).map(m => ({
+  // home_course는 연세대 "전공명"을 그대로 담고 있음(과목명 단위 아님) — homeMajor로도 노출해
+  // credits.js의 전공 필터가 실 데이터에서도 동작하게 한다.
+  function mapCourseMatch(m) {
+    return {
       id: m.id, homeCourse: m.home_course, homeMajor: m.home_course, targetCourse: m.target_course, school: m.school_id,
       similarity: m.similarity, matchedTopics: m.matched_topics || [], note: m.note
-    }));
+    };
   }
+
+  /**
+   * course_matches는 11만 행이 넘어서, 앱을 열 때 전부 받으면(1000행씩 100번 넘게) 화면이
+   * 15초 가까이 비어 있었다. 그래서 처음엔 안 받고, 화면에 필요한 조각만 그때그때 받는다:
+   *   - 학교를 확정했으면 → 그 학교의 모든 전공 과목(평균 수백 행)
+   *   - 아니면 고른 연세 전공 → 그 전공의 모든 학교 과목(평균 천여 행)
+   * 받은 조각은 MOCK.courseMatches에 쌓아 두고(같은 조각은 다시 안 받음),
+   * 'courseMatches:updated'로 이 데이터를 쓰는 화면(학점 인정 탭·신청 전공 카드)만 다시 그린다 —
+   * 'MOCK:updated'는 모든 화면을 다시 그리게 해서 쓰지 않는다.
+   */
+  const courseSliceRequests = new Map();
+  const courseSliceDone = new Set();
+  const courseSliceFailed = new Set();
+  const sliceKeys = ({ school, major } = {}) => [school ? `school:${school}` : null, major ? `major:${major}` : null].filter(Boolean);
+
+  window.isCourseMatchesLoaded = (req) => sliceKeys(req).some(k => courseSliceDone.has(k));
+  window.courseMatchesFailed = (req) => sliceKeys(req).some(k => courseSliceFailed.has(k));
+  window.ensureCourseMatches = ({ school, major } = {}) => {
+    if (window.isCourseMatchesLoaded({ school, major })) return Promise.resolve(false);
+    // 학교 조각이 더 작고(그 학교의 모든 전공을 덮음) 확정 학교 화면에서 다시 쓰여서 우선한다
+    const key = school ? `school:${school}` : major ? `major:${major}` : null;
+    if (!key) return Promise.resolve(false);
+    if (courseSliceRequests.has(key)) return courseSliceRequests.get(key);
+    courseSliceFailed.delete(key);
+    const p = fetchAll('course_matches', {
+      order: [['id']],
+      strict: true,
+      filter: q => school ? q.eq('school_id', school) : q.eq('home_course', major)
+    }).then(rows => {
+      const byId = new Map(MOCK.courseMatches.map(m => [m.id, m]));
+      rows.forEach(r => byId.set(r.id, mapCourseMatch(r)));
+      MOCK.courseMatches = [...byId.values()];
+      courseSliceDone.add(key);
+      document.dispatchEvent(new CustomEvent('courseMatches:updated'));
+      return true;
+    }).catch(() => {
+      courseSliceRequests.delete(key);
+      courseSliceFailed.add(key);
+      document.dispatchEvent(new CustomEvent('courseMatches:updated'));
+      return false;
+    });
+    courseSliceRequests.set(key, p);
+    return p;
+  };
 
   async function loadMajorMatches() {
     const data = await fetchAll('major_matches', { order: [['korean_major_id'], ['rank'], ['id']] });
@@ -451,16 +498,16 @@
     return out;
   }
 
+  // course_matches는 여기서 받지 않는다 — 위 ensureCourseMatches가 필요한 조각만 받는다
   Promise.all([
     loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadCourseMatches(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
+    loadLivingPrep(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
     loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions(), loadCreditCatalog()
-  ]).then(([schools, checklist, scholarships, livingPrep, courseMatches, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions, creditCatalog]) => {
+  ]).then(([schools, checklist, scholarships, livingPrep, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions, creditCatalog]) => {
     if (schools.length) MOCK.schools = schools;
     if (checklist.length) MOCK.checklist = checklist;
     if (scholarships.length) MOCK.scholarships = scholarships;
     if (Object.keys(livingPrep).length) MOCK.livingPrep = livingPrep;
-    if (courseMatches.length) MOCK.courseMatches = courseMatches;
     if (majorMatches.length) MOCK.majorMatches = majorMatches;
     if (tips.length) MOCK.tips = tips;
     if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;

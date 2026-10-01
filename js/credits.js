@@ -406,6 +406,31 @@
     const confirmed = AppState.getConfirmedSchool();
     const note = document.getElementById('confirmedSchoolNote');
 
+    const showPanel = (html) => {
+      renderRelevanceFilter([]);
+      renderCountryFilter([]);
+      note.hidden = true;
+      document.getElementById('matchList').innerHTML = `<div class="info-panel"><p class="info-panel__text">${html}</p></div>`;
+    };
+
+    // 과목 매칭은 11만 행이 넘어 처음에 다 받지 않는다(data-source.js의 ensureCourseMatches).
+    // 학교도 전공도 정하지 않았으면 보여줄 범위가 없어 먼저 전공을 고르게 한다.
+    if (!confirmed && !selectedMajor) {
+      showPanel('<strong>내 전공</strong>을 고르면 그 전공으로 학점 인정받을 수 있는 교환교 과목을 보여드려요.');
+      return;
+    }
+    const sliceReq = { school: confirmed ? confirmed.id : null, major: confirmed ? null : selectedMajor };
+    if (typeof ensureCourseMatches === 'function' && !isCourseMatchesLoaded(sliceReq) && !isCourseMatchesLoaded({ major: selectedMajor })) {
+      if (courseMatchesFailed(sliceReq)) {
+        showPanel('학점 인정 과목을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+        ensureCourseMatches(sliceReq);
+        return;
+      }
+      ensureCourseMatches(sliceReq);
+      showPanel('학점 인정 과목을 불러오는 중이에요…');
+      return;
+    }
+
     // 학교를 확정했으면 그 학교 과목만 본다. 갈 곳이 정해진 뒤에 다른 학교 과목은
     // 고를 수 없는 선택지라 목록만 길어진다.
     // 예전엔 확정 학교에 과목 데이터가 없으면 전체를 예시로 보여줬는데, 확정한
@@ -589,4 +614,7 @@
     renderMajorFilter();
     renderMatches();
   });
+
+  // 필요한 과목 조각이 도착하면 목록만 다시 그린다
+  document.addEventListener('courseMatches:updated', () => renderMatches());
 })();
