@@ -31,7 +31,7 @@ create index if not exists mentor_pins_order_idx
 
 alter table public.mentor_pins enable row level security;
 
--- 누구나(비로그인 포함) 공개된 글만 읽는다. 쓰기 정책은 일부러 만들지 않는다 —
--- 대시보드(service role)에서만 넣고 고친다.
-create policy mentor_pins_public_read on public.mentor_pins
-  for select to anon, authenticated using (published);
+-- 로그인한 사람만 공개된 글을 읽는다(비로그인은 게시판 전체가 잠겨 있다). 쓰기 정책은
+-- 일부러 만들지 않는다 — 대시보드(service role)에서만 넣고 고친다.
+create policy mentor_pins_authenticated_read on public.mentor_pins
+  for select to authenticated using (published);

@@ -103,6 +103,21 @@
 .mentor-row__fav.is-active { color: var(--coral-500); }
 .mentor-row__fav.is-active svg { fill: currentColor; }
 
+/* ---- 비로그인 잠금 ---- */
+.mentor-gating #mentorQaPanel { visibility: hidden; }
+.mentor-locked__icon { font-size: 2rem; line-height: 1; }
+.mentor-locked__title { margin: 0; font-size: var(--fs-h3); font-weight: 800; }
+.mentor-locked__desc { margin: 0; font-size: var(--fs-small); color: var(--ink-700); line-height: 1.55; }
+/* 게시판 모양을 그대로 두고 흐리게 — 그 위에 로그인 카드를 얹는다 */
+.mentor-preview { position: relative; min-height: 70vh; overflow: hidden; }
+.mentor-preview__blur { filter: blur(6px); opacity: 0.8; pointer-events: none; user-select: none; -webkit-user-select: none; }
+.mentor-preview__lock {
+  position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
+  width: min(100% - 2 * var(--space-3), 360px);
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center;
+  box-shadow: var(--shadow-modal);
+}
+
 /* ---- 상단 고정 글(공지·교환보고서·칼럼): 일반 글 위에 항상 붙는다 ---- */
 .mentor-pins {
   display: flex;

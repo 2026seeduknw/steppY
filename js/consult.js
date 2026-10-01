@@ -29,6 +29,53 @@
   const creditNum = document.getElementById('mentorCreditNum');
   const askOpenBtn = document.getElementById('askOpenBtn');
   const pinsEl = document.getElementById('mentorPins');
+  const panelEl = document.getElementById('mentorQaPanel');
+  const ledeEl = document.getElementById('mentorLede');
+
+  /**
+   * 비로그인은 게시판을 통째로 잠근다 — 질문·답변·고정 글 모두 로그인해야 보인다.
+   * 세션 확인은 비동기(Auth.init)라서, 끝나기 전에는 화면을 가려 둔다. 안 그러면
+   * 로그인한 사람에게도 잠금 화면이 잠깐 번쩍인다. (서버 쪽 잠금은
+   * supabase/mentor_lock_guests.sql — 화면만 가리면 API로는 여전히 읽힌다.)
+   */
+  function showGuestLock() {
+    ledeEl.textContent = '교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요.';
+    // 블러 뒤에 깔리는 건 진짜 글이 아니라 모양만 같은 예시다 — 서버를 잠가도 같은 화면이 나온다.
+    const pin = (kind, label, title) => `
+      <div class="mentor-row mentor-row--pin"><div class="mentor-row__line">
+        <span class="mentor-pin__badge mentor-pin__badge--${kind}">${label}</span>
+        <span class="mentor-row__title mentor-pin__title">${title}</span></div>
+        <div class="mentor-row__foot"><span class="mentor-row__meta">운영진 · 3일 전</span></div></div>`;
+    const row = (tag, title, count, meta) => `
+      <div class="mentor-row"><div class="mentor-row__line">
+        <span class="mentor-row__tag">[${tag}]</span><span class="mentor-row__title">${title}</span>
+        ${count ? `<span class="mentor-row__count">[${count}]</span>` : ''}</div>
+        <div class="mentor-row__foot"><span class="mentor-row__meta">${meta}</span></div></div>`;
+    panelEl.innerHTML = `
+      <div class="mentor-preview">
+        <div class="mentor-preview__blur" aria-hidden="true" inert>
+          <div class="mentor-toolbar"><span></span><span class="btn btn--accent">질문하기</span></div>
+          <div class="mentor-pins">
+            ${pin('notice', '공지', '[필수] 멘토스텝 이용 규칙 및 운영 안내')}
+            ${pin('report', '교환보고서', '2026-1 교환보고서 모음 · 수강신청부터 기숙사까지')}
+            ${pin('column', '칼럼', '교환 가기 전에 꼭 챙길 서류 TOP 5')}
+          </div>
+          <div class="mentor-list">
+            ${row('프랑스', '리옹 기숙사 신청은 언제까지 해야 하나요?', 4, '2시간 전')}
+            ${row('미국', '비자 인터뷰 때 가져가야 할 서류 알려주세요', 7, '5시간 전')}
+            ${row('일본', '학점 인정 과목은 출국 전에 확정되나요?', 2, '1일 전')}
+            ${row('독일', '현지 은행 계좌는 도착하고 바로 열어도 되나요', 3, '1일 전')}
+            ${row('영국', '보험은 학교 지정이 아니면 안 되나요?', '', '2일 전')}
+          </div>
+        </div>
+        <section class="mentor-preview__lock card card-pad">
+          <div class="mentor-locked__icon" aria-hidden="true">🔒</div>
+          <h2 class="mentor-locked__title">로그인하면 볼 수 있어요</h2>
+          <p class="mentor-locked__desc">다녀온 선배의 질문·답변, 교환보고서와 칼럼을 읽고 직접 질문도 할 수 있어요.</p>
+          <a class="btn btn--primary btn--block" href="auth.html">로그인 · 회원가입</a>
+        </section>
+      </div>`;
+  }
 
   // 상단 고정 글 — 운영자가 mentor_pins 테이블(supabase/mentor_pins.sql)에 직접 넣는다.
   // 테이블이 없거나 읽지 못하면 조용히 비워 둔다(게시판은 그대로 보인다).
@@ -619,7 +666,13 @@
 
   renderCountryFilter();
   renderList();
-  loadPins();
+
+  document.body.classList.add('mentor-gating');
+  Auth.init().then(() => {
+    document.body.classList.remove('mentor-gating');
+    if (!AppState.isAuthed) { showGuestLock(); return; }
+    loadPins();
+  });
 
   document.addEventListener('MOCK:updated', () => {
     renderCountryFilter();
