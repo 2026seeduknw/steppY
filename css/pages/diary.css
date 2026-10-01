@@ -2124,3 +2124,5 @@ body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item.is-acti
 
 /* 시작 버튼 — 탭바 폭(278px)에 맞춰 작게, 가운데 */
 .dintro__cta .btn.btn--block { display: flex; width: min(278px, 100%); height: 40px; min-height: 40px; padding: 0 20px; font-size: 14px; margin: 0 auto; }
+/* 상단 제목 묶음과 01 사이는 섹션 간격(42px)의 절반으로 */
+.dintro__hero { margin-bottom: calc(var(--space-4) - var(--space-6)); }

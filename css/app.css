@@ -1349,9 +1349,9 @@ a.todo-pill__add { text-decoration: none; }
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  /* 안쪽 여백을 4분의 1 줄인다(31 → 23px). 배너 한 장에 문구가 세 줄뿐이라
+  /* 안쪽 여백을 줄인다(31 → 23 → 12px). 배너 한 장에 문구가 세 줄뿐이라
      기본 카드 여백을 그대로 쓰면 글보다 빈 자리가 더 컸다. */
-  padding: calc(var(--space-5) * 0.75);
+  padding: calc(var(--space-5) * 0.375);
   border-radius: var(--radius-row);
   background: var(--beige, #F5F1E4);
   border: 1px solid var(--amber-200, #E8E0C8);
@@ -1366,11 +1366,11 @@ a.todo-pill__add { text-decoration: none; }
   border-radius: var(--radius-pill);
   background: var(--amber-700);
   color: var(--moonlight, #F0ECDD);
-  font-size: var(--fs-micro);
+  font-size: 0.656rem;
   font-weight: 700;
 }
 .credits-cta h2 {
-  font-size: 1.0625rem;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1.4;
   color: var(--ink-900);
@@ -1378,19 +1378,19 @@ a.todo-pill__add { text-decoration: none; }
   margin-bottom: 4px;
 }
 .credits-cta p {
-  font-size: var(--fs-small);
+  font-size: 0.78rem;
   line-height: 1.55;
   color: var(--ink-700);
   word-break: keep-all;
 }
 .credits-cta__arrow {
   flex: 0 0 auto;
-  width: 34px; height: 34px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   background: var(--amber-700);
   color: var(--moonlight, #F0ECDD);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 /* ---- 홈/준비하기: 국가별 후기로 보내는 카드 ----
