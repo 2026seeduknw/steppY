@@ -73,7 +73,8 @@
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function entries() {
     const list = AppState.isAuthed ? AppState.getJournal() : guestSample();
-    return list.slice().sort((a, b) => a.date.localeCompare(b.date));
+    // 같은 날은 기록 시각순 — 먼저 찍은 사진이 앞(왼쪽)에 온다. 시각은 찍은 시점(앨범에서 고른 사진은 EXIF)이다.
+    return list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)));
   }
 
   // 귀국 후(DEPARTURE_PHASES.AFTER)에는 "출국 전(한국)" 기록과 "파견 중" 기록이 한 달력에
@@ -1154,12 +1155,57 @@
     });
   }
 
-  async function addPendingPhoto(file) {
+  /**
+   * 사진을 찍은 시각. 앨범에서 고른 사진은 올린 시각이 아니라 찍은 시각으로 줄을 세워야 해서
+   * JPEG EXIF(DateTimeOriginal)를 먼저 읽고, 없으면 파일 수정 시각(방금 찍은 것처럼 지금과 같으면 모르는 걸로 친다)을 쓴다.
+   * 리사이즈(canvas)를 거치면 EXIF가 사라지므로 원본 파일에서 읽는다.
+   */
+  async function readTakenAt(file) {
+    try {
+      const t = parseExifDate(new DataView(await file.slice(0, 262144).arrayBuffer()));
+      if (t && !isNaN(t)) return t;
+    } catch (e) { /* EXIF가 없거나 깨졌으면 아래로 */ }
+    if (file.lastModified && Math.abs(Date.now() - file.lastModified) > 60000) return new Date(file.lastModified);
+    return null;
+  }
+  function parseExifDate(dv) {
+    if (dv.getUint16(0) !== 0xFFD8) return null;            // JPEG가 아니다
+    let off = 2;
+    while (off + 4 < dv.byteLength) {
+      const marker = dv.getUint16(off), len = dv.getUint16(off + 2);
+      if (marker === 0xFFE1 && dv.getUint32(off + 4) === 0x45786966) {   // 'Exif'
+        const tiff = off + 10, little = dv.getUint16(tiff) === 0x4949;
+        const u16 = (o) => dv.getUint16(o, little), u32 = (o) => dv.getUint32(o, little);
+        const find = (ifd, tags) => {
+          const n = u16(ifd);
+          for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (tags.includes(u16(e))) return { count: u32(e + 4), val: e + 8 }; }
+          return null;
+        };
+        const text = (e) => {
+          const o = e.count > 4 ? tiff + u32(e.val) : e.val;
+          let str = ''; for (let i = 0; i < e.count - 1; i++) str += String.fromCharCode(dv.getUint8(o + i));
+          return str;
+        };
+        const toDate = (str) => { const m = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(str); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null; };
+        const ifd0 = tiff + u32(tiff + 4);
+        const ptr = find(ifd0, [0x8769]);                                 // Exif IFD
+        if (ptr) { const e = find(tiff + u32(ptr.val), [0x9003, 0x9004]); if (e) { const d = toDate(text(e)); if (d) return d; } }
+        const e0 = find(ifd0, [0x0132]);                                  // DateTime
+        return e0 ? toDate(text(e0)) : null;
+      }
+      if ((marker & 0xFF00) !== 0xFF00) break;
+      off += 2 + len;
+    }
+    return null;
+  }
+
+  async function addPendingPhoto(file, takenAt) {
+    if (takenAt === undefined) takenAt = await readTakenAt(file);
     const blob = await resizeImage(file);
     const path = await AppState.uploadDiaryPhoto(blob);
     const url = URL.createObjectURL(blob);   // 방금 올린 건 서명 URL을 기다릴 것 없이 바로 보여준다
     photoUrls[path] = url;
-    pendingPhotos.push({ path, url });
+    pendingPhotos.push({ path, url, takenAt });
     return path;
   }
 
@@ -1499,9 +1545,12 @@
         const files = Array.from(e.target.files || []);
         input.value = '';
         let blocked = false;
-        for (const file of files) {
+        // 한 번에 여러 장을 고르면 고른 순서가 아니라 찍은 순서로 줄을 세운다(모르는 건 맨 뒤)
+        const stamped = await Promise.all(files.map(async (f) => ({ f, t: await readTakenAt(f) })));
+        stamped.sort((a, b) => (a.t ? +a.t : Infinity) - (b.t ? +b.t : Infinity));
+        for (const { f: file, t } of stamped) {
           if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
-          try { await addPendingPhoto(file); AppState.recordPhotoUpload(); }
+          try { await addPendingPhoto(file, t); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);
@@ -1553,10 +1602,13 @@
             SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
         : null;
 
+      // 기록 시각은 가장 먼저 찍은 사진의 시각 — 그래야 같은 날 사진이 찍은 순서로 놓인다(모르면 지금)
+      const taken = pendingPhotos.map(p => p.takenAt).filter(Boolean).map(Number);
+      const takenAt = taken.length ? new Date(Math.min(...taken)) : null;
       const entry = AppState.addJournalEntry({
         date, phase: departurePhaseFor(date), title, body,
         photos: pendingPhotos.map(p => p.path),
-        tags, location: stripCoords(pendingLocation),
+        tags, location: stripCoords(pendingLocation), takenAt,
         nowPlaying, weather: pendingWeather, visibility
       });
       const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;

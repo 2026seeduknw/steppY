@@ -121,7 +121,10 @@
 .arc-lb[hidden] { display: none; }
 .arc-lb__bg { position: absolute; inset: 0; opacity: 0; transition: opacity 320ms ease; background: rgba(16, 15, 13, 0.5); -webkit-backdrop-filter: blur(22px) saturate(0.9); backdrop-filter: blur(22px) saturate(0.9); }
 .arc-lb.is-on .arc-lb__bg { opacity: 1; }
-.arc-lb__img { position: absolute; border-radius: 3px; object-fit: cover; box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55); transition: left 420ms cubic-bezier(.2, .8, .2, 1), top 420ms cubic-bezier(.2, .8, .2, 1), width 420ms cubic-bezier(.2, .8, .2, 1), height 420ms cubic-bezier(.2, .8, .2, 1); }
+.arc-lb__img { position: absolute; border-radius: 3px; object-fit: cover; user-select: none; -webkit-user-drag: none; transition: left 420ms cubic-bezier(.2, .8, .2, 1), top 420ms cubic-bezier(.2, .8, .2, 1), width 420ms cubic-bezier(.2, .8, .2, 1), height 420ms cubic-bezier(.2, .8, .2, 1), opacity 320ms ease, filter 320ms ease; }
+.arc-lb__img.is-center { z-index: 2; box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55); }
+.arc-lb__img.is-side { z-index: 1; opacity: 0.5; filter: brightness(0.75); cursor: pointer; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4); }
+.arc-lb:not(.is-on) .arc-lb__img.is-side { opacity: 0; }
 .arc-lb__info { position: absolute; opacity: 0; transform: translateY(6px); transition: opacity 320ms ease, transform 320ms ease; }
 .arc-lb.is-on .arc-lb__info { opacity: 1; transform: none; transition-delay: 260ms; }
 .arc-lb.is-on .arc-lb__info--2 { transition-delay: 340ms; }

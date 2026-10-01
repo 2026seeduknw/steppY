@@ -533,7 +533,7 @@ const AppState = {
 
   /* -------------------------------------------------------- 기록하기 */
 
-  addJournalEntry({ date, phase, title, body, photos, tags, location, nowPlaying, weather, visibility }) {
+  addJournalEntry({ date, phase, title, body, photos, tags, location, nowPlaying, weather, visibility, takenAt }) {
     const s = this.load();
     // addTodo와 같은 방식 — 서버 uuid가 오기 전까지 쓸 임시 id
     const tempId = 'j' + Date.now();
@@ -552,7 +552,8 @@ const AppState = {
       weather: weather || null,
       // 새 기록은 친구 공개가 기본이다(supabase/friends.sql). 쓰는 창에서 끄면 'private'.
       visibility: visibility === 'private' ? 'private' : 'friends',
-      createdAt: new Date().toISOString()
+      // 기록 시각 — 사진을 찍은 시각이 있으면 그걸 쓴다(같은 날 사진을 찍은 순서로 세우려고). 서버 created_at에도 그대로 넣는다.
+      createdAt: (takenAt instanceof Date && !isNaN(takenAt) ? takenAt : new Date()).toISOString()
     };
     s.journal.push(entry);
     this.save();
@@ -571,7 +572,8 @@ const AppState = {
             location: entry.location,
             now_playing: entry.nowPlaying,
             weather: entry.weather,
-            visibility: entry.visibility
+            visibility: entry.visibility,
+            created_at: entry.createdAt
           })
           .select('id, created_at')
           .single();

@@ -447,7 +447,13 @@
     return { cap: e.title || e.body || '', date, place, weather, song };
   }
 
+  /*
+   * 확대 화면 — 가운데 사진이 살짝 커지고, 이전·다음 사진이 양옆에 어둡게 비친다(누르거나 쓸어서 넘긴다).
+   * 사진마다 <img>를 하나씩 두고 위치(left/top/width/height)만 바꿔서 넘길 때 미끄러지듯 움직이게 한다.
+   * 같은 날 사진은 먼저 찍은 것이 왼쪽 — shots 순서가 곧 왼쪽→오른쪽이다.
+   */
   let lb = null, lbCtx = { shots: [], thumbs: [] }, lbIndex = 0, lbThumb = null;
+  const lbImgs = new Map();   // 사진 번호 → <img>
   function ensureLb() {
     if (lb) return lb;
     lb = document.createElement('div');
@@ -458,33 +464,94 @@
       <button type="button" class="arc-lb__close" aria-label="닫기">✕</button>
       <button type="button" class="arc-lb__nav arc-lb__nav--prev" aria-label="이전 사진">‹</button>
       <button type="button" class="arc-lb__nav arc-lb__nav--next" aria-label="다음 사진">›</button>
-      <img class="arc-lb__img" alt="">
       <div class="arc-lb__info arc-lb__info--1"></div>
       <div class="arc-lb__info arc-lb__info--2"></div>
       <div class="arc-lb__info arc-lb__info--3"></div>`;
     document.body.appendChild(lb);
     lb.querySelector('.arc-lb__bg').addEventListener('click', closeLightbox);
     lb.querySelector('.arc-lb__close').addEventListener('click', closeLightbox);
-    lb.querySelector('.arc-lb__nav--prev').addEventListener('click', () => step(-1));
-    lb.querySelector('.arc-lb__nav--next').addEventListener('click', () => step(1));
-    let sx = 0;
-    lb.addEventListener('pointerdown', (e) => { sx = e.clientX; });
-    lb.addEventListener('pointerup', (e) => { const dx = e.clientX - sx; if (Math.abs(dx) > 60) step(dx < 0 ? 1 : -1); });
+    lb.querySelector('.arc-lb__nav--prev').addEventListener('click', () => goTo(lbIndex - 1));
+    lb.querySelector('.arc-lb__nav--next').addEventListener('click', () => goTo(lbIndex + 1));
+    // 옆에 비친 사진을 누르면 그 사진으로 / 좌우로 쓸어도 넘어간다
+    let sx = 0, sy = 0;
+    lb.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
+    lb.addEventListener('pointerup', (e) => {
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { goTo(lbIndex + (dx < 0 ? 1 : -1)); return; }
+      const side = e.target.closest && e.target.closest('.arc-lb__img.is-side');
+      if (side && Math.abs(dx) < 8 && Math.abs(dy) < 8) goTo(Number(side.dataset.i));
+    });
     document.addEventListener('keydown', (e) => {
       if (!lb || lb.hidden) return;
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowLeft') step(-1);
-      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') goTo(lbIndex - 1);
+      if (e.key === 'ArrowRight') goTo(lbIndex + 1);
     });
     return lb;
   }
   const q = (sel) => lb.querySelector(sel);
   function fitSize(nw, nh) {
-    const maxW = Math.min(innerWidth * 0.82, 380), maxH = innerHeight * 0.46;
+    const maxW = Math.min(innerWidth * 0.8, 360), maxH = innerHeight * 0.46;
     const r = nw / nh;
     let w = maxW, h = w / r;
     if (h > maxH) { h = maxH; w = h * r; }
     return { w, h };
+  }
+  const natural = (i) => {
+    const t = lbCtx.thumbs[i];
+    const r = t.getBoundingClientRect();
+    return { nw: t.naturalWidth || r.width || 1, nh: t.naturalHeight || r.height || 1 };
+  };
+  /** 가운데 사진의 자리와, 양옆 사진(조금 작게, 가운데 높이에 맞춰)의 자리 */
+  function layout(c) {
+    const { nw, nh } = natural(c);
+    const { w, h } = fitSize(nw, nh);
+    const left = (innerWidth - w) / 2, top = (innerHeight - h) / 2 - 8;
+    const out = { [c]: { left, top, width: w, height: h } };
+    const gap = 12;
+    [[c - 1, -1], [c + 1, 1]].forEach(([i, dir]) => {
+      if (i < 0 || i >= lbCtx.shots.length) return;
+      const d = natural(i);
+      const sh = h * 0.86, sw = Math.min(sh * (d.nw / d.nh), innerWidth * 0.8);
+      out[i] = { left: dir < 0 ? left - gap - sw : left + w + gap, top: top + (h - sh) / 2, width: sw, height: sh };
+    });
+    return out;
+  }
+  const px = (r) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  function makeImg(i, rect, role) {
+    const img = document.createElement('img');
+    img.className = `arc-lb__img is-${role}`;
+    img.dataset.i = i;
+    img.alt = '';
+    img.draggable = false;
+    img.src = lbCtx.shots[i].url;
+    Object.assign(img.style, px(rect));
+    lb.insertBefore(img, q('.arc-lb__info--1'));
+    lbImgs.set(i, img);
+    return img;
+  }
+  /** c번을 가운데로 — 이미 있는 사진은 미끄러져 움직이고, 새로 필요한 사진은 그 자리에서 나타난다 */
+  function show(c, fromRect) {
+    const rects = layout(c);
+    lbIndex = c;
+    [...lbImgs.keys()].forEach(i => {
+      if (!(i in rects)) { const el = lbImgs.get(i); lbImgs.delete(i); el.style.opacity = '0'; setTimeout(() => el.remove(), 320); }
+    });
+    Object.keys(rects).map(Number).forEach(i => {
+      const role = i === c ? 'center' : 'side';
+      let el = lbImgs.get(i);
+      if (!el) {
+        el = makeImg(i, i === c && fromRect ? fromRect : rects[i], role);
+        if (!(i === c && fromRect)) { el.style.opacity = '0'; void el.offsetWidth; }
+      }
+      el.className = `arc-lb__img is-${role}`;
+      void el.offsetWidth;
+      Object.assign(el.style, px(rects[i]));
+      el.style.opacity = '';
+    });
+    placeInfo(rects[c]);
+    syncNav();
+    return rects[c];
   }
   function fillInfo(info) {
     const place = info && info.place;
@@ -502,61 +569,56 @@
     const els = [q('.arc-lb__info--1'), q('.arc-lb__info--2'), q('.arc-lb__info--3')];
     els.forEach(el => { el.style.left = rect.left + 'px'; el.style.width = rect.width + 'px'; });
     els[0].style.top = Math.max(60, rect.top - els[0].offsetHeight - 16) + 'px';
-    els[1].style.top = (rect.bottom + 18) + 'px';
-    els[2].style.top = (rect.bottom + 18 + els[1].offsetHeight + (els[1].offsetHeight ? 14 : 0)) + 'px';
+    els[1].style.top = (rect.top + rect.height + 18) + 'px';
+    els[2].style.top = (rect.top + rect.height + 18 + els[1].offsetHeight + (els[1].offsetHeight ? 14 : 0)) + 'px';
   }
   function openLightbox(shots, k, thumbs) {
     ensureLb();
     lbCtx = { shots, thumbs };
-    const thumbEl = thumbs[k];
-    lbIndex = k; lbThumb = thumbEl;
-    const img = q('.arc-lb__img');
-    const r = thumbEl.getBoundingClientRect();
+    lbThumb = thumbs[k];
+    lbImgs.forEach(el => el.remove()); lbImgs.clear();
     lb.hidden = false;
-    img.src = shots[k].url;
-    Object.assign(img.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
     fillInfo(shots[k].info);
-    thumbEl.style.visibility = 'hidden';
-    void img.offsetWidth;   // 시작 위치를 먼저 확정한 뒤 목표로 옮겨야 전환이 걸린다
-    setTimeout(() => {
-      const { w, h } = fitSize(thumbEl.naturalWidth || r.width, thumbEl.naturalHeight || r.height);
-      const tgt = { left: (innerWidth - w) / 2, top: (innerHeight - h) / 2 - 8 };
-      Object.assign(img.style, { left: tgt.left + 'px', top: tgt.top + 'px', width: w + 'px', height: h + 'px' });
-      placeInfo({ left: tgt.left, top: tgt.top, bottom: tgt.top + h, width: w });
-      lb.classList.add('is-on');
-      syncNav();
-    }, 30);
+    lbThumb.style.visibility = 'hidden';
+    const r = lbThumb.getBoundingClientRect();
+    void lb.offsetWidth;   // 시작 위치를 먼저 확정한 뒤 목표로 옮겨야 전환이 걸린다
+    setTimeout(() => { show(k, { left: r.left, top: r.top, width: r.width, height: r.height }); lb.classList.add('is-on'); }, 30);
+    // show()가 시작 위치에서 목표로 옮기려면 시작 위치로 만들어진 뒤여야 해서, 한 번 더 만들어 둔다
+    makeStart(k, r);
+  }
+  /** 눌린 사진의 자리에서 시작하는 가운데 사진을 미리 만들어 둔다(show가 이걸 목표 위치로 옮긴다) */
+  function makeStart(k, r) {
+    const img = makeImg(k, { left: r.left, top: r.top, width: r.width, height: r.height }, 'center');
+    img.style.transition = 'none';
+    void img.offsetWidth;
+    img.style.transition = '';
   }
   function closeLightbox() {
     if (!lb || lb.hidden) return;
-    const img = q('.arc-lb__img');
     const r = lbThumb.getBoundingClientRect();
-    lb.classList.remove('is-on');
-    Object.assign(img.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
     const th = lbThumb;
-    setTimeout(() => { lb.hidden = true; th.style.visibility = ''; }, 430);
-  }
-  function step(d) {
-    const n = lbIndex + d;
-    if (n < 0 || n >= lbCtx.shots.length) return;
-    const next = lbCtx.thumbs[n];
-    lbThumb.style.visibility = '';
-    lbThumb = next; lbIndex = n;
-    next.style.visibility = 'hidden';
-    if (next.scrollIntoView) next.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
-    const shot = lbCtx.shots[n];
     lb.classList.remove('is-on');
+    lbImgs.forEach((el, i) => {
+      if (i === lbIndex) Object.assign(el.style, px(r));
+      else el.style.opacity = '0';
+    });
+    setTimeout(() => { lb.hidden = true; th.style.visibility = ''; lbImgs.forEach(el => el.remove()); lbImgs.clear(); }, 430);
+  }
+  function goTo(n) {
+    if (n < 0 || n >= lbCtx.shots.length || n === lbIndex) return;
+    lbThumb.style.visibility = '';
+    lbThumb = lbCtx.thumbs[n];
+    lbThumb.style.visibility = 'hidden';
+    if (lbThumb.scrollIntoView) lbThumb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
+    // 정보는 잠깐 사라졌다가 새 사진의 것으로 다시 나타난다
+    const infoEls = lb.querySelectorAll('.arc-lb__info');
+    infoEls.forEach(el => { el.style.transition = 'opacity 140ms ease'; el.style.opacity = '0'; });
+    const rect = show(n);
     setTimeout(() => {
-      const img = q('.arc-lb__img');
-      img.src = shot.url;
-      const { w, h } = fitSize(next.naturalWidth || 1, next.naturalHeight || 1);
-      const tgt = { left: (innerWidth - w) / 2, top: (innerHeight - h) / 2 - 8 };
-      Object.assign(img.style, { left: tgt.left + 'px', top: tgt.top + 'px', width: w + 'px', height: h + 'px' });
-      fillInfo(shot.info);
-      placeInfo({ left: tgt.left, top: tgt.top, bottom: tgt.top + h, width: w });
-      lb.classList.add('is-on');
-      syncNav();
-    }, 180);
+      fillInfo(lbCtx.shots[n].info);
+      placeInfo(rect);
+      infoEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
+    }, 160);
   }
   function syncNav() {
     q('.arc-lb__nav--prev').disabled = lbIndex <= 0;
