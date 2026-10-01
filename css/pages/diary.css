@@ -1838,31 +1838,6 @@ body[data-page="journal"][data-theme] .report-entry__caption { font-family: var(
    색은 전부 --diary-* 를 따라가서 낮/밤/필름 테마가 바뀌어도 같이 바뀐다.
    ========================================================================== */
 
-/* 탭 — 내 기록 | 타임라인 | 친구 */
-.diary-tabs { display: flex; align-items: center; gap: 6px; margin-top: var(--space-3); }
-.diary-tabs__tab {
-  flex: 1; padding: 9px 0; border-radius: var(--radius-pill);
-  border: 1px solid var(--diary-line-strong); background: transparent; color: var(--diary-text-dim);
-  font: inherit; font-size: var(--fs-small); font-weight: 700; cursor: pointer;
-}
-.diary-tabs__tab.is-active { background: var(--diary-accent); border-color: var(--diary-accent); color: var(--diary-surface); }
-.diary-tabs__friends {
-  position: relative; flex: none; width: 40px; height: 40px; display: grid; place-items: center;
-  border-radius: 50%; border: 1px solid var(--diary-line-strong); background: transparent;
-  color: var(--diary-text); cursor: pointer;
-}
-.diary-tabs__badge {
-  position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: var(--radius-pill); background: var(--coral-500); color: #fff;
-  font-size: 11px; font-weight: 800; line-height: 18px; text-align: center;
-}
-.diary-tabs__badge[hidden] { display: none; }
-
-/* 타임라인을 보는 동안은 달력·연속 기록 등을 접는다(머리글·탭·쓰기 막대만 남긴다) */
-.diary-view.is-timeline > :not(.diary-header):not(.diary-tabs):not(.ft-timeline):not(.diary-write-bar) { display: none !important; }
-.ft-timeline { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
-.ft-timeline[hidden] { display: none; }
-
 /* 카드 */
 .ft-card {
   background: var(--diary-surface); color: var(--diary-text);

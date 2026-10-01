@@ -182,6 +182,15 @@
   const MARKUP = `
     <header class="diary-header">
       <h1 class="diary-header__title">기록</h1>
+    </header>
+
+    <div class="arc-title">
+      <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
+      <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
+    </div>
+
+    <div class="arc-weekrow">
+      <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
       <div class="diary-streak" id="streakBadge">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2c1 3-3 4-3 7.5A3.5 3.5 0 0 0 12 13a3.5 3.5 0 0 0 3-5c1.5 1.5 2 3.3 2 5a5 5 0 0 1-10 0c0-4 3-5.5 3-9 0-.7.5-1.3 2-2z"/>
@@ -189,22 +198,6 @@
         <span class="diary-streak__num" id="streakNum">0</span>
         <span class="diary-streak__label">일 연속</span>
       </div>
-    </header>
-
-    <div class="diary-tabs" role="tablist" aria-label="기록 보기">
-      <button type="button" class="diary-tabs__tab is-active" role="tab" aria-selected="true" data-tab="mine">내 기록</button>
-      <button type="button" class="diary-tabs__tab" role="tab" aria-selected="false" data-tab="timeline">타임라인</button>
-      <button type="button" class="diary-tabs__friends" id="friendsBtn" aria-label="친구 관리">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16.5 5.2a3 3 0 0 1 0 5.6M18 14c2 .6 3.5 2.3 3.5 5"/></svg>
-        <span class="diary-tabs__badge" data-friends-badge hidden>0</span>
-      </button>
-    </div>
-
-    <section class="ft-timeline" id="friendTimeline" hidden></section>
-
-    <div class="arc-title">
-      <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
-      <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
     </div>
 
     <section class="diary-featured" id="diaryFeaturedSlot"></section>
@@ -227,11 +220,9 @@
     </section>
 
     <section class="arc-sec-home" id="archiveFriendsSec">
-      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><span class="arc-sec-home__hint">친구들은 지금 어디서 뭘 할까요?</span></div>
+      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
       <div id="archiveFriends"></div>
     </section>
-
-    <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
 
     <div id="diaryHeroSlot"></div>
     <div id="diaryPhaseToggle" hidden></div>
@@ -1824,31 +1815,14 @@
       e.target.value = '';
       if (file) openEntryModal(file);
     });
-    wireTabs();
+    wireFriends();
     root.querySelector('#openWrapup').addEventListener('click', openWrapupModal);
     root.querySelector('#openReport').addEventListener('click', openReportModal);
   }
 
-  /** 내 기록 ↔ 친구 타임라인. 타임라인은 보일 때마다 새로 읽는다(친구가 방금 올렸을 수 있다). */
-  function wireTabs() {
-    const slot = root.querySelector('#friendTimeline');
-    let mounted = false;
-    root.querySelectorAll('[data-tab]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const timeline = btn.dataset.tab === 'timeline';
-        root.classList.toggle('is-timeline', timeline);
-        slot.hidden = !timeline;
-        root.querySelectorAll('[data-tab]').forEach(b => {
-          const on = b === btn;
-          b.classList.toggle('is-active', on);
-          b.setAttribute('aria-selected', String(on));
-        });
-        if (!timeline) return;
-        if (!mounted) { mounted = true; Friends.mountTimeline(slot); }
-        else Friends.reloadTimeline();
-      });
-    });
-    root.querySelector('#friendsBtn').addEventListener('click', () => {
+  /** 친구 관리(코드로 추가·요청 수락·차단)로 들어가는 버튼. 받은 요청이 있으면 숫자 배지가 붙는다. */
+  function wireFriends() {
+    root.querySelector('#archiveFriendsManage').addEventListener('click', () => {
       if (needLogin()) return;
       Friends.openManager();
     });
