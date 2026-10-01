@@ -26,7 +26,6 @@
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
   let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
   let nowPlayingSearchTimer = null;
-  let lastStreak = null;
   let root = null;
 
   /**
@@ -180,24 +179,9 @@
   /* --------------------------------------------------------------- 뼈대 */
 
   const MARKUP = `
-    <header class="diary-header">
-      <h1 class="diary-header__title">기록</h1>
-    </header>
-
     <div class="arc-title">
       <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
       <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
-    </div>
-
-    <div class="arc-weekrow">
-      <div class="diary-week" id="weekStrip" aria-label="이번 주 기록"></div>
-      <div class="diary-streak" id="streakBadge">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2c1 3-3 4-3 7.5A3.5 3.5 0 0 0 12 13a3.5 3.5 0 0 0 3-5c1.5 1.5 2 3.3 2 5a5 5 0 0 1-10 0c0-4 3-5.5 3-9 0-.7.5-1.3 2-2z"/>
-        </svg>
-        <span class="diary-streak__num" id="streakNum">0</span>
-        <span class="diary-streak__label">일 연속</span>
-      </div>
     </div>
 
     <section class="diary-featured" id="diaryFeaturedSlot"></section>
@@ -262,15 +246,11 @@
     const slot = root.querySelector('#diaryHeroSlot');
     const info = departureInfo();
 
-    // 날짜를 모르면 여기서 받지 않고 홈으로 보낸다 — 입력 자리가 두 곳이면
-    // 한쪽에서 고친 값이 다른 쪽에 안 보이는 것처럼 느껴진다.
-    if (!info.hasRange) {
-      slot.innerHTML = `
-        <a class="diary-hero diary-hero--compact diary-hero--setup" href="home.html">
-          <span class="diary-hero__cta">홈에서 출국일 입력하기 →</span>
-        </a>`;
-      return;
-    }
+    // 날짜를 모르면 아무것도 보이지 않는다 — 출국일 입력 안내는 홈에 있다(입력 자리가 두 곳이면
+    // 한쪽에서 고친 값이 다른 쪽에 안 보이는 것처럼 느껴져서 여기서는 안내도 하지 않는다).
+    // 빈 칸이 flex 간격만 먹지 않게 슬롯 자체를 숨긴다.
+    slot.hidden = !info.hasRange;
+    if (!info.hasRange) { slot.innerHTML = ''; return; }
 
     // 출국 전 — 남은 날 한 줄.
     if (info.phase === DEPARTURE_PHASES.BEFORE) {
@@ -334,24 +314,6 @@
 
   /* --------------------------------------------------------------- 연속 기록 */
 
-  function renderStreak() {
-    const days = new Set(entries().map(e => e.date));
-    let streak = 0;
-    const cursor = new Date(now);
-    if (!days.has(todayIso)) cursor.setDate(cursor.getDate() - 1);
-    while (days.has(toIso(cursor))) { streak++; cursor.setDate(cursor.getDate() - 1); }
-
-    const el = root.querySelector('#streakNum');
-    el.textContent = streak;
-    if (lastStreak !== null && streak > lastStreak) {
-      const badge = root.querySelector('#streakBadge');
-      badge.classList.remove('is-bumping');
-      void badge.offsetWidth;
-      badge.classList.add('is-bumping');
-    }
-    lastStreak = streak;
-    renderWeek();
-  }
 
   /* --------------------------------------------------------------- 최근 사진 */
 
@@ -705,19 +667,6 @@
   }
   /* --------------------------------------------------------------- 이번 주 */
 
-  function renderWeek() {
-    const el = root && root.querySelector('#weekStrip');
-    if (!el) return;
-    const days = new Set(entries().map(e => e.date));
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());   // 일요일
-    const names = ['일', '월', '화', '수', '목', '금', '토'];
-    el.innerHTML = names.map((n, i) => {
-      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-      const iso = toIso(d);
-      const cls = ['diary-week__day', days.has(iso) && 'is-done', iso === todayIso && 'is-today', iso > todayIso && 'is-future'].filter(Boolean).join(' ');
-      return `<div class="${cls}"><span>${n}</span><i>${days.has(iso) ? '✓' : ''}</i></div>`;
-    }).join('');
-  }
 
   /* --------------------------------------------------------------- 시간대 배경 */
 
@@ -1845,7 +1794,6 @@
     renderArchive();
     renderHero();
     renderPhaseToggle();
-    renderStreak();
     renderFeatured();
     renderMonth();
     renderSide();
