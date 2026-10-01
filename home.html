@@ -16,7 +16,13 @@
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell home-hero">
-  <h1 id="greeting">안녕하세요</h1>
+  <div class="home-hero__row">
+    <h1 id="greeting">안녕하세요</h1>
+    <button type="button" class="home-wallet" id="homeWallet" hidden>
+      <span class="home-wallet__coin">🪙 <strong id="homeWalletCredits">0</strong></span>
+      <span class="home-wallet__plan" id="homeWalletPlan">일반</span>
+    </button>
+  </div>
   <p id="greetingSub"></p>
   <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
 </div>
@@ -84,6 +90,7 @@
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
 <script src="js/components/modal.js"></script>
+<script src="js/components/paywall.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>

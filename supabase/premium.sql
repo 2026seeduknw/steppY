@@ -43,16 +43,29 @@ create table if not exists public.premium_plans (
   active boolean not null default true
 );
 
-insert into public.credit_packages (id, credits, price_krw, label, sort_order) values
-  ('credit_100',  100,  1200, '100 크레딧',  1),
-  ('credit_300',  300,  3300, '300 크레딧',  2),
-  ('credit_600',  600,  6000, '600 크레딧',  3),
-  ('credit_1500', 1500, 13500, '1500 크레딧', 4)
-on conflict (id) do nothing;
+-- credits는 보너스를 포함한 총 지급량, bonus는 그중 덤(화면에 "+N 보너스"로 보인다)
+alter table public.credit_packages add column if not exists bonus integer not null default 0;
+
+-- 1크레딧 ≈ 11원. 큰 묶음일수록 보너스를 얹는다(10% / 20% / 30%).
+-- do update라서 이 파일을 다시 실행하면 가격이 새 값으로 바뀐다.
+insert into public.credit_packages (id, credits, bonus, price_krw, label, sort_order) values
+  ('credit_100',  100,  0,   1100,  '100 크레딧',  1),
+  ('credit_330',  330,  30,  3300,  '330 크레딧',  2),
+  ('credit_600',  600,  100, 5500,  '600 크레딧',  3),
+  ('credit_1300', 1300, 300, 11000, '1300 크레딧', 4)
+on conflict (id) do update
+  set credits = excluded.credits, bonus = excluded.bonus, price_krw = excluded.price_krw,
+      label = excluded.label, sort_order = excluded.sort_order, active = true;
+
+-- 예전 자리표시자 묶음은 지우지 않고 내린다(이미 팔린 기록이 id를 가리킬 수 있다)
+update public.credit_packages set active = false where id in ('credit_300', 'credit_1500');
 
 insert into public.premium_plans (id, days, price_krw, label, sort_order) values
-  ('premium_1m', 30, 4900, '프리미엄 1개월', 1)
-on conflict (id) do nothing;
+  ('premium_1m', 30,  4400,  '프리미엄 1개월', 1),
+  ('premium_6m', 180, 22000, '프리미엄 6개월', 2)
+on conflict (id) do update
+  set days = excluded.days, price_krw = excluded.price_krw, label = excluded.label,
+      sort_order = excluded.sort_order, active = true;
 
 alter table public.credit_packages enable row level security;
 alter table public.premium_plans   enable row level security;

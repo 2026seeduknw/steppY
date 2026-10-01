@@ -234,11 +234,19 @@
    *  그대로 country_en으로 반환하고, 확정 학교 국가로 찾는 건 화면 쪽(prepare-view.js)에서 처리. */
   async function loadCountryPrep() {
     const { data } = await supabaseClient.from('country_prep').select('*');
+    // *_ko는 화면용으로 다듬은 문장(supabase/country_prep_ko.sql). 아직 안 채워졌으면
+    // 원문으로 떨어진다 — 서류는 원문 쉼표로 나눠 같은 목록 모양으로 맞춘다.
+    const pick = (c, f) => c[`${f}_ko`] || c[f];
+    const docs = (c) => (Array.isArray(c.account_docs_ko) && c.account_docs_ko.length)
+      ? c.account_docs_ko
+      : String(c.account_docs || '').split(/\s*,\s*/).filter(Boolean);
     return (data || []).map(c => ({
       countryEn: c.country_en, countryKo: c.country_ko,
-      telecomRecommend: c.telecom_recommend, telecomPrice: c.telecom_price, telecomNote: c.telecom_note,
-      insurance: c.insurance, insurancePrice: c.insurance_price, insuranceNote: c.insurance_note,
-      bankRecommend: c.bank_recommend, accountDocs: c.account_docs
+      telecomRecommend: pick(c, 'telecom_recommend'), telecomPrice: pick(c, 'telecom_price'), telecomNote: pick(c, 'telecom_note'),
+      insurance: pick(c, 'insurance'), insurancePrice: pick(c, 'insurance_price'), insuranceNote: pick(c, 'insurance_note'),
+      bankRecommend: pick(c, 'bank_recommend'), accountDocs: docs(c),
+      telecomSource: c.telecom_source, insuranceSource: c.insurance_source, bankSource: c.bank_note_source,
+      surveyDate: c.survey_date
     }));
   }
 
@@ -365,7 +373,7 @@
       supabaseClient.from('premium_plans').select('*').order('sort_order')
     ]);
     return {
-      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, priceKrw: p.price_krw, label: p.label })),
+      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, bonus: p.bonus || 0, priceKrw: p.price_krw, label: p.label })),
       premiumPlans: (plans || []).map(p => ({ id: p.id, days: p.days, priceKrw: p.price_krw, label: p.label }))
     };
   }

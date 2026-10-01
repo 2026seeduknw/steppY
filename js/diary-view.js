@@ -1031,6 +1031,13 @@
 
   /* --------------------------------------------------------------- 기록 모달 */
 
+  // 결제창에서 크레딧으로 1장을 더 샀으면 쓰기 창의 "크레딧" 버튼을 다시 "+"로 돌린다.
+  // 쓰기 창은 열 때마다 새로 그려지므로 리스너는 여기서 한 번만 단다.
+  document.addEventListener('credits:changed', () => {
+    const s = document.getElementById('entryModalScrim');
+    if (s && s.classList.contains('is-open') && s.querySelector('.diary-photo-picker')) renderPhotoPicker(s);
+  });
+
   function ensureScrim(id) {
     let scrim = document.getElementById(id);
     if (!scrim) {
@@ -1111,9 +1118,14 @@
     if (!edit) requestLocation();
 
     if (initialFile) {
-      addPendingPhoto(initialFile)
-        .then(() => renderPhotoPicker(scrim))
-        .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
+      // 메인 화면 카메라로 바로 찍은 사진도 하루 무료 한도에 똑같이 센다
+      if (AppState.freePhotoUploadsLeft() <= 0) {
+        openPaywall({ reason: 'photo' });
+      } else {
+        addPendingPhoto(initialFile)
+          .then(() => { AppState.recordPhotoUpload(); renderPhotoPicker(scrim); })
+          .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
+      }
     }
   }
 
@@ -1280,18 +1292,23 @@
 
     ['#photoInput', '#cameraInput'].forEach((sel) => {
       const input = scrim.querySelector(sel);
+      // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
+      input.closest('label').addEventListener('click', (e) => {
+        if (AppState.freePhotoUploadsLeft() > 0) return;
+        e.preventDefault();
+        openPaywall({ reason: 'photo' });
+      });
       input.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         input.value = '';
+        let blocked = false;
         for (const file of files) {
-          if (AppState.freePhotoUploadsLeft() <= 0) {
-            showToast('오늘 무료 사진은 3장까지예요 · 프리미엄이면 무제한으로 올릴 수 있어요');
-            break;
-          }
+          if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
           try { await addPendingPhoto(file); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);
+        if (blocked) openPaywall({ reason: 'photo' });
       });
     });
 

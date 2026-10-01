@@ -161,3 +161,14 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-weight: 700;
   color: var(--sky-700);
 }
+
+/* 처음 3개 다음에 붙는 잠금 줄 — 카드와 같은 폭, 점선으로 "더 있다"를 보여준다 */
+.match-lock {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: var(--space-3); margin-top: var(--space-2);
+  border: 1.5px dashed var(--line-200); border-radius: var(--radius-lg);
+  background: var(--cloud-50);
+}
+.match-lock__text { margin: 0; font-size: var(--fs-small); color: var(--ink-700); }
+.match-lock__text b { color: var(--ink-900); }
+.match-lock__btn { flex: none; white-space: nowrap; text-decoration: none; }

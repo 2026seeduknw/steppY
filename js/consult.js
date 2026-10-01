@@ -17,8 +17,8 @@
 (function () {
   AppState.load();
 
-  const ASK_COST = 10;
-  const ANSWER_REWARD = 10;
+  const ASK_COST = BM.ASK_COST;
+  const ANSWER_REWARD = BM.ANSWER_REWARD;
 
   const state = { region: null, country: '', onlyFavorite: false };
 
@@ -96,21 +96,50 @@
     if (!countryFilterMount) return;
     const regions = buildCountryRegions();
 
+    // 별표한 국가는 대륙을 거치지 않고 맨 앞에서 바로 고른다
+    const allCountries = regions.flatMap(r => r.countries);
+    const favs = AppState.getFavoriteCountries()
+      .map(name => allCountries.find(c => c.country === name))
+      .filter(Boolean);
+
     if (!state.region) {
       countryFilterMount.innerHTML = `
         <button type="button" class="chip${state.country === '' ? ' is-selected' : ''}" data-region="">전체</button>
+        ${favs.map(c => `
+          <button type="button" class="chip chip--fav${state.country === c.country ? ' is-selected' : ''}" data-country="${escapeHtml(c.country)}">
+            <span class="chip__star" aria-hidden="true">★</span>${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
+          </button>`).join('')}
         ${regions.map(r => `
           <button type="button" class="chip" data-region="${r.region}">${REGION_ICON[r.region] || '🌐'} ${REGION_LABEL_EN[r.region] || r.region}</button>
         `).join('')}`;
     } else {
       const region = regions.find(r => r.region === state.region);
+      // 국가 칩마다 오른쪽에 별 — 한 알약 안에 "고르기"와 "별표" 버튼 두 개를 나란히 둔다
       countryFilterMount.innerHTML = `
         <button type="button" class="chip" data-region-back>← ${REGION_LABEL_EN[state.region] || state.region}</button>
-        ${(region ? region.countries : []).map(c => `
-          <button type="button" class="chip${state.country === c.country ? ' is-selected' : ''}" data-country="${escapeHtml(c.country)}">
-            ${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
-          </button>`).join('')}`;
+        ${(region ? region.countries : []).map(c => {
+          const fav = AppState.isCountryFavorite(c.country);
+          return `
+          <span class="chip country-chip${state.country === c.country ? ' is-selected' : ''}">
+            <button type="button" class="country-chip__pick" data-country="${escapeHtml(c.country)}">
+              ${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
+            </button>
+            <button type="button" class="country-chip__star${fav ? ' is-on' : ''}" data-country-fav="${escapeHtml(c.country)}"
+                    aria-pressed="${fav}" aria-label="${escapeHtml(c.country)} 즐겨찾기">${fav ? '★' : '☆'}</button>
+          </span>`;
+        }).join('')}`;
     }
+
+    countryFilterMount.querySelectorAll('[data-country-fav]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+        const on = AppState.toggleCountryFavorite(btn.dataset.countryFav);
+        btn.classList.toggle('is-on', on);
+        btn.textContent = on ? '★' : '☆';
+        btn.setAttribute('aria-pressed', String(on));
+        if (typeof showToast === 'function') showToast(on ? '즐겨찾기한 국가는 맨 앞에서 바로 고를 수 있어요' : '국가 즐겨찾기를 뺐어요');
+      });
+    });
 
     countryFilterMount.querySelectorAll('[data-region]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -211,7 +240,8 @@
     renderList();
   });
   askOpenBtn.addEventListener('click', openAskSheet);
-  creditWrap.addEventListener('click', openCreditInfoSheet);
+  creditWrap.addEventListener('click', () => openPaywall({ reason: 'menu' }));
+  document.addEventListener('credits:changed', renderCreditBadge);
 
   /* ---------------------------------------------------------- 바텀시트 공통 */
 
@@ -303,7 +333,8 @@
           }
           if (!title || !body) return;
           if (AppState.getCredits() < ASK_COST) {
-            if (typeof showToast === 'function') showToast('크레딧이 부족해요.');
+            // 쓴 글은 그대로 두고 결제창을 위에 겹쳐 연다 — 충전하고 돌아와 바로 등록할 수 있게
+            openPaywall({ reason: 'credits', need: ASK_COST });
             return;
           }
           submitBtn.disabled = true;
@@ -322,48 +353,6 @@
         });
       }
     });
-  }
-
-  /**
-   * 크레딧 배지를 누르면 뜨는 가격표. supabase/premium.sql이 아직 PG(결제대행사)와
-   * 연결되지 않아 "구매" 버튼은 아직 아무 결제도 진행하지 않는다 — 가격표 자체를
-   * 먼저 노출해 두고, 실제 결제는 PG를 정한 뒤 이 버튼에 연결한다.
-   */
-  function openCreditInfoSheet() {
-    const packages = AppState.getCreditPackages();
-    const plans = AppState.getPremiumPlans();
-    const won = (n) => `₩${n.toLocaleString('ko-KR')}`;
-    const html = `
-      <div class="app-sheet__scrim" data-close></div>
-      <div class="app-sheet__panel" role="dialog" aria-modal="true" aria-label="크레딧 · 프리미엄">
-        <div class="app-sheet__grip" data-close></div>
-        <div class="app-sheet__head"><h2>크레딧 · 프리미엄</h2><button type="button" class="app-sheet__done" data-close>닫기</button></div>
-        <div class="app-sheet__body">
-          <p class="mentor-credit-sheet__balance">내 크레딧 <strong>🪙 ${AppState.getCredits()}</strong></p>
-
-          <span class="mentor-section-title">크레딧 구매</span>
-          <div class="mentor-price-list">
-            ${packages.map(p => `
-              <div class="mentor-price-row">
-                <span class="mentor-price-row__label">🪙 ${p.label}</span>
-                <span class="mentor-price-row__price">${won(p.priceKrw)}</span>
-                <button type="button" class="btn btn--ghost btn--sm" disabled>결제 준비 중</button>
-              </div>`).join('')}
-          </div>
-
-          <span class="mentor-section-title">프리미엄 — 사진 무제한 업로드 · 광고 제거 · 크레딧 증정</span>
-          <div class="mentor-price-list">
-            ${plans.map(p => `
-              <div class="mentor-price-row">
-                <span class="mentor-price-row__label">${p.label}</span>
-                <span class="mentor-price-row__price">${won(p.priceKrw)}</span>
-                <button type="button" class="btn btn--ghost btn--sm" disabled>결제 준비 중</button>
-              </div>`).join('')}
-          </div>
-          <p class="mentor-form__cost">결제 수단은 아직 준비 중이에요 · 곧 연결할게요</p>
-        </div>
-      </div>`;
-    openSheet(html);
   }
 
   /**

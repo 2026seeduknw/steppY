@@ -103,6 +103,8 @@
         toggle.textContent = clamped ? '더보기' : '접기';
         return;
       }
+      const unlock = e.target.closest('[data-unlock]');
+      if (unlock) { unlockMore(unlock); return; }
       const chip = e.target.closest('[data-topic-jump]');
       if (chip) {
         e.stopPropagation();
@@ -154,7 +156,15 @@
     if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
     requestAnimationFrame(() => {
       const el = document.querySelector(`[data-match-id="${CSS.escape(String(target.id))}"]`);
-      if (!el) return;
+      if (!el) {
+        // 필터는 풀었으니 안 보이면 잠긴 뒤쪽에 있는 카드다 — 잠금 줄로 데려간다
+        const lock = document.querySelector('.match-lock');
+        if (lock) {
+          lock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('그 카드는 잠긴 목록 안에 있어요 · 크레딧으로 더 볼 수 있어요');
+        }
+        return;
+      }
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('is-jumped');
       setTimeout(() => el.classList.remove('is-jumped'), 1600);
@@ -346,6 +356,52 @@
     return courseName.replace(/\s*\([^)]*\)\s*$/, '');
   }
 
+  /* ------------------------------------------------ 처음 3개 무료, 나머지는 크레딧으로
+     목록 키는 "어떤 목록인가"만 담는다(모드 · 연세 전공 · 확정 학교 · 신청 전공).
+     국가·관련도 필터는 같은 목록을 거르는 것이라 키에 넣지 않는다 — 한 번 푼
+     목록은 필터를 바꿔도 풀린 채로 남는다. 서버 쪽은 supabase/bm_unlocks.sql. */
+  function matchListKey() {
+    const school = AppState.getConfirmedSchool();
+    return [mode, selectedMajor || '-', school ? school.id : '-', mode === 'course' ? (selectedTargetMajor || '-') : '-'].join('|');
+  }
+
+  function lockRowHtml(hiddenCount) {
+    const cta = AppState.isAuthed
+      ? `<button type="button" class="btn btn--primary btn--sm match-lock__btn" data-unlock>🪙 ${BM.MATCH_UNLOCK_COST}으로 ${BM.MATCH_UNLOCK_STEP}개 더 보기</button>`
+      : `<a class="btn btn--primary btn--sm match-lock__btn" href="auth.html">로그인하고 더 보기</a>`;
+    return `
+      <div class="match-lock">
+        <p class="match-lock__text">🔒 <b>${hiddenCount}개</b>가 더 있어요</p>
+        ${cta}
+      </div>`;
+  }
+
+  /** 보여줄 만큼 자르고, 남은 게 있으면 잠금 줄을 붙인다. */
+  function withLock(matches, cardHtml) {
+    const limit = AppState.visibleMatchCount(matchListKey());
+    const cards = matches.slice(0, limit).map(cardHtml).join('');
+    return matches.length > limit ? cards + lockRowHtml(matches.length - limit) : cards;
+  }
+
+  async function unlockMore(btn) {
+    const key = matchListKey();
+    if (AppState.getCredits() < BM.MATCH_UNLOCK_COST) {
+      openPaywall({ reason: 'match', need: BM.MATCH_UNLOCK_COST });
+      return;
+    }
+    btn.disabled = true;
+    const res = await AppState.unlockMatches(key);
+    if (!res.ok) {
+      btn.disabled = false;
+      if (res.error && /insufficient_credits/.test(res.error.message || '')) openPaywall({ reason: 'match', need: BM.MATCH_UNLOCK_COST });
+      else showToast('지금은 열 수 없어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    trackEvent('credits_match_unlock', { mode, steps: AppState.visibleMatchCount(key) });
+    renderMatches();
+    showToast(`🪙 ${BM.MATCH_UNLOCK_COST} 크레딧으로 ${BM.MATCH_UNLOCK_STEP}개를 더 열었어요`);
+  }
+
   function renderCourseMatches() {
     const confirmed = AppState.getConfirmedSchool();
     const note = document.getElementById('confirmedSchoolNote');
@@ -396,7 +452,7 @@
     renderCountryFilter(matches);
     matches = byCountry(matches);
 
-    document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
+    document.getElementById('matchList').innerHTML = matches.length ? withLock(matches, m => {
       const school = schoolDisplay(m.school);
       return `
       <div class="card match-card" data-school="${m.school}">
@@ -415,7 +471,7 @@
         ${noteBlock(formatNote(m.note))}
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${
+    }) : `<p class="info-panel__text">${
       selectedCountry || selectedRelevance || selectedTargetMajor
         ? '조건에 맞는 과목이 없어요. 관련도를 바꿔보세요.'
         : confirmed
@@ -449,7 +505,7 @@
       note.hidden = true;
     }
 
-    document.getElementById('matchList').innerHTML = matches.length ? matches.map(m => {
+    document.getElementById('matchList').innerHTML = matches.length ? withLock(matches, m => {
       const school = schoolDisplay(m.school);
       // 목록이 전부 확정 학교라 따로 표시할 것이 없다
       return `
@@ -469,7 +525,7 @@
         ${noteBlock(m.note || '')}
       </div>
     `;
-    }).join('') : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
+    }) : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
   }
 
   function renderMatches() {

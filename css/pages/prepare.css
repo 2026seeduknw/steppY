@@ -96,50 +96,64 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .prepare-main { display: flex; flex-direction: column; gap: var(--space-5); padding-left: var(--space-6); }
 .prepare-aside { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: calc(var(--header-h) + var(--space-5)); }
 
-/* ---- 체크리스트 ---- */
-.checklist { display: flex; flex-direction: column; gap: var(--space-2); }
-.checklist-item {
-  border: 1px solid var(--line-200);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.checklist-item__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-}
-.checklist-item__check {
-  flex: 0 0 auto;
-  width: 24px; height: 24px;
-  border-radius: var(--radius-pill);
-  border: 1.5px solid var(--sky-300);
+/* ---- 열고 닫는 카드(체크리스트 · 준비물) ----
+   머리줄 오른쪽 버튼으로 몸통을 접는다. 접어도 머리줄(제목·퍼센트)은 남는다. */
+.prep-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.prep-card__title { margin: 0; font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; color: var(--ink-900); }
+.prep-card__right { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+.prep-card__pct { font-size: var(--fs-small); color: var(--ink-400); white-space: nowrap; }
+.prep-card__pct b { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 800; color: var(--ink-900); }
+.prep-card__toggle {
+  width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  font-size: 0.75rem;
+  border: 1px solid var(--line-200); background: var(--cloud-0); color: var(--ink-600); cursor: pointer;
 }
-.checklist-item.is-done .checklist-item__check { background: var(--mint-500); border-color: var(--mint-500); }
-.checklist-item__title { font-weight: 600; flex: 1; }
-.checklist-item.is-done .checklist-item__title { color: var(--ink-400); text-decoration: line-through; }
-.checklist-item__due { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); }
-.checklist-item__caret { color: var(--ink-400); transition: transform var(--dur-fast) var(--ease-out); }
-.checklist-item.is-expanded .checklist-item__caret { transform: rotate(180deg); }
-.checklist-item__detail {
-  padding: 0 var(--space-4) var(--space-4);
-  font-size: var(--fs-small);
-  color: var(--ink-700);
-  display: none;
+.prep-card__toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur-base) var(--ease-out); }
+.prep-card.is-collapsed .prep-card__toggle svg { transform: rotate(180deg); }
+.prep-card__body { margin-top: var(--space-3); }
+.prep-card.is-collapsed .prep-card__body { display: none; }
+
+/* ---- 비자 및 서류: 진행 바 + 단계형 목록 ---- */
+.prep-progress { height: 8px; border-radius: 999px; background: var(--key-100); overflow: hidden; margin-bottom: var(--space-4); }
+.prep-progress__fill { height: 100%; width: 0; border-radius: inherit; background: var(--key-500); transition: width 520ms var(--ease-out); }
+
+.stepper { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.step-item { position: relative; display: flex; gap: var(--space-3); padding-bottom: var(--space-4); }
+.step-item:last-child { padding-bottom: 0; }
+/* 동그라미 사이를 잇는 세로선 — 끝낸 단계 아래 선은 채워진다 */
+.step-item:not(:last-child)::before {
+  content: ''; position: absolute; left: 14px; top: 32px; bottom: 2px;
+  width: 2px; border-radius: 2px; background: var(--line-200);
 }
-.checklist-item.is-expanded .checklist-item__detail { display: block; }
-.checklist-item__source {
-  margin-top: var(--space-2);
-  font-size: var(--fs-micro);
-  color: var(--ink-400);
-  font-family: var(--font-mono);
+.step-item.is-done:not(:last-child)::before { background: var(--key-500); }
+
+.step-item__dot {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--line-200); background: var(--cloud-0); cursor: pointer;
+  transition: background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
 }
+.step-item__dot svg { width: 16px; height: 16px; fill: none; stroke: var(--key-ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.step-item.is-done .step-item__dot { background: var(--key-500); border-color: var(--key-500); }
+.step-item.is-done .step-item__dot svg { opacity: 1; }
+/* 지금 할 일 — 두꺼운 링 */
+.step-item.is-current .step-item__dot { border: 8px solid var(--key-500); }
+
+.step-item__main { flex: 1; min-width: 0; }
+/* 제목 왼쪽, 마감(D-day) 오른쪽 크게 — 동그라미(30px)와 세로 가운데를 맞춘다 */
+.step-item__row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  width: 100%; min-height: 30px; padding: 0; border: 0; background: none;
+  text-align: left; cursor: pointer; font: inherit;
+}
+.step-item__title { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.step-item__due { flex: none; font-family: var(--font-mono); font-size: 1.1rem; font-weight: 800; color: var(--ink-900); }
+.step-item.is-done .step-item__due { color: var(--ink-400); }
+.step-item.is-done .step-item__title { color: var(--ink-400); text-decoration: line-through; }
+.step-item__detail { display: none; margin-top: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); line-height: 1.55; }
+.step-item.is-expanded .step-item__detail { display: block; }
+.step-item__detail p { margin: 0; }
+.step-item__source { margin-top: var(--space-2) !important; font-size: var(--fs-micro); color: var(--ink-400); font-family: var(--font-mono); }
 
 /* ---- 생활 정보 카드 ---- */
 .living-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-4); }
@@ -168,8 +182,22 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   padding: 0 var(--space-5) var(--space-5);
 }
 .living-card.is-expanded .living-card__detail { display: flex; }
-.living-card__summary { font-size: var(--fs-small); color: var(--ink-700); }
-.living-card .spec-note { font-size: var(--fs-micro); padding: var(--space-2) var(--space-3); }
+/* 추천 / 요금 / 필요 서류 — 왼쪽 작은 이름표, 오른쪽 내용 */
+.living-facts { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.living-facts__row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--space-2); align-items: baseline; }
+.living-facts dt { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-400); }
+.living-facts dd { margin: 0; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-900); word-break: keep-all; }
+.living-docs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.living-docs li {
+  padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-200); background: var(--cloud-0);
+  font-size: var(--fs-micro); font-weight: 600; color: var(--ink-700);
+}
+.living-card__note {
+  margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+  background: var(--cloud-50); font-size: var(--fs-small); line-height: 1.55; color: var(--ink-700); word-break: keep-all;
+}
+.living-card__source { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); }
+.living-card__source a { color: var(--ink-400); text-decoration: underline; }
 
 .scholarship-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
 .scholarship-row { padding: var(--space-3); background: var(--sky-50); border-radius: var(--radius-sm); }
@@ -182,3 +210,35 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .tip-item { padding: var(--space-3) var(--space-4); border: 1px solid var(--line-200); border-radius: var(--radius-md); }
 .tip-item__title { font-weight: 600; font-size: var(--fs-small); }
 .tip-item__summary { font-size: var(--fs-micro); color: var(--ink-600); }
+
+/* 항공권 예약 → 출국일 입력 팝업(화면 가운데).
+   app.css의 .modal-panel(바텀시트)을 이기려고 #id + 클래스 두 개로 명시도를 올린다. */
+#departurePromptScrim { align-items: center; }
+#departurePromptScrim .modal-panel.departure-prompt {
+  width: min(340px, 86vw); max-width: min(340px, 86vw);
+  height: auto; max-height: 86vh;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  text-align: center;
+  transform: translateY(16px) scale(0.98);
+}
+#departurePromptScrim.is-open .modal-panel.departure-prompt { transform: translateY(0) scale(1); }
+.departure-prompt__icon { margin: 0; font-size: 1.8rem; }
+.departure-prompt__title { margin: 0; font-size: var(--fs-h3); font-weight: 800; color: var(--ink-900); }
+.departure-prompt__desc { margin: 0 0 var(--space-1); font-size: var(--fs-small); color: var(--ink-600); line-height: 1.5; }
+.departure-prompt__field {
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+  font-size: var(--fs-small); font-weight: 700; color: var(--ink-900);
+}
+.departure-prompt__field input {
+  height: 46px; padding: 0 var(--space-3);
+  border: 1.5px solid var(--key-500); border-radius: var(--radius-md);
+  background: var(--cloud-0); color: var(--ink-900); font: inherit; font-size: 16px; font-weight: 700;
+}
+.departure-prompt__field--sub { font-weight: 600; color: var(--ink-600); }
+.departure-prompt__field--sub input { border-color: var(--line-200); font-weight: 500; }
+
+.step-item__departure { margin-top: var(--space-2) !important; font-size: var(--fs-small); color: var(--ink-700); }
+.step-item__departure b { font-family: var(--font-mono); color: var(--ink-900); }
+.step-item__departure-edit { margin-left: 6px; border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: var(--sky-700); text-decoration: underline; cursor: pointer; }

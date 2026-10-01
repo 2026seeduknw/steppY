@@ -118,14 +118,16 @@ MOCK.mentorQuestions = [];
  * 그대로 보인다 — DB 값과 동일하게 맞춰뒀다. 실제 금액은 PG 연동 시점에
  * DB 쪽만 바꾸면 된다(여기 값은 화면이 잠깐이라도 비어 보이지 않게 하는 fallback).
  * ------------------------------------------------------------------- */
+// credits는 보너스를 포함한 총 지급량, bonus는 그중 덤으로 얹은 양(화면 표시용)
 MOCK.creditPackages = [
-  { id: 'credit_100', credits: 100, priceKrw: 1200, label: '100 크레딧' },
-  { id: 'credit_300', credits: 300, priceKrw: 3300, label: '300 크레딧' },
-  { id: 'credit_600', credits: 600, priceKrw: 6000, label: '600 크레딧' },
-  { id: 'credit_1500', credits: 1500, priceKrw: 13500, label: '1500 크레딧' }
+  { id: 'credit_100',  credits: 100,  bonus: 0,   priceKrw: 1100,  label: '100 크레딧' },
+  { id: 'credit_330',  credits: 330,  bonus: 30,  priceKrw: 3300,  label: '330 크레딧' },
+  { id: 'credit_600',  credits: 600,  bonus: 100, priceKrw: 5500,  label: '600 크레딧' },
+  { id: 'credit_1300', credits: 1300, bonus: 300, priceKrw: 11000, label: '1300 크레딧' }
 ];
 MOCK.premiumPlans = [
-  { id: 'premium_1m', days: 30, priceKrw: 4900, label: '프리미엄 1개월' }
+  { id: 'premium_1m', days: 30,  priceKrw: 4400,  label: '프리미엄 1개월' },
+  { id: 'premium_6m', days: 180, priceKrw: 22000, label: '프리미엄 6개월' }
 ];
 
 /* ---------------------------------------------------------------------

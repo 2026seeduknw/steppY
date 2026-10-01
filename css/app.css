@@ -43,6 +43,11 @@
   --journey-steps-mask:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='26' viewBox='0 0 36 26'%3E%3Cg fill='%23000'%3E%3Cellipse cx='11' cy='7' rx='5' ry='3.4'/%3E%3Cellipse cx='3.6' cy='7.9' rx='2' ry='2.3'/%3E%3Cellipse cx='29' cy='18' rx='5' ry='3.4'/%3E%3Cellipse cx='21.6' cy='18.9' rx='2' ry='2.3'/%3E%3C/g%3E%3C/svg%3E")
     repeat-x left center / 36px 26px;
+  /* 위 타일에서 발 한 짝만 떼어 낸 모양 — 굽이치는 길처럼 방향을 자유롭게
+     돌려 써야 하는 자리용(퀘스트 로드맵). 같은 발 실루엣이라 같은 발자국으로 읽힌다. */
+  --footstep-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='11' viewBox='0 0 16 11'%3E%3Cg fill='%23000'%3E%3Cellipse cx='10' cy='5.4' rx='5' ry='3.3'/%3E%3Cellipse cx='3' cy='6.1' rx='1.9' ry='2.2'/%3E%3C/g%3E%3C/svg%3E")
+    no-repeat center / contain;
 }
 
 html { background: var(--oxford); }
@@ -520,7 +525,6 @@ body[data-page="prepare"] .page-shell.prepare-hero { padding-left: var(--space-4
 .confirmed-card__badges { margin-top: var(--space-2); }
 .confirmed-card__actions { flex-direction: row; align-items: center; justify-content: space-between; }
 .empty-hero { flex-direction: column; align-items: stretch; gap: var(--space-4); padding: var(--space-5); border-radius: var(--radius-row); }
-.checklist-item { border-radius: 12px; }
 
 /* ---- F5 학점 인정 / 전공 매칭 ---- */
 /* .credits-grid 는 .page-shell 과 같이 걸려 있고 이 파일 안에서 더 뒤에 오므로,
@@ -707,6 +711,16 @@ button.appbar__avatar { border: none; cursor: pointer; }
   overflow-wrap: anywhere;
 }
 .account-sheet__cancel { display: block; width: 100%; margin-top: var(--space-3); text-align: center; }
+/* 계정 시트의 크레딧·프리미엄 줄 — 누르면 결제창(js/components/paywall.js) */
+.account-sheet__wallet {
+  display: flex; align-items: center; gap: var(--space-2); width: 100%;
+  margin: calc(var(--space-5) * -1 + var(--space-2)) 0 var(--space-4);
+  padding: 12px var(--space-3); border-radius: var(--radius-md);
+  border: 1px solid var(--key-200); background: var(--key-100); color: var(--ink-900);
+  font: inherit; font-size: var(--fs-small); cursor: pointer; text-align: left;
+}
+.account-sheet__wallet-coin strong { font-family: var(--font-mono); }
+.account-sheet__wallet-plan { flex: 1; text-align: right; font-weight: 700; color: var(--key-ink); }
 
 /* ---- auth.html ----
    랜딩과 같은 얼굴로 맞춘다: 흰 바탕 · 네이비 글자 · 시안은 워드마크에만.
@@ -857,7 +871,7 @@ body[data-page="auth"] {
 .todo-pill__count span { font-size: var(--fs-body); color: var(--ink-400); }
 /* To-Do 만 하늘색 로고 글씨체 대신 원래 남색으로 되돌린다 — 배경(--sky-100)이
    이미 하늘색이라 글자까지 같은 색이면 묻힌다. */
-.todo-pill__label.brand-head { font-size: 1.25rem; color: var(--ink-900); -webkit-text-stroke: 0; }
+.todo-pill__label.brand-head { font-size: 1rem; color: var(--ink-900); -webkit-text-stroke: 0; white-space: nowrap; }
 /* .wm-text 는 자기 색을 직접 들고 있어서(components.css) 위 규칙이 부모에서
    내려가지 않는다 — 이 자리에서 한 번 더 눌러야 진짜 남색이 된다. */
 .todo-pill__label.brand-head .wm-text { color: var(--ink-900); -webkit-text-stroke: 0; }
@@ -1654,7 +1668,6 @@ body[data-page="prepare"] .tabbar,
 body[data-page="home"] .tabbar { background: rgba(255, 255, 255, 0.72); }
 
 /* 카드 안에 또 얹히는 면은 더 옅게 — 유리 위에 유리를 겹치면 탁해진다 */
-body[data-page="prepare"] .checklist-item,
 body[data-page="prepare"] .living-item,
 body[data-page="prepare"] .tip-card,
 body[data-page="home"] .todo-pill,
@@ -1966,3 +1979,94 @@ textarea {
   color: var(--ink-900);
   word-break: keep-all;
 }
+
+/* ==========================================================================
+   크레딧 · 프리미엄 결제창 (js/components/paywall.js)
+   어느 화면에서 열리든 같은 모양 — 결제를 권하는 이유(reason)만 맨 위에 바뀐다.
+   ========================================================================== */
+.app-sheet--paywall { z-index: 95; }   /* 질문하기 시트 위에 겹쳐 열릴 수 있다 */
+/* 제목 줄 없이 — 맨 위 "내 크레딧" 줄 오른쪽에 ✕ 를 둔다 */
+.paywall__top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.paywall__top .paywall__balance { flex: 1; min-width: 0; }
+.paywall__close {
+  flex: none; width: 32px; height: 32px; margin-right: -6px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: none;
+  font-size: 1.05rem; color: var(--ink-600); cursor: pointer;
+}
+.paywall__close:hover { background: var(--cloud-50); }
+.paywall { padding: var(--space-3) var(--space-5) var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+
+.paywall__reason {
+  display: flex; gap: var(--space-2); align-items: flex-start;
+  padding: var(--space-3); border-radius: var(--radius-md);
+  background: var(--cloud-50); border: 1px solid var(--line-100);
+}
+.paywall__reason-icon { font-size: 1.3rem; line-height: 1.2; }
+.paywall__reason-title { font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); margin: 0; }
+.paywall__reason-desc { font-size: var(--fs-micro); color: var(--ink-600); margin: 2px 0 0; line-height: 1.45; }
+
+.paywall__balance { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-600); }
+.paywall__balance strong { font-family: var(--font-mono); font-size: var(--fs-body); color: var(--ink-900); }
+.paywall__badge {
+  margin-left: auto; padding: 2px 9px; border-radius: 999px;
+  background: var(--key-100); border: 1px solid var(--key-200); color: var(--key-ink);
+  font-size: var(--fs-micro); font-weight: 800;
+}
+.paywall__guest { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-small); color: var(--ink-700); }
+.paywall__guest p { margin: 0; }
+
+.paywall__quick {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  width: 100%; padding: 12px var(--space-3); border-radius: var(--radius-md);
+  border: 1.5px dashed var(--key-500); background: var(--key-100); color: var(--ink-900);
+  font: inherit; font-size: var(--fs-small); font-weight: 800; cursor: pointer; text-align: left;
+}
+.paywall__quick:disabled { opacity: 0.5; cursor: default; }
+.paywall__quick-note { font-size: var(--fs-micro); font-weight: 700; color: var(--key-ink); white-space: nowrap; }
+
+.paywall__premium {
+  padding: var(--space-3); border-radius: var(--radius-lg);
+  background: var(--ink-900); color: #fff;
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.paywall__premium-head { display: flex; align-items: center; }
+/* 브랜드 워드마크와 같은 어그로체(components.css @font-face) + 왕관 픽토그램 */
+.paywall__premium-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'SB Aggro Light', var(--font-display); font-weight: 700;
+  font-size: 1.15rem; letter-spacing: -0.01em; color: #fff;
+}
+.paywall__crown { width: 20px; height: 20px; fill: var(--key-500); flex: none; }
+.paywall__benefits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-small); color: rgba(255, 255, 255, 0.86); }
+.paywall__benefits li { display: flex; gap: 8px; }
+
+.paywall__options { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--space-2); }
+.paywall__options--grid { grid-template-columns: repeat(2, 1fr); }
+.paywall__option {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 10px 12px; border-radius: var(--radius-md);
+  border: 1.5px solid var(--line-200); background: var(--cloud-0); color: var(--ink-900);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.paywall__option.is-selected { border-color: var(--key-500); box-shadow: 0 0 0 3px var(--key-100); }
+.paywall__option-label { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); }
+.paywall__option-price { font-family: var(--font-mono); font-size: var(--fs-body); font-weight: 800; }
+.paywall__option-sub { font-size: var(--fs-micro); color: var(--key-ink); font-weight: 700; word-break: keep-all; }
+.paywall__premium .paywall__option { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
+.paywall__premium .paywall__option-label { color: rgba(255, 255, 255, 0.7); }
+.paywall__premium .paywall__option-sub { color: var(--key-500); }
+.paywall__premium .paywall__option.is-selected { border-color: var(--key-500); box-shadow: none; background: rgba(18, 229, 226, 0.14); }
+
+.paywall__cta { margin-top: var(--space-1); }
+.paywall__premium .paywall__cta { background: var(--key-500); color: var(--key-ink); }
+.paywall__cta:disabled { opacity: 0.45; }
+
+.paywall__credits { display: flex; flex-direction: column; gap: var(--space-2); }
+.paywall__section-title { margin: 0; font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+
+.paywall__uses { font-size: var(--fs-small); color: var(--ink-700); }
+.paywall__uses summary { cursor: pointer; font-weight: 700; color: var(--ink-600); }
+.paywall__uses ul { margin: var(--space-2) 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+.paywall__uses b { font-family: var(--font-mono); color: var(--ink-900); }
+.paywall__foot { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); text-align: center; }
