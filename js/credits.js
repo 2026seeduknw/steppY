@@ -414,10 +414,31 @@
     if (confirmed) {
       matches = matches.filter(m => m.school === confirmed.id);
 
-      // 학교는 정했는데 신청 전공을 아직 안 골랐다면 목록을 내보내지 않는다.
+      // 학교는 정했는데 내 전공을 아직 안 골랐다면 목록을 내보내지 않는다.
       // 전공을 모르는 채로 그 학교 과목 전부를 늘어놓으면(수백 개) 무엇이 내
-      // 학점으로 인정되는지 판단할 수 없다. 입력은 홈 한 곳에서만 받는다.
-      if (!selectedTargetMajor && matches.length && targetMajorOptions(confirmed.id).length) {
+      // 학점으로 인정되는지 판단할 수 없다.
+      if (!selectedMajor && matches.length) {
+        renderRelevanceFilter([]);
+        renderCountryFilter([]);
+        note.hidden = true;
+        document.getElementById('matchList').innerHTML = `
+          <div class="info-panel">
+            <p class="info-panel__text">
+              먼저 <strong>내 전공</strong>을 고르면 ${confirmed.nameKo || confirmed.name}에서
+              그 전공으로 인정되는 과목만 모아서 보여드려요.
+            </p>
+          </div>`;
+        return;
+      }
+
+      if (selectedMajor) {
+        matches = matches.filter(m => m.homeMajor === selectedMajor);
+      }
+
+      // 같은 학교·같은 내 전공이라도 후보 학과(현지 학과)가 둘 이상으로 갈리는 경우에만
+      // 신청 전공으로 좁히게 한다 — 보통은 전공당 학과가 하나라 이 단계를 안 거친다.
+      const targetOptions = [...new Set(matches.flatMap(m => m.matchedTopics || []))];
+      if (!selectedTargetMajor && matches.length && targetOptions.length > 1) {
         renderRelevanceFilter([]);
         renderCountryFilter([]);
         note.hidden = true;
@@ -435,13 +456,12 @@
       note.hidden = false;
       note.textContent = selectedTargetMajor
         ? `확정하신 ${confirmed.nameKo || confirmed.name} · ${selectedTargetMajor} 기준이에요.`
-        : `확정하신 ${confirmed.nameKo || confirmed.name}의 과목만 보여드려요.`;
+        : `확정하신 ${confirmed.nameKo || confirmed.name}의 ${selectedMajor} 인정 과목이에요.`;
     } else {
       note.hidden = true;
-    }
-
-    if (selectedMajor) {
-      matches = matches.filter(m => m.homeMajor === selectedMajor);
+      if (selectedMajor) {
+        matches = matches.filter(m => m.homeMajor === selectedMajor);
+      }
     }
 
     matches = byTargetMajor(matches);
