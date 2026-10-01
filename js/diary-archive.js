@@ -200,8 +200,11 @@
   }
   const friendsEmpty = () => `
     <div class="arc-friends-empty">
-      <p>친구를 추가하면 친구들의 최근 기록이 여기에 나와요</p>
-      <button type="button" class="arc-btn arc-btn--ghost" data-open-friends>친구 추가하기</button>
+      <p><b>함께 교환학생 간 친구를 초대해 보세요</b><br>링크를 누르면 바로 친구가 되고, 서로의 기록을 나눌 수 있어요.</p>
+      <div class="arc-friends-empty__actions">
+        <button type="button" class="arc-btn arc-btn--sm" data-invite-share>친구 초대하기</button>
+        <button type="button" class="arc-link" data-open-friends>코드로 추가하기</button>
+      </div>
     </div>`;
   function drawFriends(slot, posts) {
     if (!posts.length) { slot.innerHTML = friendsEmpty(); return; }
@@ -213,6 +216,8 @@
       </article>`).join('')}</div>`;
   }
   document.addEventListener('click', (e) => {
+    const share = e.target.closest('#archiveFriends [data-invite-share]');
+    if (share) { if (ctx && ctx.needLogin && ctx.needLogin()) return; if (typeof Friends !== 'undefined') Friends.shareInvite(); return; }
     const open = e.target.closest('#archiveFriends [data-open-friends]');
     if (open) { if (ctx && ctx.needLogin && ctx.needLogin()) return; if (typeof Friends !== 'undefined') Friends.openManager(); return; }
     const img = e.target.closest('#archiveFriends .arc-fcard__img');
@@ -626,5 +631,7 @@
   }
 
   /** 다른 화면(최근 사진 캐러셀·날짜 팝업)에서 같은 확대 화면을 쓴다. shots = [{ url, info }], thumbs = 눌린 사진 요소들 */
-  global.DiaryArchive = { render, refresh, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs) };
+  /** 친구가 새로 생겼을 때(초대 링크 등) 친구들 줄을 다시 읽는다 */
+  function reloadFriends() { friendsLoadedFor = null; const slot = root && root.querySelector('#archiveFriends'); if (slot) slot._posts = null; renderFriends(); }
+  global.DiaryArchive = { render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs) };
 })(window);

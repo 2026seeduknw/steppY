@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>steppY 친구 초대</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  /* 친구 초대 링크의 도착 페이지 — 앱이 있으면 앱을 열고, 없으면 App Store로 보낸다.
+     앱의 다른 화면(layout.js·supabase)은 불러오지 않는다: 앱을 안 깐 사람이 먼저 보는 한 장짜리 페이지다. */
+  body { min-width: 0; /* base.css의 데스크탑 전용 min-width:1120px 해제 — 폰에서 보는 페이지다 */ min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: var(--space-5) var(--space-4); background: var(--cloud-50); box-sizing: border-box; }
+  .invite { width: 100%; max-width: 380px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+  .invite__logo { width: 72px; height: 72px; border-radius: 50%; }
+  .invite__title { margin: 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.3; word-break: keep-all; }
+  .invite__desc { margin: 0; font-size: var(--fs-small); color: var(--ink-700); line-height: 1.65; word-break: keep-all; }
+  .invite__code { margin-top: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: #fff; border: 1px solid var(--line-200); width: 100%; }
+  .invite__code small { display: block; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); margin-bottom: 6px; }
+  .invite__code b { font-size: 1.6rem; letter-spacing: 0.18em; font-variant-numeric: tabular-nums; user-select: all; -webkit-user-select: all; }
+  .invite__actions { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; margin-top: var(--space-2); }
+  .invite__btn { display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; font: inherit; font-size: 15px; font-weight: 700; text-decoration: none; border: 0; cursor: pointer; }
+  .invite__btn--primary { background: var(--ink-900); color: #fff; }
+  .invite__btn--ghost { background: #fff; color: var(--ink-900); border: 1px solid var(--line-200); }
+  .invite__note { margin: 0; font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.6; }
+  .invite__bad { color: var(--coral-600); }
+</style>
+</head>
+<body>
+<main class="invite">
+  <img class="invite__logo" src="assets/logo-mark-circle.png" alt="steppY">
+  <h1 class="invite__title" id="title">친구가 steppY에<br>초대했어요</h1>
+  <p class="invite__desc" id="desc">함께 교환학생을 준비하고, 서로의 교환 생활도 나눠요.<br>앱에서 열면 바로 친구가 돼요.</p>
+
+  <div class="invite__code" id="codeBox" hidden>
+    <small>초대 코드</small>
+    <b id="code"></b>
+  </div>
+
+  <div class="invite__actions" id="actions">
+    <a class="invite__btn invite__btn--primary" id="openApp" href="#">steppY 앱에서 열기</a>
+    <a class="invite__btn invite__btn--ghost" id="getApp" href="#">앱 설치하기</a>
+  </div>
+  <p class="invite__note" id="note">앱이 없다면 설치한 뒤 앱의 <b>기록 → 친구 관리</b>에서 위 코드를 입력해 주세요.</p>
+</main>
+
+<script src="js/app-links.js"></script>
+<script>
+(function () {
+  const params = new URLSearchParams(location.search);
+  const code = (params.get('code') || '').trim().toUpperCase();
+  const valid = /^[A-Z0-9]{4,16}$/.test(code);
+  const $ = (id) => document.getElementById(id);
+
+  $('getApp').href = AppLinks.APP_STORE_URL;
+
+  if (!valid) {
+    // 코드가 없거나 이상하면 앱을 열 이유가 없다 — 안내만 남기고 설치 링크만 둔다
+    $('title').innerHTML = '초대 링크를 <span class="invite__bad">확인할 수 없어요</span>';
+    $('desc').textContent = '링크가 잘렸거나 잘못된 것 같아요. 초대한 친구에게 다시 받아 주세요.';
+    $('openApp').hidden = true;
+    $('note').hidden = true;
+    return;
+  }
+
+  $('code').textContent = code;
+  $('codeBox').hidden = false;
+  const appUrl = AppLinks.appUrl(code);
+  $('openApp').href = appUrl;
+
+  // 들어오자마자 앱을 열어 본다. 앱이 열리면 이 페이지는 백그라운드로 가므로(visibilitychange/pagehide)
+  // 그때는 아무것도 하지 않고, 잠시 뒤에도 그대로 보이고 있으면 앱이 없는 걸로 보고 App Store로 안내한다.
+  let opened = false;
+  const mark = () => { opened = true; };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) mark(); });
+  window.addEventListener('pagehide', mark);
+
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  setTimeout(() => { location.href = appUrl; }, 250);
+  if (isIOS) {
+    setTimeout(() => { if (!opened && !document.hidden) location.href = AppLinks.APP_STORE_URL; }, 2200);
+  }
+})();
+</script>
+</body>
+</html>

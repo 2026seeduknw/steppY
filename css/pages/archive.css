@@ -153,3 +153,16 @@
 /* 친구 관리 버튼의 받은 요청 수 */
 .arc-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--coral-500); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; }
 .arc-badge[hidden] { display: none; }
+
+/* Folders ↔ Friends 사이를 조금 더 띄운다 */
+#archiveFriendsSec { margin-top: var(--space-4); }
+
+/* 기록 버튼 줄 위의 구분선은 뺀다(필름 테마가 섹션 사이에 그어 둔 선) — 선이 없으니 위 여백도 줄인다 */
+body[data-page="journal"][data-theme="film"] .diary-write-bar { border-top: 0; padding-top: var(--space-2); }
+
+/* 친구 초대 안내(친구가 없을 때) */
+.arc-friends-empty p { line-height: 1.55; }
+.arc-friends-empty p b { color: var(--diary-text); font-size: var(--fs-body); }
+.arc-friends-empty__actions { display: flex; align-items: center; gap: var(--space-3); }
+.arc-btn--sm { flex: 0 0 auto; padding: 9px 16px; font-size: 13.5px; border-radius: var(--radius-pill); }
+.arc-link { border: 0; background: none; color: var(--diary-text-dim); font: inherit; font-size: var(--fs-small); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 2px; }

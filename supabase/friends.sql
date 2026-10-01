@@ -146,6 +146,40 @@ begin
 end;
 $$;
 
+-- 초대 링크로 들어온 경우 — 링크를 건넨 사람이 이미 "친구가 되자"고 한 것이므로 요청을 거치지 않고
+-- 바로 친구가 된다. 결과: accepted | already_friends | invalid_code | self
+--   - 코드가 곧 링크의 비밀이다. 코드를 아는 사람은 누구나 친구가 될 수 있으니, 모르는 사람에게 코드를 주지 않는다.
+--   - 상대가 이미 나에게 요청을 보내 둔 상태(pending)였으면 그 요청을 수락으로 바꾼다.
+create or replace function public.accept_invite(code text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  me uuid := auth.uuid();
+  other uuid;
+  existing public.friendships%rowtype;
+begin
+  if me is null then raise exception 'not_authenticated'; end if;
+  select id into other from public.profiles where invite_code = upper(trim(code));
+  if other is null then return 'invalid_code'; end if;
+  if other = me then return 'self'; end if;
+  if public.is_blocked_between(me, other) then return 'invalid_code'; end if;
+
+  select * into existing from public.friendships f
+   where (f.requester = me and f.addressee = other) or (f.requester = other and f.addressee = me);
+  if found then
+    if existing.status = 'accepted' then return 'already_friends'; end if;
+    update public.friendships set status = 'accepted', responded_at = now() where id = existing.id;
+    return 'accepted';
+  end if;
+
+  insert into public.friendships (requester, addressee, status, responded_at) values (other, me, 'accepted', now());
+  return 'accepted';
+end;
+$$;
+
 create or replace function public.respond_friend_request(fid uuid, accept boolean)
 returns void
 language plpgsql
@@ -389,6 +423,7 @@ create policy content_reports_insert on public.content_reports
 -- 기본값은 PUBLIC 실행 허용이라 anon에게도 열린다. 로그인한 사용자에게만 연다.
 revoke all on function public.my_invite_code()                 from public, anon;
 revoke all on function public.send_friend_request(text)        from public, anon;
+revoke all on function public.accept_invite(text)              from public, anon;
 revoke all on function public.respond_friend_request(uuid, boolean) from public, anon;
 revoke all on function public.remove_friend(uuid)              from public, anon;
 revoke all on function public.block_user(uuid)                 from public, anon;
@@ -401,6 +436,7 @@ revoke all on function public.can_see_entry(uuid)              from public, anon
 
 grant execute on function public.my_invite_code()                 to authenticated;
 grant execute on function public.send_friend_request(text)        to authenticated;
+grant execute on function public.accept_invite(text)              to authenticated;
 grant execute on function public.respond_friend_request(uuid, boolean) to authenticated;
 grant execute on function public.remove_friend(uuid)              to authenticated;
 grant execute on function public.block_user(uuid)                 to authenticated;

@@ -80,6 +80,28 @@ const Friends = (function () {
     });
   }
 
+  /**
+   * 초대 링크 문구. 링크를 누르면(invite.html) 앱이 있는 사람은 앱이 열려 바로 친구가 되고,
+   * 없는 사람은 App Store로 간다. 코드만 알려 주는 것보다 한 번 눌러서 끝나서 훨씬 덜 번거롭다.
+   */
+  function inviteMessage(code) {
+    return `같이 교환학생 준비하고, 서로의 교환 생활도 나눠요! steppY에서 친구가 되어요 👉 ${AppLinks.inviteUrl(code)}`;
+  }
+  /** 홈의 "친구 초대하기" — 공유 시트(없으면 복사)로 초대 링크를 건넨다 */
+  async function shareInvite() {
+    if (!AppState.isAuthed) { askLogin(); return; }
+    if (!(await ensureTerms())) return;
+    const res = await api.inviteCode();
+    if (!res.ok) { toast('초대 링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요'); return; }
+    const text = inviteMessage(res.data);
+    if (navigator.share) {
+      try { await navigator.share({ title: 'steppY 친구 초대', text }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); toast('초대 링크를 복사했어요'); }
+    catch (e) { toast('공유하지 못했어요'); }
+  }
+
   function makeScrim(id) {
     let scrim = document.getElementById(id);
     if (scrim) scrim.remove();   // 다시 열 때마다 새로 — 이전 리스너가 남지 않게
@@ -133,7 +155,7 @@ const Friends = (function () {
           <button type="button" class="btn btn--ghost btn--sm" data-copy>복사</button>
           <button type="button" class="btn btn--primary btn--sm" data-share>공유</button>
         </div>
-        <p class="ft-muted">친구가 이 코드를 입력하면 요청이 와요. 코드는 친구에게만 알려 주세요.</p>
+        <p class="ft-muted">‘공유’로 보낸 링크를 친구가 누르면 앱이 있는 사람은 바로 친구가 되고, 없는 사람은 App Store로 가요. 코드를 직접 입력하면 요청이 와요. 코드는 친구에게만 알려 주세요.</p>
       </section>
 
       <section class="ft-sec">
@@ -199,7 +221,7 @@ const Friends = (function () {
 
   function wireManager(body, code) {
     const refresh = () => { renderManager(); refreshBadges(); };
-    const text = `steppY에서 친구 해요! 기록하기 탭 → 친구에서 초대 코드 ${code} 를 입력해 주세요.`;
+    const text = inviteMessage(code);
 
     body.querySelector('[data-copy]').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(code); toast('코드를 복사했어요'); }
@@ -636,5 +658,5 @@ const Friends = (function () {
     return { posts };
   }
 
-  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts };
+  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts, shareInvite, ensureTerms };
 })();

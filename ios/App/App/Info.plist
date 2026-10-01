@@ -6,6 +6,17 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>kr.steppy.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>steppy</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>steppY</string>
 	<key>CFBundleExecutable</key>
