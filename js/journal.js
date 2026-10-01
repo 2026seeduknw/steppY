@@ -26,6 +26,13 @@
    */
   function wantsDiary() { return true; }
 
+  /**
+   * 비로그인에게는 사진 다이어리 대신 온보딩(js/diary-intro.js)만 보여 준다.
+   * 세션 확인(Auth.init)이 끝나기 전에는 화면을 비워 둔다 — 안 그러면 로그인한 사람도
+   * 온보딩이 잠깐 번쩍인다.
+   */
+  let authReady = false;
+
   // 마지막으로 고른 단계를 이어 쓴다 — 교환을 떠난 뒤 매번 '교환 중'으로
   // 바꿔야 하면 번거롭다. 이 기기에만 남는 값이라 서버에는 올리지 않는다.
   let phase = localStorage.getItem('steppy_journal_phase') === 'abroad' ? 'abroad' : 'prepare';
@@ -196,6 +203,13 @@
   function renderAll() {
     if (wantsDiary()) {
       ledeMount.hidden = true;
+      if (!authReady) return;
+      if (!AppState.isAuthed) {
+        if (diaryViewIsMounted()) unmountDiaryView();
+        if (!diaryIntroIsMounted()) mountDiaryIntro(rootMount);
+        return;
+      }
+      if (diaryIntroIsMounted()) unmountDiaryIntro();
       if (!diaryViewIsMounted()) mountDiaryView(rootMount);
       return;
     }
@@ -214,6 +228,8 @@
   }
 
   renderAll();
+  Auth.init().then(() => { authReady = true; renderAll(); });
+  document.addEventListener('auth:changed', renderAll);
 
   // 서버 기록은 하이드레이션 후에, 방금 만든 기록의 진짜 id는 저장 직후에 도착한다.
   // 둘 다 MOCK:updated로 오는데, 그때마다 입력창을 다시 그리면 쓰던 글이 날아간다.

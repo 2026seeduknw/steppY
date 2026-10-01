@@ -95,7 +95,7 @@ const Friends = (function () {
   let managerScrim = null;
 
   async function openManager() {
-    if (!AppState.isAuthed) { toast('로그인하면 친구를 추가할 수 있어요'); return; }
+    if (!AppState.isAuthed) { askLogin(); return; }
     if (!(await ensureTerms())) return;
     managerScrim = makeScrim('friendsScrim');
     managerScrim.innerHTML = `
@@ -330,9 +330,13 @@ const Friends = (function () {
     return reloadTimeline();
   }
 
+  const LOGIN_PROMPT = '로그인하면 친구와 기록을 함께 볼 수 있어요. 로그인 화면으로 갈까요?';
+  function askLogin() { if (window.confirm(LOGIN_PROMPT)) location.href = 'auth.html'; }
+
   async function reloadTimeline() {
     if (!tl.mount) return;
     if (!AppState.isAuthed) {
+      tl.guest = true;
       tl.mount.innerHTML = `
         <section class="card card-pad"><div class="guest-cta">
           <p class="guest-cta__text">로그인하면 <strong>친구와 기록을 함께</strong> 볼 수 있어요</p>
@@ -340,6 +344,7 @@ const Friends = (function () {
         </div></section>`;
       return;
     }
+    tl.guest = false;
     tl.entries = []; tl.cursor = null; tl.hasMore = false; tl.openComments.clear();
     tl.mount.innerHTML = `<p class="ft-muted ft-center">불러오는 중…</p>`;
     const listRes = await api.list();
@@ -567,6 +572,8 @@ const Friends = (function () {
   async function onTimelineClick(e) {
     const t = e.target.closest('button');
     if (!t) return;
+    // 미리보기에서는 무엇을 눌러도 로그인 안내로 이어진다
+    if (tl.guest) { askLogin(); return; }
     if (t.dataset.like) { toggleLike(t.dataset.like); return; }
     if (t.dataset.comments !== undefined) {
       const id = t.dataset.comments;

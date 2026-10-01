@@ -1964,3 +1964,163 @@ body[data-page="journal"][data-theme] .report-entry__caption { font-family: var(
 .diary-share__text small { color: var(--diary-text-faint); font-size: var(--fs-micro); line-height: 1.45; }
 #ftManagerBody { display: flex; flex-direction: column; gap: var(--space-4); }
 .ft-row__name em { margin-left: 0; }
+
+
+/* ==========================================================================
+   기록하기의 한글은 전부 Pretendard.
+   위쪽 규칙들이 마루부리·SUIT·IBM Plex Sans KR·Gothic A1·시스템 글꼴을 한글 글꼴로
+   각자 정해 두었는데, 변수 값만 여기서 한 번 더 덮어쓰면 그 규칙들이 전부 따라온다.
+   한글이 없는 장식 글꼴(Bebas Neue 제목, Plex Mono·DSEG7 숫자)은 그대로 앞에 두어
+   영문·숫자의 필름 느낌은 유지하고, 한글만 뒤의 Pretendard로 이어지게 한다.
+   (사용자가 쓴 글도 같은 글꼴이다 — 예전에는 기기 기본 글꼴이었다.)
+   ========================================================================== */
+body[data-page="journal"],
+body[data-page="journal"][data-theme="film"] {
+  --f-title: var(--font-display);
+  --f-body: var(--font-body);
+  --f-label: var(--font-body);
+  --f-user: var(--font-body);
+  --diary-font-ticket: var(--f-title);
+  --diary-font-display: var(--f-title);
+  --diary-font-body: var(--f-body);
+}
+body[data-page="journal"][data-theme="film"] {
+  --f-title: 'Bebas Neue', var(--font-display);
+  --f-label: 'IBM Plex Mono', var(--font-body);
+}
+/* 사용자가 쓴 제목은 SUIT로 못 박아 둔 규칙이 있었다 */
+body[data-page="journal"][data-theme="film"] .diary-featured__title,
+body[data-page="journal"][data-theme="film"] .diary-stamp__title,
+body[data-page="journal"][data-theme="film"] .stamp-fx__cap b,
+body[data-page="journal"][data-theme="film"] .diary-stamp__blank p { font-family: var(--font-body); }
+
+/* 영어로 바꿔 끼운 글자(.film-en)는 어그로체를 쓰되, 어그로체에 있는 한글 글리프가 새어 나오지
+   않게 라틴 범위로만 제한한 별칭 글꼴을 쓴다 — 한글이 섞이면 Pretendard로 이어진다. */
+@font-face {
+  font-family: 'SB Aggro Latin';
+  src: url('../../assets/fonts/SBAggroLight.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF;
+}
+body[data-page="journal"][data-theme="film"] .film-en {
+  font-family: 'SB Aggro Latin', var(--font-display) !important;
+}
+
+/* ==========================================================================
+   하루 사진이 여러 장일 때 — 카드 더미. 맨 위 사진을 위로 쓸어 올리면 맨 뒤로 넘어간다(js/diary-view.js wireStack).
+   --pos 가 0이면 맨 위, 클수록 뒤. 뒤 사진은 조금 작고 어둡게, 위쪽으로 살짝 비쳐 더미가 보이게 한다.
+   모든 사진을 같은 칸(grid 1/1)에 겹쳐서 카드 크기는 가장 큰 사진을 따른다.
+   ========================================================================== */
+.diary-stack { display: grid; place-items: center; }
+.diary-featured__card[data-stack] .diary-stack { padding-top: 22px; }   /* 뒤 사진이 위로 비칠 자리 */
+.diary-stack__img {
+  grid-area: 1 / 1; position: relative; z-index: calc(20 - var(--pos, 0));
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--pos, 0) * -9px)) scale(calc(1 - var(--pos, 0) * 0.045));
+  filter: brightness(calc(1 - var(--pos, 0) * 0.14));
+  opacity: clamp(0, calc(3 - var(--pos, 0)), 1);   /* 3장 넘게 뒤는 보이지 않는다 */
+  transition: transform 280ms ease, opacity 280ms ease, filter 280ms ease;
+  border-radius: 3px;
+}
+.diary-featured__card[data-stack] { touch-action: none; }   /* 방향 판정은 JS(wireStack)가 한다 */
+.diary-stack__count {
+  position: absolute; top: 30px; right: 10px; z-index: 40; pointer-events: none;
+  padding: 2px 9px; border-radius: var(--radius-pill); background: rgba(0, 0, 0, 0.55); color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 1.6; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.diary-stack__count::before { content: '↑ '; opacity: 0.8; }
+.diary-stack__img.is-nudge { animation: diary-stack-nudge 900ms ease 500ms 1; }
+@keyframes diary-stack-nudge { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+@media (prefers-reduced-motion: reduce) {
+  .diary-stack__img { transition: none; }
+  .diary-stack__img.is-nudge { animation: none; }
+}
+
+/* 더미 안 사진은 맨 위 사진 크기의 같은 틀을 채운다(sizeStacks가 --stack-w/h 를 정한다) */
+body[data-page="journal"][data-theme] .diary-featured__card[data-stack] .diary-stack__img {
+  width: var(--stack-w, auto); height: var(--stack-h, auto); max-width: none; max-height: none; object-fit: cover;
+}
+
+/* ==========================================================================
+   비로그인 온보딩 (js/diary-intro.js) — 위에서 아래로 이어지는 한 페이지, 흰 배경.
+   시간대·필름 테마의 하늘 배경과 색을 쓰지 않도록 이 페이지 안에서만 색을 다시 정한다.
+   ========================================================================== */
+body.journal-intro[data-page="journal"] { background: #fff !important; }
+body.journal-intro[data-page="journal"]::before,
+body.journal-intro[data-page="journal"]::after { display: none !important; }
+body.journal-intro[data-page="journal"] .app-nav { background: rgba(255, 255, 255, 0.96) !important; border-bottom-color: var(--line-100) !important; }
+body.journal-intro[data-page="journal"] .appbar__title { color: var(--ink-900) !important; }
+body.journal-intro[data-page="journal"] .tabbar { background: rgba(255, 255, 255, 0.96) !important; border-color: var(--line-100) !important; box-shadow: var(--shadow-card) !important; }
+
+.diary-intro-mount {
+  --diary-text: var(--ink-900); --diary-text-dim: var(--ink-700); --diary-text-faint: var(--ink-600);
+  --diary-line: var(--line-100); --diary-line-strong: var(--line-200);
+  --diary-surface: #fff; --diary-surface-alt: var(--cloud-50); --diary-accent: var(--ink-900);
+  background: #fff; padding-bottom: 24px;
+}
+.dintro { display: flex; flex-direction: column; gap: var(--space-6); color: var(--ink-900); padding-top: var(--space-4); }
+.dintro__hero { display: flex; flex-direction: column; gap: var(--space-2); }
+/* 한 줄에 들어가도록 화면 폭에 맞춰 줄인다(좁은 폰에서도 넘치지 않게 vw 상한) */
+.dintro__headline { margin: 0; font-size: min(1.5rem, 5.9vw); line-height: 1.2; letter-spacing: 0; white-space: nowrap; }
+.dintro__sub { margin: 0; font-size: var(--fs-body); font-weight: 700; color: var(--ink-700); }
+.dintro__page { display: flex; flex-direction: column; gap: var(--space-2); }
+.dintro__no { margin: 0; font-size: var(--fs-small); font-weight: 800; color: var(--key-700); font-variant-numeric: tabular-nums; }
+.dintro__title { margin: 0; font-size: 1.3125rem; line-height: 1.3; font-weight: 800; letter-spacing: -0.02em; word-break: keep-all; }
+.dintro__desc { margin: 0; font-size: 0.84rem; line-height: 1.65; color: var(--ink-700); word-break: keep-all; }
+.dintro__visual { margin-top: var(--space-2); }
+.dintro__login { text-align: center; font-size: var(--fs-small); color: var(--ink-600); text-decoration: underline; text-underline-offset: 3px; }
+/* 시작 버튼은 떠 있는 탭바 바로 위에 붙여 둔다 — 어디까지 읽었든 누를 수 있다 */
+.dintro__cta {
+  position: sticky; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); z-index: 5;   /* 탭바와 6px 간격 */
+  padding: var(--space-2) 0; margin-top: calc(var(--space-2) * -1);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff 30%);
+}
+
+/* 공통 예시 카드 */
+.dintro-card, .dintro-wrap {
+  background: #fff; border: 1px solid var(--line-200); border-radius: var(--radius-lg);
+  overflow: hidden; pointer-events: none; user-select: none; -webkit-user-select: none;
+  box-shadow: var(--shadow-card);
+}
+.dintro-card__photo { display: block; width: 100%; height: 190px; object-fit: cover; }
+.dintro-card__body { padding: var(--space-3); display: flex; flex-direction: column; gap: 6px; }
+.dintro-chips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dintro-chips li {
+  display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: var(--radius-md);
+  background: var(--cloud-50); border: 1px solid var(--line-100); font-size: var(--fs-small); line-height: 1.35;
+}
+.dintro-chips b { font-size: var(--fs-micro); color: var(--ink-600); font-weight: 800; }
+
+/* Wrap-up */
+.dintro-wrap { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.dintro-wrap__eyebrow { margin: 0; font-size: var(--fs-micro); font-weight: 800; letter-spacing: 0.08em; color: var(--ink-600); }
+.dintro-wrap__eyebrow b { font-size: var(--fs-small); letter-spacing: 0; color: var(--ink-900); }
+.dintro-wrap__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dintro-wrap__stats > div { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: var(--radius-md); background: var(--cloud-50); border: 1px solid var(--line-100); }
+.dintro-wrap__stats strong { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dintro-wrap__stats span { font-size: var(--fs-micro); color: var(--ink-600); font-weight: 700; }
+.dintro-wrap__strip { display: flex; gap: 6px; align-items: stretch; }
+.dintro-wrap__strip img { flex: 1; min-width: 0; height: 76px; object-fit: cover; border-radius: var(--radius-md); }
+.dintro-wrap__strip span { flex: 0 0 48px; display: grid; place-items: center; border-radius: var(--radius-md); background: var(--cloud-50); color: var(--ink-700); font-weight: 800; font-size: var(--fs-small); }
+.dintro-wrap__note { margin: 0; font-size: var(--fs-small); line-height: 1.6; color: var(--ink-700); }
+
+
+/* 사진 카드는 기록하기 탭의 최근 사진 카드(.diary-slide)를 그대로 쓴다 — 카드 모양은 위쪽 기존 규칙이 정한다.
+   여기서는 가운데 맞춤과 아래 정보 칩만 잡는다. */
+.dintro-polaroid { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); pointer-events: none; user-select: none; -webkit-user-select: none; }
+.dintro-polaroid .diary-slide { cursor: default; }
+.dintro-polaroid .dintro-chips { width: 100%; }
+
+/* 온보딩은 사진 카드만 필름 모양이고 나머지(버튼·앱바 글자)는 앱 공통 색을 쓴다 — 필름 테마가 덮은 색을 되돌린다 */
+body.journal-intro[data-page="journal"][data-theme="film"] .btn--primary { background: var(--ink-900); color: #fff; box-shadow: none; }
+body.journal-intro[data-page="journal"][data-theme="film"] .appbar__brand { color: var(--sky-400); }
+body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item { color: var(--ink-600) !important; }
+body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item.is-active { background: var(--key-500) !important; color: var(--key-ink) !important; }
+
+/* 친구 타임라인 예시 — 실제 타임라인 카드(.ft-card)를 그대로 쓰고 간격만 잡는다 */
+.dintro-timeline { display: flex; flex-direction: column; gap: var(--space-3); pointer-events: none; user-select: none; -webkit-user-select: none; }
+.dintro-timeline .ft-card { box-shadow: var(--shadow-card); border-color: var(--line-200); }
+
+/* 시작 버튼 — 탭바 폭(278px)에 맞춰 작게, 가운데 */
+.dintro__cta .btn.btn--block { display: flex; width: min(278px, 100%); height: 40px; min-height: 40px; padding: 0 20px; font-size: 14px; margin: 0 auto; }

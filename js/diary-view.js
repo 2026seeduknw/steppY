@@ -400,6 +400,114 @@
 
   let featuredLastUrl = null;
 
+  /**
+   * 더미 안의 사진은 비율이 제각각이라, 그냥 겹치면 가장 큰 사진에 맞춰 카드가 커지고 작은 사진 둘레에
+   * 여백이 생긴다. 맨 위(첫) 사진의 비율로 틀을 하나 정하고 나머지는 그 틀을 채워(cover) 진짜 카드 더미처럼 보이게 한다.
+   * 상한은 일반 사진 한 장일 때와 같다(CSS의 max-height 360px / 폭 340px·화면 84%).
+   */
+  function sizeStacks(scope) {
+    scope.querySelectorAll('.diary-featured__card[data-stack]').forEach(card => {
+      const first = card.querySelector('.diary-stack__img');
+      if (!first || !first.naturalWidth) return;
+      const maxW = Math.min(340, window.innerWidth * 0.84), maxH = 360;
+      const ratio = first.naturalWidth / first.naturalHeight;
+      let w = maxH * ratio, h = maxH;
+      if (w > maxW) { w = maxW; h = maxW / ratio; }
+      card.style.setProperty('--stack-w', Math.round(w) + 'px');
+      card.style.setProperty('--stack-h', Math.round(h) + 'px');
+    });
+  }
+
+  /**
+   * 하루에 사진이 여러 장이면 카드 더미처럼 겹쳐 놓는다. 맨 위 사진을 위로 쓸어 올리면
+   * 더미의 맨 뒤로 넘어가고 다음 사진이 올라온다(끝까지 넘기면 처음으로 돌아온다).
+   * 손가락은 처음 움직인 방향으로 동작을 정한다(touch-action: none이라 직접 판정):
+   *   위 → 사진 넘기기 / 좌우 → 전날·다음날(nav, 캐러셀) / 아래 → 페이지 스크롤.
+   * 마우스는 가로 끌기를 캐러셀이 이미 처리하므로 여기서는 위로 쓸기만 맡는다.
+   */
+  function wireStack(sl, nav) {
+    const card = sl.querySelector('.diary-featured__card');
+    const imgs = card ? [...card.querySelectorAll('.diary-stack__img')] : [];
+    const n = imgs.length;
+    if (n < 2) return;
+    const badge = card.querySelector('.diary-stack__count');
+    const order = imgs.map((_, i) => i);   // order[0]이 맨 위 사진
+    const place = () => {
+      order.forEach((idx, pos) => imgs[idx].style.setProperty('--pos', pos));
+      badge.textContent = `${order[0] + 1} / ${n}`;
+    };
+
+    let id = null, sx = 0, sy = 0, lx = 0, ly = 0, dx = 0, dy = 0, mode = null, touchy = true, busy = false;
+    const top = () => imgs[order[0]];
+    const reset = () => { const t = top(); t.style.transition = ''; t.style.transform = ''; t.style.opacity = ''; };
+
+    function flip() {
+      busy = true;
+      const t = top();
+      t.style.transition = 'transform 240ms ease-in, opacity 240ms ease-in';
+      t.style.transform = `translate(${dx * 0.35}px, -120%) rotate(${dx * 0.04 - 6}deg)`;
+      t.style.opacity = '0';
+      setTimeout(() => {
+        // 날아간 사진은 transition 없이 더미 맨 뒤로 보내고, 나머지가 한 칸씩 앞으로 올라오는 건 transition에 맡긴다
+        t.style.transition = 'none'; t.style.transform = ''; t.style.opacity = '';
+        order.push(order.shift());
+        place();
+        void t.offsetWidth;
+        t.style.transition = '';
+        busy = false;
+      }, 250);
+    }
+
+    card.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      id = ev.pointerId; touchy = ev.pointerType !== 'mouse';
+      sx = lx = ev.clientX; sy = ly = ev.clientY; dx = 0; dy = 0; mode = null;
+    });
+    card.addEventListener('pointermove', (ev) => {
+      if (ev.pointerId !== id) return;
+      dx = ev.clientX - sx; dy = ev.clientY - sy;
+      if (!mode) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dx) > Math.abs(dy)) mode = touchy ? 'h' : 'skip';
+        else mode = dy < 0 ? (busy ? 'skip' : 'up') : (touchy ? 'scroll' : 'skip');
+        if (mode === 'skip') return;
+        try { card.setPointerCapture(id); } catch (e) { /* 캡처 못 해도 이동은 따라온다 */ }
+        if (mode === 'h') nav.start();
+        if (mode === 'up') top().style.transition = 'none';
+      }
+      if (mode === 'h') nav.move(dx);
+      else if (mode === 'scroll') window.scrollBy({ top: ly - ev.clientY, behavior: 'instant' });   // 사진 위에서 아래로 끌면 페이지가 손가락을 따라온다(전역 smooth 스크롤은 잘게 끊어 부르면 서로 취소해서 즉시 이동으로)
+      else if (mode === 'up') {
+        const up = Math.max(-420, Math.min(0, dy));
+        const t = top();
+        t.style.transform = `translate(${dx * 0.35}px, ${up}px) rotate(${dx * 0.04}deg)`;
+        t.style.opacity = String(Math.max(0.4, 1 + up / 360));
+      }
+      lx = ev.clientX; ly = ev.clientY;
+    });
+    const end = (ev) => {
+      if (ev.pointerId !== id) return;
+      id = null;
+      const m = mode; mode = null;
+      if (!m || m === 'skip') return;
+      sl._noClickUntil = Date.now() + 400;   // 쓸어 넘긴 직후의 클릭은 "기록 열기"가 아니다
+      if (m === 'h') nav.end(dx);
+      else if (m === 'up') { if (ev.type !== 'pointercancel' && dy < -60) flip(); else reset(); }
+    };
+    card.addEventListener('pointerup', end);
+    card.addEventListener('pointercancel', end);
+    // 위로 쓸어 올린 자리에서 길게 눌러 생기는 메뉴·이미지 끌기가 끼어들지 않게
+    card.addEventListener('contextmenu', (ev) => { if (mode) ev.preventDefault(); });
+
+    // 쓸어 넘길 수 있다는 걸 처음 한 번만 살짝 들썩여 알려 준다
+    try {
+      if (localStorage.getItem('diary_stack_hint') !== '1') {
+        localStorage.setItem('diary_stack_hint', '1');
+        top().classList.add('is-nudge');
+      }
+    } catch (e) { /* 저장이 안 되면 매번 들썩이지만 해롭지 않다 */ }
+  }
+
   function renderFeatured(swap) {
     const slot = root && root.querySelector('#diaryFeaturedSlot');
     if (!slot) return;
@@ -437,10 +545,14 @@
     const labelFor = (iso) => iso === todayIso ? '오늘의 기록' : iso === yest ? '어제의 기록'
       : `${Number(iso.slice(5, 7))}월 ${Number(iso.slice(8, 10))}일`;
     // 왼쪽이 과거, 오른쪽이 최근 — 어제는 오늘의 왼쪽에 놓인다(달력과 같은 방향)
+    // 하루 사진은 전부 한 더미로 쌓는다. 기본 순서는 올린 순서 — 먼저 올린 기록이 맨 위,
+    // 한 기록 안에서는 쓰기 창에서 정한 순서(맨 앞이 대표 사진)를 따른다.
     const slides = dates.slice().reverse().map((d, i) => {
-      const list = withPhoto.filter(e => e.date === d);
-      const e = list[list.length - 1];
-      return { d, i, e, url: photoUrl(e.photos.find(p => photoUrl(p))) };
+      const list = withPhoto.filter(e => e.date === d)
+        .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+      const urls = [];
+      list.forEach(e => (e.photos || []).forEach(p => { const u = photoUrl(p); if (u && !urls.includes(u)) urls.push(u); }));
+      return { d, i, e: list[list.length - 1], urls };
     });
 
     slot.innerHTML = `
@@ -453,8 +565,11 @@
         ${slides.map(s => `
           <div class="diary-slide" data-date="${s.d}">
             <div class="diary-featured__film">
-              <div class="diary-featured__card" role="button" tabindex="0" aria-label="${esc(s.d)} 기록 열기">
-                <img class="diary-featured__img" src="${s.url}" alt="${esc(s.e.title || s.e.body || '')}" draggable="false">
+              <div class="diary-featured__card"${s.urls.length > 1 ? ` data-stack="${s.urls.length}"` : ''} role="button" tabindex="0" aria-label="${esc(s.d)} 기록 열기${s.urls.length > 1 ? ` · 사진 ${s.urls.length}장, 위로 쓸어 넘기기` : ''}">
+                <div class="diary-stack">
+                  ${s.urls.map((u, k) => `<img class="diary-featured__img diary-stack__img" src="${u}" style="--pos:${k}" alt="${esc(s.e.title || s.e.body || '')}${s.urls.length > 1 ? ` (${k + 1}/${s.urls.length})` : ''}" draggable="false">`).join('')}
+                </div>
+                ${s.urls.length > 1 ? `<span class="diary-stack__count" aria-hidden="true">1 / ${s.urls.length}</span>` : ''}
               </div>
               <div class="film-bar film-bar--bottom" aria-hidden="true"><span>▶ ${allDates.length - allDates.indexOf(s.d)}A</span><span>${filmDate(s.d)}</span></div>
             </div>
@@ -470,8 +585,22 @@
     const pads = car.querySelectorAll('.diary-carousel__pad');
 
     // 사진을 누르면 그날 기록 팝업
+    // 더미 카드 위에서 손가락으로 좌우로 밀 때 쓰는 캐러셀 이동 — 짧게(40px) 밀어도 전날/다음날로 넘어간다.
+    // goTo·activeIdx는 아래에서 정의되지만 이 함수들은 손가락이 움직일 때에야 불린다.
+    let navLeft = 0, navIdx = 0;
+    const nav = {
+      // 시작할 때의 위치를 기억해 둔다 — 끌다가 가운데를 넘으면 활성 슬라이드가 바뀌어, 놓을 때 그걸 기준으로 하면 두 칸 넘어간다
+      start() { navLeft = car.scrollLeft; navIdx = activeIdx(); car.style.scrollSnapType = 'none'; car.classList.add('is-dragging'); },
+      move(dx) { car.scrollLeft = navLeft - dx; },
+      end(dx) {
+        car.classList.remove('is-dragging');
+        goTo(dx <= -40 ? navIdx + 1 : dx >= 40 ? navIdx - 1 : navIdx);   // 왼쪽으로 밀면 더 최근, 오른쪽으로 밀면 더 이전
+      }
+    };
     slideEls.forEach(sl => {
-      const open = () => { view.selected = sl.dataset.date; renderMonth(); openDayModal(sl.dataset.date); };
+      wireStack(sl, nav);
+      // 사진을 쓸어 넘긴 직후의 클릭은 "기록 열기"로 치지 않는다
+      const open = () => { if (Date.now() < (sl._noClickUntil || 0)) return; view.selected = sl.dataset.date; renderMonth(); openDayModal(sl.dataset.date); };
       sl.addEventListener('click', open);
       sl.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') open(); });
     });
@@ -538,6 +667,7 @@
     car.style.visibility = 'hidden';
     Promise.all([...car.querySelectorAll('img')].map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve()))).then(() => {
       if (!car.isConnected) return;
+      sizeStacks(car);
       const cw = car.clientWidth;
       pads[0].style.flexBasis = Math.max(0, (cw - slideEls[0].offsetWidth) / 2) + 'px';
       pads[1].style.flexBasis = Math.max(0, (cw - slideEls[slideEls.length - 1].offsetWidth) / 2) + 'px';

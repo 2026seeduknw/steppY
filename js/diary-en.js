@@ -112,7 +112,7 @@
     // 통째로 한글 그대로 두되, 그 안의 태그 칩(#tagGrid)만 예외로 번역한다.
     const skip = (n) => {
       if (n.closest && n.closest('#tagGrid')) return false;
-      return n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, textarea, input, script, style, .film-en');
+      return n.closest && n.closest('#entryModalScrim, .diary-stamp__title, .diary-stamp__blank, .diary-ticket-text, .diary-featured__title, .diary-featured__loc, .stampbook__item small, .diary-postmark, .report-entry, .dintro, .journal-intro .app-nav, .journal-intro .tabbar, textarea, input, script, style, .film-en');
     };
     const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
     const nodes = [];
