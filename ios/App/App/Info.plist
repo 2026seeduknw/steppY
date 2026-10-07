@@ -33,6 +33,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
@@ -43,6 +45,13 @@
 	<string>기록을 남긴 도시와 그날 날씨를 함께 저장하기 위해 현재 위치를 한 번 확인해요. 위치를 허용하지 않아도 기록은 그대로 저장돼요.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>찍어둔 사진을 골라 기록에 붙이기 위해 사진 보관함을 열어요. 고른 사진만 회원님의 기록에 저장돼요.</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

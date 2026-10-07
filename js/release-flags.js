@@ -18,13 +18,17 @@
  *                 등록돼 심사까지 통과했을 때. 꺼져 있으면 결제창에서 프리미엄
  *                 구독·크레딧 충전 영역만 걷어낸다 — 무료 크레딧을 쓰는 흐름
  *                 (질문·매칭·사진 한 장 더)은 그대로 남는다.
+ *   ads          — AdMob 계정에 앱·광고 단위가 등록되고 js/ads.js와 Info.plist의
+ *                 테스트용 ID를 실제 ID로 바꿨을 때. 테스트 ID인 채로 심사에 내면
+ *                 "Test Ad" 배너가 그대로 보인다 — 그 전에는 꺼서 낸다.
  *
  * 이 파일은 layout.js·school-modal.js보다 먼저 실려야 한다.
  */
 const RELEASE = {
   mentorStep: true,
   partnerPromo: false,
-  payments: true
+  payments: true,
+  ads: true
 };
 
 /**

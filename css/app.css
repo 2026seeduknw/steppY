@@ -2071,3 +2071,8 @@ textarea {
 .paywall__uses ul { margin: var(--space-2) 0 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
 .paywall__uses b { font-family: var(--font-mono); color: var(--ink-900); }
 .paywall__foot { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); text-align: center; }
+
+/* 광고 자리(js/ads.js). 배너 자체는 네이티브 뷰가 이 자리 위에 얹힌다 —
+   광고가 실리기 전에는 높이도 여백도 없어 빈칸이 생기지 않는다. */
+.ad-slot { height: 0; flex: 0 0 auto; }
+.ad-slot.is-filled { margin-top: var(--space-4); }
