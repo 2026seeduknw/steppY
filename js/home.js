@@ -94,8 +94,11 @@
 
     // 로그인 전에는 저장할 지망이 없다. 빈 1~3지망 칸 세 개를 보여주는 대신
     // 다음 행동(학교 찾기) 하나만 크게 둔다.
+    // 카드 제목을 지워서 머리줄에는 이 버튼만 남았다 — 버튼을 감출 때는 줄째로 접는다.
+    const headerRow = headerCta && headerCta.closest('.section-title');
     if (!AppState.isAuthed) {
       if (headerCta) headerCta.hidden = true;
+      if (headerRow) headerRow.hidden = true;
       mount.innerHTML = `
         <a class="wishlist-cta" href="search.html">
           <span class="wishlist-cta__title">지원 가능한 학교부터 찾아보세요</span>
@@ -105,6 +108,7 @@
       return;
     }
     if (headerCta) headerCta.hidden = false;
+    if (headerRow) headerRow.hidden = false;
 
     const wishlist = AppState.getWishlist();
     const confirmed = AppState.getConfirmedSchool();

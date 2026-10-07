@@ -95,4 +95,9 @@ body[data-page="home"] #greeting {
 .search-cta p { color: var(--sky-100); font-size: var(--fs-small); }
 
 /* ---- 여정 단계 ---- */
-.journey-bar { padding-bottom: var(--space-4); }
+/* 카드 껍데기와 "Your Step !" 제목을 걷어냈다 — 단계 이름과 선만 남는다. */
+.journey-bar { padding: var(--space-2) var(--space-1) var(--space-3); }
+
+/* 지망 카드도 제목을 지워 머리줄에 버튼 하나만 남았다. */
+.section-title--actions { justify-content: flex-end; }
+.section-title--actions[hidden] { display: none; }
