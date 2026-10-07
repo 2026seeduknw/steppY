@@ -177,6 +177,50 @@ const VISA_SOURCE_KO = { EMBASSY_CONSULATE_SEOUL: '주한 대사관', NATIONAL_I
  * 보여주고, 나머지는 연세대 OIA 학교 정보·Factsheet·학교 공식 사이트에서 직접 확인하게 한다.
  * OIA 공지는 연세대가 준 원본 엑셀(Notice from OIA) 문구 그대로다.
  */
+/* OIA 안내(schools.notice_from_oia)는 국제처 원문을 그대로 옮긴 글이라 한 덩어리로 보여주면 읽기 어렵다.
+     · 한글 줄 바로 뒤에 같은 내용의 영어 번역이 붙는다 → 번역은 뺀다(한글만 남긴다).
+     · 여러 조건이 세미콜론으로 한 줄에 이어진다 → 조건마다 한 줄로 나눈다.
+     · 번역 없이 영어로만 온 줄(장학금·캠퍼스 소개 등)은 그대로 둔다.
+   줄이 많으면 앞의 네 줄만 보이고 나머지는 '더보기'로 접는다. */
+function oiaNoticeItems(raw) {
+  const hasKo = (t) => /[가-힣]/.test(t);
+  const items = [];
+  let untranslated = 0;   // 아직 영어 짝을 만나지 못한 한글 줄 수 — 그만큼의 영어 줄은 번역으로 보고 건너뛴다
+  String(raw || '').split('\n').map((l) => l.trim()).filter(Boolean).forEach((line) => {
+    if (hasKo(line)) {
+      untranslated += 1;
+      // 세미콜론·문장 끝에서 나눈다(괄호 안은 나누지 않는다)
+      line.split(/(?:;|\.\s+(?=\S))(?![^(]*\))/).map((t) => t.trim().replace(/^※\s*/, '').replace(/\.$/, '')).filter(Boolean)
+        .forEach((t) => items.push(t));
+    } else if (untranslated > 0) {
+      untranslated -= 1;
+    } else {
+      items.push(line.replace(/^※\s*/, ''));
+    }
+  });
+  // 지원 조건(한글)을 먼저, 영어로만 온 부가 안내는 뒤에 둔다
+  return [...items.filter(hasKo), ...items.filter((t) => !hasKo(t))];
+}
+
+function oiaNoticeHtml(raw) {
+  const items = oiaNoticeItems(raw);
+  if (!items.length) return '';
+  // 주소는 눌러서 열 수 있게 — 글자는 도메인만 보여 줄바꿈이 깨지지 않게 한다
+  const li = (t) => `<li>${prepEsc(t).replace(/https?:\/\/[^\s)]+/g, (url) => {
+    const host = url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+    return `<a href="${url}" target="_blank" rel="noopener">${host} ↗</a>`;
+  })}</li>`;
+  const SHOW = 4;
+  const head = items.slice(0, SHOW).map(li).join('');
+  const rest = items.slice(SHOW);
+  return `
+      <div class="app-docs__notice">
+        <p class="app-docs__notice-title">OIA 안내</p>
+        <ul>${head}</ul>
+        ${rest.length ? `<details><summary>${rest.length}개 더보기</summary><ul>${rest.map(li).join('')}</ul></details>` : ''}
+      </div>`;
+}
+
 function applicationDocsHtml() {
   const school = AppState.getConfirmedSchool();
   if (!school) return '';
@@ -192,7 +236,7 @@ function applicationDocsHtml() {
       <p class="app-docs__desc">대부분의 파견교가 공통으로 요구하는 서류예요.</p>
       <ul class="living-docs"><li>성적증명서</li><li>어학 성적표</li><li>여권 사본</li></ul>
       <p class="app-docs__desc">학교마다 추가 서류가 있을 수 있어요. 지원 전에 아래 공식 안내에서 꼭 확인하세요.</p>
-      ${school.oiaNotice ? `<p class="app-docs__notice"><b>OIA 안내</b> ${prepEsc(school.oiaNotice)}</p>` : ''}
+      ${oiaNoticeHtml(school.oiaNotice)}
       ${links.length ? `<div class="app-docs__links">${links.map(([label, url]) =>
         `<a href="${prepEsc(url)}" target="_blank" rel="noopener">${label} ↗</a>`).join('')}</div>` : ''}
     </div>`;
