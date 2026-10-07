@@ -364,6 +364,12 @@ body[data-page="credits"] .home-hero { padding-top: var(--space-3); padding-bott
    인사말이 첫 카드에 얹힌 것처럼 보였다. */
 body[data-page="home"] .home-hero { padding: var(--space-4) var(--space-4); }
 body[data-page="home"] .home-hero h1 { font-size: 1.25rem; }
+/* 인사말은 가운데로 모은다. 바로 아래 단계 줄이 좌우 대칭이라, 인사말만
+   왼쪽에 붙어 있으면 화면 윗부분이 한쪽으로 기운다. */
+body[data-page="home"] .home-hero { text-align: center; }
+body[data-page="home"] .home-hero .profile-cta { align-self: center; }
+/* 부제는 폭이 30ch 로 묶여 있어 글자만 가운데 맞추면 상자째 왼쪽에 남는다 */
+body[data-page="home"] #greetingSub { align-self: center; }
 
 /* 인사말 아래 "기본 정보를 입력해 주세요" — 가입 직후 유일하게 할 일이라
    카드로 감싸지 않고 인사말에 딸린 한 줄로 둔다(세로를 먹지 않는다).
