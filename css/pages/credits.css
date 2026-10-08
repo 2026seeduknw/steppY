@@ -76,7 +76,7 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
 
 
 @media print {
-  .app-nav, #mentor-float, #downloadReportBtn { display: none !important; }
+  .app-nav, #mentor-float { display: none !important; }
 }
 
 /* ---- 국가 필터 / 국가 태그 ---- */
@@ -123,7 +123,7 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-size: var(--fs-micro);
   color: var(--ink-600);
 }
-.relevance-filter .chip { min-height: 28px; padding: 5px var(--space-3); font-size: var(--fs-micro); }
+.relevance-filter .chip { white-space: nowrap; min-height: 28px; padding: 5px var(--space-3); font-size: var(--fs-micro); }
 .relevance-filter .chip[disabled] {
   opacity: 0.4;
   cursor: default;
@@ -172,3 +172,94 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
 .match-lock__text { margin: 0; font-size: var(--fs-small); color: var(--ink-700); }
 .match-lock__text b { color: var(--ink-900); }
 .match-lock__btn { flex: none; white-space: nowrap; text-decoration: none; }
+
+/* ==== 학점 인정 과목 찾기 — 근거를 보여주는 매칭 (js/credits.js) ====
+   기획: 상/중/하 한 글자 대신 과목 위계(Level)·과목명 키워드 두 근거를 드러낸다. */
+
+/* 안내문 — 이 탭이 무엇을 근거로 무엇을 주는지 한 번만 말한다 */
+.credits-lede { margin: var(--space-3) 0; }
+.credits-lede strong { display: block; font-size: var(--fs-body); font-weight: 800; color: var(--ink-900); word-break: keep-all; }
+.credits-lede p { margin-top: 4px; font-size: var(--fs-small); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.credits-lede[hidden] { display: none; }
+
+/* 조회 조건 — 라벨 · 드롭다운 두 줄과 실행 버튼 */
+.match-query {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); margin-bottom: var(--space-3);
+  border: 1px solid var(--line-100); border-radius: var(--radius-lg); background: var(--cloud-0);
+}
+.match-query__row { display: flex; align-items: center; gap: var(--space-2); }
+.match-query__row[hidden] { display: none; }
+.match-query__label { flex: 0 0 5.2em; font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.match-query .major-filter-mount { flex: 1 1 auto; min-width: 0; }
+.match-query .major-filter-mount .ss { width: 100%; }
+.match-query__fixed { font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.match-query .major-filter-mount:has(.match-query__change) { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.match-query__change {
+  flex: none; padding: 4px 10px; border: 1px solid var(--line-200); border-radius: var(--radius-pill);
+  background: none; font: inherit; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-700); cursor: pointer;
+}
+.match-query__fixed span { margin-left: 4px; font-size: var(--fs-micro); font-weight: 700; color: var(--mint-600); }
+.match-query__cta { width: 100%; margin-top: 2px; }
+.match-query__cta[hidden] { display: none; }
+/* 고른 값이 아직 조회되지 않았다 — 눌러야 목록이 바뀐다는 걸 버튼이 알린다 */
+.match-query__cta.is-dirty { background: var(--ink-900); color: #fff; }
+
+/* 예상 가능성 — 카드 맨 위 한 줄 */
+.verdict {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  font-size: var(--fs-small); font-weight: 800;
+}
+.verdict span { font-size: var(--fs-micro); font-weight: 600; opacity: 0.8; }
+.verdict--likely { background: var(--mint-100); color: var(--mint-600); }
+.verdict--check { background: var(--sky-50); color: var(--ink-700); }
+.verdict--risk { background: var(--coral-100); color: var(--coral-600); }
+
+/* 1:1 연결 — [파견교 과목 & Level] ▶ [본교 인정 후보]. 좁은 화면이라 위아래로 쌓고 화살표를 돌린다 */
+.xmatch { padding: var(--space-4); }
+.xmatch__pair { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+.xmatch__side { min-width: 0; padding: var(--space-3); border: 1px solid var(--line-100); border-radius: var(--radius-md); }
+.xmatch__side--home { background: var(--amber-100); border-color: var(--amber-500); }
+.xmatch__label { display: block; margin-bottom: 4px; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-400); }
+.xmatch__side .match-card__headline { margin-bottom: 2px; }
+.xmatch__meta { margin-bottom: 8px; font-size: var(--fs-small); font-weight: 600; color: var(--ink-700); }
+.xmatch__home { font-size: 1.0625rem; font-weight: 700; color: var(--ink-900); word-break: keep-all; }
+.xmatch__home span { font-size: var(--fs-small); font-weight: 600; color: var(--ink-600); }
+.xmatch__side--home .match-card__topics { margin: 8px 0 0; }
+.xmatch__arrow { align-self: center; color: var(--ink-400); font-size: var(--fs-small); line-height: 1; transform: rotate(90deg); }
+
+/* 근거 배지 — 이름(판정)과 이유를 한 줄에 */
+.xmatch__evidence { list-style: none; margin: var(--space-3) 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* 좁은 화면에서 옆으로 두면 이유가 서너 줄로 꺾인다 — 판정 아래에 이유를 둔다 */
+.evidence { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: var(--fs-small); line-height: 1.5; }
+.evidence__name {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 1px 8px; border-radius: var(--radius-pill); font-size: var(--fs-micro); font-weight: 800; white-space: nowrap;
+}
+.evidence__name::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.evidence__why { color: var(--ink-600); word-break: keep-all; }
+.evidence--go .evidence__name { background: var(--mint-100); color: var(--mint-600); }
+.evidence--warn .evidence__name { background: var(--coral-100); color: var(--coral-600); }
+.evidence--warn .evidence__name::before { content: '!'; width: auto; height: auto; background: none; font-weight: 900; }
+.evidence--neutral .evidence__name { background: var(--sky-50); color: var(--ink-600); }
+.xmatch__interview { width: 100%; }
+
+/* 자세히 보기(매칭 근거) — 앱의 기본 시트 대신 가운데 뜨는 카드(#majorNeededScrim 과 같은 이유로 id로 이긴다) */
+#interviewScrim { align-items: center; }
+#interviewScrim .modal-panel.interview-card {
+  width: min(420px, 90vw); max-width: min(420px, 90vw);
+  height: auto; max-height: 86vh; overflow-y: auto;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  transform: translateY(16px) scale(0.98);
+}
+#interviewScrim.is-open .modal-panel.interview-card { transform: translateY(0) scale(1); }
+.interview-card__title { font-size: var(--fs-h3); font-weight: 800; color: var(--ink-900); margin-bottom: var(--space-2); }
+.interview-card__lines { list-style: none; margin: var(--space-3) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); counter-reset: line; }
+.interview-card__lines li { counter-increment: line; }
+.interview-card__label { display: block; margin-bottom: 2px; font-size: var(--fs-micro); font-weight: 800; color: var(--ink-400); }
+.interview-card__label::before { content: counter(line) '. '; }
+.interview-card__lines p { font-size: var(--fs-small); line-height: 1.6; color: var(--ink-900); word-break: keep-all; overflow-wrap: anywhere; }
+.interview-card__copy { width: 100%; }
+.interview-card__hint { margin-top: var(--space-2); font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-400); text-align: center; }

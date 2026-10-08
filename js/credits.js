@@ -13,6 +13,11 @@
   let selectedRegion = '';    // '' = 전체 대륙. 국가를 안 골라도 이 값만으로 거를 수 있다.
   let selectedRelevance = '';  // '' = 전체 | 'high' | 'mid' | 'low'
   let mode = 'course'; // 'course' | 'major'
+  // 과목 탭은 위에서 고른 값을 '조회하기'를 눌러야 적용한다(기획서 3.1). 드롭다운 값(selectedMajor·
+  // selectedSchool)과 실제로 목록에 걸린 값(applied)을 따로 둔다. 전공 매칭 탭은 고르는 즉시 바뀐다.
+  let selectedSchool = '';     // '' = 전체 파견교
+  let applied = { major: selectedMajor, school: '' };
+  let selectedVerdict = '';    // '' = 전체 | 'likely' | 'check' | 'risk'
 
   // Mentor's Step(js/consult.js)와 같은 대륙 묶음 — 국가가 많아(최대 30여 개) 한 줄에
   // 다 늘어놓으면 칩이 너무 많아 보인다. 대륙으로 먼저 좁히고, 그 안에서 국가를 고른다.
@@ -20,42 +25,242 @@
   // 칩 글자는 영어로 보여준다 — data-region 값(필터링 키)은 그대로 한글이다.
   const REGION_LABEL_EN = { '미주': 'Americas', '유럽': 'Europe', '아시아/오세아니아': 'Asia/Oceania', '기타': 'Other' };
 
+  // 기본 정보에 학과가 있으면 다시 묻지 않고 글자로만 보여준다. '변경'을 누른 뒤에는
+  // 드롭다운으로 남는다 — 복수전공이나 고민 중인 학과로 바꿔 가며 조회할 수 있어야 한다.
+  let majorEditing = false;
+
   function renderMajorFilter() {
     const mount = document.getElementById('majorFilterMount');
     mount.innerHTML = '';
+    if (!majorEditing && selectedMajor && selectedMajor === AppState.profile.major) {
+      mount.innerHTML = `
+        <p class="match-query__fixed">연세대학교 · ${esc(selectedMajor)}</p>
+        <button type="button" class="match-query__change" id="majorChangeBtn">변경</button>`;
+      document.getElementById('majorChangeBtn').addEventListener('click', () => {
+        majorEditing = true;
+        renderMajorFilter();
+        const trigger = mount.querySelector('.ss__trigger');
+        if (trigger) trigger.click();
+      });
+      return;
+    }
     const items = MOCK.yonseiMajors.map(m => ({ value: m.majorName, label: m.majorName, group: m.college }));
     const select = createSearchableSelect({
       items,
       selected: selectedMajor,
       multiple: false,
       placeholder: '전공 검색',
-      onChange: (value) => { selectedMajor = value; renderMatches(); }
+      onChange: (value) => {
+        selectedMajor = value;
+        if (mode === 'major') renderMatches(); else markQueryDirty();
+      }
     });
     mount.appendChild(select.el);
+  }
+
+  /** 파견 희망교 — 학교를 확정했으면 고를 것이 없어 그 학교 이름만 보여준다. */
+  function renderSchoolFilter() {
+    const mount = document.getElementById('schoolFilterMount');
+    if (!mount) return;
+    mount.innerHTML = '';
+    const confirmed = AppState.getConfirmedSchool();
+    if (confirmed) {
+      mount.innerHTML = `<p class="match-query__fixed">${esc(confirmed.nameKo || confirmed.name)} <span>확정</span></p>`;
+      return;
+    }
+    const items = [{ value: '', label: '전체 파견교' }].concat(
+      MOCK.schools.map(s => ({ value: s.id, label: s.nameKo || s.name, group: s.country || '기타' })));
+    const select = createSearchableSelect({
+      items,
+      selected: selectedSchool,
+      multiple: false,
+      placeholder: '전체 파견교',
+      onChange: (value) => { selectedSchool = value || ''; markQueryDirty(); }
+    });
+    mount.appendChild(select.el);
+  }
+
+  /** 고른 값이 조회된 값과 다르면 버튼을 눈에 띄게 한다 — 목록이 왜 안 바뀌는지 알 수 있게. */
+  function markQueryDirty() {
+    const btn = document.getElementById('runMatchBtn');
+    if (!btn) return;
+    const dirty = (selectedMajor || '') !== (applied.major || '') || selectedSchool !== applied.school;
+    btn.classList.toggle('is-dirty', dirty);
+  }
+
+  function runQuery() {
+    if (!selectedMajor) { showToast('소속 학과를 먼저 골라 주세요.'); return; }
+    applied = { major: selectedMajor, school: selectedSchool };
+    selectedVerdict = ''; selectedCountry = ''; selectedRegion = '';
+    markQueryDirty();
+    trackEvent('credits_match_query', { major: applied.major, school: applied.school || 'all' });
+    renderMatches();
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  /* ------------------------------------------------ 인정 가능성 근거 (기획서 2.2 · 3.2)
+     상/중/하 한 글자 대신 "왜 그렇게 봤는지"를 두 가지 근거로 보여준다.
+       ① 과목 위계(Level) — 과목코드의 숫자 첫 자리로 추정한다(ENGL 212 → 200 Level).
+          번호 첫 자리가 학년 위계를 뜻하는 나라(LEVEL_CODE_COUNTRIES)에서만 추정한다.
+          그 밖의 나라는 코드가 그런 뜻이 아니라서(이탈리아 LT003P를 '000 Level · 거절
+          위험'으로 잘못 읽었다) 추정하지 않고 '확인 필요'로 둔다. 0으로 시작하는 번호와
+          3~4자리가 아닌 코드도 마찬가지다.
+       ② 과목명 키워드 — course_matches.note가 "과목명에 직접적 키워드는 없음(학과 기준으로
+          포함)"인지 "실제 개설 과목"인지를 이미 구분해 두었다. 그 구분을 그대로 쓴다.
+     본교 쪽은 과목이 아니라 전공 단위 데이터라(home_course = 연세 전공명) 인정 후보는
+     '○○학과 전공 학점'으로 적는다. */
+  function parseNote(note) {
+    const parts = String(note || '').split(' · ');
+    const find = (prefix) => { const p = parts.find(x => x.startsWith(prefix)); return p ? p.slice(prefix.length).trim() : ''; };
+    // 학점 칸에 환산 설명이 통째로 들어 있는 학교가 있다(앨버타: 300자) — 숫자와 단위까지만 쓴다
+    let credits = find('학점:').replace(/(\d)([A-Za-z가-힣])/g, '$1 $2').split(/\s*[(;]/)[0];
+    if (credits.length > 32) credits = `${credits.split(/\s+/)[0]} 현지 학점`;
+    return {
+      code: find('과목코드:'),
+      credits,
+      exchangeOk: parts.some(x => x.startsWith('교환학생 수강 가능 확인')),
+      keyword: !String(note || '').includes('직접적 키워드는 없음')
+    };
+  }
+
+  const LEVEL_CODE_COUNTRIES = new Set(['United States', 'Canada', 'Hong Kong', 'Singapore', 'Australia', 'New Zealand']);
+
+  function levelOf(code, countryEn) {
+    if (!LEVEL_CODE_COUNTRIES.has(countryEn)) return { tier: 'unknown', label: '' };
+    const c = String(code || '').trim();
+    // "ENGL 212" "EGL250" "ENG-171" "202" "CS 2110" "ENGL 204B" / Brock식 "ENGL 3P66"
+    const m = c.match(/^[A-Za-z&.\s-]*?(\d)(\d{2,3})[A-Za-z]?$/) || c.match(/^[A-Za-z]+\s(\d)[A-Za-z]\d\d$/);
+    if (!m) return { tier: 'unknown', label: '' };
+    const digit = Number(m[1]);
+    if (digit === 0) return { tier: 'unknown', label: '' };
+    const label = `${digit}${m[2] && m[2].length === 3 ? '000' : '00'} Level`;
+    if (digit === 1) return { tier: 'intro', label };
+    if (digit <= 4) return { tier: 'major', label };
+    return { tier: 'grad', label };
+  }
+
+  const VERDICTS = [
+    { key: 'likely', label: '인정 가능성 높음', en: 'Pass Likely', short: '높음' },
+    { key: 'check', label: '확인 필요', en: 'Check Needed', short: '확인 필요' },
+    { key: 'risk', label: '거절 위험', en: 'Risk', short: '위험' }
+  ];
+
+  function assess(m) {
+    const info = parseNote(m.note);
+    const level = levelOf(info.code, schoolDisplay(m.school).countryEn);
+    const key = level.tier === 'intro' ? 'risk' : (level.tier === 'major' && info.keyword ? 'likely' : 'check');
+    return { info, level, verdict: VERDICTS.find(v => v.key === key) };
+  }
+
+  function evidenceBadges(a) {
+    const out = [];
+    if (a.level.tier === 'major') out.push(['go', 'Level Match', `${a.level.label} · 학부 전공 수준`]);
+    else if (a.level.tier === 'intro') out.push(['warn', 'Level Mismatch', `${a.level.label} · 기초/교양 수준이라 전공 인정이 거절될 수 있어요`]);
+    else if (a.level.tier === 'grad') out.push(['warn', 'Level 확인', `${a.level.label} · 대학원 수준일 수 있어요`]);
+    else out.push(['neutral', 'Level 확인 필요', '과목코드로 위계를 알 수 없어요 · 강의계획서로 확인하세요']);
+    if (a.info.keyword) out.push(['go', 'Keyword Match', '과목명이 전공 핵심 키워드와 일치']);
+    else out.push(['neutral', 'Keyword 약함', '과목명 일치는 없고 개설 학과 기준으로 포함']);
+    if (a.info.exchangeOk) out.push(['go', '교환학생 수강 가능', '파견교 공식 목록에서 확인']);
+    return out.map(([tone, name, why]) => `
+      <li class="evidence evidence--${tone}"><span class="evidence__name">${name}</span><span class="evidence__why">${why}</span></li>`).join('');
+  }
+
+  function renderVerdictFilter(assessed) {
+    const mount = document.getElementById('relevanceFilterMount');
+    if (!mount) return;
+    const counts = VERDICTS.map(v => assessed.filter(x => x.a.verdict.key === v.key).length);
+    if (selectedVerdict && !counts[VERDICTS.findIndex(v => v.key === selectedVerdict)]) selectedVerdict = '';
+    mount.innerHTML = assessed.length ? `
+      <div class="relevance-filter" role="group" aria-label="인정 가능성 필터">
+        <span class="relevance-filter__label">인정 가능성</span>
+        <button type="button" class="chip${selectedVerdict === '' ? ' is-selected' : ''}" data-verdict="">전체</button>
+        ${VERDICTS.map((v, i) => `
+          <button type="button" class="chip${selectedVerdict === v.key ? ' is-selected' : ''}"
+                  data-verdict="${v.key}" ${counts[i] ? '' : 'disabled'} title="${counts[i]}건">${v.short}</button>`).join('')}
+      </div>` : '';
+    mount.querySelectorAll('[data-verdict]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedVerdict = btn.dataset.verdict;
+        trackEvent('credits_relevance_filter', { band: selectedVerdict || 'all', mode });
+        renderMatches();
+      });
+    });
+  }
+
+  /* ------------------------------------------------ 자세히 보기 — 매칭 근거 요약 (기획서 3.3)
+     PDF 대신 앱 안에서 바로 읽고 복사한다. 문장은 위의 근거(위계·키워드)에서 그대로 만든다.
+     면담 때 쓸 말(구두 스크립트)과 '교수님 면담용'이라는 이름은 뺐다 — 과목 정보와 분석만 준다. */
+  function interviewSummary(m) {
+    const a = assess(m);
+    const school = schoolDisplay(m.school);
+    const course = stripSchoolSuffix(m.targetCourse);
+    const dept = (m.matchedTopics || [])[0] || '';
+    const meta = [a.info.code, a.level.label, a.info.credits].filter(Boolean).join(' · ');
+    const major = m.homeMajor;
+
+    const line1 = `${school.name} · ${course}${meta ? ` (${meta})` : ''}`;
+    const levelText = a.level.tier === 'major' ? `과목 위계가 학부 전공 수준(${a.level.label})이고`
+      : a.level.tier === 'intro' ? `과목 위계가 기초/교양 수준(${a.level.label})이며`
+      : a.level.tier === 'grad' ? `과목 위계가 ${a.level.label}(대학원 수준 가능)이며`
+      : '과목 위계는 강의계획서로 확인이 필요하며';
+    const kwText = a.info.keyword ? `과목명이 ${major} 전공 키워드와 일치합니다.` : `과목명 일치는 약하지만 ${dept ? `'${dept}'` : '관련'} 학과 개설 과목입니다.`;
+    const line2 = `${dept ? `파견교 '${dept}' 학과 개설 과목으로, ` : ''}${levelText} ${kwText}`;
+    return { a, lines: [['파견교 과목', line1], ['매칭 분석', line2]] };
+  }
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* 아래 방식으로 다시 시도 */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch (e) { return false; }
+  }
+
+  function openInterviewCard(matchId) {
+    const m = MOCK.courseMatches.find(x => String(x.id) === String(matchId));
+    if (!m) return;
+    const { a, lines } = interviewSummary(m);
+    let scrim = document.getElementById('interviewScrim');
+    if (!scrim) {
+      scrim = document.createElement('div');
+      scrim.id = 'interviewScrim';
+      scrim.className = 'modal-scrim';
+      document.body.appendChild(scrim);
+      wireModalDismiss(scrim);
+    }
+    scrim.innerHTML = `
+      <div class="modal-panel interview-card" role="dialog" aria-label="매칭 근거">
+        <button type="button" class="modal-close" data-modal-close aria-label="닫기">✕</button>
+        <h3 class="interview-card__title">매칭 근거</h3>
+        <p class="interview-card__verdict verdict verdict--${a.verdict.key}">${a.verdict.label} <span>${a.verdict.en}</span></p>
+        <ol class="interview-card__lines">
+          ${lines.map(([label, text]) => `<li><span class="interview-card__label">${label}</span><p>${esc(text)}</p></li>`).join('')}
+        </ol>
+        <button type="button" class="btn btn--accent interview-card__copy" id="interviewCopyBtn">텍스트 복사하기</button>
+        <p class="interview-card__hint">최종 인정 여부는 학과에서 결정해요.</p>
+      </div>`;
+    wireModalCloseButtons(scrim);
+    scrim.querySelector('#interviewCopyBtn').addEventListener('click', async () => {
+      const text = lines.map(([label, t], i) => `${i + 1}. ${label}: ${t}`).join('\n');
+      const ok = await copyText(text);
+      showToast(ok ? '요약을 복사했어요.' : '복사하지 못했어요. 길게 눌러 직접 복사해 주세요.');
+      if (ok) trackEvent('credits_interview_copy', { school: m.school });
+    });
+    trackEvent('credits_interview_open', { school: m.school, verdict: a.verdict.key });
+    openModal(scrim);
   }
 
   /** 홈에서 고른 신청 전공의 과목만 남긴다. 여기서는 고르지 않고 읽기만 한다. */
   function byTargetMajor(matches) {
     if (!selectedTargetMajor) return matches;
     return matches.filter(m => (m.matchedTopics || []).includes(selectedTargetMajor));
-  }
-
-  /**
-   * course_matches.note는 DB에 완성된 문장으로 저장돼 있고, 원본 단위 표기가
-   * 숫자에 붙어 있다("6.0credit points", "3.0units", "6.0ECTS").
-   * 화면에서만 떼어 읽는다 — 원본 데이터는 건드리지 않는다.
-   *
-   * '학점:' 구간에만 적용한다. 과목코드에는 "204B" 같은 표기가 있을 수 있어
-   * 문장 전체에 숫자-문자 규칙을 걸면 엉뚱한 곳이 벌어진다.
-   */
-  function formatNote(note) {
-    if (!note) return '';
-    return note.split(' · ')
-      // "관련도: 보통"은 이제 카드 우측 상단 배지가 말한다. 한 카드에서 두 번
-      // 말하면 둘이 어긋났을 때 어느 쪽이 맞는지 알 수 없다.
-      .filter(part => !part.startsWith('관련도:'))
-      .map(part => part.startsWith('학점:') ? part.replace(/(\d)([A-Za-z])/g, '$1 $2') : part)
-      .join(' · ');
   }
 
   // 이 카드 저 카드 다 이 길이를 넘어가면 카드 하나가 화면 두어 개 높이를 먹는다 —
@@ -105,6 +310,8 @@
       }
       const unlock = e.target.closest('[data-unlock]');
       if (unlock) { unlockMore(unlock); return; }
+      const interview = e.target.closest('[data-interview]');
+      if (interview) { openInterviewCard(interview.dataset.interview); return; }
       const chip = e.target.closest('[data-topic-jump]');
       if (chip) {
         e.stopPropagation();
@@ -145,7 +352,8 @@
   /** 과목 카드의 주제 칩 → "전공 매칭 찾기"의 같은 학교·같은 전공(주제) 카드로 이동. */
   function jumpToMajorMatch(schoolId, topic) {
     trackEvent('credits_topic_jump', { school: schoolId, topic });
-    if (mode !== 'major') { mode = 'major'; applyModeUI(); }
+    // 과목 탭에서 넘어왔으면 드롭다운에 고르다 만 값이 아니라 조회된 전공으로 간다
+    if (mode !== 'major') { selectedMajor = applied.major; mode = 'major'; applyModeUI(); renderMajorFilter(); }
     // 이전 탭에서 걸어둔 국가/관련도 필터가 이 학교를 걸러내면 카드를 못 찾은 것처럼
     // 보인다 — 건너뛸 땐 "이 학교의 이 전공"이 최우선이라 필터를 푼다.
     selectedCountry = ''; selectedRegion = ''; selectedRelevance = '';
@@ -364,7 +572,9 @@
      목록은 필터를 바꿔도 풀린 채로 남는다. 서버 쪽은 supabase/bm_unlocks.sql. */
   function matchListKey() {
     const school = AppState.getConfirmedSchool();
-    return [mode, selectedMajor || '-', school ? school.id : '-', mode === 'course' ? (selectedTargetMajor || '-') : '-'].join('|');
+    if (mode !== 'course') return [mode, selectedMajor || '-', school ? school.id : '-', '-'].join('|');
+    // 고른 파견교는 확정 학교와 같은 자리에 넣는다 — 학교를 안 고른 목록의 키는 예전과 같다
+    return [mode, applied.major || '-', school ? school.id : (applied.school || '-'), school ? (selectedTargetMajor || '-') : '-'].join('|');
   }
 
   function lockRowHtml(hiddenCount) {
@@ -407,9 +617,11 @@
   function renderCourseMatches() {
     const confirmed = AppState.getConfirmedSchool();
     const note = document.getElementById('confirmedSchoolNote');
+    const major = applied.major;
+    const pickedSchool = confirmed ? null : MOCK.schools.find(s => s.id === applied.school) || null;
 
     const showPanel = (html) => {
-      renderRelevanceFilter([]);
+      renderVerdictFilter([]);
       renderCountryFilter([]);
       note.hidden = true;
       document.getElementById('matchList').innerHTML = `<div class="info-panel"><p class="info-panel__text">${html}</p></div>`;
@@ -422,14 +634,17 @@
       return;
     }
 
-    // 과목 매칭은 11만 행이 넘어 처음에 다 받지 않는다(data-source.js의 ensureCourseMatches).
-    // 학교도 전공도 정하지 않았으면 보여줄 범위가 없어 먼저 전공을 고르게 한다.
-    if (!confirmed && !selectedMajor) {
-      showPanel('<strong>내 전공</strong>을 고르면 그 전공으로 학점 인정받을 수 있는 교환교 과목을 보여드려요.');
+    // 전공을 모르는 채로 과목을 늘어놓으면 무엇이 내 학점으로 인정되는지 판단할 수 없다.
+    if (!major) {
+      showPanel('<strong>소속 학과</strong>를 고르고 <strong>조회하기</strong>를 누르면, 그 전공으로 인정받을 수 있는 파견교 과목과 판단 근거를 보여드려요.');
       return;
     }
-    const sliceReq = { school: confirmed ? confirmed.id : null, major: confirmed ? null : selectedMajor };
-    if (typeof ensureCourseMatches === 'function' && !isCourseMatchesLoaded(sliceReq) && !isCourseMatchesLoaded({ major: selectedMajor })) {
+
+    // 과목 매칭은 11만 행이 넘어 처음에 다 받지 않는다(data-source.js의 ensureCourseMatches).
+    // 학교를 정했으면(확정했거나 위에서 골랐으면) 그 학교 조각이 더 작아 그쪽을 받는다.
+    const schoolId = confirmed ? confirmed.id : (applied.school || null);
+    const sliceReq = { school: schoolId, major: schoolId ? null : major };
+    if (typeof ensureCourseMatches === 'function' && !isCourseMatchesLoaded(sliceReq) && !isCourseMatchesLoaded({ major })) {
       if (courseMatchesFailed(sliceReq)) {
         showPanel('학점 인정 과목을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
         ensureCourseMatches(sliceReq);
@@ -440,82 +655,74 @@
       return;
     }
 
-    // 학교를 확정했으면 그 학교 과목만 본다. 갈 곳이 정해진 뒤에 다른 학교 과목은
-    // 고를 수 없는 선택지라 목록만 길어진다.
-    // 예전엔 확정 학교에 과목 데이터가 없으면 전체를 예시로 보여줬는데, 확정한
-    // 학교가 아닌 카드가 자기 결과인 것처럼 섞여 보였다 — 이제 비었다고 말한다.
-    let matches = MOCK.courseMatches;
+    let matches = MOCK.courseMatches.filter(m => m.homeMajor === major);
+    if (schoolId) matches = matches.filter(m => m.school === schoolId);
+
     if (confirmed) {
-      matches = matches.filter(m => m.school === confirmed.id);
-
-      // 학교는 정했는데 내 전공을 아직 안 골랐다면 목록을 내보내지 않는다.
-      // 전공을 모르는 채로 그 학교 과목 전부를 늘어놓으면(수백 개) 무엇이 내
-      // 학점으로 인정되는지 판단할 수 없다.
-      if (!selectedMajor && matches.length) {
-        renderRelevanceFilter([]);
-        renderCountryFilter([]);
-        note.hidden = true;
-        document.getElementById('matchList').innerHTML = `
-          <div class="info-panel">
-            <p class="info-panel__text">
-              먼저 <strong>내 전공</strong>을 고르면 ${confirmed.nameKo || confirmed.name}에서
-              그 전공으로 인정되는 과목만 모아서 보여드려요.
-            </p>
-          </div>`;
-        return;
-      }
-
-      if (selectedMajor) {
-        matches = matches.filter(m => m.homeMajor === selectedMajor);
-      }
-
       // 내 전공과 관련된 현지 학과가 여러 곳이면 그 과목을 다 보여준다(카드마다 학과명이 붙는다).
-      // 신청 전공(현지 학과)을 홈에서 골라 두었으면 아래 byTargetMajor가 그 학과로 좁힌다 — 먼저
-      // 고르라고 막아 세우지는 않는다(예전엔 이 단계 때문에 확정 학교에서 과목이 안 뜬다고 느꼈다).
+      // 신청 전공(현지 학과)을 홈에서 골라 두었으면 그 학과로 좁힌다. 확정을 취소해도 신청
+      // 전공 값은 남아 있어서, 확정 학교가 있을 때만 건다 — 안 그러면 목록이 통째로 비었다.
+      matches = byTargetMajor(matches);
       note.hidden = false;
       note.textContent = selectedTargetMajor
         ? `확정하신 ${confirmed.nameKo || confirmed.name} · ${selectedTargetMajor} 기준이에요.`
-        : `확정하신 ${confirmed.nameKo || confirmed.name}의 ${selectedMajor} 인정 과목이에요.`;
+        : `확정하신 ${confirmed.nameKo || confirmed.name}의 ${major} 인정 과목이에요.`;
     } else {
       note.hidden = true;
-      if (selectedMajor) {
-        matches = matches.filter(m => m.homeMajor === selectedMajor);
-      }
     }
 
-    matches = byTargetMajor(matches);
+    // 근거를 한 번만 계산해 필터·정렬·카드가 같은 판단을 쓴다. 가능성 높은 것부터, 같으면 유사도 순.
+    const order = { likely: 0, check: 1, risk: 2 };
+    let assessed = matches.map(m => ({ m, a: assess(m) }))
+      .sort((x, y) => (order[x.a.verdict.key] - order[y.a.verdict.key]) || (y.m.similarity - x.m.similarity));
 
-    renderRelevanceFilter(matches);
-    matches = byRelevance(matches);
-    // 국가 후보는 관련도까지 적용한 뒤 뽑는다 — 그래야 골라도 0건인 국가가 안 뜬다
-    renderCountryFilter(matches);
-    matches = byCountry(matches);
+    renderVerdictFilter(assessed);
+    if (selectedVerdict) assessed = assessed.filter(x => x.a.verdict.key === selectedVerdict);
+    // 국가 후보는 가능성 필터까지 적용한 뒤 뽑는다 — 그래야 골라도 0건인 국가가 안 뜬다.
+    // 학교를 하나로 정했으면 국가를 고를 것이 없다.
+    renderCountryFilter(schoolId ? [] : assessed.map(x => x.m));
+    const allowed = new Set(byCountry(assessed.map(x => x.m)));
+    assessed = assessed.filter(x => allowed.has(x.m));
+    const byMatch = new Map(assessed.map(x => [x.m, x.a]));
 
-    document.getElementById('matchList').innerHTML = matches.length ? withLock(matches, m => {
+    const schoolName = confirmed ? (confirmed.nameKo || confirmed.name) : pickedSchool ? (pickedSchool.nameKo || pickedSchool.name) : '';
+    document.getElementById('matchList').innerHTML = assessed.length ? withLock(assessed.map(x => x.m), m => {
+      const a = byMatch.get(m);
       const school = schoolDisplay(m.school);
+      const meta = [a.info.code, a.level.label, a.info.credits].filter(Boolean).map(esc).join(' · ');
       return `
-      <div class="card match-card" data-school="${m.school}">
-        <div class="match-card__head">
-          <h3 class="match-card__headline">${stripSchoolSuffix(m.targetCourse)}</h3>
-          ${relevanceBadge(m.similarity)}
+      <div class="card match-card xmatch" data-school="${esc(m.school)}">
+        <p class="verdict verdict--${a.verdict.key}">${a.verdict.label} <span>${a.verdict.en}</span></p>
+        <div class="xmatch__pair">
+          <div class="xmatch__side">
+            <span class="xmatch__label">파견교 과목</span>
+            <h3 class="match-card__headline">${esc(stripSchoolSuffix(m.targetCourse))}</h3>
+            ${meta ? `<p class="xmatch__meta">${meta}</p>` : ''}
+            <div class="match-card__school${school.exists ? ' match-card__school--clickable' : ''}"
+                 ${school.exists ? `data-open-school="${esc(m.school)}" role="button" tabindex="0"` : ''}>
+              ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
+              <span class="match-card__school-name">${esc(school.name)}</span>
+              ${countryTag(school)}
+            </div>
+          </div>
+          <span class="xmatch__arrow" aria-hidden="true">▶</span>
+          <div class="xmatch__side xmatch__side--home">
+            <span class="xmatch__label">본교 인정 후보</span>
+            <p class="xmatch__home">${esc(m.homeMajor)} <span>전공 학점</span></p>
+            ${m.matchedTopics.length ? `
+            <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${esc(t)}</button>`).join('')}</div>` : ''}
+          </div>
         </div>
-        <div class="match-card__school${school.exists ? ' match-card__school--clickable' : ''}"
-             ${school.exists ? `data-open-school="${m.school}" role="button" tabindex="0"` : ''}>
-          ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
-          <span class="match-card__school-name">${school.name}</span>
-          ${countryTag(school)}
-        </div>
-        ${m.matchedTopics.length ? `
-        <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${t}</button>`).join('')}</div>` : ''}
-        ${noteBlock(formatNote(m.note))}
+        <ul class="xmatch__evidence">${evidenceBadges(a)}</ul>
+        <button type="button" class="btn btn--ghost btn--sm xmatch__interview" data-interview="${esc(m.id)}">자세히 보기</button>
       </div>
     `;
     }) : `<p class="info-panel__text">${
-      selectedCountry || selectedRelevance || selectedTargetMajor
-        ? '조건에 맞는 과목이 없어요. 관련도를 바꿔보세요.'
-        : confirmed
-          ? `${confirmed.nameKo || confirmed.name}의 학점 인정 과목 자료가 아직 없어요.`
-          : '서비스 준비 중이에요.'
+      selectedCountry || selectedRegion || selectedVerdict
+        ? '조건에 맞는 과목이 없어요. 필터를 바꿔보세요.'
+        : schoolName
+          ? `${esc(schoolName)}에는 ${esc(major)} 전공으로 볼 수 있는 과목 자료가 아직 없어요.`
+          : '이 전공은 아직 과목 자료가 없어요.'
     }</p>`;
   }
 
@@ -575,7 +782,12 @@
 
   function applyModeUI() {
     document.getElementById('creditsPageTitle').textContent = mode === 'major' ? '내 전공과 잘 맞는 해외 전공' : '학점 인정 사전 확인';
-    document.getElementById('downloadReportBtn').style.display = mode === 'major' ? 'none' : '';
+    // 조회 조건(파견 희망교·조회 버튼)과 안내문은 과목 탭의 것이다. 전공 매칭 탭은 학과만 고른다.
+    const course = mode === 'course';
+    document.getElementById('creditsLede').hidden = !course;
+    document.getElementById('schoolFilterRow').hidden = !course;
+    document.getElementById('runMatchBtn').hidden = !course;
+    if (course) markQueryDirty();
     document.querySelectorAll('.mode-toggle__btn').forEach(btn => {
       btn.classList.toggle('is-active', btn.dataset.mode === mode);
     });
@@ -585,18 +797,18 @@
     const btn = e.target.closest('[data-mode]');
     if (!btn || btn.dataset.mode === mode) return;
     mode = btn.dataset.mode;
+    // 두 탭의 거르는 기준이 달라(인정 가능성 / 관련도) 넘어갈 때 국가 필터도 같이 푼다
+    selectedCountry = ''; selectedRegion = '';
     applyModeUI();
     renderMatches();
     trackEvent('credits_mode_switch', { mode });
   });
 
-  document.getElementById('downloadReportBtn').addEventListener('click', () => {
-    showToast('인쇄 화면에서 PDF로 저장할 수 있어요.');
-    setTimeout(() => window.print(), 400);
-  });
+  document.getElementById('runMatchBtn').addEventListener('click', runQuery);
 
   applyModeUI();
   renderMajorFilter();
+  renderSchoolFilter();
   renderMatches();
 
   document.addEventListener('MOCK:updated', () => {
@@ -604,8 +816,12 @@
     // 서버에서 도착하므로, 아직 고른 게 없으면 그 값으로 채워 자기 전공 결과부터
     // 보게 한다(사용자가 직접 고른 뒤에는 덮어쓰지 않는다).
     if (!selectedMajor && AppState.profile.major) selectedMajor = AppState.profile.major;
+    // 처음 한 번은 내 전공으로 바로 조회해 둔다 — 빈 화면에서 버튼부터 누르게 하지 않는다
+    if (!applied.major && selectedMajor) applied.major = selectedMajor;
     if (!selectedTargetMajor && AppState.profile.targetMajor) selectedTargetMajor = AppState.profile.targetMajor;
     renderMajorFilter();
+    renderSchoolFilter();
+    markQueryDirty();
     renderMatches();
   });
 

@@ -26,12 +26,20 @@
       <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭 찾기</button>
       <button type="button" class="mode-toggle__btn is-active" data-mode="course">학점 인정 과목 찾기</button>
     </div>
-    <div class="section-title">
-      <div></div>
-      <div class="section-title__actions">
+    <div class="credits-lede" id="creditsLede">
+      <strong>과목 위계·키워드로 보는 학점 인정 가능성</strong>
+      <p>파견교 과목의 수준(Level)과 전공 키워드를 분석해 인정 가능성을 예측하고, 그 판단 근거를 함께 보여드려요.</p>
+    </div>
+    <div class="match-query" id="matchQuery">
+      <div class="match-query__row">
+        <span class="match-query__label">소속 학과</span>
         <div id="majorFilterMount" class="major-filter-mount"></div>
-        <button class="btn btn--ghost btn--sm" id="downloadReportBtn">리포트 출력/다운로드</button>
       </div>
+      <div class="match-query__row" id="schoolFilterRow">
+        <span class="match-query__label">파견 희망교</span>
+        <div id="schoolFilterMount" class="major-filter-mount"></div>
+      </div>
+      <button type="button" class="btn btn--accent match-query__cta" id="runMatchBtn">전공 과목 매칭 조회하기</button>
     </div>
     <div id="relevanceFilterMount"></div>
     <div id="countryFilterMount"></div>
