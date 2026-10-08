@@ -38,16 +38,42 @@
    * order는 테이블마다 기존 정렬 기준 뒤에 고유 열(대개 id)을 붙여, 페이지 경계에서 행이
    * 중복되거나 빠지지 않게 한다(.range()는 안정적인 정렬 없이는 페이지가 밀릴 수 있다).
    */
-  async function fetchAll(table, { columns = '*', order = [], filter, strict = false } = {}) {
+  async function fetchAll(table, { columns = '*', order = [], filter, strict = false, parallel = false } = {}) {
     const PAGE = 1000;
+    const page = (from, selectOpts) => {
+      let q = supabaseClient.from(table).select(columns, selectOpts);
+      if (filter) q = filter(q);
+      order.forEach(([col, opts]) => { q = opts ? q.order(col, opts) : q.order(col); });
+      return q.range(from, from + PAGE - 1);
+    };
+
+    // 여러 페이지짜리 테이블은 첫 요청에서 전체 행 수를 같이 받아 나머지 페이지를 한꺼번에
+    // 부른다. 차례로 받으면 major_matches(8페이지)만 1.8초가 걸려 화면 전체가 그만큼 늦었다.
+    if (parallel) {
+      const first = await page(0, { count: 'exact' });
+      if (first.error) {
+        console.error('fetchAll failed:', table, first.error);
+        if (strict) throw first.error;
+        return [];
+      }
+      const total = first.count || (first.data || []).length;
+      const starts = [];
+      for (let f = PAGE; f < total; f += PAGE) starts.push(f);
+      const rest = await Promise.all(starts.map(f => page(f)));
+      const failed = rest.find(r => r.error);
+      if (failed) {
+        console.error('fetchAll failed:', table, failed.error);
+        if (strict) throw failed.error;
+        // 중간 페이지가 빠진 채로 쓰면 일부 전공만 조용히 사라진다 — 통째로 없는 것으로 친다
+        return [];
+      }
+      return (first.data || []).concat(...rest.map(r => r.data || []));
+    }
+
     let from = 0;
     let out = [];
     for (;;) {
-      let q = supabaseClient.from(table).select(columns);
-      if (filter) q = filter(q);
-      order.forEach(([col, opts]) => { q = opts ? q.order(col, opts) : q.order(col); });
-      q = q.range(from, from + PAGE - 1);
-      const { data, error } = await q;
+      const { data, error } = await page(from);
       if (error) {
         console.error('fetchAll failed:', table, error);
         if (strict) throw error;
@@ -320,6 +346,7 @@
     const p = fetchAll('course_matches', {
       order: [['id']],
       strict: true,
+      parallel: true,
       filter: q => school ? q.eq('school_id', school) : q.eq('home_course', major)
     }).then(rows => {
       const byId = new Map(MOCK.courseMatches.map(m => [m.id, m]));
@@ -339,7 +366,7 @@
   };
 
   async function loadMajorMatches() {
-    const data = await fetchAll('major_matches', { order: [['korean_major_id'], ['rank'], ['id']] });
+    const data = await fetchAll('major_matches', { order: [['korean_major_id'], ['rank'], ['id']], parallel: true });
     return (data || []).map(m => ({
       id: m.id, koreanMajorId: m.korean_major_id, homeMajor: m.home_major, school: m.school_id,
       targetMajor: m.target_major, similarity: m.similarity, semanticScore: m.semantic_score,
@@ -498,29 +525,127 @@
     return out;
   }
 
+  /* ------------------------------------------------------------------ 캐시
+   * 참고 데이터는 화면을 옮길 때마다(화면마다 HTML이 따로라 매번 새로 부팅한다) 30개
+   * 가까운 요청으로 전부 다시 받았고, 다 올 때까지 화면이 비어 있었다. 받은 결과를
+   * 이 기기(IndexedDB)에 남겨 두고 다음 화면은 그것으로 바로 그린다.
+   *
+   *   - 받은 지 FRESH_MS 안이면 서버에 다시 묻지 않는다.
+   *   - 그보다 오래됐으면 일단 저장본으로 그리고, 뒤에서 새로 받아 달라졌을 때만 다시 그린다.
+   *   - Mentor's Step 질문·답변은 사용자가 쓰는 글이라 매번 새로 받는다(저장본은 첫 화면용).
+   *
+   * localStorage(5MB)에는 다 안 들어가서 IndexedDB를 쓴다. 사생활 보호 모드처럼
+   * IndexedDB가 막힌 곳에서는 저장 없이 예전처럼 매번 받는다.
+   *
+   * 저장하는 것은 아래 로더들이 가공한 결과다. 로더가 돌려주는 모양을 바꾸면
+   * CACHE_VERSION 을 올려야 한다 — 안 올리면 옛 모양의 저장본으로 화면을 그린다.
+   */
+  const CACHE_VERSION = 1;
+  const FRESH_MS = 10 * 60 * 1000;
+  const CACHE_DB = 'steppy-catalog';
+  const CACHE_STORE = 'groups';
+
+  function cacheDb() {
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(CACHE_DB, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(CACHE_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+        req.onblocked = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+  const cacheDbReady = cacheDb();
+
+  async function cacheRead(name) {
+    const db = await cacheDbReady;
+    if (!db) return null;
+    return new Promise((resolve) => {
+      try {
+        const req = db.transaction(CACHE_STORE).objectStore(CACHE_STORE).get(name);
+        req.onsuccess = () => {
+          const rec = req.result;
+          resolve(rec && rec.v === CACHE_VERSION ? rec : null);
+        };
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
+    });
+  }
+
+  async function cacheWrite(name, data) {
+    const db = await cacheDbReady;
+    if (!db) return;
+    try {
+      db.transaction(CACHE_STORE, 'readwrite').objectStore(CACHE_STORE)
+        .put({ v: CACHE_VERSION, savedAt: Date.now(), data }, name);
+    } catch (e) { /* 용량 초과 등 — 저장 못 해도 화면은 방금 받은 것으로 그려진다 */ }
+  }
+
+  const isEmpty = (v) => v == null || (Array.isArray(v) ? !v.length : (typeof v === 'object' && !Object.keys(v).length));
+
+  /** 빈 컬렉션은 덮어쓰지 않는다 — 조회가 실패하면 빈 값이 오는데, 그걸로 있던 내용을 지우면 안 된다. */
+  function applyToMock(data) {
+    let applied = false;
+    Object.keys(data || {}).forEach(k => {
+      if (isEmpty(data[k])) return;
+      MOCK[k] = data[k];
+      applied = true;
+    });
+    return applied;
+  }
+
+  const announce = () => document.dispatchEvent(new CustomEvent('MOCK:updated'));
+
+  /**
+   * 묶음 단위로 따로 받고 따로 알린다. major_matches는 다른 것보다 한참 크고
+   * 학교 찾기·학점 인정·전공 매칭에서만 쓰여서, 나머지 화면이 그것을 기다리지 않게 뗐다.
+   */
+  const GROUPS = {
+    core: {
+      load: async () => {
+        const [schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
+          countryPrep, schoolReviews, schoolDocuments, creditCatalog] = await Promise.all([
+          loadSchools(), loadChecklist(), loadScholarships(), loadLivingPrep(), loadTips(), loadNearbySpots(),
+          loadYonseiMajors(), loadVisaRequirements(), loadCountryPrep(), loadSchoolExchangeReports(),
+          loadSchoolDocuments(), loadCreditCatalog()
+        ]);
+        return {
+          schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
+          countryPrep, schoolReviews, schoolDocuments,
+          creditPackages: creditCatalog.creditPackages, premiumPlans: creditCatalog.premiumPlans
+        };
+      }
+    },
+    majorMatches: { load: async () => ({ majorMatches: await loadMajorMatches() }) },
+    mentor: { load: async () => ({ mentorQuestions: await loadMentorQuestions() }), alwaysRefresh: true }
+  };
+
   // course_matches는 여기서 받지 않는다 — 위 ensureCourseMatches가 필요한 조각만 받는다
-  Promise.all([
-    loadSchools(), loadChecklist(), loadScholarships(),
-    loadLivingPrep(), loadMajorMatches(), loadTips(), loadNearbySpots(), loadYonseiMajors(), loadVisaRequirements(),
-    loadCountryPrep(), loadSchoolExchangeReports(), loadSchoolDocuments(), loadMentorQuestions(), loadCreditCatalog()
-  ]).then(([schools, checklist, scholarships, livingPrep, majorMatches, tips, nearbySpots, yonseiMajors, visaRequirements, countryPrep, schoolReviews, schoolDocuments, mentorQuestions, creditCatalog]) => {
-    if (schools.length) MOCK.schools = schools;
-    if (checklist.length) MOCK.checklist = checklist;
-    if (scholarships.length) MOCK.scholarships = scholarships;
-    if (Object.keys(livingPrep).length) MOCK.livingPrep = livingPrep;
-    if (majorMatches.length) MOCK.majorMatches = majorMatches;
-    if (tips.length) MOCK.tips = tips;
-    if (nearbySpots.length) MOCK.nearbySpots = nearbySpots;
-    if (yonseiMajors.length) MOCK.yonseiMajors = yonseiMajors;
-    if (Object.keys(visaRequirements).length) MOCK.visaRequirements = visaRequirements;
-    if (countryPrep.length) MOCK.countryPrep = countryPrep;
-    if (Object.keys(schoolReviews).length) MOCK.schoolReviews = schoolReviews;
-    if (Object.keys(schoolDocuments).length) MOCK.schoolDocuments = schoolDocuments;
-    if (mentorQuestions.length) MOCK.mentorQuestions = mentorQuestions;
-    if (creditCatalog.creditPackages.length) MOCK.creditPackages = creditCatalog.creditPackages;
-    if (creditCatalog.premiumPlans.length) MOCK.premiumPlans = creditCatalog.premiumPlans;
-    document.dispatchEvent(new CustomEvent('MOCK:updated'));
-  }).catch(err => {
-    console.warn('[data-source] Supabase에서 데이터를 불러오지 못해 mock 데이터를 계속 사용합니다.', err);
-  });
+  async function refreshGroup(name, cached) {
+    const group = GROUPS[name];
+    if (cached && !group.alwaysRefresh && Date.now() - cached.savedAt < FRESH_MS) return;
+
+    let fresh;
+    try {
+      fresh = await group.load();
+    } catch (err) {
+      console.warn('[data-source] Supabase에서 데이터를 불러오지 못했어요 (' + name + ').', err);
+      return;
+    }
+    // 이번에 비어 온 컬렉션은 저장본의 값을 그대로 둔다(위 applyToMock과 같은 이유)
+    const merged = Object.assign({}, cached ? cached.data : null);
+    Object.keys(fresh).forEach(k => { if (!isEmpty(fresh[k])) merged[k] = fresh[k]; });
+    const changed = !cached || JSON.stringify(merged) !== JSON.stringify(cached.data);
+    cacheWrite(name, merged);
+    if (changed && applyToMock(fresh)) announce();
+  }
+
+  (async function boot() {
+    const names = Object.keys(GROUPS);
+    // 저장본은 한꺼번에 읽어 한 번만 알린다 — 묶음마다 알리면 화면이 연달아 세 번 다시 그려진다
+    const cached = await Promise.all(names.map(cacheRead));
+    if (cached.map(c => !!c && applyToMock(c.data)).some(Boolean)) announce();
+    names.forEach((name, i) => refreshGroup(name, cached[i]));
+  })();
 })();
