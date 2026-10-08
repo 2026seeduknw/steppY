@@ -4,6 +4,9 @@
 
 @import url('../vendor/fonts/pretendard.css');
 
+/* SUIT(SUNN, OFL) 가변 굵기 — 앱 기본 글꼴. Pretendard 는 SUIT 에 없는 글자를 받는 예비로 남긴다. */
+@font-face { font-family: 'SUIT Variable'; src: url('../assets/fonts/SUIT-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }

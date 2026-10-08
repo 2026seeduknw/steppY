@@ -209,8 +209,8 @@
         <div class="school-card__name">${countryFlag(school.countryEn)} ${school.name}</div>
         <div class="school-card__loc">${school.country} · ${school.city}</div>
         <div class="school-card__stats">
-          <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${formatGpa(school.gpaCut) || school.gpaCut}</div></div>
-          <div><div class="school-card__stat-label">${school.langTest.type}</div><div class="school-card__stat-value">${school.langTest.cut}</div></div>
+          <div><div class="school-card__stat-label">GPA 컷</div><div class="school-card__stat-value">${formatGpa(school.gpaCut) || school.gpaCut || '-'}</div></div>
+          <div><div class="school-card__stat-label">${school.langTest.type}</div><div class="school-card__stat-value">${school.langTest.cut ?? '-'}</div></div>
         </div>
       </button>
     `;
@@ -299,10 +299,12 @@
   document.getElementById('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; state.page = 1; renderGrid(); });
   document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; renderGrid(); });
 
+  // 결과 수 옆의 두 칩(지원 가능만·즐겨찾기만). 켜짐은 다른 필터 칩과 같은 is-selected 로 보인다.
+  function setQuickChip(btn, on) { btn.classList.toggle('is-selected', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const eligibleToggle = document.getElementById('onlyEligibleToggle');
-  eligibleToggle.addEventListener('click', () => { state.onlyEligible = !state.onlyEligible; eligibleToggle.classList.toggle('is-on'); state.page = 1; renderGrid(); });
+  eligibleToggle.addEventListener('click', () => { state.onlyEligible = !state.onlyEligible; setQuickChip(eligibleToggle, state.onlyEligible); state.page = 1; renderGrid(); });
   const favToggle = document.getElementById('onlyFavoriteToggle');
-  favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; favToggle.classList.toggle('is-on'); state.page = 1; renderGrid(); });
+  favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; setQuickChip(favToggle, state.onlyFavorite); state.page = 1; renderGrid(); });
 
   document.getElementById('resetFilters').addEventListener('click', () => {
     state.country = ''; state.majors.clear(); state.regions.clear();
@@ -311,7 +313,7 @@
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
     state.page = 1;
     document.getElementById('qsSelect').value = '';
-    eligibleToggle.classList.remove('is-on'); favToggle.classList.remove('is-on');
+    setQuickChip(eligibleToggle, false); setQuickChip(favToggle, false);
     renderFilters(); renderGrid();
   });
 

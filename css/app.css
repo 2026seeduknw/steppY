@@ -109,14 +109,31 @@ body[data-page]::before { display: none; }
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  background: #fff;
+  /* 홈과 같게: 띠처럼 보이던 불투명한 면과 아래 선을 걷어 페이지 바탕이 앱바 뒤로
+     이어지게 한다. 위에 붙어 따라오는 줄이라 조금 비치게만 두고 뒤를 흐린다.
+     색은 페이지 바탕을 따라간다(--appbar-bg, 없으면 흰색). */
+  background: var(--appbar-bg, rgba(255, 255, 255, 0.78));
   backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid var(--line-100);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid transparent;
 }
 /* 좌·중앙·우 세 칸. 좌우 칸이 같은 폭이라야 제목이 진짜 가운데 온다.
    오른쪽 칸은 비어 있지만 자리를 지킨다 — 빼면 제목이 오른쪽으로 밀린다. */
 .appbar__slot { flex: 0 0 34px; display: flex; align-items: center; }
-.appbar__slot:last-child { justify-content: flex-end; }
+.appbar__slot:last-child { justify-content: flex-end; min-width: 0; }
+
+/* 앱바 오른쪽 — 내 크레딧·요금제 (누르면 결제창). 상자 없이 글자만.
+   오른쪽 칸은 제목을 가운데 두려고 폭이 34px 로 묶여 있다. 지갑은 줄어들지 않고
+   칸 왼쪽으로 넘쳐 나오게 둔다 — 칸이 지갑만큼 늘어나면 제목이 왼쪽으로 밀린다. */
+.appbar-wallet {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 0 4px 6px; border: 0; background: none;
+  font: inherit; cursor: pointer; white-space: nowrap;
+}
+.appbar-wallet__coin { font-size: var(--fs-body); color: var(--ink-900); }
+.appbar-wallet__coin strong { font-family: var(--font-mono); font-weight: 800; }
+.appbar-wallet__plan { font-size: var(--fs-small); font-weight: 700; color: var(--ink-400); }
+.appbar-wallet.is-premium .appbar-wallet__plan { color: var(--key-ink); }
 
 .appbar__center {
   flex: 1; min-width: 0;
@@ -313,7 +330,7 @@ body.is-sheet-open { overflow: hidden; }
 .sim-banner__field input,
 .cal-add-form input, .cal-add-form select,
 .ss__search,
-.chat-input-row input { font-size: 16px; }
+.chat-input-row input { font-size: var(--fs-input); }
 .field input, .field select { height: 46px; border-radius: 10px; }
 
 
@@ -460,8 +477,10 @@ body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
   gap: var(--space-2);
   margin: 0 calc(var(--space-4) * -1);
   padding: var(--space-3) var(--space-4);
-  background: var(--cloud-50);
-  border-bottom: 1px solid var(--line-100);
+  /* 띠처럼 보이던 옅은 면과 아래 선을 걷어 페이지 바탕과 하나로 잇는다(--page-mist, 없으면 흰색).
+     위에 붙어 따라오는 줄이라 투명하게 두면 스크롤할 때 카드가 비친다 —
+     바탕과 같은 색으로 칠해 둔다. */
+  background: var(--page-mist, #fff);
 }
 .search-input { flex: 1 1 100%; height: 44px; border-radius: 12px; }
 .sort-select { flex: 1 1 auto; height: 38px; border-radius: var(--radius-pill); font-size: var(--fs-small); }
@@ -1045,8 +1064,7 @@ body[data-page="onboarding"] {
 .ob__form input,
 .ob__form select {
   height: 44px; border-radius: 12px;
-  /* 16px 미만이면 iOS가 포커스 때 화면을 확대한다 */
-  font-size: 16px;
+  font-size: var(--fs-input);
   padding: 0 14px;
   border: 1px solid var(--line-200);
   background: #fff;
@@ -1112,7 +1130,13 @@ body[data-page="onboarding"] {
   min-width: 0;
 }
 .school-card__meta .badge { height: 22px; padding: 0 8px; font-size: var(--fs-micro); }
-.school-card__name { margin-top: var(--space-1); }
+/* 칩 줄과 학교 이름 사이가 33px 로 벌어져 있었다 — 하트(34px)가 같은 줄에 있어서
+   줄 높이를 키우고, 그 아래에 줄 여백 16px 과 이름 위 여백 5px 이 더 붙었다.
+   하트를 카드 오른쪽 위에 따로 띄워 줄 높이를 칩(22px)에 맞추고, 사이는 8px 만 둔다.
+   하트 아랫변(48px)이 이름 윗변(51px)보다 위라 긴 이름과 겹치지 않는다. */
+.school-card__top { margin-bottom: var(--space-2); padding-right: 42px; }
+.school-card__top .fav-btn { position: absolute; top: 14px; right: 14px; }
+.school-card__name { margin-top: 0; }
 
 
 /* ==========================================================================
@@ -1893,7 +1917,7 @@ input[type="date"],
 input[type="tel"],
 select,
 textarea {
-  font-size: max(16px, var(--fs-body));
+  font-size: var(--fs-input);
 }
 
 
@@ -2082,3 +2106,44 @@ textarea {
    광고가 실리기 전에는 높이도 여백도 없어 빈칸이 생기지 않는다. */
 .ad-slot { height: 0; flex: 0 0 auto; }
 .ad-slot.is-filled { margin-top: var(--space-4); }
+
+
+/* ==========================================================================
+   학교 이름·지역 — Pretendard
+   앱 기본 글꼴은 SUIT 지만, 학교 이름과 지역은 거의 전부 영문이고 길다.
+   영문이 촘촘하게 이어지는 줄은 Pretendard(Inter 계열)가 더 고르게 읽힌다.
+   ========================================================================== */
+.school-card__name,
+.school-card__loc,
+.school-modal__title,
+.wishlist-slot__name,
+.wishlist-slot__meta,
+.confirmed-card__name,
+.confirmed-card__meta {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+}
+
+
+/* ==========================================================================
+   셀렉트(드롭다운) — 화살표와 안쪽 여백
+   기본 화살표는 오른쪽 테두리에 딱 붙고, 글자는 입력칸보다 안쪽으로 밀려
+   같은 폼 안에서 줄이 어긋났다. 기본 모양을 끄고 화살표를 직접 그려서
+   입력칸과 같은 좌우 여백을 갖게 한다. 배경색을 따로 준 규칙이 화살표를
+   지우지 않도록 화살표 쪽 속성만 !important 로 고정한다.
+   ========================================================================== */
+select:not([multiple]) {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23565E66' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 12px 12px !important;
+  padding-right: 36px !important;
+  text-overflow: ellipsis;
+}
+
+/* "All about …" 제목의 위아래 여백을 바로 아래 "Cost of living ?" 패널과 맞춘다.
+   위: 카드 안쪽 여백이 31px 이었다(패널은 21px).
+   아래: 제목의 margin 16px 위에 .section-title 의 margin 16px 이 겹쳐 32px 이었다. */
+.score-card { padding-top: var(--space-4); }
+.score-card .section-title h2.brand-head { margin-bottom: 0; }

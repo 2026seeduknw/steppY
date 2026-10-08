@@ -80,12 +80,35 @@ function renderAppBar(activeKey) {
       <a class="appbar__brand" href="index.html" aria-label="steppY 소개 화면으로">steppY</a>
     </div>
 
-    <div class="appbar__slot" aria-hidden="true"></div>
+    <div class="appbar__slot">${authed ? `
+      <button type="button" class="appbar-wallet" id="appbarWallet" aria-label="내 크레딧과 요금제">
+        <span class="appbar-wallet__coin">🪙 <strong id="appbarWalletCredits">0</strong></span>
+        <span class="appbar-wallet__plan" id="appbarWalletPlan">일반</span>
+      </button>` : ''}</div>
   `;
 
   const account = document.getElementById('appbarAccount');
   if (account) account.addEventListener('click', openAccountSheet);
+
+  // 오른쪽 칸 — 내 크레딧과 요금제. 예전에는 홈에서만 보였다(home.js 가 꽂았다).
+  // 어느 화면에서든 남은 크레딧이 보여야 해서 앱바가 직접 그린다. 누르면 결제창.
+  const wallet = document.getElementById('appbarWallet');
+  if (wallet) wallet.addEventListener('click', () => {
+    if (typeof openPaywall === 'function') openPaywall({ reason: 'menu' });
+  });
+  updateAppBarWallet();
 }
+
+function updateAppBarWallet() {
+  const btn = document.getElementById('appbarWallet');
+  if (!btn || typeof AppState === 'undefined') return;
+  document.getElementById('appbarWalletCredits').textContent = AppState.getCredits().toLocaleString('ko-KR');
+  const premium = AppState.isPremium();
+  btn.classList.toggle('is-premium', premium);
+  document.getElementById('appbarWalletPlan').textContent = premium ? '프리미엄' : '일반';
+}
+// 크레딧을 쓰거나 충전하면, 그리고 프로필·데이터가 뒤늦게 도착하면 숫자를 다시 읽는다.
+['credits:changed', 'profile:updated', 'MOCK:updated'].forEach((ev) => document.addEventListener(ev, updateAppBarWallet));
 
 /**
  * 계정 시트 — 로그인한 이메일 확인, 로그아웃, 회원 탈퇴.

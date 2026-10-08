@@ -55,7 +55,7 @@
 .arc-btn--sm { padding: 6px 12px; font-size: 12px; border-radius: var(--radius-pill); }
 .arc-btn--danger { background: transparent; color: #e0705e; flex: 0 0 auto; padding-left: 10px; padding-right: 10px; font-weight: 600; font-size: 13.5px; }
 .arc-btn[hidden] { display: none; }
-.arc-input { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--diary-line-strong); background: var(--diary-surface-alt); color: var(--diary-text); font: inherit; font-size: 16px; }
+.arc-input { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--diary-line-strong); background: var(--diary-surface-alt); color: var(--diary-text); font: inherit; font-size: var(--fs-input); }
 
 /* ---- 폴더 페이지(전체 화면) ---- */
 .arc-page {

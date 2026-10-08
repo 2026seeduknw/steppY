@@ -104,7 +104,9 @@
 .sim-banner__result strong { font-family: var(--font-mono); color: var(--amber-700); font-size: var(--fs-h2); }
 
 /* ---- Result grid ---- */
-.result-meta { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
+.result-meta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
+.result-meta__quick { display: flex; gap: 6px; flex: none; }
+.result-meta__quick .chip { min-height: 30px; padding: 5px var(--space-3); font-size: var(--fs-micro); white-space: nowrap; }
 .result-meta__count { font-size: var(--fs-small); color: var(--ink-600); }
 .result-meta__count strong { color: var(--ink-900); font-family: var(--font-mono); }
 

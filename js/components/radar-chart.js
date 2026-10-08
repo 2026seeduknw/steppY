@@ -224,7 +224,7 @@ function scoreCardHtml(school, opts) {
     <div class="card score-card">
       <div class="section-title">
         <div>${numbered && typeof schoolPlaceEn === 'function'
-          ? `<h2 class="brand-head" data-wordmark="">How is ${schoolPlaceEn(school)} ?</h2>`
+          ? `<h2 class="brand-head" data-wordmark="">All about ${schoolPlaceEn(school)}</h2>`
           : '<h2>살기 어떤 곳인가</h2>'}</div>
       </div>
       <p class="score-card__note">생활 점수를 steppY가 수치화해서 알려드려요. 막대 아래 한 줄은 그 점수가 나온 실제 숫자예요.</p>

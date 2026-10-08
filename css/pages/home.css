@@ -103,16 +103,5 @@ body[data-page="home"] #greeting {
    앱바 오른쪽 칸은 제목을 가운데 두려고 폭이 34px 로 묶여 있다. 지갑은 줄어들지
    않고 칸 왼쪽으로 넘쳐 나오게 둔다 — min-width 를 풀지 않으면 칸이 지갑만큼
    늘어나 제목이 왼쪽으로 밀린다. */
-body[data-page="home"] .appbar__slot:last-child { min-width: 0; }
 .home-hero__row { margin: var(--space-2) 0 var(--space-1); }
 .home-hero__row #greeting { margin: 0; text-align: center; }
-.home-wallet {
-  flex: none; display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 0 4px 6px; border: 0; background: none;
-  font: inherit; cursor: pointer; white-space: nowrap;
-}
-.home-wallet[hidden] { display: none; }
-.home-wallet__coin { font-size: var(--fs-body); color: var(--ink-900); }
-.home-wallet__coin strong { font-family: var(--font-mono); font-weight: 800; }
-.home-wallet__plan { font-size: var(--fs-small); font-weight: 700; color: var(--ink-400); }
-.home-wallet.is-premium .home-wallet__plan { color: var(--key-ink); }

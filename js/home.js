@@ -45,29 +45,6 @@
    * 보기도 전에 폼부터 만나는 순서였다 — 홈을 먼저 보여주고 여기서 부른다.
    * 채워지면 버튼은 스스로 사라진다.
    */
-  const walletBtn = document.getElementById('homeWallet');
-  /**
-   * 앱바 오른쪽 칸 — 내 크레딧과 요금제. 누르면 결제창(js/components/paywall.js).
-   * 앱바는 로그인 상태가 바뀔 때마다 통째로 다시 그려지므로(layout.js), 버튼을
-   * 변수로 쥐고 있다가 그릴 때마다 새 오른쪽 칸에 다시 꽂는다.
-   */
-  function renderWallet() {
-    const btn = walletBtn;
-    if (!btn) return;
-    const slot = document.querySelector('#app-nav .appbar__slot:last-child');
-    if (slot && btn.parentNode !== slot) {
-      slot.removeAttribute('aria-hidden');
-      slot.appendChild(btn);
-    }
-    btn.hidden = !AppState.isAuthed;
-    if (btn.hidden) return;
-    document.getElementById('homeWalletCredits').textContent = AppState.getCredits().toLocaleString('ko-KR');
-    const premium = AppState.isPremium();
-    btn.classList.toggle('is-premium', premium);
-    document.getElementById('homeWalletPlan').textContent = premium ? '프리미엄' : '일반';
-  }
-  if (walletBtn) walletBtn.addEventListener('click', () => openPaywall({ reason: 'menu' }));
-  document.addEventListener('credits:changed', renderWallet);
 
   function renderProfileCta() {
     const cta = document.getElementById('profileCta');
@@ -78,7 +55,6 @@
 
   function renderAll() {
     renderGreeting();
-    renderWallet();
     renderProfileCta();
     // 기본 정보(프로필)는 앱바 계정 시트로 옮겼다 — 홈에서는 보여주지 않는다
     renderTodoCard(document.getElementById('todoCard'));
