@@ -18,11 +18,19 @@
 <div class="page-shell">
   <div class="search-toolbar">
     <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명으로 검색">
-    <select class="sort-select" id="sortSelect">
-      <option value="default">기본순</option>
-      <option value="major">전공 유사도 순</option>
-      <option value="slot">정원 많은 순</option>
-    </select>
+    <button type="button" class="quick-filter quick-filter--more" id="quickMore">➕ 상세 필터</button>
+    <!-- 가장 자주 거르는 세 가지(어디·얼마·날씨)는 시트를 열지 않고 여기서 바로 고른다.
+         나머지(학과·자격·언어·상권·치안·QS·정렬)는 '상세 필터' 시트에 있다. -->
+    <div class="quick-filters" role="group" aria-label="빠른 필터">
+      <select class="quick-filter" id="quickRegion" aria-label="대륙/국가"></select>
+      <select class="quick-filter" id="quickCost" aria-label="한 달 물가">
+        <option value="">💰 한 달 물가</option>
+        <option value="low">250만 원 이하</option>
+        <option value="mid">250만~350만 원</option>
+        <option value="high">350만 원 이상</option>
+      </select>
+      <select class="quick-filter" id="quickClimate" aria-label="기후/날씨"></select>
+    </div>
   </div>
 
   <!-- 로그인 상태에서는 학점 인정으로 보내고, 게스트에게는 js/search.js가
@@ -45,8 +53,12 @@
       </div>
 
       <div class="filter-group filter-group--half">
-        <span class="filter-group__title">국가</span>
-        <div class="filter-chip-list" id="countryFilters"></div>
+        <span class="filter-group__title">정렬</span>
+        <select class="sort-select" id="sortSelect" style="height:36px;">
+          <option value="default">기본순</option>
+          <option value="major">전공 유사도 순</option>
+          <option value="slot">정원 많은 순</option>
+        </select>
       </div>
       <div class="filter-group filter-group--half">
         <span class="filter-group__title">QS 순위</span>
@@ -70,16 +82,8 @@
         <div class="filter-chip-list" id="trackFilters"></div>
       </div>
       <div class="filter-group">
-        <span class="filter-group__title">지역</span>
-        <div class="filter-chip-list" id="regionFilters"></div>
-      </div>
-      <div class="filter-group">
         <span class="filter-group__title">상권</span>
         <div class="filter-chip-list" id="commerceFilters"></div>
-      </div>
-      <div class="filter-group">
-        <span class="filter-group__title">기후</span>
-        <div class="filter-chip-list" id="climateFilters"></div>
       </div>
       <div class="filter-group">
         <span class="filter-group__title">치안</span>
@@ -132,6 +136,7 @@
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/prepare-view.js"></script>
+<script src="js/components/major-credit.js"></script>
 <script src="js/search.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

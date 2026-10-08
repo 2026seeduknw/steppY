@@ -57,7 +57,7 @@ body {
   min-width: 0;
   /* 랜딩·로그인·온보딩과 같은 흰 바탕. 예전의 --cloud-50 은 그 화면들과
      나란히 놓이면 한 톤 가라앉아 보인다. */
-  background: #fff;
+  background: var(--page-bg);
   /* 콘텐츠가 짧은 화면(예: 학교를 아직 고르지 않은 Mentor's Step)에서 body가
      뷰포트보다 작아지면, 데스크탑 기기 컬럼용으로 html에 깔아둔 oxford 배경이
      아래쪽에 그대로 드러난다. 최소 한 화면은 채우게 한다. */
@@ -213,7 +213,7 @@ body[data-page]::before { display: none; }
 }
 .tabbar__icon { width: 21px; height: 21px; flex: 0 0 auto; }
 /* 지금 보고 있는 탭도 "고른 것" 이다 — 칩·진행 표시와 같은 색을 쓴다 */
-.tabbar__item.is-active { background: var(--key-500); color: var(--key-ink); }
+.tabbar__item.is-active { background: var(--key-500); color: var(--on-key); }
 .tabbar__item:not(.is-active):active { background: rgba(35, 53, 77, 0.07); }
 
 
@@ -531,7 +531,7 @@ body[data-page="consult"] .home-hero { padding-bottom: var(--space-3); }
    text-align:center 가 걸린다 — 목록 행에서는 좌측 정렬이 맞다. */
 .school-card { text-align: left; padding: var(--space-4); border-radius: var(--radius-row); }
 .school-card__name { font-size: 1rem; }
-.school-card__stats { grid-template-columns: 1fr 1fr; }
+.school-card__stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* ---- F4 교환 준비하기 ---- */
 body[data-page="prepare"] .page-shell { padding-left: var(--space-4); padding-right: var(--space-4); }
@@ -909,7 +909,7 @@ body[data-page="auth"] {
   border: none;
   border-radius: 50%;
   background: var(--key-500);
-  color: var(--key-ink);
+  color: var(--on-key);
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
@@ -1208,7 +1208,7 @@ body[data-page="onboarding"] {
   top: 6px;
   margin-left: -6.5px;
   background: var(--key-500);
-  box-shadow: 0 0 0 3px rgba(18, 229, 226, 0.22);
+  box-shadow: 0 0 0 3px rgba(52, 73, 69, 0.20);
 }
 
 /* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
@@ -1645,9 +1645,9 @@ body[data-page="home"] {
   /* 랜딩·로그인·온보딩이 모두 흰 바탕이라 앱 화면만 사진이면 톤이 갈린다.
      사진과 유리 카드를 걷고 흰 바탕 + 헤어라인 카드로 통일한다.
      되돌리려면 --page-bg 에 사진을 넣고 아래 ::after 를 되살리면 된다. */
-  --glass-card: #fff;
-  --glass-line: var(--line-100);
-  background: #fff;
+  --glass-card: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.4) 100%);
+  --glass-line: rgba(255, 255, 255, 0.95);
+  background: var(--page-bg);
 }
 
 /* 픽셀 구름 텍스처와 겹치면 배경이 지저분해진다 */
@@ -1657,8 +1657,8 @@ body[data-page="home"]::before { display: none; }
 /* 앱바·탭바는 뒤가 비치는 전제로 반투명이었다. 흰 바탕에서는 비칠 것이
    없으므로 불투명으로 둔다 — 반투명은 스크롤할 때 경계만 흐릿해진다. */
 body[data-page="prepare"] .app-nav,
-body[data-page="home"] .app-nav { background: #fff; }
-body[data-page="home"] .tabbar { background: #fff; }
+body[data-page="home"] .app-nav { background: transparent; }
+body[data-page="home"] .tabbar { background: rgba(255, 255, 255, 0.72); }
 
 /* ---- 카드들을 유리로 ---- */
 body[data-page="prepare"] .card,
@@ -1675,7 +1675,9 @@ body[data-page="home"] .search-cta {
      흐릿한 테두리만 남아 지저분해진다 — 불투명 카드 + 헤어라인으로 바꾼다. */
   background: var(--glass-card);
   border: 1px solid var(--glass-line);
-  box-shadow: var(--shadow-card);
+  box-shadow: inset 0 1px 0 #fff, 0 18px 34px -18px rgba(35, 53, 77, 0.28);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 /* 확정 학교 카드와 D-day 카드는 원래 어두운 면이다. 유리로 바꾸면 대비가 죽으니
@@ -1692,9 +1694,13 @@ body[data-page="prepare"] .departure-card--after {
 /* 앱바·탭바도 같은 유리로 맞춘다 — 카드만 유리면 따로 논다 */
 body[data-page="prepare"] .app-nav,
 body[data-page="home"] .app-nav {
-  background: rgba(255, 255, 255, 0.62);
-  border-bottom-color: rgba(255, 255, 255, 0.6);
+  /* Mist 바탕이 앱바 뒤로 그대로 이어지게 — 흰 띠가 생기면 화면이 두 토막 난다 */
+  background: var(--appbar-bg);
+  border-bottom-color: transparent;
 }
+
+/* 홈의 첫 행동(학교 찾기)은 키 컬러로 — Mist 바탕에서는 아이보리 버튼이 묻힌다 */
+body[data-page="home"] .wishlist-cta__btn { background: var(--key-500); color: var(--on-key); }
 body[data-page="prepare"] .tabbar,
 body[data-page="home"] .tabbar { background: rgba(255, 255, 255, 0.72); }
 
@@ -2087,10 +2093,10 @@ textarea {
 .paywall__premium .paywall__option { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
 .paywall__premium .paywall__option-label { color: rgba(255, 255, 255, 0.7); }
 .paywall__premium .paywall__option-sub { color: var(--key-500); }
-.paywall__premium .paywall__option.is-selected { border-color: var(--key-500); box-shadow: none; background: rgba(18, 229, 226, 0.14); }
+.paywall__premium .paywall__option.is-selected { border-color: var(--key-500); box-shadow: none; background: rgba(52, 73, 69, 0.10); }
 
 .paywall__cta { margin-top: var(--space-1); }
-.paywall__premium .paywall__cta { background: var(--key-500); color: var(--key-ink); }
+.paywall__premium .paywall__cta { background: var(--key-500); color: var(--on-key); }
 .paywall__cta:disabled { opacity: 0.45; }
 
 .paywall__credits { display: flex; flex-direction: column; gap: var(--space-2); }

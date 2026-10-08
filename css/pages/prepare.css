@@ -133,7 +133,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   border: 2px solid var(--line-200); background: var(--cloud-0); cursor: pointer;
   transition: background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
 }
-.step-item__dot svg { width: 16px; height: 16px; fill: none; stroke: var(--key-ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.step-item__dot svg { width: 16px; height: 16px; fill: none; stroke: var(--on-key); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
 .step-item.is-done .step-item__dot { background: var(--key-500); border-color: var(--key-500); }
 .step-item.is-done .step-item__dot svg { opacity: 1; }
 /* 지금 할 일 — 두꺼운 링 */

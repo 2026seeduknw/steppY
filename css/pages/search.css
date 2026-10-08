@@ -144,3 +144,66 @@
   color: var(--ink-400);
 }
 
+
+
+/* ---- 빠른 필터 ----
+   첫 줄: 검색창 + '상세 필터'. 둘째 줄: 대륙/국가 · 한 달 물가 · 기후 세 칸.
+   세 칸은 셀렉트를 알약으로 입힌 것이라 누르면 기기의 기본 선택창이 뜬다 —
+   손가락으로 고르기에는 직접 만든 드롭다운보다 낫다.
+   네 개를 한 줄에 두면 402px 에서 라벨이 '대륙/…' 로 잘려서, 상세 필터만 위로 올렸다. */
+.search-toolbar .search-input { flex: 1 1 0; min-width: 0; }
+/* min-width:0 이 없으면 셀렉트의 기본 폭(가장 긴 선택지)만큼 줄이 화면 밖으로 넘친다 */
+.quick-filters { flex: 1 1 100%; min-width: 0; display: flex; gap: 6px; }
+.quick-filter {
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line-200);
+  background-color: var(--cloud-0);
+  color: var(--ink-900);
+  font-family: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* 세 칸이 폭을 똑같이 나눠 갖는다. 화살표 자리는 공통 셀렉트(오른쪽 36px)보다 좁힌다. */
+select.quick-filter {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 10px;
+  padding-right: 26px !important;
+  background-position: right 9px center !important;
+  background-size: 10px 10px !important;
+}
+/* 고른 필터는 채운다. 화살표도 흰색으로 바꾼다(app.css 의 셀렉트 화살표는 회색). */
+select.quick-filter.is-active {
+  background-color: var(--sky-500);
+  border-color: var(--sky-500);
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+.quick-filter--more { height: 44px; border-style: dashed; background-color: transparent; }
+/* 시트 여는 원래 버튼은 '상세 필터' 칩이 대신한다 */
+.search-toolbar .filter-trigger { display: none; }
+
+/* ---- 카드 아래 띠: 내 전공 인정 예상 과목 ---- */
+.school-card { overflow: hidden; }
+.school-card__credit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin: var(--space-4) calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+  padding: 0 var(--space-4);
+  background: var(--key-100);
+  border-top: 1px solid var(--key-200);
+  font-size: var(--fs-small);
+  color: var(--ink-900);
+  text-align: left;
+}
+.school-card__credit strong { font-weight: 800; }
+.school-card__credit-arrow { flex: none; font-size: 1.1rem; color: var(--sky-500); }
+.school-card__credit--none { background: var(--cloud-50); border-top-color: var(--line-100); color: var(--ink-600); }

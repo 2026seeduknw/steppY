@@ -2091,7 +2091,7 @@ body.journal-intro[data-page="journal"] .tabbar { background: rgba(255, 255, 255
 body.journal-intro[data-page="journal"][data-theme="film"] .btn--primary { background: var(--ink-900); color: #fff; box-shadow: none; }
 body.journal-intro[data-page="journal"][data-theme="film"] .appbar__brand { color: var(--sky-400); }
 body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item { color: var(--ink-600) !important; }
-body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item.is-active { background: var(--key-500) !important; color: var(--key-ink) !important; }
+body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item.is-active { background: var(--key-500) !important; color: var(--on-key) !important; }
 
 /* 친구 타임라인 예시 — 실제 타임라인 카드(.ft-card)를 그대로 쓰고 간격만 잡는다 */
 .dintro-timeline { display: flex; flex-direction: column; gap: var(--space-3); pointer-events: none; user-select: none; -webkit-user-select: none; }
