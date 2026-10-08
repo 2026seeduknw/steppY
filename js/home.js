@@ -45,10 +45,20 @@
    * 보기도 전에 폼부터 만나는 순서였다 — 홈을 먼저 보여주고 여기서 부른다.
    * 채워지면 버튼은 스스로 사라진다.
    */
-  /** 인사 오른쪽 — 내 크레딧과 요금제. 누르면 결제창(js/components/paywall.js). */
+  const walletBtn = document.getElementById('homeWallet');
+  /**
+   * 앱바 오른쪽 칸 — 내 크레딧과 요금제. 누르면 결제창(js/components/paywall.js).
+   * 앱바는 로그인 상태가 바뀔 때마다 통째로 다시 그려지므로(layout.js), 버튼을
+   * 변수로 쥐고 있다가 그릴 때마다 새 오른쪽 칸에 다시 꽂는다.
+   */
   function renderWallet() {
-    const btn = document.getElementById('homeWallet');
+    const btn = walletBtn;
     if (!btn) return;
+    const slot = document.querySelector('#app-nav .appbar__slot:last-child');
+    if (slot && btn.parentNode !== slot) {
+      slot.removeAttribute('aria-hidden');
+      slot.appendChild(btn);
+    }
     btn.hidden = !AppState.isAuthed;
     if (btn.hidden) return;
     document.getElementById('homeWalletCredits').textContent = AppState.getCredits().toLocaleString('ko-KR');
@@ -56,7 +66,6 @@
     btn.classList.toggle('is-premium', premium);
     document.getElementById('homeWalletPlan').textContent = premium ? '프리미엄' : '일반';
   }
-  const walletBtn = document.getElementById('homeWallet');
   if (walletBtn) walletBtn.addEventListener('click', () => openPaywall({ reason: 'menu' }));
   document.addEventListener('credits:changed', renderWallet);
 
@@ -105,16 +114,10 @@
 
   function renderWishlistRow() {
     const mount = document.getElementById('wishlistRow');
-    const headerCta = document.querySelector('#wishlistRow')
-      .closest('.card').querySelector('.section-title .btn');
 
     // 로그인 전에는 저장할 지망이 없다. 빈 1~3지망 칸 세 개를 보여주는 대신
     // 다음 행동(학교 찾기) 하나만 크게 둔다.
-    // 카드 제목을 지워서 머리줄에는 이 버튼만 남았다 — 버튼을 감출 때는 줄째로 접는다.
-    const headerRow = headerCta && headerCta.closest('.section-title');
     if (!AppState.isAuthed) {
-      if (headerCta) headerCta.hidden = true;
-      if (headerRow) headerRow.hidden = true;
       mount.innerHTML = `
         <a class="wishlist-cta" href="search.html">
           <span class="wishlist-cta__title">지원 가능한 학교부터 찾아보세요</span>
@@ -123,9 +126,6 @@
         </a>`;
       return;
     }
-    if (headerCta) headerCta.hidden = false;
-    if (headerRow) headerRow.hidden = false;
-
     const wishlist = AppState.getWishlist();
     const confirmed = AppState.getConfirmedSchool();
     mount.innerHTML = [1, 2, 3].map(rank => {

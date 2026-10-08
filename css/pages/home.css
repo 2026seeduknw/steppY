@@ -98,17 +98,14 @@ body[data-page="home"] #greeting {
 /* 카드 껍데기와 "Your Step !" 제목을 걷어냈다 — 단계 이름과 선만 남는다. */
 .journey-bar { padding: var(--space-2) var(--space-1) var(--space-3); }
 
-/* 지망 카드도 제목을 지워 머리줄에 버튼 하나만 남았다. */
-.section-title--actions { justify-content: flex-end; }
-.section-title--actions[hidden] { display: none; }
-
-/* 인사 한 줄 + 오른쪽 내 크레딧·요금제 (누르면 결제창). 상자 없이 글자만,
-   인사("~님")와 세로 가운데를 맞춘다 — 그래서 h1 의 위아래 여백을 줄 쪽으로 옮긴다. */
-.home-hero__row {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
-  margin: var(--space-2) 0 var(--space-1);
-}
-.home-hero__row #greeting { min-width: 0; margin: 0; }
+/* 인사말은 화면 한가운데. 내 크레딧·요금제 (누르면 결제창)는 앱바 오른쪽 칸으로
+   올렸다(home.js 가 옮긴다) — 프로필 아이콘·화면 이름과 같은 높이. 상자 없이 글자만.
+   앱바 오른쪽 칸은 제목을 가운데 두려고 폭이 34px 로 묶여 있다. 지갑은 줄어들지
+   않고 칸 왼쪽으로 넘쳐 나오게 둔다 — min-width 를 풀지 않으면 칸이 지갑만큼
+   늘어나 제목이 왼쪽으로 밀린다. */
+body[data-page="home"] .appbar__slot:last-child { min-width: 0; }
+.home-hero__row { margin: var(--space-2) 0 var(--space-1); }
+.home-hero__row #greeting { margin: 0; text-align: center; }
 .home-wallet {
   flex: none; display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 0 4px 6px; border: 0; background: none;
@@ -119,7 +116,3 @@ body[data-page="home"] #greeting {
 .home-wallet__coin strong { font-family: var(--font-mono); font-weight: 800; }
 .home-wallet__plan { font-size: var(--fs-small); font-weight: 700; color: var(--ink-400); }
 .home-wallet.is-premium .home-wallet__plan { color: var(--key-ink); }
-
-/* 인사말을 가운데로 모았다(app.css). 지갑이 숨어 있으면 인사가 줄 한가운데에,
-   지갑이 보이면 남은 폭의 가운데에 온다. */
-.home-hero__row #greeting { flex: 1 1 auto; }

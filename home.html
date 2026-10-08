@@ -16,12 +16,12 @@
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell home-hero">
+  <button type="button" class="home-wallet" id="homeWallet" hidden>
+    <span class="home-wallet__coin">🪙 <strong id="homeWalletCredits">0</strong></span>
+    <span class="home-wallet__plan" id="homeWalletPlan">일반</span>
+  </button>
   <div class="home-hero__row">
     <h1 id="greeting">안녕하세요</h1>
-    <button type="button" class="home-wallet" id="homeWallet" hidden>
-      <span class="home-wallet__coin">🪙 <strong id="homeWalletCredits">0</strong></span>
-      <span class="home-wallet__plan" id="homeWalletPlan">일반</span>
-    </button>
   </div>
   <p id="greetingSub"></p>
   <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
@@ -36,9 +36,6 @@
     <section id="todoCard"></section>
 
     <section class="card card-pad" aria-label="지망하는 학교">
-      <div class="section-title section-title--actions">
-        <a href="search.html" class="btn btn--accent btn--sm">학교 찾기</a>
-      </div>
       <div class="wishlist-row" id="wishlistRow"></div>
     </section>
 
@@ -52,7 +49,6 @@
 
     <a class="reviews-cta" href="consult.html">
       <div class="reviews-cta__body">
-        <span class="reviews-cta__eyebrow">선배 후기</span>
         <h2>파견 국가별 후기 보기</h2>
         <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
       </div>
