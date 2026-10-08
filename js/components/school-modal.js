@@ -298,7 +298,7 @@ function livingCostPanelHtml(school) {
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   return `
     <section class="info-panel info-panel--wide">
-      <h3 class="brand-head" data-wordmark="">Cost of living, 얼마나 들까 ?</h3>
+      <h3 class="brand-head" data-wordmark="">Cost of living ?</h3>
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}

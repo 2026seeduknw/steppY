@@ -396,6 +396,8 @@ const AppState = {
 
   setWishlistRank(rank, schoolId) {
     const s = this.load();
+    // 지망을 다시 손봤으면 탐색을 마친 것으로 본다 → 홈의 단계가 다시 '학교 확정'으로 간다
+    this._setConfirmCancelled(false);
     // 같은 학교가 다른 순위에 있으면 먼저 뺀다 (DB의 user_wishlist_school_once 제약과 동일)
     Object.keys(s.wishlist).forEach(r => { if (s.wishlist[r] === schoolId) delete s.wishlist[r]; });
     if (schoolId) s.wishlist[rank] = schoolId; else delete s.wishlist[rank];
@@ -412,8 +414,29 @@ const AppState = {
     }, '지망 학교');
   },
 
+  /**
+   * 확정을 취소한 직후인지. 홈의 진행 단계가 이 값을 보고 '학교 탐색'으로 되돌아간다.
+   *
+   * 지망은 그대로 남기 때문에 이 표시가 없으면 취소하고도 홈이 '학교 확정' 단계에
+   * 머물러, 취소가 안 된 것처럼 읽힌다. 지망을 다시 고르거나 학교를 확정하면 지운다.
+   * 이 기기에만 남긴다(계정별 키) — 다른 기기에서는 지망이 있으면 '학교 확정' 단계다.
+   */
+  get confirmCancelled() {
+    try { return localStorage.getItem(this._confirmCancelledKey()) === '1'; } catch (e) { return false; }
+  },
+  _confirmCancelledKey() {
+    return 'steppy:confirmCancelled:' + ((typeof Auth !== 'undefined' && Auth.userId) || 'guest');
+  },
+  _setConfirmCancelled(on) {
+    try {
+      if (on) localStorage.setItem(this._confirmCancelledKey(), '1');
+      else localStorage.removeItem(this._confirmCancelledKey());
+    } catch (e) { /* 사파리 프라이빗 모드 등 */ }
+  },
+
   confirmSchool(schoolId) {
     this.load().confirmedSchoolId = schoolId;
+    this._setConfirmCancelled(!schoolId);
     this.save();
     this._push(() => supabaseClient.from('profiles')
       .upsert({ id: Auth.userId, confirmed_school_id: schoolId }), '확정 학교');

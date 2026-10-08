@@ -176,8 +176,9 @@
     const wishlist = AppState.getWishlist();
     const hasWishlist = Object.keys(wishlist).length > 0;
     const confirmed = AppState.getConfirmedSchool();
+    // 확정을 취소하고 돌아왔으면 지망이 남아 있어도 다시 '학교 탐색'부터다(state.js)
     const steps = [
-      { label: '학교 탐색', done: hasWishlist },
+      { label: '학교 탐색', done: hasWishlist && !AppState.confirmCancelled },
       { label: '학교 확정', done: !!confirmed },
       { label: '교환 준비', done: false }
     ];
