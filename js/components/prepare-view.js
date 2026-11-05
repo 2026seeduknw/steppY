@@ -12,6 +12,9 @@ const PREPARE_MARKUP = `
 
       <section class="card card-pad" id="todoCard"></section>
 
+      <!-- 국제처 공식 일정(지원·배정 후·출국 전) — js/components/oia-timeline.js -->
+      <section class="card card-pad" id="oiaTimeline"></section>
+
       <section class="card card-pad prep-card" id="checklistSection"></section>
       <section class="card card-pad prep-card" id="livingSection"></section>
 
@@ -35,6 +38,20 @@ function renderPrepareView() {
   renderDepartureCard(document.getElementById('departureCard'), { inline: true });
   renderPrepareChecklist();
   renderPrepareLiving();
+  renderPrepareTimeline();
+}
+
+/** 국제처 일정 — 배정 발표 전이면 지원 일정부터, 출국 뒤에는 파견 중·귀국 후. */
+function renderPrepareTimeline() {
+  const mount = document.getElementById('oiaTimeline');
+  if (!mount || typeof renderOiaTimeline !== 'function') return;
+  if (!AppState.getConfirmedSchool()) { mount.style.display = 'none'; return; }
+  mount.style.display = '';
+  const info = typeof departureInfo === 'function' ? departureInfo() : {};
+  const phases = info.phase === 'after' ? ['return']
+    : info.phase === 'abroad' ? ['abroad', 'return']
+    : OIA.beforePlacement(AppState.profile) ? ['apply', 'placed'] : ['placed'];
+  renderOiaTimeline(mount, { phases, title: '국제처 일정' });
 }
 
 function renderPrepareHero() {
@@ -44,8 +61,8 @@ function renderPrepareHero() {
     mount.innerHTML = `
       <div class="empty-hero">
         <div>
-          <h2>아직 확정한 학교가 없어요</h2>
-          <p>학교 찾기에서 지망 학교를 선택하고 확정하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요</p>
+          <h2>아직 배정된 학교가 없어요</h2>
+          <p>희망대학표를 만들고 배정 결과(또는 미리 준비해볼 학교)를 등록하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요</p>
         </div>
         <a href="search.html" class="btn btn--accent">학교 찾기로 이동</a>
       </div>`;
@@ -70,6 +87,7 @@ function renderPrepareHero() {
           <div class="confirmed-card__meta">${confirmed.country} · ${confirmed.city}${confirmed.qsRank ? ` · QS ${confirmed.qsRank}` : ''}</div>
           <div class="confirmed-card__badges">
             <span class="badge badge--amber">${AppState.profile.exchangeTerm.year} ${AppState.profile.exchangeTerm.season}</span>
+            ${OIA.beforePlacement(AppState.profile) ? '<span class="badge badge--neutral">배정 발표 전 · 미리 준비 중</span>' : ''}
           </div>
         </div>
       </div>
@@ -79,7 +97,7 @@ function renderPrepareHero() {
       <div id="departureCard"></div>
       <div class="confirmed-card__actions">
         <span class="btn btn--ghost" style="color:#fff;border-color:rgba(255,255,255,.4);">학교 정보 보기</span>
-        <button type="button" class="confirmed-card__cancel" id="cancelConfirmBtn">학교 확정 취소</button>
+        <button type="button" class="confirmed-card__cancel" id="cancelConfirmBtn">${OIA.beforePlacement(AppState.profile) ? '미리 준비 그만두기' : '배정 학교 지우기'}</button>
       </div>
     </div>`;
   // 카드 아무 데나 누르면 학교 상세가 열린다. 그 안의 '수정'·날짜 입력만
@@ -101,7 +119,7 @@ function renderPrepareHero() {
 
     if (AppState.lastWriteError) {
       btn.disabled = false;
-      btn.textContent = '학교 확정 취소';
+      btn.textContent = OIA.beforePlacement(AppState.profile) ? '미리 준비 그만두기' : '배정 학교 지우기';
       if (typeof showToast === 'function') showToast('취소하지 못했어요. 잠시 후 다시 시도해 주세요.');
       return;
     }
@@ -538,7 +556,8 @@ function renderPrepareLiving() {
       rows: [['추천', c.insurance], ['요금', c.insurancePrice]],
       note: c.insuranceNote, source: c.insuranceSource
     } : base('insurance'),
-    scholarship: base('scholarship'),
+    // 국제처 장학금 목록은 늘 있다 — 기본 안내(living_prep)가 비어 있어도 카드를 둔다
+    scholarship: base('scholarship') || { title: '장학금', rows: [] },
     telecom: c ? {
       title: '통신사',
       rows: [['추천', c.telecomRecommend], ['요금', c.telecomPrice]],
@@ -566,14 +585,20 @@ function renderPrepareLiving() {
   // 항목만 열어 보게 한다 — 보험을 알아보는 날과 계좌를 여는 날은 다르다.
   mount.innerHTML = keys.map(k => {
     const d = cards[k];
+    // 장학금은 국제처 책자(Ch.10) 목록을 쓴다. 학점처럼 앱이 아는 조건만 미리 견주고,
+    // 국적·학자금 구간처럼 받지 않는 정보는 조건 문장으로만 보여준다.
     const scholarshipExtra = k === 'scholarship' ? `
       <div class="scholarship-list">
-        ${MOCK.scholarships.map(s => `
+        ${OIA.SCHOLARSHIPS.map(s => {
+          const fit = s.check(AppState.profile, confirmed);
+          return `
           <div class="scholarship-row">
-            <div class="scholarship-row__name">${prepEsc(s.name)}</div>
-            <div class="scholarship-row__amount">${prepEsc(s.amount)}</div>
-            <div class="scholarship-row__elig">${prepEsc(s.eligibility)}</div>
-          </div>`).join('')}
+            <div class="scholarship-row__name">${prepEsc(s.name)}${fit === true ? ` <span class="badge badge--go">${s.id === 'icu' ? '해당' : '학점 기준 충족'}</span>` : fit === false ? ' <span class="badge badge--warn">기준 미달</span>' : ''}</div>
+            <div class="scholarship-row__amount">${prepEsc(s.amount)} · ${prepEsc(s.when)}</div>
+            <div class="scholarship-row__elig">${prepEsc(s.cond)}</div>
+          </div>`;
+        }).join('')}
+        <p class="living-card__note">문의 · 국제처 국제팀 02-2123-4704 / sap@yonsei.ac.kr</p>
       </div>` : '';
     const links = d.source ? prepSourceLinks(d.source) : '';
     return `
@@ -638,6 +663,8 @@ function morphToPreparePage() {
   renderAppBar('prepare');
   renderTabBar('prepare');
   renderPrepareView();
+  // 방금 확정했다면 출국일이 아직 없다 — 다음 화면까지 기다리지 않고 바로 묻는다
+  if (typeof ensureDepartureDate === 'function') ensureDepartureDate();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

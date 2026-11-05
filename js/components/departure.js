@@ -61,6 +61,12 @@ function hasDeparted() {
   return info.hasRange && info.phase !== DEPARTURE_PHASES.BEFORE;
 }
 
+/** 귀국일이 지났는가 — 지났으면 귀국 후 할 일(귀국신고·경험보고서·성적표·학점인정)이 남아 있다. */
+function hasReturned() {
+  const info = departureInfo();
+  return info.hasRange && info.phase === DEPARTURE_PHASES.AFTER;
+}
+
 /** 오늘 남기는 기록이 '출국 전'인지 '파견 중'인지. 사용자가 매번 고르지 않아도 되게 한다. */
 function departurePhaseFor(iso) {
   const range = AppState.getProgramRange();
@@ -228,6 +234,9 @@ function renderDepartureCard(mount, opts = {}) {
     const editBtn = mount.querySelector('#depEdit');
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      // 예전에는 날짜를 지우고 입력칸으로 되돌렸다. 이제 출국일이 비면 화면을 덮는 입력 창이
+      // 뜨므로(layout.js), 지우지 않고 그 창을 닫을 수 있는 모양으로 연다.
+      if (typeof openDepartureGate === 'function') { openDepartureGate({ dismissible: true }); return; }
       AppState.setProgramRange(null, null);
       renderDepartureCard(mount, opts);
     });
@@ -319,6 +328,7 @@ function renderDepartureCard(mount, opts = {}) {
 
   const edit = mount.querySelector('#depEdit');
   if (edit) edit.addEventListener('click', () => {
+    if (typeof openDepartureGate === 'function') { openDepartureGate({ dismissible: true }); return; }
     AppState.setProgramRange(null, null);
     renderDepartureCard(mount);
   });

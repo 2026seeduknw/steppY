@@ -1,118 +1,36 @@
 /**
- * 기본 정보 입력 (§4.1) — F2/F4 공통, 단일 프로필 엔티티(AppState.profile)를 공유.
+ * 기본 정보 카드 (계정 시트) — 보기만 한다.
+ *
+ * 고치는 건 기본 정보 화면(onboarding.html)에서 한다. 예전엔 이 카드 안에 따로 입력 폼이
+ * 있었는데, 전형·어학 등급·학적처럼 국제처 규칙에 맞춘 칸이 늘면서 두 폼이 어긋나기
+ * 시작했다(여기만 IELTS를 받는 식으로). 입력하는 곳을 한 군데로 모았다.
  */
-const LANG_TEST_TYPES = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
-const SEASONS = ['봄학기', '여름학기', '가을학기', '겨울학기'];
-
 function renderProfileCard(mount) {
   mount.innerHTML = profileViewTemplate();
-  mount.querySelector('[data-edit-profile]').addEventListener('click', () => {
-    mount.innerHTML = profileEditTemplate();
-    wireProfileEdit(mount);
-    wireMajorSelect(mount);
-  });
 }
 
 function profileViewTemplate() {
   const p = AppState.profile;
-  const lang = p.languageTests[0];
+  const term = p.exchangeTerm || {};
+  const a = p.academic || {};
+  const track = term.track;
+  const test = track ? OIA.testFor(p, track) : (p.languageTests || [])[0];
+  const degree = (OIA.DEGREES.find(d => d.key === a.degree) || OIA.DEGREES[0]).label;
+  const field = (OIA.FIELDS.find(f => f.key === a.field) || {}).label;
+  const stat = (label, value) => `<div class="profile-stat"><span class="profile-stat__label">${label}</span><span class="profile-stat__value">${value}</span></div>`;
   return `
     <div class="section-title">
       <div><h2>기본 정보</h2></div>
-      <button class="btn--text" data-edit-profile>수정</button>
+      <a class="btn--text" href="onboarding.html">수정</a>
     </div>
     <div class="profile-stats profile-stats--compact">
-      <div class="profile-stat"><span class="profile-stat__label">이름</span><span class="profile-stat__value">${p.name || '미등록'}</span></div>
-      <div class="profile-stat"><span class="profile-stat__label">GPA</span><span class="profile-stat__value tnum">${p.gpa == null ? '미등록' : `${formatGpa(p.gpa)} <em>/ ${formatGpa(p.gpaScale)}</em>`}</span></div>
-      <div class="profile-stat"><span class="profile-stat__label">어학 성적</span><span class="profile-stat__value tnum">${lang ? `${lang.type} ${lang.score}` : '미등록'}</span></div>
-      <div class="profile-stat"><span class="profile-stat__label">교환 시기</span><span class="profile-stat__value">${p.exchangeTerm.year} ${p.exchangeTerm.season}</span></div>
-      <div class="profile-stat"><span class="profile-stat__label">재학 학과</span><span class="profile-stat__value">${p.major || '미등록'}</span></div>
+      ${stat('이름', p.name || '미등록')}
+      ${stat('GPA', p.gpa == null ? '미등록' : `<span class="tnum">${formatGpa(p.gpa)}</span> <em>/ ${formatGpa(p.gpaScale)}</em>${a.percentile != null ? ` <em>· 백분위 ${a.percentile}</em>` : ''}`)}
+      ${stat('지원 전형', track ? OIA.trackLabel(track) : '미정')}
+      ${stat('어학 성적', a.langExempt ? '면제 대상' : test ? `<span class="tnum">${OIA.testText(test)}</span>${test.date ? ` <em>· ${test.date.replace('-', '.')}</em>` : ''}` : '미등록')}
+      ${stat('교환 시기', `${term.year} ${term.season}${term.length === 2 ? ' · 1년' : ' · 한 학기'}`)}
+      ${stat('학적', [degree, field, a.semesters != null ? `${a.semesters}학기 이수` : null].filter(Boolean).join(' · '))}
+      ${stat('재학 학과', p.major || '미등록')}
     </div>
   `;
-}
-
-function profileEditTemplate() {
-  const p = AppState.profile;
-  const lang = p.languageTests[0] || { type: 'TOEFL', score: '' };
-  return `
-    <div class="section-title">
-      <div><h2>기본 정보 수정</h2></div>
-    </div>
-    <form class="profile-form" id="profileForm">
-      <label class="field">
-        <span>이름 (홈 인사에 쓰여요)</span>
-        <input type="text" name="name" maxlength="20" autocomplete="nickname"
-               value="${(p.name || '').replace(/"/g, '&quot;')}" placeholder="예: 김스텝" required>
-      </label>
-      <label class="field">
-        <span>GPA (4.3 만점, 0.01 단위)</span>
-        <input type="number" step="0.01" min="0" max="4.3" data-decimals="2" name="gpa" value="${p.gpa == null ? '' : p.gpa}" required>
-      </label>
-      <label class="field">
-        <span>어학 시험</span>
-        <select name="langType">${LANG_TEST_TYPES.map(t => `<option ${t === lang.type ? 'selected' : ''}>${t}</option>`).join('')}</select>
-      </label>
-      <label class="field">
-        <span>어학 점수</span>
-        <input type="number" name="langScore" value="${lang.score}" required>
-      </label>
-      <label class="field">
-        <span>교환 시기</span>
-        <select name="season">${SEASONS.map(s => `<option ${s === p.exchangeTerm.season ? 'selected' : ''}>${s}</option>`).join('')}</select>
-      </label>
-      <label class="field">
-        <span>단위</span>
-        <select name="unit">
-          <option value="semester" ${p.exchangeTerm.unit === 'semester' ? 'selected' : ''}>학기(semester)</option>
-          <option value="quarter" ${p.exchangeTerm.unit === 'quarter' ? 'selected' : ''}>쿼터(quarter)</option>
-        </select>
-      </label>
-      <label class="field">
-        <span>재학 학과</span>
-        <input type="hidden" name="major" value="${p.major || ''}">
-        <div data-major-select></div>
-      </label>
-      <div class="field field--actions">
-        <button type="button" class="btn btn--ghost btn--sm" data-cancel-edit>취소</button>
-        <button type="submit" class="btn btn--primary btn--sm">저장</button>
-      </div>
-    </form>
-  `;
-}
-
-function wireMajorSelect(mount) {
-  const container = mount.querySelector('[data-major-select]');
-  const hiddenInput = mount.querySelector('input[name="major"]');
-  const items = MOCK.yonseiMajors.map(m => ({ value: m.majorName, label: m.majorName, group: m.college }));
-  const select = createSearchableSelect({
-    items,
-    selected: hiddenInput.value,
-    multiple: false,
-    placeholder: '학과를 검색해서 선택하세요',
-    onChange: (value) => { hiddenInput.value = value; }
-  });
-  container.replaceWith(select.el);
-}
-
-function wireProfileEdit(mount) {
-  mount.querySelector('[data-cancel-edit]').addEventListener('click', () => renderProfileCard(mount));
-  mount.querySelector('#profileForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    AppState.updateProfile({
-      name: String(fd.get('name') || '').trim(),
-      gpa: roundDecimals(fd.get('gpa'), 2),
-      major: fd.get('major'),
-      languageTests: [{ type: fd.get('langType'), score: parseFloat(fd.get('langScore')) }],
-      exchangeTerm: {
-        unit: fd.get('unit'),
-        season: fd.get('season'),
-        year: (AppState.profile.exchangeTerm || {}).year || new Date().getFullYear() + 1
-      }
-    });
-    renderProfileCard(mount);
-    showToast('기본 정보를 저장했어요');
-    // 홈 인사("안녕하세요, ○○님")가 이 이벤트를 듣고 다시 그린다.
-    document.dispatchEvent(new CustomEvent('profile:updated'));
-  });
 }

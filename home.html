@@ -10,55 +10,69 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/home.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="home">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell home-hero">
-  <div class="home-hero__row">
-    <h1 id="greeting">안녕하세요</h1>
-  </div>
-  <p id="greetingSub"></p>
-  <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
-</div>
+<div class="page-shell v2-home">
+  <header class="v2-home__head">
+    <h1 class="v2-wordmark" aria-label="steppY">STEPPY</h1>
+    <p class="v2-home__greet" id="greeting"></p>
+    <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
+  </header>
 
-<div class="page-shell home-grid">
-  <div class="home-main">
-    <section class="journey-bar" aria-label="진행 단계">
+  <div class="v2-widgets">
+    <!-- 왼쪽: 지금 어느 단계인지 -->
+    <section class="v2-widget v2-widget--stage" aria-label="진행 단계">
       <div id="journeySteps"></div>
     </section>
 
-    <section id="todoCard"></section>
-
-    <section class="card card-pad" aria-label="지망하는 학교">
-      <div class="wishlist-row" id="wishlistRow"></div>
+    <!-- 오른쪽: 옆으로 넘기는 바로가기 -->
+    <section class="v2-widget v2-shortcuts" aria-label="바로가기">
+      <div class="v2-shortcuts__track" id="shortcutTrack">
+        <a class="v2-shortcut v2-shortcut--sand" href="credits.html?mode=major">
+          <strong class="v2-shortcut__title">전공 매칭</strong>
+          <span class="v2-shortcut__sub">내 전공과 가까운 파견교 학과 찾기</span>
+        </a>
+        <a class="v2-shortcut v2-shortcut--mint" href="consult.html">
+          <strong class="v2-shortcut__title">Mentor's Step</strong>
+          <span class="v2-shortcut__sub">궁금한 걸 남기면 다녀온 선배가 답해줘요</span>
+        </a>
+        <a class="v2-shortcut v2-shortcut--sky" href="credits.html">
+          <strong class="v2-shortcut__title">과목 찾기</strong>
+          <span class="v2-shortcut__sub">파견교 과목이 학점으로 인정될까?</span>
+        </a>
+        <a class="v2-shortcut v2-shortcut--plum" href="reviews.html">
+          <strong class="v2-shortcut__title">국가별 후기</strong>
+          <span class="v2-shortcut__sub">기숙사·교통·생활비 후기 모아보기</span>
+        </a>
+      </div>
+      <div class="v2-shortcuts__dots" id="shortcutDots" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i></div>
+      <span class="v2-shortcuts__go" aria-hidden="true">→</span>
     </section>
-
-    <a class="credits-cta" href="credits.html">
-      <div class="credits-cta__body">
-        <h2>다녀와서 이 과목, 학점으로 인정될까요?</h2>
-        <p>내 전공과 파견교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
-      </div>
-      <span class="credits-cta__arrow" aria-hidden="true">→</span>
-    </a>
-
-    <a class="reviews-cta" href="consult.html">
-      <div class="reviews-cta__body">
-        <h2>파견 국가별 후기 보기</h2>
-        <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
-      </div>
-      <span class="reviews-cta__arrow" aria-hidden="true">→</span>
-    </a>
-
-    <button type="button" class="search-cta" id="partnerPromoBanner" data-release="partnerPromo" style="border:none;width:100%;text-align:left;cursor:pointer;font:inherit;">
-      <div>
-        <h2>보험·어학원·여행까지, 제휴 혜택으로 준비해보세요</h2>
-        <p>교환학생 전용 해외보험·어학연수·여행 프로그램을 특별 혜택가로 준비할 수 있어요</p>
-      </div>
-      <span class="btn btn--accent">제휴 혜택 보기</span>
-    </button>
   </div>
+
+  <!-- 다가오는 국제처 일정 두 줄 — 단계 상자는 높이가 고정(148px)이라 그 아래 한 줄로 둔다.
+       js/components/oia-timeline.js renderUpcomingSchedule -->
+  <section class="upcoming" id="homeSchedule" aria-label="다가오는 국제처 일정" hidden></section>
+
+  <!-- 할 일 — 두 상자 아래 가로로 긴 알약. 누르면 아래로 목록이 펼쳐진다 -->
+  <section class="v2-todo" id="todoCard" aria-label="할 일"></section>
+
+  <section class="v2-picks" aria-label="지망 학교">
+    <p class="v2-picks__label">MY PICKS</p>
+    <div class="v2-wheel" id="picksWheel"></div>
+  </section>
+
+  <button type="button" class="search-cta" id="partnerPromoBanner" data-release="partnerPromo" style="border:none;width:100%;text-align:left;cursor:pointer;font:inherit;">
+    <div>
+      <h2>보험·어학원·여행까지, 제휴 혜택으로 준비해보세요</h2>
+      <p>교환학생 전용 해외보험·어학연수·여행 프로그램을 특별 혜택가로 준비할 수 있어요</p>
+    </div>
+    <span class="btn btn--accent">제휴 혜택 보기</span>
+  </button>
 </div>
 
 <div id="mentor-float"></div>
@@ -75,9 +89,11 @@
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -90,10 +106,11 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/target-major.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
+<script src="js/components/logo-fit.js"></script>
 <script src="js/home.js"></script>
 <script src="js/app-links.js"></script>
-<script src="js/components/dropdown.js"></script>
 <script src="js/invite.js"></script>
 </body>
 </html>

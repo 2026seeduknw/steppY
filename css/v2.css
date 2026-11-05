@@ -441,5 +441,7 @@ body[data-page="saved"] .saved__head h2 { font-size: 17px; }
 .fav-row__meta b { color: var(--v2-good); }
 /* 제목과 아래 전환 버튼 사이 — 학교 찾기의 제목·검색창 간격(15px)과 같게 */
 body[data-page="credits"] .v2-head { margin-bottom: 15px; }
+/* 단계 아래 작은 날짜(지원 1월 7일 · 배정 1월 20일). 네 칸이 반쪽 상자에 들어가야 해서 한 줄로 작게 */
+.journey__sub { display: block; font-size: 9.5px; font-weight: 500; color: var(--ink-400); letter-spacing: -0.03em; margin-top: 1px; white-space: nowrap; }
 /* 홈 — 다가오는 국제처 일정(단계·바로가기 두 상자 아래) */
 .v2-home .upcoming { margin-top: 8px; padding: 10px 14px; border-radius: var(--v2-radius); background: #fff; border: 1px solid var(--line-100); }

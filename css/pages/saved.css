@@ -75,3 +75,29 @@
 .saved-empty__title { font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
 .saved-empty__sub { font-size: var(--fs-small); line-height: 1.5; color: var(--ink-600); word-break: keep-all; }
 .saved-empty__btn { margin-top: var(--space-2); align-self: stretch; height: 46px; }
+
+/* ---- 희망대학표 ----
+   한 줄 = 한 학교. 순위 · 이름(+국가·학과·기간 한 줄) · 위아래/고치기. 세로를 아끼려고
+   학과·기간 입력은 고치기를 눌렀을 때만 그 줄 아래로 연다(app_ui.md 1장). */
+.wish-note { font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.5; margin: calc(-1 * var(--space-2)) 0 var(--space-2); word-break: keep-all; }
+.wish-warn { font-size: var(--fs-micro); color: var(--amber-700); background: var(--amber-100); border-radius: 10px; padding: 7px 10px; margin-bottom: var(--space-2); }
+.wish-warn a { color: inherit; font-weight: 800; }
+.wish-list { list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.wish-row { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; border-top: 1px solid var(--line-100); }
+.wish-row:first-child { border-top: 0; }
+.wish-row.is-off { background: var(--coral-100); }
+.wish-row__rank { text-align: center; font-size: var(--fs-small); font-weight: 800; color: var(--sky-500); }
+.wish-row__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 9px 4px; background: none; border: 0; font: inherit; text-align: left; cursor: pointer; color: inherit; }
+.wish-row__name { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wish-row__meta { font-size: var(--fs-micro); color: var(--ink-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wish-row__elig { font-weight: 700; margin-left: 4px; }
+.wish-row__elig.is-go { color: var(--mint-600); }
+.wish-row__elig.is-warn, .wish-row__elig.is-off { color: var(--coral-600); }
+.wish-row__ctrl { display: flex; padding-right: 4px; }
+.wish-row__ctrl button { width: 30px; height: 30px; border: 0; background: none; color: var(--ink-600); font-size: 15px; cursor: pointer; border-radius: 8px; }
+.wish-row__ctrl button:disabled { opacity: .25; cursor: default; }
+.wish-edit { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; padding: 0 var(--space-3) var(--space-3); }
+.wish-edit input { height: 40px; border: 1px solid var(--line-200); border-radius: 10px; padding: 0 12px; font: inherit; font-size: var(--fs-input); }
+.wish-edit__len { display: flex; gap: 6px; }
+.wish-edit__actions { display: flex; justify-content: space-between; align-items: center; }
+.wish-edit__remove { color: var(--coral-600); font-size: var(--fs-micro); }

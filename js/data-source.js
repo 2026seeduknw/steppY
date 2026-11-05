@@ -237,6 +237,12 @@
         // nonEnglish 가 된다 — GE3(다국가 컨소시엄)가 그랬다. 모르는 건
         // 모른다고 둔다. 수업 언어 필터도, 어학 성적 요구도 걸리지 않는다.
         track: s.language ? s.track : null,
+        // 수업 언어권 목록 — 'English, French' 면 영어권·프랑스어권 둘 다로 지원할 수 있다(js/oia-rules.js)
+        languages: typeof OIA !== 'undefined' ? OIA.parseLanguages(s.language) : [],
+        academicSystem: s.academic_system || '',
+        openGrad: s.open_grad !== false,
+        // 이 학교 정보가 어느 학기 명단에서 왔는지. term 컬럼(supabase/oia_2027.sql)이 없으면 지금 명단 기준
+        term: s.term || (typeof OIA !== 'undefined' ? OIA.SCHOOLS_TERM : ''),
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
           cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,

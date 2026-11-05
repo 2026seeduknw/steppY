@@ -67,6 +67,7 @@ function guestState() {
     profile: emptyState(null).profile,
     favorites: [],
     wishlist: {},
+    wishlistMeta: {},
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
@@ -116,15 +117,20 @@ function emptyState(displayName) {
       targetMajor: null,
       gpa: null,
       gpaScale: 4.3,
+      // [{ type, score | level, lang(FLEX만), date('YYYY-MM') }] — 시험 종류는 js/oia-rules.js TESTS
       languageTests: [],
-      // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다
-      exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1 },
+      // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다.
+      // track — 지원 전형(영어권 'english' 또는 비영어권 언어 'fr' 등, 하나만). length — 1학기(1) / 1년(2).
+      exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1, track: null, length: 1 },
+      // 국제처 공통 자격을 판정하는 학적 정보(supabase/oia_2027.sql의 profiles.academic)
+      academic: {},
       targetScoreSimUsed: false,
       // null(또는 지난 시각)이면 비프리미엄. supabase/premium.sql의 profiles.premium_until.
       premiumUntil: null
     },
     favorites: [],
     wishlist: {},
+    wishlistMeta: {},
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
@@ -139,6 +145,11 @@ function emptyState(displayName) {
     // 매칭 목록별로 크레딧을 써서 푼 횟수 { listKey: 횟수 } — supabase/bm_unlocks.sql의 match_unlocks
     matchUnlocks: {}
   };
+}
+
+/** 아직 돌리지 않은 SQL 의 컬럼을 쓰려다 난 오류인가(PostgREST PGRST204 / Postgres 42703). */
+function isMissingColumn(err) {
+  return !!err && (err.code === 'PGRST204' || err.code === '42703');
 }
 
 const AppState = {
@@ -186,6 +197,23 @@ const AppState = {
   get profile() { return this.load().profile; },
   isFavorite(schoolId) { return this.load().favorites.includes(schoolId); },
   getWishlist() { return this.load().wishlist; },
+
+  /**
+   * 희망대학표 — 순위 순서대로 [{ rank, schoolId, major, length }].
+   * 국제처 지원서의 '희망교환대학표'와 같은 것이다: 최대 25개, 순서가 있고, 최종 1곳에 배정된다.
+   */
+  getWishlistList() {
+    const s = this.load();
+    const meta = s.wishlistMeta || {};
+    return Object.keys(s.wishlist).map(Number).sort((a, b) => a - b).map(rank => {
+      const id = s.wishlist[rank];
+      return { rank, schoolId: id, major: (meta[id] || {}).major || '', length: (meta[id] || {}).length || null };
+    });
+  },
+  wishlistRankOf(schoolId) {
+    const e = this.getWishlistList().find(x => x.schoolId === schoolId);
+    return e ? e.rank : null;
+  },
 
   /* -------------------------------------------------------- Mentor's Step */
 
@@ -379,6 +407,14 @@ const AppState = {
       language_tests: p.languageTests || [],
       exchange_term: p.exchangeTerm
     }), '프로필');
+    // 학적 정보는 따로 쓴다 — oia_2027.sql 전이면 컬럼이 없어 이 쓰기만 실패하고,
+    // 위의 다른 프로필 값까지 함께 실패하지 않게 하려는 것이다.
+    if ('academic' in patch) {
+      this._push(async () => {
+        const res = await supabaseClient.from('profiles').upsert({ id: Auth.userId, academic: p.academic || {} });
+        return isMissingColumn(res.error) ? null : res;
+      }, '학적 정보');
+    }
   },
 
   toggleFavorite(schoolId) {
@@ -394,24 +430,82 @@ const AppState = {
     return added;
   },
 
-  setWishlistRank(rank, schoolId) {
-    const s = this.load();
-    // 지망을 다시 손봤으면 탐색을 마친 것으로 본다 → 홈의 단계가 다시 '학교 확정'으로 간다
-    this._setConfirmCancelled(false);
-    // 같은 학교가 다른 순위에 있으면 먼저 뺀다 (DB의 user_wishlist_school_once 제약과 동일)
-    Object.keys(s.wishlist).forEach(r => { if (s.wishlist[r] === schoolId) delete s.wishlist[r]; });
-    if (schoolId) s.wishlist[rank] = schoolId; else delete s.wishlist[rank];
-    this.save();
+  /**
+   * 희망대학표 끝에 담는다. 반환 { ok, reason } — reason: 'full'(25개) | 'track'(다른 언어권) | 'exists'.
+   * 국제처 규칙상 한 전형(언어권)의 학교만 적을 수 있어서, 전형을 정했으면 다른 언어권 학교는 막는다.
+   */
+  addToWishlist(schoolId) {
+    const list = this.getWishlistList();
+    if (list.some(e => e.schoolId === schoolId)) return { ok: false, reason: 'exists' };
+    if (list.length >= OIA.WISHLIST_MAX) return { ok: false, reason: 'full' };
+    const track = (this.profile.exchangeTerm || {}).track;
+    const school = MOCK.schools.find(sc => sc.id === schoolId);
+    if (track && school && !OIA.schoolOffersTrack(school, track)) return { ok: false, reason: 'track' };
+    this._setWishlistOrder(list.map(e => e.schoolId).concat(schoolId));
+    return { ok: true, rank: list.length + 1 };
+  },
 
-    const rows = Object.keys(s.wishlist).map(r => ({
-      user_id: Auth.userId, rank: Number(r), school_id: s.wishlist[r]
+  removeFromWishlist(schoolId) {
+    this._setWishlistOrder(this.getWishlistList().map(e => e.schoolId).filter(id => id !== schoolId));
+    const meta = this.load().wishlistMeta || {};
+    delete meta[schoolId];
+  },
+
+  /** 순위를 한 칸 올리거나(-1) 내린다(+1). */
+  moveWishlist(schoolId, delta) {
+    const ids = this.getWishlistList().map(e => e.schoolId);
+    const i = ids.indexOf(schoolId);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    this._setWishlistOrder(ids);
+  },
+
+  /** 학교마다 적는 지원 학과·파견 기간. */
+  setWishlistMeta(schoolId, patch) {
+    const s = this.load();
+    s.wishlistMeta = s.wishlistMeta || {};
+    s.wishlistMeta[schoolId] = Object.assign({}, s.wishlistMeta[schoolId], patch);
+    this._writeWishlist();
+  },
+
+  /** 예전 1~3지망 칩용. rank 자리에 넣고 나머지는 순서를 유지한다(schoolId 가 없으면 그 자리를 비운다). */
+  setWishlistRank(rank, schoolId) {
+    const ids = this.getWishlistList().map(e => e.schoolId).filter(id => id !== schoolId);
+    if (schoolId) ids.splice(Math.max(0, Math.min(ids.length, Number(rank) - 1)), 0, schoolId);
+    else ids.splice(Number(rank) - 1, 1);
+    this._setWishlistOrder(ids);
+  },
+
+  _setWishlistOrder(ids) {
+    const s = this.load();
+    // 희망대학표를 다시 손봤으면 탐색을 마친 것으로 본다 → 홈의 단계가 다시 앞으로 간다
+    this._setConfirmCancelled(false);
+    s.wishlist = {};
+    ids.slice(0, OIA.WISHLIST_MAX).forEach((id, i) => { s.wishlist[i + 1] = id; });
+    this._writeWishlist();
+  },
+
+  _writeWishlist() {
+    this.save();
+    const rows = this.getWishlistList().map(e => ({
+      user_id: Auth.userId, rank: e.rank, school_id: e.schoolId,
+      apply_major: e.major || null, apply_length: e.length || null
     }));
     // 순위 재배치는 부분 갱신보다 "이 사용자 지망 전체를 다시 쓰기"가 안전하다.
     this._push(async () => {
       const del = await supabaseClient.from('user_wishlist').delete().eq('user_id', Auth.userId);
       if (del.error) return del;
-      return rows.length ? supabaseClient.from('user_wishlist').insert(rows) : del;
-    }, '지망 학교');
+      if (!rows.length) return del;
+      const res = await supabaseClient.from('user_wishlist').insert(rows);
+      if (!res.error) return res;
+      // oia_2027.sql 전에는 4순위부터(rank 1~3 제약)와 새 컬럼에서 막힌다.
+      // 이미 지웠으니 1~3순위만이라도 다시 넣어 둔다 — 아니면 지망이 통째로 사라진다.
+      const basic = rows.filter(r => r.rank <= 3).map(({ user_id, rank, school_id }) => ({ user_id, rank, school_id }));
+      const retry = basic.length ? await supabaseClient.from('user_wishlist').insert(basic) : del;
+      if (retry.error) return retry;
+      return rows.length > 3 ? { error: res.error } : retry;
+    }, '희망대학표');
   },
 
   /**
@@ -723,7 +817,8 @@ const AppState = {
     const [prof, favs, wish, todos, journal, credits, qFavs, unlocks, creditTotal] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
-      supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
+      // '*' — oia_2027.sql 전에는 apply_major/apply_length 컬럼이 없어, 이름을 적으면 조회가 통째로 실패한다
+      supabaseClient.from('user_wishlist').select('*').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
       supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, visibility, created_at').eq('user_id', uid),
       supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
@@ -752,7 +847,9 @@ const AppState = {
         gpa: p.gpa === null ? null : Number(p.gpa),
         gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
         languageTests: p.language_tests || [],
-        exchangeTerm: p.exchange_term || next.profile.exchangeTerm,
+        exchangeTerm: Object.assign({}, next.profile.exchangeTerm, p.exchange_term || {}),
+        // oia_2027.sql 전이면 컬럼이 없어 undefined → 빈 객체
+        academic: (p.academic && typeof p.academic === 'object') ? p.academic : {},
         targetScoreSimUsed: false,
         // premium.sql이 아직 적용되지 않았으면 이 컬럼이 없어 p.premium_until은 그냥 undefined다.
         premiumUntil: p.premium_until || null
@@ -776,7 +873,10 @@ const AppState = {
     if (qFavs.data) next.questionFavorites = qFavs.data.map(r => r.question_id);
     // bm_unlocks.sql 전이면 에러만 나고 빈 객체로 남는다 — 목록은 무료 3개만 보인다.
     if (unlocks.data) unlocks.data.forEach(r => { next.matchUnlocks[r.list_key] = r.steps; });
-    if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
+    if (wish.data) wish.data.forEach(r => {
+      next.wishlist[r.rank] = r.school_id;
+      if (r.apply_major || r.apply_length) next.wishlistMeta[r.school_id] = { major: r.apply_major || '', length: r.apply_length || null };
+    });
     if (todos.data) {
       next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));
       next.customTodos = todos.data.filter(r => !r.base_id).map(r => ({

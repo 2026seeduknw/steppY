@@ -1076,6 +1076,15 @@ body[data-page="onboarding"] {
 .ob__chips .chip { min-height: 32px; padding: 6px var(--space-3); font-size: var(--fs-small); }
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
 .ob__hint { font-size: var(--fs-micro); color: var(--ink-400); line-height: 1.5; word-break: keep-all; }
+/* 같은 층위의 두 칸(학점·백분위, 점수·응시 연월)은 한 줄에 반씩 — app_ui.md 1장 */
+.ob__row--pair > * { flex: 1 1 0; min-width: 0; }
+.ob__row--pair > .ob__row > input { width: 100%; }
+.ob__row--pair > select { flex: 1 1 0; }
+.ob__sub { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); margin-top: 2px; }
+.ob__sub span, .ob__check span { font-weight: 500; color: var(--ink-400); }
+.ob__check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: var(--ink-700); }
+.ob__form .ob__check input { width: 18px; height: 18px; padding: 0; flex: none; }
+.ob [hidden] { display: none !important; }
 
 /* 로그인 화면의 기본 버튼과 같은 네이비 — 두 화면이 이어서 나온다.
    버튼은 <main class="ob"> 밖의 .ob__footer 안에 있다. */
@@ -2153,3 +2162,29 @@ select:not([multiple]) {
    아래: 제목의 margin 16px 위에 .section-title 의 margin 16px 이 겹쳐 32px 이었다. */
 .score-card { padding-top: var(--space-4); }
 .score-card .section-title h2.brand-head { margin-bottom: 0; }
+
+/* ---- 예상 출국일 입력 창 (js/components/layout.js openDepartureGate) ----
+   확정 직후에는 닫을 수 없는 창이라 탭바·앱바 위를 통째로 덮는다. */
+.departure-gate {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-4);
+  background: rgba(20, 28, 26, 0.55);
+}
+.departure-gate__panel {
+  position: relative;
+  width: min(360px, 100%);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--cloud-0);
+  box-shadow: var(--shadow-modal);
+}
+.departure-gate__title { font-size: var(--fs-h3); font-weight: 800; color: var(--ink-900); }
+.departure-gate__desc { margin: var(--space-2) 0 var(--space-3); font-size: var(--fs-small); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.departure-gate__field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.departure-gate__field input {
+  height: 44px; padding: 0 var(--space-3);
+  border: 1.5px solid var(--line-200); border-radius: var(--radius-md);
+  background: var(--cloud-0); font: inherit; font-weight: 500; color: var(--ink-900);
+}
+.account-sheet__departure { margin-bottom: var(--space-2); }

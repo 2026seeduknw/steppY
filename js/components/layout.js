@@ -51,7 +51,98 @@ const PAGE_TITLES = {
   reviews: '국가별 후기'
 };
 
-/** 학교를 확정하면 "홈" 탭의 라벨·목적지가 교환 준비하기로 통째로 바뀐다(탭은 5개 유지). */
+/**
+ * 지금 어느 단계인가에 따라 하단 탭 네 개가 통째로 바뀐다.
+ *
+ *   exploring — 학교를 아직 확정하지 않았다(로그인 전 포함). 고르는 데 필요한 화면.
+ *   confirmed — 갈 학교를 정했고 아직 출국 전. 학교 찾기는 끝났고 기록이 시작된다.
+ *   abroad    — 출국일이 지났다. 기록이 첫 자리로 오고, 준비하기(홈) 탭은 빠진다.
+ *   returned  — 귀국일이 지났다. 귀국신고 → 경험보고서 → 성적표 → 학점인정이 남아 있어서
+ *               학점 인정 탭이 첫 자리로 온다(그 화면 맨 위에 귀국 후 할 일이 뜬다).
+ *
+ * 교환보고서는 어느 단계의 탭에도 없다 — 화면(report.html)은 남아 있다. 내 저장은 멘토 앞에 둔다.
+ * (departure.js가 layout.js보다 먼저 실려 있다. 혹시 없으면 출국 전으로 본다)
+ */
+const TABS_BY_STAGE = {
+  // 내 저장(PICKS) — 지망·찜한 학교를 나란히 견주는 화면. 멘토 바로 앞에 둔다
+  exploring: ['home', 'search', 'credits', 'saved', 'consult'],
+  confirmed: ['home', 'credits', 'journal', 'saved', 'consult'],
+  abroad: ['journal', 'quest', 'saved', 'consult', 'credits'],
+  returned: ['credits', 'journal', 'saved', 'consult', 'quest']
+};
+
+function journeyStage() {
+  if (!AppState.getConfirmedSchool()) return 'exploring';
+  if (typeof hasReturned === 'function' && hasReturned()) return 'returned';
+  return (typeof hasDeparted === 'function' && hasDeparted()) ? 'abroad' : 'confirmed';
+}
+
+/**
+ * 예상 출국일 입력 창.
+ *
+ * 학교를 확정했는데 출국일이 없으면 화면을 덮고 이것부터 받는다 — 탭 구성도, 기록의
+ * Day 수도, 준비 일정도 이 날짜를 기준으로 갈린다. 가볍게 받으려고 출국일 하나만 묻고
+ * 귀국일은 학기 기준으로 채운다. 이때는 닫을 수 없다(바깥을 눌러도, ESC도).
+ * 계정 시트의 '출국일 변경'으로 다시 열면 닫을 수 있고 귀국일까지 고칠 수 있다.
+ */
+function openDepartureGate({ dismissible = false } = {}) {
+  if (document.getElementById('departureGate')) return;
+  const range = AppState.getProgramRange();
+  const guess = guessProgramRange();
+  const school = AppState.getConfirmedSchool();
+  const name = school ? (school.nameKo || school.name) : '';
+
+  const gate = document.createElement('div');
+  gate.id = 'departureGate';
+  gate.className = 'departure-gate';
+  gate.innerHTML = `
+    <div class="departure-gate__panel" role="dialog" aria-modal="true" aria-label="예상 출국일">
+      ${dismissible ? '<button type="button" class="modal-close" data-gate-close aria-label="닫기">✕</button>' : ''}
+      <h2 class="departure-gate__title">${dismissible ? '출국일 변경' : '언제쯤 출국하세요?'}</h2>
+      <p class="departure-gate__desc">${dismissible
+        ? '날짜를 바꾸면 남은 날과 탭 구성이 그 날짜에 맞춰 바뀌어요.'
+        : `${name ? `${name} ` : ''}${OIA.beforePlacement(AppState.profile) ? '기준으로 미리 준비해봐요!' : '배정을 축하해요!'} 예상 출국일만 알려주세요. 정확하지 않아도 되고, 나중에 바꿀 수 있어요.`}</p>
+      <label class="departure-gate__field">예상 출국일
+        <input type="date" id="gateStart" value="${range ? range.start : guess.start}">
+      </label>
+      ${dismissible ? `
+      <label class="departure-gate__field">귀국일
+        <input type="date" id="gateEnd" value="${range ? range.end : guess.end}">
+      </label>` : ''}
+      <button type="button" class="btn btn--accent btn--block" id="gateSave">저장</button>
+    </div>`;
+  document.body.appendChild(gate);
+  document.body.classList.add('is-sheet-open');
+
+  const close = () => { gate.remove(); document.body.classList.remove('is-sheet-open'); };
+  if (dismissible) {
+    gate.addEventListener('click', e => { if (e.target === gate || e.target.closest('[data-gate-close]')) close(); });
+  }
+  gate.querySelector('#gateSave').addEventListener('click', () => {
+    const start = gate.querySelector('#gateStart').value;
+    if (!start) { showToast('출국일을 골라 주세요.'); return; }
+    const endInput = gate.querySelector('#gateEnd');
+    let end = endInput ? endInput.value : (guess.end > start ? guess.end : '');
+    if (!end) {
+      // 학기 기준 귀국일이 출국일보다 앞서면 한 학기(약 16주)를 더해 둔다
+      const d = new Date(`${start}T00:00:00`); d.setDate(d.getDate() + 112);
+      end = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    if (start > end) { showToast('출국일이 귀국일보다 늦을 수 없어요'); return; }
+    AppState.setProgramRange(start, end);
+    close();
+    // 탭 구성·남은 날·기록 화면이 모두 이 날짜를 본다 — 한꺼번에 다시 그리게 한다
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+  });
+}
+
+/** 확정했는데 출국일이 없으면 입력 창을 띄운다. 서버 상태가 오기 전에는 판단하지 않는다. */
+function ensureDepartureDate() {
+  if (!AppState._hydrated || typeof guessProgramRange !== 'function') return;
+  if (AppState.getConfirmedSchool() && !AppState.getProgramRange()) openDepartureGate();
+}
+
+/** 학교를 확정하면 "홈" 탭의 라벨·목적지가 교환 준비하기로 통째로 바뀐다. */
 function homeSlot() {
   const confirmed = !!AppState.getConfirmedSchool();
   return {
@@ -143,6 +234,8 @@ function openAccountSheet() {
             <span aria-hidden="true">›</span>
           </button>` : ''}
           <section class="card card-pad account-sheet__profile" id="accountProfileCard"></section>
+          ${AppState.getConfirmedSchool() && typeof guessProgramRange === 'function' ? `
+          <button type="button" class="btn btn--ghost btn--block account-sheet__departure" id="changeDepartureBtn">출국일 변경</button>` : ''}
           <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
 
           <p class="account-sheet__legal"><a href="privacy.html">개인정보처리방침</a></p>
@@ -154,7 +247,7 @@ function openAccountSheet() {
               <p class="account-danger__title">계정을 지우면 되돌릴 수 없어요</p>
               <ul class="account-danger__list">
                 <li>남긴 기록과 사진</li>
-                <li>1~3지망 · 확정한 학교 · 즐겨찾기</li>
+                <li>희망대학표 · 배정(준비 중인) 학교 · 즐겨찾기</li>
                 <li>학점·어학 성적, 교환 시기 같은 기본 정보</li>
                 <li>준비 체크리스트에서 직접 추가한 할 일</li>
               </ul>
@@ -190,6 +283,8 @@ function openAccountSheet() {
   sheet.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
   const walletBtn = sheet.querySelector('#accountWalletBtn');
   if (walletBtn) walletBtn.addEventListener('click', () => { close(); openPaywall({ reason: 'menu' }); });
+  const departureBtn = sheet.querySelector('#changeDepartureBtn');
+  if (departureBtn) departureBtn.addEventListener('click', () => { close(); openDepartureGate({ dismissible: true }); });
   sheet.querySelector('#signOutBtn').addEventListener('click', async () => {
     await Auth.signOut();
     close();
@@ -232,31 +327,14 @@ function renderTabBar(activeKey) {
   const mount = document.getElementById('mentor-float');
   if (!mount) return;
   const slot = homeSlot();
-  // 학교를 확정하면 '학교 찾기'를 뺀다. 이미 갈 곳을 정한 사람에게 계속 학교를
-  // 고르라고 권하는 자리가 되기 때문이다. 다시 고르고 싶으면 '학교 확정 취소'를
-  // 누르면 되고, 그러면 이 탭도 같이 돌아온다(search.html 자체는 계속 열린다 —
-  // 위시리스트·홈의 '학교 찾기' 링크는 그대로 동작).
-  // 출국하면 학점 인정도 뺀다 — 수강신청까지 끝난 뒤라 더 고를 것이 없다.
-  // (departure.js가 layout.js보다 먼저 실려 있다. 혹시 없더라도 탭은 그대로 둔다)
-  // 서버 상태가 오기 전에는 게스트 기준으로 탭 수가 다르게 계산돼서(5개 → 4개) 눈에 띄게 바뀐다.
+  // 서버 상태가 오기 전에는 게스트 기준으로 탭 구성이 다르게 계산돼서 눈에 띄게 바뀐다.
   // 자리는 잡아두되 하이드레이션이 끝나기 전에는 숨긴다.
   const pending = !AppState._hydrated;
-  const departed = typeof hasDeparted === 'function' && hasDeparted();
-  const confirmed = !!AppState.getConfirmedSchool();
-  const tabs = APP_TABS.filter(tab => {
-    // 후기 데이터가 0건이라 멘토 탭을 열면 빈 챗봇이 나온다. 출시 빌드에서는 뺀다
-    // (js/release-flags.js — 데이터가 들어오면 mentorStep을 true로).
-    if (tab.key === 'consult' && !RELEASE.mentorStep) return false;
-    if (tab.key === 'search' && confirmed) return false;
-    // 퀘스트는 갈 학교를 확정한 뒤에만 탭에 나온다 — 교환 생활에서 해볼 도전이라 가기 전에는 쓸 일이 없다.
-    if (tab.key === 'quest' && !confirmed) return false;
-    if (tab.key === 'credits' && departed) return false;
-    // 기록하기는 학교를 확정한 뒤부터. 파견 기간도 갈 학교도 정해지지 않은 상태에서는
-    // Day 수도 못 세고 남길 것도 마땅치 않다.
-    // 교환보고서는 출국 후에만. 출국 전에는 모을 기록 자체가 없다.
-    if (tab.key === 'report' && !departed) return false;
-    return true;
-  });
+  const order = TABS_BY_STAGE[journeyStage()];
+  const tabs = order
+    // 후기·질문 데이터가 준비되지 않은 출시 빌드에서는 멘토 탭을 뺀다(js/release-flags.js)
+    .filter(key => key !== 'consult' || RELEASE.mentorStep)
+    .map(key => APP_TABS.find(tab => tab.key === key));
   mount.innerHTML = `
     <nav class="tabbar${pending ? ' tabbar--pending' : ''}" role="navigation" aria-label="주요 화면">
       ${tabs.map(tab => {
@@ -358,6 +436,7 @@ document.addEventListener('MOCK:updated', () => {
   // 확정되므로 앱바와 탭바를 함께 다시 그린다.
   renderAppBar(page);
   renderTabBar(page);
+  ensureDepartureDate();
 });
 
 // 로그인/로그아웃 직후에는 아직 서버 상태를 못 받았어도 앱바 표시는 즉시 바꾼다.

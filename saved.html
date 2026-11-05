@@ -10,16 +10,21 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/saved.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="saved">
 
 <div id="app-nav" class="app-nav"></div>
 
-<!-- 찜한 학교를 나란히 견주고, 출국까지 남은 할 일을 날짜순으로 본다.
-     두 덩어리 모두 js/saved.js 가 그린다. -->
+<!-- 지망·찜한 학교를 나란히 견주고, 아래 찜 목록에서 1~3지망을 바꾼다(js/saved.js). -->
 <div class="page-shell saved">
+  <header class="v2-head">
+    <p class="v2-head__eyebrow">Compare your</p>
+    <h1 class="v2-head__title">PICKS</h1>
+  </header>
+  <section class="saved__section" id="savedWishlist" aria-label="희망대학표"></section>
   <section class="saved__section" id="savedCompare" aria-label="관심 학교 비교"></section>
-  <section class="saved__section" id="savedChecklist" aria-label="D-Day 체크리스트"></section>
+  <section class="saved__section" id="savedFavs" aria-label="찜한 학교"></section>
 </div>
 
 <div id="mentor-float"></div>
@@ -36,23 +41,26 @@
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
-<script src="js/components/dropdown.js"></script>
 <script src="js/wordmark-text.js"></script>
 <script src="js/components/school-modal.js"></script>
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/components/major-credit.js"></script>
+<script src="js/components/logo-fit.js"></script>
 <script src="js/saved.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

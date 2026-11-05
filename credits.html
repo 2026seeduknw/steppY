@@ -11,24 +11,27 @@
 <link rel="stylesheet" href="css/pages/credits.css">
 <link rel="stylesheet" href="css/pages/major-matching.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="credits">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell home-hero">
-  <h1 id="creditsPageTitle">학점 인정 사전 확인</h1>
+<div class="page-shell">
+  <header class="v2-head">
+    <p class="v2-head__eyebrow">Will it count?</p>
+    <h1 class="v2-head__title">CREDITS</h1>
+  </header>
 </div>
 
 <div class="page-shell credits-grid">
   <main>
+    <!-- 출국 뒤: 파견 중·귀국 후 국제처 할 일 / 늘: 학점 인정 한도 — js/components/credit-limit.js -->
+    <section class="card card-pad credits-top" id="creditsTimeline" hidden></section>
+    <section class="card card-pad credits-top" id="creditLimit"></section>
     <div class="mode-toggle" id="modeToggle">
-      <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭 찾기</button>
-      <button type="button" class="mode-toggle__btn is-active" data-mode="course">학점 인정 과목 찾기</button>
-    </div>
-    <div class="credits-lede" id="creditsLede">
-      <strong>과목 위계·키워드로 보는 학점 인정 가능성</strong>
-      <p>파견교 과목의 수준(Level)과 전공 키워드를 분석해 인정 가능성을 예측하고, 그 판단 근거를 함께 보여드려요.</p>
+      <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭</button>
+      <button type="button" class="mode-toggle__btn is-active" data-mode="course">과목 찾기</button>
     </div>
     <div class="match-query" id="matchQuery">
       <div class="match-query__row">
@@ -62,14 +65,15 @@
 <script src="js/auth.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
 <script src="js/components/searchable-select.js"></script>
-<script src="js/components/dropdown.js"></script>
 <script src="js/components/eligibility.js"></script>
 <script src="js/components/radar-chart.js"></script>
 <script src="js/wordmark-text.js"></script>
@@ -77,8 +81,11 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/components/target-major.js"></script>
+<script src="js/components/logo-fit.js"></script>
+<script src="js/components/credit-limit.js"></script>
 <script src="js/credits.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

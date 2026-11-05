@@ -884,6 +884,71 @@ select.dd--open { border-color: var(--ink-900); }
 .dd__option:disabled { color: var(--ink-400); cursor: default; }
 .dd__option-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
+/* ---------------------------------------------------------------- 내 지원 자격
+   학교와 상관없는 연세대 공통 기준(js/components/eligibility.js myEligibilityHtml).
+   항목마다 한 줄 — 라벨 왼쪽, 근거 오른쪽. 카드 안에 카드를 두지 않는다(app_ui.md 1장). */
+.my-elig {
+  border: 1px solid var(--line-200); border-radius: var(--radius-lg);
+  background: #fff; padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+}
+.my-elig.is-fail { border-color: var(--coral-100); }
+.my-elig__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.my-elig__title { font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.my-elig__track { font-weight: 600; color: var(--ink-400); font-size: var(--fs-micro); margin-left: 4px; }
+.my-elig__edit { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); text-decoration: none; }
+.my-elig__summary { font-size: var(--fs-micro); color: var(--ink-600); margin: 2px 0 6px; }
+.my-elig__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.my-elig__row { display: flex; align-items: center; gap: 6px; font-size: var(--fs-micro); min-width: 0; }
+.my-elig__icon {
+  flex: none; width: 16px; height: 16px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;
+  background: var(--sky-100); color: var(--sky-700);
+}
+.my-elig__row.is-ok .my-elig__icon { background: var(--mint-100); color: var(--mint-600); }
+.my-elig__row.is-fail .my-elig__icon { background: var(--coral-100); color: var(--coral-600); }
+.my-elig__label { flex: none; font-weight: 700; color: var(--ink-900); }
+.my-elig__detail { flex: 1; min-width: 0; text-align: right; color: var(--ink-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-elig__score { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-200); font-size: var(--fs-small); color: var(--ink-700); }
+.my-elig__score strong { font-size: var(--fs-body); color: var(--ink-900); }
+.my-elig__score span { display: block; font-size: var(--fs-micro); color: var(--ink-400); }
+.my-elig__score--empty { font-size: var(--fs-micro); color: var(--ink-400); }
+.my-elig__note, .list-term-note { font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.5; word-break: keep-all; }
+.list-term-note {
+  background: var(--amber-100); color: var(--amber-700); border-radius: 10px;
+  padding: 8px 12px; margin-bottom: var(--space-3);
+}
+.result-meta__quick .chip[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- 국제처 일정
+   js/components/oia-timeline.js. 시기 제목 아래 한 줄씩 — 체크 · 이름 · 마감.
+   설명은 줄을 눌렀을 때만 연다(세로가 가장 비싸다, app_ui.md 1장). */
+.oia-tl__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.oia-tl__title { font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-900); }
+.oia-tl__count { font-size: var(--fs-small); font-weight: 700; color: var(--sky-500); }
+.oia-tl__empty { font-size: var(--fs-small); color: var(--ink-600); line-height: 1.5; margin-top: 6px; word-break: keep-all; }
+.oia-tl__phase { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-400); margin: 12px 0 4px; letter-spacing: .02em; }
+.oia-tl__list { list-style: none; margin: 0; padding: 0; }
+.oia-tl__item { display: grid; grid-template-columns: 26px 1fr; align-items: start; column-gap: 6px; padding: 6px 0; border-top: 1px solid var(--line-100); }
+.oia-tl__list .oia-tl__item:first-child { border-top: 0; }
+.oia-tl__check {
+  width: 22px; height: 22px; margin-top: 1px; border-radius: 50%;
+  border: 1.5px solid var(--line-200); background: #fff; color: transparent;
+  font-size: 12px; font-weight: 800; cursor: pointer; padding: 0;
+}
+.oia-tl__item.is-done .oia-tl__check { background: var(--mint-500); border-color: var(--mint-500); color: #fff; }
+.oia-tl__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sky-300); margin: 9px 0 0 8px; }
+.oia-tl__row { display: flex; flex-direction: column; gap: 1px; background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0; }
+.oia-tl__name { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); line-height: 1.4; word-break: keep-all; }
+.oia-tl__item.is-info .oia-tl__name { font-weight: 600; color: var(--ink-700); }
+.oia-tl__item.is-done .oia-tl__name { color: var(--ink-400); text-decoration: line-through; }
+.oia-tl__due { font-size: var(--fs-micro); color: var(--ink-400); }
+.oia-tl__dday { font-weight: 800; color: var(--ink-600); margin-right: 2px; }
+.oia-tl__dday.is-soon { color: var(--coral-600); }
+.oia-tl__dday.is-past { color: var(--ink-400); font-weight: 600; }
+.oia-tl__detail { display: none; grid-column: 2; font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.55; margin-top: 4px; word-break: keep-all; }
+.oia-tl__item.is-open .oia-tl__detail { display: block; }
+.oia-tl__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 10px; }
+
 /* 홈 — 다가오는 국제처 일정 두 줄 */
 .upcoming__title { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-600); margin-bottom: 4px; }
 .upcoming__title span { font-weight: 600; color: var(--ink-400); margin-left: 4px; }
@@ -892,3 +957,26 @@ select.dd--open { border-color: var(--ink-900); }
 .upcoming__name { font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .upcoming__due { flex: none; color: var(--ink-400); }
 
+/* ---------------------------------------------------------------- 학점 인정 한도
+   js/components/credit-limit.js. 네 칸(졸업학점·기간·학제·딴 학점)을 2×2 로 — 한 줄에 하나씩 쌓지 않는다. */
+.credits-top { margin-bottom: var(--space-3); }
+.credits-top[hidden] { display: none; }
+.climit__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.climit__title { font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-900); }
+.climit__limit { font-size: var(--fs-small); color: var(--ink-600); }
+.climit__limit strong { color: var(--sky-500); font-size: var(--fs-body); }
+.climit__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.climit__field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.climit__field > span { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); }
+.climit__field input { height: 36px; border: 1px solid var(--line-200); border-radius: 10px; padding: 0 10px; font: inherit; font-size: var(--fs-input); min-width: 0; }
+.climit__chips { display: flex; gap: 4px; flex-wrap: nowrap; }
+.climit__chips .chip { min-height: 30px; padding: 4px 8px; font-size: var(--fs-micro); white-space: nowrap; }
+.climit__note { grid-column: 1 / -1; font-size: var(--fs-micro); color: var(--ink-600); }
+.climit__check { display: flex; align-items: center; gap: 6px; font-size: var(--fs-micro); color: var(--ink-600); margin-top: 6px; }
+.climit__result { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--sky-50); font-size: var(--fs-small); color: var(--ink-700); }
+.climit__result strong { font-size: var(--fs-body); color: var(--ink-900); }
+.climit__result span { display: block; font-size: var(--fs-micro); color: var(--ink-400); }
+.climit__rules { margin-top: 8px; font-size: var(--fs-micro); color: var(--ink-600); }
+.climit__rules summary { cursor: pointer; font-weight: 700; color: var(--ink-700); }
+.climit__rules ul { margin: 6px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; line-height: 1.5; word-break: keep-all; }
+.climit__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 8px; word-break: keep-all; }

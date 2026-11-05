@@ -310,9 +310,6 @@ function schoolModalTemplate(school, opts = {}) {
   const profile = AppState.profile;
   const elig = computeEligibility(profile, school);
   const isFav = AppState.isFavorite(school.id);
-  const wishlist = AppState.getWishlist();
-  const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
-  const confirmed = AppState.getConfirmedSchool();
 
   return `
     <div class="modal-panel">
@@ -331,7 +328,7 @@ function schoolModalTemplate(school, opts = {}) {
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
             <span class="badge badge--neutral">${quotaLabel(school)}</span>
-            <span class="badge badge--amber">GPA ${formatGpa(school.gpaCut) || school.gpaCut}↑</span>
+            <span class="badge badge--amber">GPA ${formatGpa(Math.max(OIA.MIN_GPA, Number(school.gpaCut) || 0))}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
           ${extraInfoBadgesHtml(school)}
@@ -363,35 +360,35 @@ function schoolModalTemplate(school, opts = {}) {
         <a href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace(/^https?:\/\//, '')} ↗</a>
       </p>
 
-      ${AppState.isAuthed ? `
-      <footer class="school-modal__footer" id="modalFooter">
-        <div class="school-modal__rank">
-          <span class="school-modal__rank-label">지망 순위</span>
-          <div class="chip-group" role="group" aria-label="지망 순위 선택">
-            ${[1, 2, 3].map(r => `<button type="button" class="chip rank-chip ${String(myRank) === String(r) ? 'is-selected' : ''}" data-rank="${r}">${r}지망</button>`).join('')}
-          </div>
-        </div>
-        <button class="btn btn--primary" id="confirmSchoolBtn">
-          ${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}
-        </button>
-      </footer>` : `
-      ${GUEST_MODAL_FOOTER}`}
+      ${schoolModalFooterOnly(school)}
     </div>
     </div>
   `;
 }
 
+/**
+ * 배정 결과 등록 확인.
+ *
+ * 학교는 학생이 고르는 게 아니라 국제처가 배정한다(발표 후 변경 불가). 그래서 발표 전에는
+ * "이 학교로 미리 준비해보기"로만 받고, 발표 뒤에는 "배정 결과에 나온 학교인지" 묻는다.
+ */
 function confirmWarningTemplate(school, overwriting) {
+  const pre = OIA.beforePlacement(AppState.profile);
+  const { data: termData } = OIA.termOf(AppState.profile);
+  const when = termData ? OIA.fmtDate(termData.placementAt) : '';
   return `
     <div class="confirm-warning">
-      <p class="confirm-warning__title">🎓 합격 발표를 받으셨나요?</p>
+      <p class="confirm-warning__title">${pre ? '배정 발표 전이에요' : '🎓 배정 결과에 나온 학교인가요?'}</p>
       <ul>
-        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 기존 확정이 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
-        <li><strong>${school.name}</strong>(으)로 교환학생 합격이 확정된 뒤에 눌러주세요.</li>
+        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 학교가 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
+        ${pre
+          ? `<li>배정 결과는 ${when ? `<strong>${when}</strong>에 ` : ''}연세포탈에서 발표돼요.</li>
+             <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요. 발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
+          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요. 취소하면 이후 정규학기 국제처 파견에 다시 지원할 수 없어요.</li>`}
       </ul>
       <div class="confirm-warning__actions">
-        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">아직이에요</button>
-        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">합격했어요, 확정할게요</button>
+        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">${pre ? '그만둘게요' : '아직이에요'}</button>
+        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">${pre ? '미리 준비해볼게요' : '네, 배정됐어요'}</button>
       </div>
     </div>
   `;
@@ -416,31 +413,42 @@ function wireSchoolModalActions(scrim, school, opts) {
     if (opts.onChange) opts.onChange();
   });
 
-  // 게스트 푸터에는 지망 칩도 확정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
+  // 게스트 푸터에는 희망대학표 버튼도 배정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
   if (!AppState.isAuthed) return;
 
-  scrim.querySelectorAll('.rank-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const rank = btn.dataset.rank;
-      const already = btn.classList.contains('is-selected');
-      scrim.querySelectorAll('.rank-chip').forEach(b => b.classList.remove('is-selected'));
-      AppState.setWishlistRank(rank, already ? null : school.id);
-      if (!already) { btn.classList.add('is-selected'); showToast(`${rank}지망으로 등록했어요`); trackEvent('wishlist_rank_select', { schoolId: school.id, rank }); }
-      else { showToast('지망 등록을 취소했어요'); }
-      if (opts.onChange) opts.onChange();
-    });
+  const rerenderFooter = () => {
+    scrim.querySelector('#modalFooter').outerHTML = schoolModalFooterOnly(school);
+    wireSchoolModalActions(scrim, school, opts);
+  };
+
+  const wishBtn = scrim.querySelector('#wishToggleBtn');
+  if (wishBtn) wishBtn.addEventListener('click', () => {
+    const rank = AppState.wishlistRankOf(school.id);
+    if (rank) {
+      AppState.removeFromWishlist(school.id);
+      showToast('희망대학표에서 뺐어요');
+    } else {
+      const res = AppState.addToWishlist(school.id);
+      if (!res.ok) {
+        const track = (AppState.profile.exchangeTerm || {}).track;
+        showToast(res.reason === 'full' ? `희망대학표는 ${OIA.WISHLIST_MAX}개까지 쓸 수 있어요`
+          : res.reason === 'track' ? `${OIA.trackLabel(track)} 전형이라 이 학교는 담을 수 없어요` : '이미 담은 학교예요');
+        return;
+      }
+      showToast(`희망대학표 ${res.rank}순위로 담았어요`);
+      trackEvent('wishlist_rank_select', { schoolId: school.id, rank: res.rank });
+    }
+    rerenderFooter();
+    if (opts.onChange) opts.onChange();
   });
 
   const confirmBtn = scrim.querySelector('#confirmSchoolBtn');
   confirmBtn.addEventListener('click', () => {
     const confirmed = AppState.getConfirmedSchool();
-    if (confirmed && confirmed.id === school.id) { showToast('이미 확정된 학교예요'); return; }
+    if (confirmed && confirmed.id === school.id) { showToast('이미 등록한 학교예요'); return; }
     const footer = scrim.querySelector('#modalFooter');
     footer.outerHTML = `<footer class="school-modal__footer school-modal__footer--warning" id="modalFooter">${confirmWarningTemplate(school, confirmed)}</footer>`;
-    scrim.querySelector('#cancelConfirmBtn').addEventListener('click', () => {
-      scrim.querySelector('#modalFooter').outerHTML = schoolModalFooterOnly(school);
-      wireSchoolModalActions(scrim, school, opts);
-    });
+    scrim.querySelector('#cancelConfirmBtn').addEventListener('click', rerenderFooter);
     scrim.querySelector('#finalConfirmBtn').addEventListener('click', () => {
       AppState.confirmSchool(school.id);
       trackEvent('school_confirm', { schoolId: school.id });
@@ -451,26 +459,37 @@ function wireSchoolModalActions(scrim, school, opts) {
   });
 }
 
-/** 로그인 전에는 저장할 계정이 없다. 지망·확정 대신 로그인 안내를 둔다. */
+/** 로그인 전에는 저장할 계정이 없다. 희망대학표·배정 대신 로그인 안내를 둔다. */
 const GUEST_MODAL_FOOTER = `<footer class="school-modal__footer school-modal__footer--guest" id="modalFooter">
     <div class="guest-cta">
-      <p class="guest-cta__text">로그인하면 이 학교를 <strong>1~3지망으로 담고 확정</strong>할 수 있어요</p>
+      <p class="guest-cta__text">로그인하면 이 학교를 <strong>희망대학표에 담고</strong> 준비를 시작할 수 있어요</p>
       <a class="btn btn--primary btn--block" href="auth.html">로그인하고 담기</a>
     </div>
   </footer>`;
 
+/**
+ * 학교 상세 아래 — 희망대학표 담기/빼기와 배정 결과 등록.
+ * 희망대학표는 국제처 지원서의 그것과 같다: 최대 25개, 순서대로, 한 언어권만.
+ * 순서·지원 학과·기간은 내 저장 화면에서 고친다.
+ */
 function schoolModalFooterOnly(school) {
   if (!AppState.isAuthed) return GUEST_MODAL_FOOTER;
-  const wishlist = AppState.getWishlist();
-  const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
+  const rank = AppState.wishlistRankOf(school.id);
+  const count = AppState.getWishlistList().length;
   const confirmed = AppState.getConfirmedSchool();
+  const isMine = confirmed && confirmed.id === school.id;
+  const pre = OIA.beforePlacement(AppState.profile);
+  const track = (AppState.profile.exchangeTerm || {}).track;
+  const blocked = !rank && track && !OIA.schoolOffersTrack(school, track);
   return `<footer class="school-modal__footer" id="modalFooter">
     <div class="school-modal__rank">
-      <span class="school-modal__rank-label">지망 순위</span>
-      <div class="chip-group" role="group" aria-label="지망 순위 선택">
-        ${[1, 2, 3].map(r => `<button type="button" class="chip rank-chip ${String(myRank) === String(r) ? 'is-selected' : ''}" data-rank="${r}">${r}지망</button>`).join('')}
-      </div>
+      <span class="school-modal__rank-label">희망대학표</span>
+      <button type="button" class="chip wish-chip ${rank ? 'is-selected' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}>
+        ${rank ? `${rank}순위 · 빼기` : blocked ? `${OIA.trackLabel(track)} 아님` : `담기&nbsp;·&nbsp;<span class="tnum">${count}/${OIA.WISHLIST_MAX}</span>`}
+      </button>
     </div>
-    <button class="btn btn--primary" id="confirmSchoolBtn">${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}</button>
+    <button class="btn btn--primary" id="confirmSchoolBtn">${isMine
+      ? (pre ? '미리 준비 중인 학교예요 ✓' : '배정된 학교예요 ✓')
+      : (pre ? '이 학교로 미리 준비해보기' : '배정 결과로 등록하기')}</button>
   </footer>`;
 }

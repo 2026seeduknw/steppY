@@ -65,7 +65,7 @@
       <div class="report-blur" aria-hidden="true">
         ${blurredPreview()}
       </div>
-      <p class="report-blur__note">미리보기 — 실제 초안은 귀국 후에 열려요</p>
+      <p class="report-blur__note">미리보기: 실제 초안은 귀국 후에 열려요</p>
     `;
   }
 

@@ -21,7 +21,6 @@
 
   // Mentor's Step(js/consult.js)와 같은 대륙 묶음 — 국가가 많아(최대 30여 개) 한 줄에
   // 다 늘어놓으면 칩이 너무 많아 보인다. 대륙으로 먼저 좁히고, 그 안에서 국가를 고른다.
-  const REGION_ICON = { '미주': '🌎', '유럽': '🌍', '아시아/오세아니아': '🌏', '기타': '🌐' };
   // 칩 글자는 영어로 보여준다 — data-region 값(필터링 키)은 그대로 한글이다.
   const REGION_LABEL_EN = { '미주': 'Americas', '유럽': 'Europe', '아시아/오세아니아': 'Asia/Oceania', '기타': 'Other' };
 
@@ -274,6 +273,11 @@
       ${isLong ? '<button type="button" class="match-card__note-toggle" data-note-toggle>더보기</button>' : ''}`;
   }
 
+  // "University of Alberta" → "U of Alberta" — 보조 줄 한 줄에 들어가게 흔한 말만 줄인다
+  function shortSchoolName(name) {
+    return String(name).split(/\s[-–]\s/)[0].replace(/^University of /, 'U of ').replace(/ University$/, ' Univ.');
+  }
+
   function schoolDisplay(schoolId) {
     const school = MOCK.schools.find(s => s.id === schoolId);
     return {
@@ -520,7 +524,7 @@
         <button type="button" class="chip${selectedRegion === '' ? ' is-selected' : ''}" data-region="">All</button>
         ${regions.map(r => `
           <button type="button" class="chip${selectedRegion === r.region ? ' is-selected' : ''}" data-region="${r.region}">
-            ${REGION_ICON[r.region] || '🌐'} ${REGION_LABEL_EN[r.region] || r.region}
+            ${REGION_LABEL_EN[r.region] || r.region}
           </button>`).join('')}
       </div>` : ''}
       ${subOptions ? `
@@ -690,30 +694,29 @@
       const a = byMatch.get(m);
       const school = schoolDisplay(m.school);
       const meta = [a.info.code, a.level.label, a.info.credits].filter(Boolean).map(esc).join(' · ');
+      const schoolRow = MOCK.schools.find(s => s.id === m.school);
+      // 보조 줄: 과목 코드 · 레벨 · 학점 · 학교 — 제목 길이와 상관없이 같은 자리(app_ui.md 1장)
+      const metaLine = [a.info.code, a.level.label, a.info.credits, schoolRow ? shortSchoolName(schoolRow.name) : school.name]
+        .filter(Boolean).map(esc).join(' · ') + (school.countryEn ? ' ' + countryFlag(school.countryEn) : '');
       return `
-      <div class="card match-card xmatch" data-school="${esc(m.school)}">
-        <p class="verdict verdict--${a.verdict.key}">${a.verdict.label} <span>${a.verdict.en}</span></p>
-        <div class="xmatch__pair">
-          <div class="xmatch__side">
-            <span class="xmatch__label">파견교 과목</span>
-            <h3 class="match-card__headline">${esc(stripSchoolSuffix(m.targetCourse))}</h3>
-            ${meta ? `<p class="xmatch__meta">${meta}</p>` : ''}
-            <div class="match-card__school${school.exists ? ' match-card__school--clickable' : ''}"
-                 ${school.exists ? `data-open-school="${esc(m.school)}" role="button" tabindex="0"` : ''}>
-              ${school.logo ? `<img class="match-card__school-logo" src="assets/school-logos/${school.logo}" alt="">` : ''}
-              <span class="match-card__school-name">${esc(school.name)}</span>
-              ${countryTag(school)}
-            </div>
-          </div>
-          <span class="xmatch__arrow" aria-hidden="true">▶</span>
-          <div class="xmatch__side xmatch__side--home">
-            <span class="xmatch__label">본교 인정 후보</span>
-            <p class="xmatch__home">${esc(m.homeMajor)} <span>전공 학점</span></p>
-            ${m.matchedTopics.length ? `
-            <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${esc(t)}</button>`).join('')}</div>` : ''}
-          </div>
+      <div class="card match-card xmatch v2-xmatch" data-school="${esc(m.school)}">
+        <p class="verdict verdict--${a.verdict.key}">${a.verdict.label}</p>
+        <div class="v2-xmatch__course">
+          <span class="v2-xmatch__logo${school.exists ? ' match-card__school--clickable' : ''}"
+                ${school.exists ? `data-open-school="${esc(m.school)}" role="button" tabindex="0" aria-label="${esc(school.name)} 학교 상세"` : ''}>
+            ${school.logo ? `<img src="assets/school-logos/${school.logo}" alt="" data-abbr="${esc(schoolInitials(school.name))}">` : `<span class="logo-fallback">${esc(schoolInitials(school.name))}</span>`}
+          </span>
+          <h3 class="match-card__headline v2-xmatch__title">${esc(stripSchoolSuffix(m.targetCourse))}</h3>
+          <p class="v2-xmatch__meta">${metaLine}</p>
         </div>
-        <ul class="xmatch__evidence">${evidenceBadges(a)}</ul>
+        <span class="v2-xmatch__arrow" aria-hidden="true">↓</span>
+        <div class="v2-xmatch__home">
+          <span class="v2-xmatch__label">본교 인정 후보</span>
+          <p class="v2-xmatch__home-name">${esc(m.homeMajor)} · 전공 학점</p>
+          ${m.matchedTopics.length ? `
+          <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${esc(t)}</button>`).join('')}</div>` : ''}
+        </div>
+        <ul class="xmatch__evidence v2-xmatch__evidence">${evidenceBadges(a)}</ul>
         <button type="button" class="btn btn--ghost btn--sm xmatch__interview" data-interview="${esc(m.id)}">자세히 보기</button>
       </div>
     `;
@@ -724,6 +727,8 @@
           ? `${esc(schoolName)}에는 ${esc(major)} 전공으로 볼 수 있는 과목 자료가 아직 없어요.`
           : '이 전공은 아직 과목 자료가 없어요.'
     }</p>`;
+    // 학교 로고는 비율이 제각각이라 면적을 맞춘다(logo-fit.js)
+    fitLogosIn(document.getElementById('matchList'), '.v2-xmatch__logo img', { maxW: 30, maxH: 30, area: 26 * 26 });
   }
 
   function renderMajorMatches() {
@@ -781,10 +786,9 @@
   }
 
   function applyModeUI() {
-    document.getElementById('creditsPageTitle').textContent = mode === 'major' ? '내 전공과 잘 맞는 해외 전공' : '학점 인정 사전 확인';
+
     // 조회 조건(파견 희망교·조회 버튼)과 안내문은 과목 탭의 것이다. 전공 매칭 탭은 학과만 고른다.
     const course = mode === 'course';
-    document.getElementById('creditsLede').hidden = !course;
     document.getElementById('schoolFilterRow').hidden = !course;
     document.getElementById('runMatchBtn').hidden = !course;
     if (course) markQueryDirty();
@@ -806,12 +810,17 @@
 
   document.getElementById('runMatchBtn').addEventListener('click', runQuery);
 
+  // 홈 바로가기(전공 매칭 카드)는 credits.html?mode=major 로 들어온다
+  if (new URLSearchParams(location.search).get('mode') === 'major') mode = 'major';
+
   applyModeUI();
   renderMajorFilter();
   renderSchoolFilter();
   renderMatches();
+  renderCreditsTop();
 
   document.addEventListener('MOCK:updated', () => {
+    renderCreditsTop();
     // 이 IIFE는 AppState 하이드레이션보다 먼저 돈다. 로그인 사용자의 전공은 그때
     // 서버에서 도착하므로, 아직 고른 게 없으면 그 값으로 채워 자기 전공 결과부터
     // 보게 한다(사용자가 직접 고른 뒤에는 덮어쓰지 않는다).
