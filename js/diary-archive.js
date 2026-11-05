@@ -53,7 +53,10 @@
     } catch (e) { /* 저장소를 못 읽으면 기본값 */ }
     FOLDERS = defaults();
   }
-  function save() { try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ } }
+  function save() {
+    try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ }
+    document.dispatchEvent(new CustomEvent('archive:changed'));
+  }
 
   // 방금 만든 기록의 id는 서버 uuid가 도착하면 바뀐다(state.js) — 폴더에 담아 둔 id도 같이 바꾼다
   document.addEventListener('journal:idchanged', (ev) => {
@@ -312,21 +315,23 @@
     sheet.hidden = true;
     sheet.innerHTML = `
       <div class="arc-sheet__scrim" data-cancel></div>
-      <div class="arc-sheet__panel" role="dialog" aria-label="폴더 꾸미기">
+      <div class="arc-sheet__panel rec-fsheet" role="dialog" aria-label="폴더 꾸미기">
         <div class="arc-sheet__grip"></div>
-        <div class="arc-sheet__preview" id="arcPreview"></div>
-        <div class="arc-field"><label for="arcName">이름</label><input class="arc-input" id="arcName" maxlength="14" autocomplete="off"></div>
-        <div class="arc-field"><span class="arc-lab">정리 방식</span>
-          <div class="arc-seg" id="arcType"><button type="button" data-type="manual">직접 담기</button><button type="button" data-type="monthly">Monthly</button></div>
-          <p class="arc-segnote" id="arcTypeNote"></p></div>
-        <div class="arc-field"><span class="arc-lab">색</span><div class="arc-swatches" id="arcColors"></div></div>
-        <div class="arc-field"><span class="arc-lab">패턴</span><div class="arc-pats" id="arcPats"></div></div>
-        <div class="arc-field"><span class="arc-lab">스티커 (선택)</span><div class="arc-emojis" id="arcEmojis"></div></div>
-        <div class="arc-sheet__actions">
-          <button type="button" class="arc-btn arc-btn--danger" id="arcDelete">폴더 삭제</button>
-          <button type="button" class="arc-btn arc-btn--ghost" data-cancel>취소</button>
-          <button type="button" class="arc-btn" id="arcSave">저장</button>
+        <h3 class="rec-fsheet__title" id="arcSheetTitle">폴더 꾸미기</h3>
+        <div class="rec-fsheet__name">
+          <div class="rec-fsheet__preview" id="arcPreview"></div>
+          <input class="rec-fsheet__input" id="arcName" maxlength="14" autocomplete="off" aria-label="폴더 이름" placeholder="폴더 이름">
         </div>
+        <p class="rec-fsheet__lab">색</p>
+        <div class="rec-fsheet__colors" id="arcColors"></div>
+        <p class="rec-fsheet__lab">무늬</p>
+        <div class="rec-fsheet__pats">
+          <div class="rec-fsheet__patlist" id="arcPats"></div>
+          <button type="button" class="rec-fsheet__sticker" id="arcStickerToggle">+ 스티커</button>
+        </div>
+        <div class="rec-fsheet__emojis" id="arcEmojis" hidden></div>
+        <button type="button" class="rec-fsheet__save" id="arcSave">저장</button>
+        <button type="button" class="rec-fsheet__delete" id="arcDelete">폴더 삭제</button>
       </div>`;
     document.body.appendChild(sheet);
     sheet.addEventListener('click', (e) => {
@@ -334,7 +339,7 @@
       const c = e.target.closest('[data-color]'); if (c) { draft.color = c.dataset.color; syncSheet(); return; }
       const p = e.target.closest('[data-pat]'); if (p) { draft.pattern = p.dataset.pat; syncSheet(); return; }
       const m = e.target.closest('[data-emo]'); if (m) { draft.emoji = m.dataset.emo; syncSheet(); return; }
-      const t = e.target.closest('[data-type]'); if (t) { draft.type = t.dataset.type; syncSheet(); return; }
+      if (e.target.closest('#arcStickerToggle')) { const box = sheet.querySelector('#arcEmojis'); box.hidden = !box.hidden; return; }
       if (e.target.closest('#arcSave')) {
         Object.assign(draftTarget, { name: (draft.name || '').trim() || 'Untitled', color: draft.color, pattern: draft.pattern, emoji: draft.emoji, type: draft.type });
         save(); closeSheet(false); refresh(); return;
@@ -353,8 +358,8 @@
     return sheet;
   }
   const TYPE_NOTE = { manual: '기록을 직접 골라 담고, 폴더 안에 폴더를 만들 수 있어요.', monthly: '기록을 날짜 기준으로 YYYY.MM 폴더에 자동으로 정리해요.' };
-  function patThumb(k) {
-    const d = '#8a7a68';
+  function patThumb(k, color) {
+    const d = color || '#8a7a68';
     const svg = {
       dots: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='4' cy='4' r='1.6' fill='${d}'/><circle cx='12' cy='12' r='1.6' fill='${d}'/></svg>`,
       stripes: `<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M-1 9L9 -1M3 11L11 3' stroke='${d}' stroke-opacity='.5' stroke-width='2'/></svg>`,
@@ -365,22 +370,35 @@
   }
   function syncSheet() {
     const s = ensureSheet();
-    s.querySelector('#arcPreview').innerHTML = `<div class="arc-folder arc-folder--preview">${folderIcon(draft, 'pv')}<span class="arc-folder__name">${esc(draft.name || '이름 없음')}</span></div>`;
+    s.querySelector('#arcPreview').innerHTML = folderIcon(draft, 'pv');
     s.querySelectorAll('#arcColors [data-color]').forEach(b => b.classList.toggle('is-sel', b.dataset.color === draft.color));
-    s.querySelectorAll('#arcPats [data-pat]').forEach(b => b.classList.toggle('is-sel', b.dataset.pat === draft.pattern));
+    // 무늬 칸은 지금 고른 색으로 미리 보여준다 — 폴더에 입혔을 때 모습 그대로
+    const c = COLORS[draft.color] || COLORS.beige;
+    s.querySelectorAll('#arcPats [data-pat]').forEach(b => {
+      b.classList.toggle('is-sel', b.dataset.pat === draft.pattern);
+      b.style.backgroundColor = c.f2;
+      b.style.backgroundImage = b.dataset.pat === 'none' ? 'none' : patThumb(b.dataset.pat, c.dot);
+    });
     s.querySelectorAll('#arcEmojis [data-emo]').forEach(b => b.classList.toggle('is-sel', b.dataset.emo === draft.emoji));
-    s.querySelectorAll('#arcType [data-type]').forEach(b => b.classList.toggle('is-sel', b.dataset.type === draft.type));
-    s.querySelector('#arcTypeNote').textContent = TYPE_NOTE[draft.type];
+    const st = s.querySelector('#arcStickerToggle');
+    st.textContent = draft.emoji ? `${draft.emoji} 스티커` : '+ 스티커';
   }
+  // 시안(Figma 기록하기/저장소)의 여섯 색. 옛 폴더가 쓰던 peach·graphite도 그대로 그려진다
+  const SHEET_COLORS = ['beige', 'sky', 'mint', 'lavender', 'pink', 'butter'];
+  const SHEET_PATS = ['none', 'stripes', 'checks', 'dots', 'grid'];
   function openSheet(node, list, fresh) {
     const s = ensureSheet();
     draftTarget = node; draftList = list; isNew = fresh;
     draft = { ...node, type: node.type || 'manual' };
-    s.querySelector('#arcName').value = draft.name;
-    s.querySelector('#arcColors').innerHTML = Object.entries(COLORS).map(([k, c]) => `<button type="button" class="arc-swatch" data-color="${k}" style="background:${c.sw}" aria-label="${k}"></button>`).join('');
-    s.querySelector('#arcPats').innerHTML = Object.entries(PATTERNS).map(([k, label]) => `<button type="button" class="arc-pat" data-pat="${k}" style="${k === 'none' ? '' : `background-image:${patThumb(k)}`}">${k === 'none' ? label : ''}</button>`).join('');
-    s.querySelector('#arcEmojis').innerHTML = EMOJIS.map(e => `<button type="button" class="arc-emo" data-emo="${e}">${e || '–'}</button>`).join('');
-    s.querySelector('#arcDelete').hidden = fresh;
+    s.querySelector('#arcSheetTitle').textContent = fresh ? '새 폴더' : '폴더 꾸미기';
+    s.querySelector('#arcName').value = fresh ? '' : draft.name;
+    if (fresh) draft.name = '';
+    s.querySelector('#arcColors').innerHTML = SHEET_COLORS.map(k => `<button type="button" class="rec-fsheet__color" data-color="${k}" style="background:${COLORS[k].sw}" aria-label="${k}"></button>`).join('');
+    s.querySelector('#arcPats').innerHTML = SHEET_PATS.map(k => `<button type="button" class="rec-fsheet__pat" data-pat="${k}" aria-label="${PATTERNS[k]}" title="${PATTERNS[k]}"></button>`).join('');
+    s.querySelector('#arcEmojis').innerHTML = EMOJIS.map(e => `<button type="button" class="rec-fsheet__emo" data-emo="${e}" aria-label="${e || '스티커 없음'}">${e || '없음'}</button>`).join('');
+    s.querySelector('#arcEmojis').hidden = true;
+    s.querySelector('#arcDelete').hidden = fresh || node.type === 'monthly';
+    s.querySelector('#arcSave').textContent = fresh ? '만들기' : '저장';
     syncSheet();
     s.hidden = false;
     void s.offsetWidth;
@@ -396,11 +414,12 @@
   }
   function createFolder(list) {
     if (ctx && ctx.needLogin && ctx.needLogin()) return;
+    list = list || FOLDERS;
     const f = { id: 'f' + Date.now(), name: 'New folder', color: 'beige', pattern: 'none', emoji: '', type: 'manual', entryIds: [], children: [] };
     list.push(f);
     openSheet(f, list, true);
   }
-  function refresh() { if (root && ctx) render(root, ctx); }
+  function refresh() { if (root && ctx) render(root, ctx); document.dispatchEvent(new CustomEvent('archive:changed')); }
 
   /* ------------------------------------------------------------ 사진 담기(기록 고르기) */
   let picker = null;
@@ -633,5 +652,19 @@
   /** 다른 화면(최근 사진 캐러셀·날짜 팝업)에서 같은 확대 화면을 쓴다. shots = [{ url, info }], thumbs = 눌린 사진 요소들 */
   /** 친구가 새로 생겼을 때(초대 링크 등) 친구들 줄을 다시 읽는다 */
   function reloadFriends() { friendsLoadedFor = null; const slot = root && root.querySelector('#archiveFriends'); if (slot) slot._posts = null; renderFriends(); }
-  global.DiaryArchive = { render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs) };
+  /** 새 기록하기 화면(js/record-v2.js)이 쓰는 것들 — 폴더 데이터와 아이콘, 꾸미기 시트 */
+  function ensureLoaded() { if (!FOLDERS.length || render._uid !== storeKey()) { render._uid = storeKey(); load(); } return FOLDERS; }
+  function editFolder(node) { const hit = findNode(node.id); if (hit && !hit.node.virtual) openSheet(hit.node, hit.list, false); }
+  function addEntries(node, ids) {
+    const list = node.entryIds = node.entryIds || [];
+    let added = 0;
+    ids.forEach(id => { if (!list.includes(id)) { list.push(id); added++; } });
+    save();
+    return added;
+  }
+  global.DiaryArchive = {
+    render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs),
+    folders: ensureLoaded, folderIcon, itemsOf, entriesOfNode, kidsOf, findNode,
+    editFolder, createFolder: () => { ensureLoaded(); createFolder(FOLDERS); }, openPicker, addEntries, save
+  };
 })(window);

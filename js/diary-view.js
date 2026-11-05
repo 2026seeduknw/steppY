@@ -180,29 +180,37 @@
   /* --------------------------------------------------------------- 뼈대 */
 
   const MARKUP = `
-    <div class="arc-title">
-      <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
-      <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
-    </div>
+    <header class="v2-head rec-head">
+      <p class="v2-head__eyebrow">Archive your memories</p>
+      <h1 class="v2-head__title" id="recDayTitle">Today</h1>
+    </header>
 
-    <section class="diary-featured" id="diaryFeaturedSlot"></section>
+    <section class="rec-hero" id="recHero"></section>
 
-    <div class="diary-write-bar">
-      <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="0" aria-label="바로 사진 찍어 기록하기">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
-        카메라
+    <section class="rec-recent">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Recent</h2>
+        <button type="button" class="rec-sec-head__more" id="recOpenStorage" aria-label="저장소 전체 보기">→</button>
+      </div>
+      <div class="rec-recent__row" id="recRecent"></div>
+    </section>
+
+    <section class="rec-cta">
+      <p class="rec-cta__text">오늘 사진을 폴더에 담아 보아요</p>
+      <div class="rec-cta__btns">
+        <button type="button" class="rec-pill rec-pill--dark" id="recPutToday">+ 폴더에 담기</button>
+        <button type="button" class="rec-pill" id="recNewFolder">새 폴더 만들기</button>
+      </div>
+    </section>
+
+    <!-- 예전 첫 화면(최근 사진 카드·기록 버튼)은 시안에서 빠졌다. 기록 쓰기 창은 위 버튼과 사진 자리에서 연다 -->
+    <section class="diary-featured" id="diaryFeaturedSlot" hidden></section>
+    <div class="diary-write-bar" hidden>
+      <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="-1" aria-hidden="true">
         <input type="file" accept="image/*" capture="environment" id="cameraInputMain" tabindex="-1">
       </label>
-      <button type="button" class="diary-write-bar__btn" id="writeBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        기록하기
-      </button>
+      <button type="button" class="diary-write-bar__btn" id="writeBtn" tabindex="-1" aria-hidden="true"></button>
     </div>
-
-    <section class="arc-sec-home" id="archiveFoldersSec">
-      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Folders</span><button type="button" class="arc-edit" id="archiveEdit">꾸미기</button></div>
-      <div class="arc-grid" id="archiveFolders"></div>
-    </section>
 
     <section class="arc-sec-home" id="archiveFriendsSec">
       <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
@@ -690,9 +698,9 @@
     const h = new Date().getHours();
     const tod = ['day', 'dusk', 'night'].includes(forced) ? forced : (h >= 6 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night');
     document.body.dataset.tod = tod;
-    // 화면 분위기 — 기본은 필름 카메라. ?theme=glass 로 이전의 유리 + 노을 테마를 볼 수 있다.
+    // 화면 분위기 — 기본은 v2(흰 바탕, Figma 기록하기 시안). ?theme=film 은 필름 카메라, ?theme=glass 는 유리 + 노을 테마.
     const th = new URLSearchParams(location.search).get('theme');
-    document.body.dataset.theme = th === 'glass' ? 'glass' : 'film';
+    document.body.dataset.theme = th === 'glass' ? 'glass' : th === 'film' ? 'film' : 'v2';
   }
 
   /* --------------------------------------------------------------- 우표첩 */
@@ -1215,7 +1223,7 @@
     // 경로가 아니라 주소(또는 앱에 들어 있는 assets/ 파일)로 저장된 사진(예시 기록)은 서명 없이 그대로 쓴다
     all.filter(p => /^(https?:\/\/|assets\/)/.test(p)).forEach(p => { photoUrls[p] = p; });
     const paths = all.filter(p => !photoUrls[p]);
-    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); renderArchive(); return; }
+    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); renderArchive(); renderHome(); return; }
     const map = await AppState.signPhotoPaths(paths);
     Object.assign(photoUrls, map);
     paths.forEach(p => { if (!map[p]) photoFailed.add(p); });
@@ -1223,6 +1231,8 @@
     renderMonth();
     renderSide();
     renderArchive();
+    renderHome();
+    document.dispatchEvent(new CustomEvent('record:photos'));
   }
 
   /* --------------------------------------------------------------- 기록 모달 */
@@ -1278,7 +1288,7 @@
             </label>
           </div>
           <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
-          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요. 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
           <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
@@ -1295,7 +1305,7 @@
           </div>
           <label class="diary-share">
             <input type="checkbox" name="share" ${!edit || edit.visibility === 'friends' ? 'checked' : ''}>
-            <span class="diary-share__text"><b>친구에게 공개</b><small>친구 목록에 있는 분들이 사진·글·위치·노래를 볼 수 있어요. 끄면 나만 봐요.</small></span>
+            <span class="diary-share__text"><b>친구에게 공개</b><small>친구 목록에 있는 분들이 사진·글·위치·노래를 볼 수 있어요.<br>끄면 나만 봐요.</small></span>
           </label>
           ${edit ? '' : '<span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>'}
           <input type="hidden" name="date" value="${targetDate}">
@@ -1756,7 +1766,7 @@
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <div class="diary-modal-header">
           <h2>지금까지 쌓인 기록으로 미리 보기</h2>
-          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요. 적어둔 글을 항목별·날짜순으로 모아 보여줄 뿐이에요.</p>
+          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요.<br>적어둔 글을 항목별·날짜순으로 모아 보여줄 뿐이에요.</p>
         </div>
         <nav class="report-nav">
           ${REPORT_CATEGORIES.map(c => {
@@ -1860,6 +1870,120 @@
     return true;
   }
 
+  /* --------------------------------------------------------------- 첫 화면(시안: 기록하기/첫 화면) */
+
+  /** 제목 — 파견 중이면 Day N, 출국 전이면 D-N, 귀국 후에는 지낸 날 수 */
+  function renderDayTitle() {
+    const el = root.querySelector('#recDayTitle');
+    if (!el) return;
+    const info = departureInfo();
+    if (!info.hasRange) el.textContent = 'Today';
+    else if (info.phase === DEPARTURE_PHASES.BEFORE) el.textContent = `D-${info.daysUntil}`;
+    else if (info.phase === DEPARTURE_PHASES.AFTER) el.textContent = `${info.totalDays} Days`;
+    else el.textContent = `Day ${info.dayNum}`;
+  }
+
+  /** 오늘 찍은 사진(없으면 가장 최근 사진)을 크게. 누르면 확대 화면 */
+  function heroEntry() {
+    const withPhoto = entries().filter(e => (e.photos || []).length);
+    const today = withPhoto.filter(e => e.date === todayIso);
+    const pick = (today.length ? today : withPhoto).slice(-1)[0] || null;
+    return pick ? { entry: pick, isToday: pick.date === todayIso } : null;
+  }
+  const shortDate = (iso) => `${iso.slice(2, 4)}.${iso.slice(5, 7)}.${iso.slice(8, 10)}.`;
+  function placeText(e) {
+    const loc = e.location || {};
+    return [loc.city, loc.place || loc.name || loc.country].filter(Boolean).join(' · ');
+  }
+  function renderHomeHero() {
+    const slot = root.querySelector('#recHero');
+    if (!slot) return;
+    const hit = heroEntry();
+    const url = hit && (hit.entry.photos || []).map(photoUrl).find(Boolean);
+    if (!hit || !url) {
+      const loading = hit && photosLoading(hit.entry);
+      slot.className = 'rec-hero rec-hero--empty' + (loading ? ' is-loading' : '');
+      slot.innerHTML = loading ? '' : `
+        <div class="rec-hero__empty">
+          <p class="rec-hero__empty-title">오늘의 첫 사진을 남겨 보세요</p>
+          <p class="rec-hero__empty-sub">찍은 사진은 여기에 가장 크게 보여요</p>
+          <button type="button" class="rec-pill rec-pill--dark" data-hero-write>+ 사진 기록하기</button>
+        </div>`;
+      return;
+    }
+    const e = hit.entry;
+    const place = placeText(e);
+    slot.className = 'rec-hero';
+    slot.innerHTML = `
+      <button type="button" class="rec-hero__btn" data-hero-open aria-label="${hit.isToday ? '오늘' : '최근'} 사진 크게 보기">
+        <img class="rec-hero__img" src="${esc(url)}" alt="${esc(e.title || '')}" draggable="false">
+        ${place ? `<span class="rec-hero__place">📍 ${esc(place)}</span>` : ''}
+        <span class="rec-hero__label">${hit.isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
+        <span class="rec-hero__date">${shortDate(e.date)}</span>
+      </button>`;
+  }
+
+  /** 최근에 사진이 담긴 순서로 폴더 넷 */
+  function recentFolders() {
+    if (typeof DiaryArchive === 'undefined' || !DiaryArchive.folders) return [];
+    const list = DiaryArchive.folders().slice();
+    const latest = (f) => DiaryArchive.entriesOfNode(f).reduce((m, e) => (e.date > m ? e.date : m), '');
+    return list.map((f, i) => ({ f, i, d: latest(f) }))
+      .sort((a, b) => b.d.localeCompare(a.d) || a.i - b.i)
+      .slice(0, 4).map(x => x.f);
+  }
+  function renderRecent() {
+    const row = root.querySelector('#recRecent');
+    if (!row) return;
+    row.innerHTML = recentFolders().map(f => `
+      <button type="button" class="rec-folder" data-folder="${esc(f.id)}" aria-label="${esc(f.name)} 폴더 열기">
+        ${DiaryArchive.folderIcon(f, 'rh-' + f.id)}
+        <span class="rec-folder__name">${esc(f.name)}</span>
+        <span class="rec-folder__meta">${f.type === 'monthly' ? '자동' : DiaryArchive.itemsOf(f).length + '장'}</span>
+      </button>`).join('');
+  }
+
+  function recordCtx() {
+    return { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin(), write: () => openEntryModal() };
+  }
+
+  /** + 폴더에 담기 — 오늘 기록이 있으면 담을 폴더를 고르고, 없으면 기록부터 쓴다 */
+  function putTodayInFolder() {
+    if (needLogin()) return;
+    const today = entries().filter(e => e.date === todayIso && (e.photos || []).length);
+    if (!today.length) { openEntryModal(); return; }
+    if (typeof RecordV2 !== 'undefined') RecordV2.chooseFolder(recordCtx(), today.map(e => e.id));
+  }
+
+  function wireHome() {
+    root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
+    root.querySelector('#recNewFolder').addEventListener('click', () => { if (!needLogin()) DiaryArchive.createFolder(); });
+    root.querySelector('#recPutToday').addEventListener('click', putTodayInFolder);
+    root.querySelector('#recRecent').addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-folder]');
+      if (!b) return;
+      const hit = DiaryArchive.findNode(b.dataset.folder);
+      if (hit) RecordV2.openFolder(recordCtx(), hit.node);
+    });
+    root.querySelector('#recHero').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
+      if (!ev.target.closest('[data-hero-open]')) return;
+      const hit = heroEntry();
+      if (!hit) return;
+      const urls = (hit.entry.photos || []).map(photoUrl).filter(Boolean);
+      const img = root.querySelector('.rec-hero__img');
+      const info = DiaryArchive.infoOf(hit.entry);
+      DiaryArchive.openPhotos(urls.map(u => ({ url: u, info })), 0, urls.map(() => img));
+    });
+    if (!wireHome._doc) { wireHome._doc = true; document.addEventListener('archive:changed', () => { if (root) renderRecent(); }); }
+  }
+
+  function renderHome() {
+    renderDayTitle();
+    renderHomeHero();
+    renderRecent();
+  }
+
   function renderArchive() {
     if (typeof DiaryArchive === 'undefined' || !root) return;
     DiaryArchive.render(root, { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin() });
@@ -1867,6 +1991,7 @@
 
   function renderAll() {
     renderArchive();
+    renderHome();
     renderHero();
     renderPhaseToggle();
     renderFeatured();
@@ -1881,6 +2006,7 @@
     root.innerHTML = MARKUP;
     applyTimeOfDay();
     wireChrome();
+    wireHome();
     renderAll();
     refreshPhotoUrls();
     // 퀘스트 완료 뒤 "사진 찍기"로 넘어오면(journal.html?add=1) 바로 기록 쓰기 창을 연다
