@@ -469,7 +469,7 @@ const Friends = (function () {
         ${e.title ? `<h3 class="ft-card__title">${esc(e.title)}</h3>` : ''}
         ${e.body ? `<p class="ft-card__body">${esc(e.body)}</p>` : ''}
         ${meta.length ? `<p class="ft-card__meta">${meta.join(' · ')}</p>` : ''}
-        ${track ? `<p class="ft-card__song">🎵 ${esc(track.name)} — ${esc(track.artist)}</p>` : ''}
+        ${track ? `<p class="ft-card__song">🎵 ${esc(track.name)} · ${esc(track.artist)}</p>` : ''}
         <footer class="ft-card__actions">
           <button type="button" class="ft-act${liked ? ' is-on' : ''}" data-like="${esc(e.id)}" aria-pressed="${liked}">${liked ? '♥' : '♡'} <span>${likes.length || ''}</span></button>
           <button type="button" class="ft-act" data-comments="${esc(e.id)}" aria-expanded="${open}">💬 <span>${cc || ''}</span></button>

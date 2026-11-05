@@ -288,7 +288,7 @@ function mentalRateTipHtml(local, currency) {
   if (!rate || local == null) return '';
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   const approx = mentalToKrw(local, currency);
-  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁 — ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
+  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁: ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
 }
 
 function livingCostPanelHtml(school) {
@@ -299,9 +299,9 @@ function livingCostPanelHtml(school) {
   return `
     <section class="info-panel info-panel--wide">
       <h3 class="brand-head" data-wordmark="">Cost of living ?</h3>
-      ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
+      ${dorm ? `<p class="info-panel__text">기숙사비(학기당) <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
-      ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
+      ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
       <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요. 여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
     </section>`;
 }

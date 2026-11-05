@@ -1,0 +1,445 @@
+/* ==========================================================================
+   v2 (1102ver) — Figma "steppY 화면 지도" 아래 시안을 옮긴 화면들.
+   app.css 다음에 실려 같은 선택자를 덮는다. 규칙은 app_ui.md 1장
+   "로고 옆 글은 로고에 맞추고, 아래 줄은 자리를 고정한다" 참고.
+   ========================================================================== */
+
+:root {
+  --v2-ink: #1E2A26;
+  --v2-ink-soft: #5B6560;
+  --v2-ink-faint: #8A928E;
+  --v2-stage: #DCE3DB;       /* 진행 단계 상자 */
+  --v2-sand: #EFE6D6;        /* 바로가기 1 */
+  --v2-sky: #E1E7EF;         /* 바로가기 2 */
+  --v2-plum: #ECE4EA;        /* 바로가기 3 */
+  --v2-plate: #E6E3DC;       /* 지망 원판 바탕 */
+  --v2-dark: #2F3B37;
+  --v2-good-bg: #DCEBDD;  --v2-good: #2F5D3A;
+  --v2-warn-bg: #F3E7CC;  --v2-warn: #8A6420;
+  --v2-bad-bg: #F6E0DA;   --v2-bad: #A0473A;
+  --v2-radius: 28px;
+  /* 화면 맨 위 큰 영어 제목(STEPPY·SCHOOLS…)만 SUIT — 나머지 글자는 전부 Pretendard(tokens.css) */
+  --font-title: 'SUIT Variable', 'Pretendard Variable', sans-serif;
+}
+
+/* ---------------------------------------------------------------- 공통 */
+
+/* 화면 맨 위 큰 영어 제목 — 작은 한 줄(eyebrow) + 굵은 단어 */
+.v2-wordmark {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: clamp(56px, 18vw, 72px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  color: var(--v2-ink);
+}
+
+/* 원형 학교 로고 — 이미지가 없으면 약어 */
+.v2-logo {
+  display: grid; place-items: center;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: #fff;
+  overflow: hidden;
+}
+.v2-logo img { width: 68%; height: 68%; object-fit: contain; }
+.v2-logo__abbr { font-weight: 900; color: var(--v2-dark); letter-spacing: -0.02em; font-size: 0.95em; }
+
+/* ---------------------------------------------------------------- 홈 */
+
+.v2-home { padding-top: var(--space-2); padding-bottom: 120px; }
+.v2-home__head { margin-bottom: 18px; }
+.v2-home__greet { margin: 10px 0 0 4px; font-size: 13px; color: var(--v2-ink-soft); }
+.v2-home .profile-cta { margin-top: 10px; }
+
+.v2-widgets {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 8px;
+}
+.v2-widget {
+  position: relative;
+  height: 148px;
+  border-radius: var(--v2-radius);
+  overflow: hidden;
+}
+
+/* 왼쪽 상자: 진행 막대(위) + 할 일(아래) */
+.v2-widget--stage {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 14px 16px;
+  background: var(--v2-stage);
+}
+.v2-widget--stage .journey__labels { font-size: 11px; }
+/* 할 일 알약 — 두 상자 아래 한 줄 전체 */
+.v2-todo { display: block; margin-top: 8px; }
+
+/* 오른쪽 상자: 옆으로 넘기는 바로가기 */
+.v2-shortcuts__track {
+  display: flex; height: 100%;
+  overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.v2-shortcuts__track::-webkit-scrollbar { display: none; }
+.v2-shortcut {
+  flex: 0 0 100%; scroll-snap-align: start;
+  display: flex; flex-direction: column;
+  padding: 14px 18px 44px;
+  color: var(--v2-ink); text-decoration: none;
+}
+.v2-shortcut--sand { background: var(--v2-sand); }
+.v2-shortcut--sky  { background: var(--v2-sky); }
+.v2-shortcut--mint { background: #DCE8E2; }
+.v2-shortcut--plum { background: var(--v2-plum); }
+.v2-shortcut__title { margin-top: 0; font-size: 22px; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; word-break: keep-all; }
+.v2-shortcut__sub { margin-top: 6px; font-size: 11px; line-height: 1.4; color: #6B5E49; word-break: keep-all; }
+.v2-shortcuts__dots { position: absolute; left: 18px; bottom: 25px; display: flex; gap: 4px; pointer-events: none; }
+.v2-shortcuts__dots i { width: 5px; height: 5px; border-radius: 3px; background: #B9B2A6; transition: width .2s; }
+.v2-shortcuts__dots i.is-on { width: 14px; background: var(--v2-dark); }
+.v2-shortcuts__go {
+  position: absolute; right: 14px; bottom: 14px;
+  display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: 50%; background: var(--v2-dark); color: #fff; font-size: 14px; font-weight: 700;
+  pointer-events: none;
+}
+
+/* MY PICKS 원판 */
+.v2-picks {
+  margin-top: 16px;
+  padding: 20px 0 22px;
+  border-radius: 120px;
+  background: var(--v2-plate);
+  text-align: center;
+}
+.v2-picks__label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; color: var(--v2-ink-faint); }
+.v2-picks__hint { margin: 6px 16px 0; font-size: 11px; color: var(--v2-ink-faint); }
+
+.v2-wheel {
+  --size: min(300px, 78vw);
+  --r: calc(var(--size) * 0.37);
+  position: relative;
+  width: var(--size); height: var(--size);
+  margin: 18px auto 0;
+  touch-action: pan-y;
+}
+.v2-wheel__ring {
+  position: absolute; inset: calc(50% - var(--r)); border-radius: 50%;
+  border: 1.5px dashed #D3CEC4;
+}
+.v2-pick {
+  /* 모든 원은 같은 크기로 만들고 scale로만 키우고 줄인다 — 너비·높이를 바꾸면 각도와 따로 움직여 덜컹거린다.
+     흰 원·테두리는 두지 않는다 — 학교 로고가 곧 원판 위의 한 칸이다 */
+  --d: calc(var(--size) * 0.35);
+  --s: 0.62;
+  position: absolute; left: 50%; top: 50%;
+  width: var(--d); height: var(--d);
+  padding: 0; border: 0; background: none; cursor: pointer;
+  font-size: calc(var(--d) * 0.15);
+  /* 원 위의 자리 = 각도(--a)만큼 돌려서 반지름만큼 밀고, 다시 돌려 세운다 */
+  transform: translate(-50%, -50%) rotate(var(--a)) translate(var(--r)) rotate(calc(-1 * var(--a))) scale(var(--s));
+  transition: transform .6s cubic-bezier(.33, 1, .68, 1), opacity .45s ease, filter .6s ease;
+}
+.v2-pick .v2-logo { background: none; border-radius: 0; overflow: visible; }
+.v2-pick .v2-logo img { width: 100%; height: 100%; object-fit: contain; }
+.v2-pick.is-top { --s: 1; z-index: 1; filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18)); }
+.v2-pick.is-fav:not(.is-top) { opacity: 0.55; }
+.v2-pick.is-hidden { opacity: 0 !important; pointer-events: none; }
+/* 로고 이미지가 없는 학교는 약어를 흰 원에 적는다 — 아무것도 없으면 빈자리처럼 보인다 */
+.v2-pick .v2-logo--abbr { background: #fff; border-radius: 50%; border: 2px solid #9AA39E; }
+.v2-pick.is-top .v2-logo--abbr { border-color: var(--v2-dark); }
+.v2-pick__badge {
+  position: absolute; top: -2px; right: -2px;
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--v2-dark); color: #fff;
+  border: 2.5px solid var(--v2-plate);
+  font-size: 12px; font-weight: 900; line-height: 1;
+}
+.v2-pick__badge { transform: scale(1.15); transform-origin: top right; }
+.v2-pick__badge:empty { display: none; }
+
+.v2-wheel__center {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -38%);
+  width: 46%;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 0; border: 0; background: none; font: inherit; cursor: pointer;
+}
+.v2-wheel__rank { font-size: 11px; font-weight: 700; color: var(--v2-good); }
+.v2-wheel__name {
+  font-size: 11px; font-weight: 600; line-height: 1.25; color: var(--v2-ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.v2-wheel__flag { margin-top: 6px; min-height: 26px; font-size: 24px; line-height: 1; }
+
+.v2-wheel__empty {
+  position: absolute; inset: 18%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 50%; background: #fff; color: var(--v2-ink); text-decoration: none; padding: 0 18px;
+}
+.v2-wheel__empty strong { font-size: 14px; }
+.v2-wheel__empty span { font-size: 11px; color: var(--v2-ink-soft); word-break: keep-all; }
+
+/* 비어 있는 지망 자리 */
+.v2-pick .v2-logo--empty {
+  background: #F4F2EE; border-radius: 50%; border: 2.4px dashed #B9B2A6;
+  font-size: 1.8em; font-weight: 700; color: var(--v2-dark);
+}
+.v2-pick.is-empty.is-top .v2-logo--empty { border-color: var(--v2-dark); }
+
+/* 가운데 이름이 바뀔 때 살짝 겹쳐 사라졌다 나타난다 */
+.v2-wheel__rank, .v2-wheel__name, .v2-wheel__flag { transition: opacity .25s ease; }
+.v2-wheel__center.is-changing .v2-wheel__rank,
+.v2-wheel__center.is-changing .v2-wheel__name,
+.v2-wheel__center.is-changing .v2-wheel__flag { opacity: 0; }
+
+/* ---------------------------------------------------------------- 화면 제목 (학교 찾기 등) */
+.v2-head { text-align: center; margin: 4px 0 -1px; }   /* 아래 검색줄은 붙박이(sticky)라 자기 위 여백 16px을 갖고 있다 — 제목과 사이는 15px */
+.v2-head__eyebrow { margin: 0; font-size: 14px; color: var(--v2-ink-soft); }
+.v2-head__title { margin: 0; font-family: var(--font-title); font-size: 54px; font-weight: 900; line-height: 1.05; letter-spacing: -0.04em; color: var(--v2-ink); }
+
+/* ---------------------------------------------------------------- 학교 찾기: 나라별 책장 */
+body[data-page="search"] .school-grid { display: block; }
+body[data-page="search"] #quickMore { background: var(--v2-dark); color: #fff; border-color: var(--v2-dark); font-weight: 700; }
+
+/* 책장은 페이지 좌우 여백을 무시하고 화면 끝까지 — 넘기는 카드가 화면 가장자리에서 잘려 보이게 */
+.v2-shelf { width: 100vw; margin: 0 0 44px calc(50% - 50vw); }
+.v2-shelf__head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 24px; }
+.v2-shelf__country { margin: 0; font-size: 19px; font-weight: 800; color: var(--v2-ink); }
+.v2-shelf__count { font-size: 12px; color: var(--v2-ink-faint); }
+
+/* 책장 한 칸 — 옆으로 넘긴다. 마지막 카드가 살짝 잘려 보여야 넘길 수 있다는 걸 안다 */
+.v2-shelf__track {
+  overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 24px; scrollbar-width: none;
+  padding: 16px 0 4px;
+}
+/* 넘기는 내용 전체 폭(줄) — 선반은 이 줄에 붙어 학교 카드와 함께 움직인다 */
+.v2-shelf__row { position: relative; display: flex; gap: 16px; width: max-content; padding: 0 24px; }
+/* 원목 선반 — ㄴ자: 벽 쪽 뒤판 + 바닥판. 옆판은 없다. 학교 로고 카드가 바닥판 위, 뒤판 앞에 선다.
+   색은 밝은 오크 — 뒤판은 그늘이라 한 단 어둡게, 바닥판 윗면은 빛을 받아 밝게, 앞면은 진하게.
+   (결 무늬는 넣지 않는다 — 세로줄로 찍으면 나무보다 자 눈금처럼 보였다) */
+.v2-shelf__row::before {
+  content: ''; position: absolute; z-index: 0;
+  /* 바닥판(58px)에 아래를 붙인 채 높이만 절반(46 → 23px) */
+  left: 10px; right: 10px; top: 39px; height: 23px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(#E6CCA2, #DBBE92);
+}
+.v2-shelf__row::after {
+  content: ''; position: absolute; z-index: 0;
+  /* 바닥판 두께도 절반(12 → 6px) — 윗면은 카드가 서는 58px 그대로 */
+  left: 4px; right: 4px; top: 58px; height: 6px;
+  border-radius: 1px;
+  background: linear-gradient(#F1DDB9 0, #E8CFA4 40%, #DCBD8F 40%, #D3B184 100%);
+  box-shadow: 0 6px 8px -3px rgba(120, 88, 48, .22);
+}
+.v2-shelf__row > .v2-book { position: relative; z-index: 1; }
+.v2-shelf__track::-webkit-scrollbar { display: none; }
+
+.v2-book {
+  flex: 0 0 190px; scroll-snap-align: start;
+  cursor: pointer; text-align: left;
+}
+.v2-book__cover { position: relative; height: 58px; display: flex; justify-content: center; align-items: flex-end; }
+.v2-book__logo {
+  display: grid; place-items: center;
+  width: 76px; height: 56px;
+  border-radius: 14px; background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.10);
+}
+.v2-book__logo img { max-width: 64px; max-height: 42px; object-fit: contain; }
+.v2-book__abbr { font-size: 14px; font-weight: 900; color: var(--v2-dark); }
+.v2-book__fav {
+  position: absolute; top: -8px; right: 42px;
+  display: grid; place-items: center;
+  width: 22px; height: 22px; padding: 0;
+  border: 1.5px solid #E0DBD2; border-radius: 50%; background: #fff;
+  font-size: 12px; line-height: 1; color: var(--v2-ink-faint); cursor: pointer;
+}
+.v2-book__fav.is-active { color: #C8553D; }
+/* 이름은 두 줄 칸에 — 한 줄짜리는 그 칸의 세로 가운데로 내린다(옆 카드의 두 줄 이름과 가운데가 맞게).
+   아래 두 줄(GPA·어학 / 모집·생활비)은 이름 길이와 상관없이 같은 자리(app_ui.md 1장) */
+.v2-book__name {
+  margin: 18px 0 0; height: 36px;
+  display: flex; align-items: center;
+  font-size: 14px; font-weight: 700; line-height: 1.3; color: var(--v2-ink);
+}
+.v2-book__name > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.v2-book__line {
+  display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+  margin: 5px 0 0; font-size: 12px; color: var(--v2-ink-soft); white-space: nowrap;
+}
+.v2-book__elig, .v2-book__pct {
+  flex: 0 0 auto; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+}
+.v2-book__elig--go { background: var(--v2-good-bg); color: var(--v2-good); }
+.v2-book__elig--warn { background: var(--v2-warn-bg); color: var(--v2-warn); }
+.v2-book__elig--unknown, .v2-book__elig--neutral, .v2-book__elig--no { background: #ECE9E3; color: #7A817D; }
+.v2-book__pct { background: #E3E8EF; color: #44546B; }
+.v2-book__pct.is-high { background: var(--v2-bad-bg); color: var(--v2-bad); }
+
+.v2-shelf__count {
+  padding: 4px 0 4px 8px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--v2-ink-faint);
+}
+
+/* 나라 화면 — 같은 화면 위로 오른쪽에서 밀려 들어온다. 하단 탭바는 그대로 보이게 그 아래 층에 둔다 */
+.v2-country {
+  position: fixed; inset: 0; z-index: 65;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--page-bg);
+  transform: translateX(100%);
+  transition: transform .28s cubic-bezier(.33, 1, .68, 1);
+}
+.v2-country.is-open { transform: none; }
+.v2-country__bar {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px;
+  background: var(--appbar-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.v2-country__back {
+  display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  font-size: 22px; line-height: 1; color: var(--v2-ink); cursor: pointer;
+}
+.v2-country__title { flex: 1; margin: 0; font-size: 20px; font-weight: 800; color: var(--v2-ink); }
+.v2-country__count { font-size: 12px; color: var(--v2-ink-faint); }
+.v2-country__body { display: grid; gap: 12px; padding: 6px 16px 120px; }
+body.has-country-view { overflow: hidden; }
+.v2-country__body > .school-card { width: 100%; }
+/* 위의 body[data-page="search"] .school-grid { display:block } 이 나라 화면 목록까지 덮어
+   카드 사이 간격(gap)이 0이 됐다 — 나라 화면은 다시 grid로 */
+body[data-page="search"] .v2-country__body.school-grid { display: grid; gap: 16px; }
+
+/* 흰 로고(어두운 바탕용)는 짙은 바탕 위에 — logo-fit.js 가 불러온 뒤 알아본다 */
+.v2-book__logo.has-light-logo { background: var(--v2-dark); }
+.v2-pick .v2-logo.has-light-logo { background: var(--v2-dark); border-radius: 50%; }
+.v2-pick .v2-logo.has-light-logo img { width: 70% !important; height: 70% !important; }
+/* 파일이 없는 로고는 약어 글자로 */
+.logo-fallback { font-weight: 900; color: var(--v2-dark); letter-spacing: -0.02em; }
+.v2-book__logo .logo-fallback { font-size: 14px; }
+.v2-pick .v2-logo.has-logo-fallback { background: #fff; border-radius: 50%; border: 2px solid #9AA39E; font-size: 1.2em; }
+
+/* ---------------------------------------------------------------- 내 저장 (Compare your PICKS) */
+body[data-page="saved"] .saved { padding-top: 0; }
+body[data-page="saved"] .v2-head { margin-bottom: 14px; }
+body[data-page="saved"] .compare { border-radius: var(--v2-radius); padding: 6px 12px 10px; border: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+body[data-page="saved"] .compare__row { min-height: 50px; border-top: 1px solid #EEEBE5; }
+body[data-page="saved"] .compare__row--head { border-top: 0; }
+body[data-page="saved"] .compare__label { padding-left: 4px; font-size: 12px; color: var(--v2-ink-faint); }
+body[data-page="saved"] .compare__cell { border-left: 0; padding: 6px 4px; background: none; }
+body[data-page="saved"] .compare__school { border-left: 0; padding: 12px 4px 8px; gap: 8px; }
+
+/* 학교 머리 — 지망 학교 로고를 원 안에. 세 학교 모두 같은 크기, 지망은 아래 글자로만 */
+.compare__logo {
+  position: relative;
+  display: grid; place-items: center;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #fff; border: 1.5px solid #D3CEC4;
+}
+.compare__logo.has-light-logo { background: var(--v2-dark); }
+.compare__logo .logo-fallback { font-size: 13px; }
+body[data-page="saved"] .compare__tag { font-size: 11px; font-weight: 500; color: var(--v2-ink-faint); }
+
+/* 값 — 큰 숫자 + 그 아래 작은 줄(상위 %, 시험 이름). 강조 칸은 칸 폭을 거의 다 채우는 초록 테두리 상자 —
+   글자는 다른 칸과 같은 크기로 두고 상자를 키운다(app_ui.md 1장 "강조 칸") */
+.compare__value { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 0 7px; min-width: 0; white-space: nowrap; }
+.compare__main { font-size: 15px; font-weight: 800; color: var(--v2-ink); line-height: 1.2; }
+.compare__sub { font-size: 10px; font-weight: 700; color: #44546B; line-height: 1.2; }
+.compare__sub.is-hot { color: var(--v2-bad); }
+.compare__cell.is-best .compare__value {
+  box-sizing: border-box; width: calc(100% - 4px);
+  padding: 7px 4px 9px; border-radius: 14px;
+  border: 1.5px solid var(--v2-good); background: none;
+}
+
+/* ---------------------------------------------------------------- 학점 인정 (Will it count? CREDITS) */
+body[data-page="credits"] .credits-grid { padding-top: 0; }
+/* 위 두 탭 — 회색 알약 안에서 고른 쪽만 흰 알약 */
+body[data-page="credits"] .mode-toggle {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  padding: 4px; border-radius: 22px; background: var(--v2-plate); border: 0;
+}
+body[data-page="credits"] .mode-toggle__btn {
+  height: 34px; border: 0; border-radius: 18px; background: none;
+  font-size: 13px; font-weight: 600; color: #6B766F;
+}
+body[data-page="credits"] .mode-toggle__btn.is-active { background: #fff; color: var(--v2-ink); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+/* 조회 카드 — "소속 학과" 같은 라벨은 값이 이미 말해 주므로 뺀다(app_ui.md 2장) */
+body[data-page="credits"] .match-query { border-radius: 24px; border: 0; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
+body[data-page="credits"] .match-query__label { display: none; }
+
+/* 결과 카드 — 로고 옆 제목은 한 줄이면 로고와 세로 가운데, 두 줄이면 로고 위끝에 맞추고,
+   보조 줄은 제목 길이와 상관없이 같은 자리(app_ui.md 1장) */
+.v2-xmatch { border-radius: 24px; padding: 16px 18px 18px; border: 0; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
+.v2-xmatch .verdict { display: inline-flex; margin: 0; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; }
+.v2-xmatch__course {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; row-gap: 6px;
+  margin-top: 14px;
+}
+.v2-xmatch__logo {
+  grid-row: 1; display: grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #fff; border: 1.5px solid #D3CEC4; overflow: hidden;
+}
+.v2-xmatch__logo.has-light-logo { background: var(--v2-dark); }
+.v2-xmatch__logo .logo-fallback { font-size: 10px; }
+.v2-xmatch__title.match-card__headline {
+  grid-column: 2; grid-row: 1; margin: 0;
+  height: 36px; display: flex; align-items: center; overflow: hidden;
+  font-size: 14px; font-weight: 800; line-height: 1.28; color: var(--v2-ink); word-break: keep-all;
+}
+.v2-xmatch__meta {
+  grid-column: 2; grid-row: 2; margin: 0;
+  font-size: 11px; color: var(--v2-ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.v2-xmatch__arrow {
+  display: grid; place-items: center; width: 26px; height: 26px; margin: 10px auto;
+  border-radius: 50%; background: var(--v2-dark); color: #fff; font-size: 13px; font-weight: 800;
+}
+.v2-xmatch__home { padding: 10px 16px 12px; border-radius: 16px; background: #F4F2EE; }
+.v2-xmatch__label { display: block; font-size: 10.5px; color: var(--v2-ink-faint); }
+.v2-xmatch__home-name { margin: 2px 0 0; font-size: 14px; font-weight: 800; color: var(--v2-ink); }
+.v2-xmatch__home .match-card__topics { margin-top: 8px; }
+.v2-xmatch__evidence { margin-top: 12px; }
+
+/* 검색줄 칸 글씨는 가운데 — ⌄ 표시가 오른쪽 여백(36px)을 차지하므로 왼쪽도 같은 만큼 비워야 진짜 가운데다 */
+/* 빠른 필터 칸 글씨는 가운데 — ⌄ 그림이 오른쪽 여백 안에 있으므로 좌우 여백을 같게 둬야 진짜 가운데다
+   (search.css 가 오른쪽 여백을 !important 로 잡고 있다) */
+body[data-page="search"] .quick-filters select.quick-filter { padding-left: 24px !important; padding-right: 24px !important; text-align: center; text-align-last: center; }
+
+/* 학점 인정 카드의 긴 설명 상자 — 두 줄로 접으면 세 번째 줄이 아래 안쪽 여백(padding)에 비쳐
+   글자가 상자 밖으로 삐져나온 것처럼 보였다. 줄 수 제한(line-clamp)은 여백까지 잘라 주지 않는다.
+   그래서 아래 여백만 같은 색 테두리로 바꾼다 — 테두리 자리에는 글자가 들어가지 못한다. */
+body[data-page="credits"] .match-card__note { padding: 14px 16px; border-radius: 14px; line-height: 1.55; }
+body[data-page="credits"] .match-card__note.is-clamped { padding-bottom: 0; border-bottom: 14px solid var(--sky-50); }
+body[data-page="credits"] .match-card__note-toggle { margin-top: 8px; }
+
+/* PICKS 아래 찜한 학교 목록 — 줄마다 1·2·3 버튼으로 지망을 정한다 */
+body[data-page="saved"] .saved__section + .saved__section { margin-top: 28px; }
+body[data-page="saved"] .saved__head h2 { font-size: 17px; }
+.fav-list { list-style: none; margin: 0; padding: 4px 16px; border-radius: var(--v2-radius); border: 0; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
+.fav-row { display: flex; align-items: center; gap: 10px; min-height: 64px; border-top: 1px solid #EEEBE5; }
+.fav-row:first-child { border-top: 0; }
+.fav-row__school {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.fav-row__logo {
+  flex: none; display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
+  background: #fff; border: 1.5px solid #D3CEC4;
+}
+.fav-row__logo.has-light-logo { background: var(--v2-dark); }
+.fav-row__logo .logo-fallback { font-size: 11px; }
+.fav-row__text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fav-row__name { font-size: 14px; font-weight: 700; color: var(--v2-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-row__meta { font-size: 12px; color: var(--v2-ink-soft); }
+.fav-row__meta b { color: var(--v2-good); }
+/* 제목과 아래 전환 버튼 사이 — 학교 찾기의 제목·검색창 간격(15px)과 같게 */
+body[data-page="credits"] .v2-head { margin-bottom: 15px; }
+/* 홈 — 다가오는 국제처 일정(단계·바로가기 두 상자 아래) */
+.v2-home .upcoming { margin-top: 8px; padding: 10px 14px; border-radius: var(--v2-radius); background: #fff; border: 1px solid var(--line-100); }

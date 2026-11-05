@@ -641,7 +641,7 @@ body[data-page="credits"]::before {
 .confirm-warning__title { font-weight: 700; margin-bottom: var(--space-3); }
 .confirm-warning ul { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-4); }
 .confirm-warning li { font-size: var(--fs-small); color: var(--ink-700); padding-left: var(--space-4); position: relative; }
-.confirm-warning li::before { content: '—'; position: absolute; left: 0; color: var(--coral-500); }
+.confirm-warning li::before { content: '·'; position: absolute; left: 0; color: var(--coral-500); }
 .confirm-warning__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 
 /* ---- UC 캠퍼스 목록 모달(지도/날씨/점수 카드 대신 캠퍼스 선택 화면) ---- */
@@ -857,3 +857,38 @@ body[data-page="credits"]::before {
   text-align: left;
 }
 .uc-siblings-link:hover { background: var(--sky-100); border-style: solid; }
+
+/* ---- 페이지 안 드롭다운 (js/components/dropdown.js) ----
+   <select> 는 각 화면 모양 그대로 두고, 누르면 기본 선택창 대신 아래 목록이 열린다. */
+select.dd--open { border-color: var(--ink-900); }
+
+.dd__panel {
+  position: fixed; z-index: 300;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 6px 0; border-radius: 12px;
+  background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .14), 0 0 0 1px rgba(0, 0, 0, .04);
+  opacity: 0; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease;
+}
+.dd__panel.is-open { opacity: 1; transform: none; }
+.dd__group { padding: 10px 18px 4px; font-size: 12px; font-weight: 700; color: var(--ink-400); }
+.dd__option {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 48px; padding: 0 18px;
+  border: 0; background: none; text-align: left; cursor: pointer;
+  font: inherit; font-size: 15px; color: var(--ink-900); white-space: nowrap;
+}
+.dd__option:hover, .dd__option:focus-visible { background: var(--cloud-50); outline: none; }
+.dd__option[aria-selected="true"] { background: var(--cloud-50); font-weight: 800; }
+.dd__check { flex: none; width: 14px; height: 8px; margin-top: -4px; }
+.dd__option[aria-selected="true"] .dd__check { border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
+.dd__option:disabled { color: var(--ink-400); cursor: default; }
+.dd__option-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* 홈 — 다가오는 국제처 일정 두 줄 */
+.upcoming__title { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-600); margin-bottom: 4px; }
+.upcoming__title span { font-weight: 600; color: var(--ink-400); margin-left: 4px; }
+.upcoming__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.upcoming__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-micro); min-width: 0; }
+.upcoming__name { font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.upcoming__due { flex: none; color: var(--ink-400); }
+

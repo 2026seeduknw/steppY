@@ -1278,7 +1278,7 @@
             </label>
           </div>
           <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
-          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요 — 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요. 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
           <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
           ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
           <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
@@ -1467,7 +1467,7 @@
         if (fb.lat && fb.lng && typeof SongEngine !== 'undefined') {
           SongEngine.fetchWeather(fb.lat, fb.lng).then(w => { pendingWeather = w; }).catch(() => {});
         }
-        if (note) note.textContent = `📍 ${reason} — 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
+        if (note) note.textContent = `📍 ${reason}. 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
       } else {
         pendingLocation = null;
         if (note) note.textContent = `📍 ${reason} (위치 없이 저장돼요)`;

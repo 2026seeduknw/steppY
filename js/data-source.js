@@ -88,9 +88,9 @@
   }
 
   const SECURITY_TEXT = {
-    high: '치안 양호 — Numbeo·GPI·외교부 여행경보 종합 기준',
-    medium: '치안 보통 — Numbeo·GPI·외교부 여행경보 종합 기준',
-    low: '치안 주의 — Numbeo·GPI·외교부 여행경보 종합 기준'
+    high: '치안 양호 (Numbeo·GPI·외교부 여행경보 종합 기준)',
+    medium: '치안 보통 (Numbeo·GPI·외교부 여행경보 종합 기준)',
+    low: '치안 주의 (Numbeo·GPI·외교부 여행경보 종합 기준)'
   };
 
   function coerce(v) {

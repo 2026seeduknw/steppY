@@ -115,7 +115,7 @@
       const text = REPORT_CATEGORIES.map(c => {
         const items = all.filter(e => categoriesOfTags(e.tags).includes(c.id));
         if (!items.length) return `## ${c.ko}\n(기록 없음)\n`;
-        return `## ${c.ko}\n` + items.map(e => `- ${e.date} ${e.title ? e.title + ' — ' : ''}${e.body || '(사진만 기록)'}`).join('\n') + '\n';
+        return `## ${c.ko}\n` + items.map(e => `- ${e.date} ${e.title ? e.title + ': ' : ''}${e.body || '(사진만 기록)'}`).join('\n') + '\n';
       }).join('\n');
       navigator.clipboard.writeText(text)
         .then(() => showToast('보고서 초안을 복사했어요'))

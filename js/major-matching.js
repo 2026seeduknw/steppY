@@ -39,7 +39,7 @@
 
     if (confirmed && matches.some(m => m.school === confirmed.id)) {
       note.hidden = false;
-      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}이(가) 포함된 결과예요 — 카드에 표시했어요.`;
+      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}이(가) 포함된 결과예요. 카드에 표시했어요.`;
     } else {
       note.hidden = true;
     }

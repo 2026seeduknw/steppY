@@ -83,7 +83,7 @@ MOCK.checklist = [
     ],
     checkedAt: '2026-10' },
   { id: 'insurance', title: '해외여행자보험 가입', done: false,
-    detail: '파견 국가와 파견교가 요구하는 보험 조건을 확인하고 가입해요. 국가별 보험 정보는 아래 "생활 준비 — 준비물"의 보험 카드에 있어요.',
+    detail: '파견 국가와 파견교가 요구하는 보험 조건을 확인하고 가입해요. 국가별 보험 정보는 아래 "생활 준비 · 준비물"의 보험 카드에 있어요.',
     dynamicSource: 'insurance' },
   { id: 'flight', title: '항공권 예약', done: false,
     detail: '파견교 오리엔테이션과 기숙사 입주 일정을 확인한 뒤 출국편을 예약해요.' },

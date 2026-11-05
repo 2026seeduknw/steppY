@@ -553,7 +553,7 @@ function renderPrepareLiving() {
 
   const section = document.getElementById('livingSection');
   if (!section) return;
-  section.innerHTML = prepCardHead('생활 준비 — 준비물', 'living') +
+  section.innerHTML = prepCardHead('생활 준비 · 준비물', 'living') +
     `<div class="prep-card__body"><div class="living-grid" id="livingGrid"></div></div>`;
   wirePrepCardToggle(section, 'living');
   const mount = document.getElementById('livingGrid');
@@ -631,7 +631,7 @@ function morphToPreparePage() {
   document.querySelectorAll('body > .page-shell').forEach(el => el.remove());
   document.getElementById('mentor-float').insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
   document.body.dataset.page = 'prepare';
-  document.title = '교환 준비하기 — steppY';
+  document.title = '교환 준비하기 · steppY';
   // 앱 셸로 바꾸면서 renderAppNav()가 renderAppBar()/renderTabBar() 둘로 갈렸는데
   // 이 호출부를 놓쳤다. 정의가 없는 함수라 여기서 ReferenceError가 나면서 바로
   // 아래 renderPrepareView()가 실행되지 않았고, 마크업만 꽂힌 빈 카드들이 남았다.
