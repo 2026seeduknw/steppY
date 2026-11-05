@@ -208,10 +208,10 @@
         <span class="saved__meta">${list.length}/${OIA.WISHLIST_MAX}${track ? ` · ${OIA.trackLabel(track)}` : ''}</span>
       </div>
       <p class="wish-note">${termData
-        ? `${OIA.fmtDate(termData.applyFrom)} ~ ${OIA.fmtDate(termData.applyTo)} 온라인 지원서에 이 순서대로 적어요. 마감 뒤에는 바꿀 수 없어요.`
-        : '국제처 온라인 지원서에 이 순서대로 적어요. 석차 순으로 위에서부터 한 곳에 배정돼요.'}</p>
+        ? `${OIA.fmtDate(termData.applyFrom)} ~ ${OIA.fmtDate(termData.applyTo)} 온라인 지원서에 이 순서대로 적어요.<br>마감 뒤에는 바꿀 수 없어요.`
+        : '국제처 온라인 지원서에 이 순서대로 적어요.<br>석차 순으로 위에서부터 한 곳에 배정돼요.'}</p>
       ${!track ? `<p class="wish-warn">지원 전형(영어권/비영어권 언어)을 아직 안 정했어요 · <a href="onboarding.html">정하기</a></p>` : ''}
-      ${mixed ? '<p class="wish-warn">언어권이 서로 다른 학교가 섞여 있어요. 한 전형의 학교만 적을 수 있어요.</p>' : ''}`;
+      ${mixed ? '<p class="wish-warn">언어권이 서로 다른 학교가 섞여 있어요.<br>한 전형의 학교만 적을 수 있어요.</p>' : ''}`;
 
     if (!list.length) {
       wishMount.innerHTML = head + `
@@ -256,7 +256,7 @@
           </li>`;
         }).join('')}
       </ol>
-      <p class="saved__note">지원 학과는 '배정가능 대학 명단'의 지원 가능 학과에서 골라요. 지원 불가 학과를 쓰면 배정되지 않아요.</p>`;
+      <p class="saved__note">지원 학과는 '배정가능 대학 명단'의 지원 가능 학과에서 골라요.<br>지원 불가 학과를 쓰면 배정되지 않아요.</p>`;
 
     wishMount.querySelectorAll('[data-open-school]').forEach((el) => {
       el.addEventListener('click', () => openSchoolModal(el.dataset.openSchool, { onChange: renderAll }));

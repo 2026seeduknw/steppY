@@ -961,7 +961,13 @@ select.dd--open { border-color: var(--ink-900); }
    js/components/credit-limit.js. 네 칸(졸업학점·기간·학제·딴 학점)을 2×2 로 — 한 줄에 하나씩 쌓지 않는다. */
 .credits-top { margin-bottom: var(--space-3); }
 .credits-top[hidden] { display: none; }
-.climit__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.climit__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.climit__body { margin-top: 8px; }
+.climit__body[hidden] { display: none; }
+.climit__right { display: inline-flex; align-items: center; gap: 6px; }
+.climit__toggle { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 1.5px solid #E0DBD2; border-radius: 50%; background: #fff; color: var(--ink-700); cursor: pointer; }
+.climit__toggle svg { transition: transform 200ms ease; }
+.climit__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 .climit__title { font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-900); }
 .climit__limit { font-size: var(--fs-small); color: var(--ink-600); }
 .climit__limit strong { color: var(--sky-500); font-size: var(--fs-body); }
@@ -978,5 +984,7 @@ select.dd--open { border-color: var(--ink-900); }
 .climit__result span { display: block; font-size: var(--fs-micro); color: var(--ink-400); }
 .climit__rules { margin-top: 8px; font-size: var(--fs-micro); color: var(--ink-600); }
 .climit__rules summary { cursor: pointer; font-weight: 700; color: var(--ink-700); }
-.climit__rules ul { margin: 6px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; line-height: 1.5; word-break: keep-all; }
+.climit__rules ul { margin: 6px 0 0; padding-left: 16px; list-style: disc; display: flex; flex-direction: column; gap: 3px; line-height: 1.5; word-break: keep-all; }
+.climit__rules li { display: list-item; }
+.climit__rules li::marker { color: var(--ink-500); }
 .climit__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 8px; word-break: keep-all; }

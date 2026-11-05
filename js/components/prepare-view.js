@@ -253,7 +253,7 @@ function applicationDocsHtml() {
       <p class="app-docs__title">파견교 지원 서류</p>
       <p class="app-docs__desc">대부분의 파견교가 공통으로 요구하는 서류예요.</p>
       <ul class="living-docs"><li>성적증명서</li><li>어학 성적표</li><li>여권 사본</li></ul>
-      <p class="app-docs__desc">학교마다 추가 서류가 있을 수 있어요. 지원 전에 아래 공식 안내에서 꼭 확인하세요.</p>
+      <p class="app-docs__desc">학교마다 추가 서류가 있을 수 있어요.<br>지원 전에 아래 공식 안내에서 꼭 확인하세요.</p>
       ${oiaNoticeHtml(school.oiaNotice)}
       ${links.length ? `<div class="app-docs__links">${links.map(([label, url]) =>
         `<a href="${prepEsc(url)}" target="_blank" rel="noopener">${label} ↗</a>`).join('')}</div>` : ''}
@@ -323,8 +323,8 @@ function visaDocsHtml() {
       <p class="visa-docs__title">${prepEsc(country)} 학생비자 서류</p>
       ${docs.length
         ? `<ul class="living-docs">${docs.map(x => `<li>${prepEsc(x)}</li>`).join('')}</ul>
-           <p class="visa-docs__note">공식 안내에서 자동으로 모은 목록이라 빠진 서류가 있을 수 있어요. 신청 전에 아래 공식 안내를 꼭 확인하세요.</p>`
-        : `<p class="visa-docs__note">아직 서류 목록을 정리하지 못했어요. 아래 공식 안내에서 확인하세요.</p>`}
+           <p class="visa-docs__note">공식 안내에서 자동으로 모은 목록이라 빠진 서류가 있을 수 있어요.<br>신청 전에 아래 공식 안내를 꼭 확인하세요.</p>`
+        : `<p class="visa-docs__note">아직 서류 목록을 정리하지 못했어요.<br>아래 공식 안내에서 확인하세요.</p>`}
       ${sources.length ? `<p class="visa-docs__sources">${sources.join('')}</p>` : ''}
     </div>`;
 }

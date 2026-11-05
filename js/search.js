@@ -233,7 +233,7 @@
     const grid = document.getElementById('schoolGrid');
     const pager = document.getElementById('schoolPager');
     if (!filtered.length) {
-      grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요. 필터를 조정해보세요.</div>`;
+      grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요.<br>필터를 조정해보세요.</div>`;
       if (pager) pager.innerHTML = '';
       return;
     }
@@ -334,6 +334,7 @@
           <span class="v2-book__logo">${logo
             ? `<img src="assets/school-logos/${logo}" alt="" loading="lazy" data-abbr="${abbrOf(school.name)}">`
             : `<span class="v2-book__abbr">${schoolInitials(school.name)}</span>`}</span>
+          ${school.qsRank ? `<span class="v2-book__qs" aria-label="QS 세계 순위 ${school.qsRank}위">QS ${school.qsRank}</span>` : ''}
           <button type="button" class="v2-book__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}"
                   aria-label="찜하기" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
         </div>
@@ -449,7 +450,7 @@
     banner.innerHTML = `
       <div class="score-prompt__head">
         <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
-        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요.<br>로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
       </div>
       <form class="score-prompt__form" id="guestScoreForm">
         <label class="score-prompt__field">
@@ -513,12 +514,15 @@
     const myTerm = OIA.termKeyOf(p.exchangeTerm);
     const listTerm = (MOCK.schools[0] && MOCK.schools[0].term) || OIA.SCHOOLS_TERM;
     const termData = myTerm && OIA.TERMS[myTerm];
+    // 짧게 두 줄 — 지금 명단의 학기 / 내 학기 명단 공개일
+    const listDay = termData && termData.schoolListAt ? new Date(`${termData.schoolListAt}T00:00:00`) : null;
     const listNote = myTerm && listTerm && myTerm !== listTerm
-      ? `<p class="list-term-note">지금 학교 목록은 <strong>${OIA.termLabel(listTerm)}</strong> 파견 명단이에요.
-          ${termData && termData.schoolListAt ? `${OIA.termLabel(myTerm)} 명단은 ${OIA.fmtDate(termData.schoolListAt)}에 공지돼요 — 학교와 컷이 바뀔 수 있어요.` : '내 학기 명단이 나오면 바뀔 수 있어요.'}</p>`
+      ? `<p class="list-term-note"><strong>${OIA.termLabel(listTerm)}</strong> 파견 명단<br>
+          ${listDay && !isNaN(listDay) ? `${OIA.termLabel(myTerm)} 명단은 ${listDay.getMonth() + 1}월 ${listDay.getDate()}일에 공개` : `${OIA.termLabel(myTerm)} 명단은 아직 공개 전`}</p>`
       : '';
-    // 게스트는 학점·어학만 받으므로 공통 자격 카드 대신 명단 안내만 둔다
-    mount.innerHTML = (AppState.isAuthed ? myEligibilityHtml(p) : '') + listNote;
+    // 내 지원 자격(학점·이수 학기·전형·백분위)은 첫 로그인 때 기본 정보 화면에서 받는다.
+    // 학교 찾기에는 카드를 두지 않고, 지금 명단이 내 학기 명단이 아닐 때의 안내만 남긴다.
+    mount.innerHTML = listNote;
   }
 
   /** 내 전형으로 지원할 수 없는 학교를 숨기는 칩. 전형을 정했으면 처음부터 켜 둔다. */

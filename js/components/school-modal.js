@@ -56,7 +56,7 @@ function openUCGroupModal(onChange) {
     <div class="uc-group-modal">
       <header class="uc-group-modal__header">
         <h2 class="school-modal__title">University of California</h2>
-        <p class="info-panel__text">UC는 캠퍼스마다 위치·지원 요건·모집 인원이 달라요. 캠퍼스를 선택하면 상세 정보를 볼 수 있어요.</p>
+        <p class="info-panel__text">UC는 캠퍼스마다 위치·지원 요건·모집 인원이 달라요.<br>캠퍼스를 선택하면 상세 정보를 볼 수 있어요.</p>
       </header>
       <div class="uc-campus-list">
         ${campuses.map(c => `
@@ -226,7 +226,7 @@ function climatePanelHtml(school) {
   // 계절마다 "서울은 며칠"을 붙이면 같은 말이 네 번 반복된다 — 아래 한 줄로 모은다.
   const hasRain = seasons.some(s => rain[s]);
   const seoulRain = hasRain
-    ? `<p class="climate-caption">☔ 는 한 달에 비 오는 날 수예요. 서울은 ${SEASON_ORDER
+    ? `<p class="climate-caption">☔ 는 한 달에 비 오는 날 수예요.<br>서울은 ${SEASON_ORDER
         .map(s => `${s.replace('학기', '')} ${SEOUL_SEASON_RAIN[s].days}일`)
         .join(' · ')}.</p>`
     : '';
@@ -302,7 +302,7 @@ function livingCostPanelHtml(school) {
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
-      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요. 여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요.<br>여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
     </section>`;
 }
 
@@ -383,8 +383,8 @@ function confirmWarningTemplate(school, overwriting) {
         ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 학교가 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
         ${pre
           ? `<li>배정 결과는 ${when ? `<strong>${when}</strong>에 ` : ''}연세포탈에서 발표돼요.</li>
-             <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요. 발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
-          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요. 취소하면 이후 정규학기 국제처 파견에 다시 지원할 수 없어요.</li>`}
+             <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요.<br>발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
+          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요.<br>취소하면 이후 정규학기 국제처 파견에 다시 지원할 수 없어요.</li>`}
       </ul>
       <div class="confirm-warning__actions">
         <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">${pre ? '그만둘게요' : '아직이에요'}</button>

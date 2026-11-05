@@ -298,7 +298,7 @@
     if (!items.length) {
       listEl.innerHTML = `
         <div class="empty-state mentor-empty">
-          <p>아직 질문이 없어요. 첫 질문을 남겨보세요.</p>
+          <p>아직 질문이 없어요.<br>첫 질문을 남겨보세요.</p>
           <button type="button" class="btn btn--accent" id="mentorEmptyAsk">질문하기</button>
         </div>`;
       const btn = document.getElementById('mentorEmptyAsk');

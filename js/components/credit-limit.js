@@ -23,6 +23,10 @@ function renderCreditLimit(mount) {
     system: saved.system || OIA.creditSystemOf(school),
     earned: saved.earned || ''
   };
+  // 접어 두면 제목과 최대 학점만 보인다. 처음엔 접어서 아래 과목 목록이 먼저 보이게 한다
+  const OPEN_KEY = 'steppy_credit_limit_open';
+  let open = false;
+  try { open = localStorage.getItem(OPEN_KEY) === '1'; } catch (e) { /* 무시 */ }
 
   function draw() {
     const limit = OIA.creditLimit({ gradCredits: Number(st.grad), semesters: st.semesters, arch5: st.arch5, graduate });
@@ -33,8 +37,14 @@ function renderCreditLimit(mount) {
       <div class="climit">
         <div class="climit__head">
           <h2 class="climit__title">몇 학점까지 인정될까?</h2>
-          ${limit ? `<span class="climit__limit">최대 <strong class="tnum">${limit}</strong>학점</span>` : ''}
+          <span class="climit__right">
+            ${limit ? `<span class="climit__limit">최대 <strong class="tnum">${limit}</strong>학점</span>` : ''}
+            <button type="button" class="climit__toggle" data-climit-toggle aria-expanded="${open}" aria-label="${open ? '접기' : '펼치기'}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+          </span>
         </div>
+        <div class="climit__body"${open ? '' : ' hidden'}>
         <div class="climit__grid">
           ${graduate ? `<p class="climit__note">대학원은 파견 학기당 12학점까지예요.</p>` : `
           <label class="climit__field"><span>졸업학점</span>
@@ -43,7 +53,7 @@ function renderCreditLimit(mount) {
             <div class="climit__chips">${[[1, '한 학기'], [2, '1년']].map(([v, l]) => `<button type="button" class="chip${st.semesters === v ? ' is-selected' : ''}" data-sem="${v}">${l}</button>`).join('')}</div></div>
           <div class="climit__field"><span>파견교 학점</span>
             <div class="climit__chips">${Object.entries(sysLabel).map(([v, l]) => `<button type="button" class="chip${st.system === v ? ' is-selected' : ''}" data-sys="${v}">${l}</button>`).join('')}</div></div>
-          <label class="climit__field"><span>딴 학점</span>
+          <label class="climit__field"><span>이수 학점</span>
             <input type="number" inputmode="decimal" min="0" step="0.5" name="earned" value="${st.earned}" placeholder="${st.system === 'ects' ? '예: 30 ECTS' : '예: 15'}"></label>
         </div>
         ${!graduate ? `<label class="climit__check"><input type="checkbox" name="arch5" ${st.arch5 ? 'checked' : ''}> 5년제 건축학 전공</label>` : ''}
@@ -52,17 +62,25 @@ function renderCreditLimit(mount) {
         <details class="climit__rules">
           <summary>과목으로 인정받는 규칙</summary>
           <ul>
-            <li>내용이 거의 같고 파견교 학점 ≥ 연세대 학점일 때 과목으로 대체돼요. 두 과목을 합쳐 맞출 수도 있어요.</li>
-            <li>파견교 1과목을 연세대 2과목으로 인정받을 수는 없어요. 남는 학점은 일반선택이에요.</li>
-            <li>입학년도 이후 실제로 열린 연세대 과목만 대체할 수 있어요. 이미 들은 과목은 일반선택만 돼요.</li>
-            <li>F·Non-Pass·수강취소 과목은 빠져요. 파견 학점은 평량평균에 들어가지 않아요.</li>
+            <li>내용이 거의 같고 파견교 학점 ≥ 연세대 학점일 때 과목으로 대체돼요.<br>두 과목을 합쳐 맞출 수도 있어요.</li>
+            <li>파견교 1과목을 연세대 2과목으로 인정받을 수는 없어요.<br>남는 학점은 일반선택이에요.</li>
+            <li>입학년도 이후 실제로 열린 연세대 과목만 대체할 수 있어요.<br>이미 들은 과목은 일반선택만 돼요.</li>
+            <li>F·Non-Pass·수강취소 과목은 빠져요.<br>파견 학점은 평량평균에 들어가지 않아요.</li>
             <li>성적증명서로 이수를 증명해야 하는 과목(영양사·CPA 등)은 대체인정 받지 말고 연세대에서 들으세요.</li>
             <li>승인: 전공 = 담당교수+학과장, 학부대학 과목 = 담당교수+학부대학장, 일반선택 = 학사지원팀.</li>
           </ul>
         </details>
-        <p class="climit__source">출처 · 2027-2 국제처 해외파견프로그램 안내 9장. 실제 인정은 국제처 환산 뒤 학사지원팀이 승인해요.</p>
+        <p class="climit__source">출처 · 2027-2 국제처 해외파견프로그램 안내 9장.<br>실제 인정은 국제처 환산 뒤 학사지원팀이 승인해요.</p>
+        </div>
       </div>`;
 
+    const head = mount.querySelector('.climit__head');
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      open = !open;
+      try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch (err) { /* 무시 */ }
+      draw();
+    });
     const persist = () => { try { localStorage.setItem(KEY, JSON.stringify({ grad: st.grad, arch5: st.arch5, system: st.system, earned: st.earned })); } catch (e) { /* 무시 */ } };
     mount.querySelectorAll('[data-sem]').forEach(b => b.addEventListener('click', () => { st.semesters = Number(b.dataset.sem); draw(); }));
     mount.querySelectorAll('[data-sys]').forEach(b => b.addEventListener('click', () => { st.system = b.dataset.sys; persist(); draw(); }));

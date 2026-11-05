@@ -74,6 +74,8 @@
 .v2-widget--stage .journey__labels { font-size: 11px; }
 /* 할 일 알약 — 두 상자 아래 한 줄 전체 */
 .v2-todo { display: block; margin-top: 8px; }
+/* 알약에 테두리 — 바탕이 흰색이 되면서 면이 사라져 보였다. 위 일정 카드와 같은 선 */
+body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid #E0DCD1; }
 
 /* 오른쪽 상자: 옆으로 넘기는 바로가기 */
 .v2-shortcuts__track {
@@ -201,6 +203,10 @@
 /* ---------------------------------------------------------------- 학교 찾기: 나라별 책장 */
 body[data-page="search"] .school-grid { display: block; }
 body[data-page="search"] #quickMore { background: var(--v2-dark); color: #fff; border-color: var(--v2-dark); font-weight: 700; }
+body[data-page="search"] #quickMore { display: grid; place-items: center; }
+body[data-page="search"] #quickMore svg { display: block; }
+/* 필터 시트: '초기화'는 머리의 '필터' 제목 바로 옆(layout.js mountFilterSheet) */
+body[data-page="search"] .app-sheet__head #resetFilters { margin: 0 auto 0 10px; font-size: 13px; font-weight: 600; color: var(--v2-ink-faint); padding: 6px 4px; }
 
 /* 책장은 페이지 좌우 여백을 무시하고 화면 끝까지 — 넘기는 카드가 화면 가장자리에서 잘려 보이게 */
 .v2-shelf { width: 100vw; margin: 0 0 44px calc(50% - 50vw); }
@@ -257,6 +263,14 @@ body[data-page="search"] #quickMore { background: var(--v2-dark); color: #fff; b
   font-size: 12px; line-height: 1; color: var(--v2-ink-faint); cursor: pointer;
 }
 .v2-book__fav.is-active { color: #C8553D; }
+/* QS 순위 — 로고 왼쪽 옆, 책장 선반 위에 세워 둔 작은 이름표 */
+.v2-book__qs {
+  position: absolute; bottom: 0; right: calc(50% + 38px + 6px); z-index: 2;
+  height: 24px; padding: 0 7px; display: grid; place-items: center;
+  border-radius: 7px 7px 3px 3px; background: #fff;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.10);
+  font-size: 10.5px; font-weight: 800; line-height: 1; color: var(--v2-ink); white-space: nowrap;
+}
 /* 이름은 두 줄 칸에 — 한 줄짜리는 그 칸의 세로 가운데로 내린다(옆 카드의 두 줄 이름과 가운데가 맞게).
    아래 두 줄(GPA·어학 / 모집·생활비)은 이름 길이와 상관없이 같은 자리(app_ui.md 1장) */
 .v2-book__name {
@@ -400,10 +414,10 @@ body[data-page="credits"] .match-query__label { display: none; }
   display: grid; place-items: center; width: 26px; height: 26px; margin: 10px auto;
   border-radius: 50%; background: var(--v2-dark); color: #fff; font-size: 13px; font-weight: 800;
 }
-.v2-xmatch__home { padding: 10px 16px 12px; border-radius: 16px; background: #F4F2EE; }
-.v2-xmatch__label { display: block; font-size: 10.5px; color: var(--v2-ink-faint); }
-.v2-xmatch__home-name { margin: 2px 0 0; font-size: 14px; font-weight: 800; color: var(--v2-ink); }
-.v2-xmatch__home .match-card__topics { margin-top: 8px; }
+.v2-xmatch__home { margin: 0; padding: 10px 14px; border-radius: 14px; background: #F4F2EE; font-size: 13px; line-height: 1.45; color: var(--v2-ink-soft); word-break: keep-all; }
+.v2-xmatch__home-school { margin-right: 4px; }
+/* 파견교 전공 이름 — 누르면 그 전공의 매칭으로 넘어간다 */
+.v2-xmatch__topic { padding: 0; border: 0; background: none; font: inherit; font-weight: 800; color: var(--v2-ink); text-decoration: underline; text-decoration-color: #C9C4B8; text-underline-offset: 3px; cursor: pointer; text-align: left; }
 .v2-xmatch__evidence { margin-top: 12px; }
 
 /* 검색줄 칸 글씨는 가운데 — ⌄ 표시가 오른쪽 여백(36px)을 차지하므로 왼쪽도 같은 만큼 비워야 진짜 가운데다 */
@@ -445,3 +459,7 @@ body[data-page="credits"] .v2-head { margin-bottom: 15px; }
 .journey__sub { display: block; font-size: 9.5px; font-weight: 500; color: var(--ink-400); letter-spacing: -0.03em; margin-top: 1px; white-space: nowrap; }
 /* 홈 — 다가오는 국제처 일정(단계·바로가기 두 상자 아래) */
 .v2-home .upcoming { margin-top: 8px; padding: 10px 14px; border-radius: var(--v2-radius); background: #fff; border: 1px solid var(--line-100); }
+
+/* 홈: 지망 원판 아래 '나의 픽 비교하러 가기' — 학교 찾기의 학점 인정 카드와 같은 꼴 */
+body[data-page="home"] .v2-picks-cta { margin-top: 16px; background: #F2EFE7; border: 1px solid #EFEED6; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+body[data-page="home"] .v2-picks-cta .credits-cta__arrow { background: var(--v2-dark); color: #fff; }

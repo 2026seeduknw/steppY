@@ -23,7 +23,9 @@
   </header>
   <div class="search-toolbar">
     <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명으로 검색">
-    <button type="button" class="quick-filter quick-filter--more" id="quickMore">필터</button>
+    <button type="button" class="quick-filter quick-filter--more" id="quickMore" aria-label="필터">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+    </button>
     <!-- 가장 자주 거르는 세 가지(어디·얼마·날씨)는 시트를 열지 않고 여기서 바로 고른다.
          나머지(학과·자격·언어·상권·치안·QS·정렬)는 '상세 필터' 시트에 있다. -->
     <div class="quick-filters" role="group" aria-label="빠른 필터">
@@ -38,9 +40,6 @@
     </div>
   </div>
 
-  <!-- 내 지원 자격(연세대 공통 기준)과 지금 명단의 학기 — js/search.js renderMyElig -->
-  <div id="myEligibility"></div>
-
   <!-- 로그인 상태에서는 학점 인정으로 보내고, 게스트에게는 js/search.js가
        이 자리를 점수 입력 패널로 바꾼다(renderGuestScorePanel). -->
   <div class="sim-banner sim-banner--cta">
@@ -52,6 +51,9 @@
       <span class="credits-cta__arrow" aria-hidden="true">→</span>
     </a>
   </div>
+
+  <!-- 지금 명단의 학기 안내(내 학기 명단이 아닐 때만) — js/search.js renderMyElig -->
+  <div id="myEligibility"></div>
 
   <div class="search-layout">
     <aside class="card filter-panel">

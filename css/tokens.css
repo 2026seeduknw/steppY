@@ -69,9 +69,9 @@
      팔레트: Shell #F7F5F1 · Stone #E0DCD1 · Sky #D5E3E8 · Honeydew #E4E3BC · Viridian #344945
      바탕은 Shell 단색. 주 키 컬러는 Viridian, 옅은 강조는 Sky(선택·배지)와
      Honeydew(강조 버튼), 선은 Stone. */
-  --page-mist: #F7F5F1;   /* Shell (이름은 예전 Mist 테마 때 것) */
+  --page-mist: #FFFFFF;   /* Shell — Figma 시안대로 흰 바탕(예전 #F7F5F1). 이름은 Mist 테마 때 것 */
   --page-bg: var(--page-mist);
-  --appbar-bg: rgba(247, 245, 241, 0.8);   /* 앱바 — 바탕과 같은 색, 조금 비치게 */
+  --appbar-bg: rgba(255, 255, 255, 0.86);   /* 앱바 — 바탕과 같은 색, 조금 비치게 */
 
   /* 랜딩 배경 — 가운데가 살짝 진한 옅은 하늘색 */
   --sky-wash-mid:  #BFDCFA;

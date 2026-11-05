@@ -30,13 +30,8 @@ MOCK.defaultProfile = {
  * 오늘의 할 일 (§4.2) — F2/F4 공통, 최대 4개 노출.
  * 사용자별 로컬 상태 초기값(js/state.js)이라 Supabase 대상이 아님.
  * ------------------------------------------------------------------- */
-MOCK.todos = [
-  { id: 't1', title: '여행자보험 가입증명서 제출', date: '2027-01-05', done: false, tag: '서류' },
-  { id: 't2', title: '온라인 지원서 최종 제출', date: '2026-09-20', done: false, tag: '지원' },
-  { id: 't3', title: 'TOEFL 성적표 유효기간 확인', date: '2026-09-01', done: true, tag: '어학' },
-  { id: 't4', title: '초과학기 등록 서약서 작성', date: '2027-01-10', done: false, tag: '서류' },
-  { id: 't5', title: '출국신고서 제출', date: '2027-01-12', done: false, tag: '서류' }
-];
+// 기본 할 일은 국제처 책자 일정에서 만든다(AppState.baseTodos, js/oia-rules.js). 예전 예시 5개는 지웠다.
+MOCK.todos = [];
 
 /* ---------------------------------------------------------------------
  * 학교 데이터 (F3 검색/비교, F2/F4 지망·확정 카드) — Supabase schools 테이블

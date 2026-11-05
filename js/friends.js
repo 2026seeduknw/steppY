@@ -56,11 +56,11 @@ const Friends = (function () {
       scrim.innerHTML = `
         <div class="modal-panel modal-panel--sm ft-panel">
           <h2 class="ft-title">친구 기능 이용 안내</h2>
-          <p class="ft-lead">친구에게 공개한 기록은 친구 목록에 있는 분들만 볼 수 있어요. 기록마다 공개 여부를 고를 수 있어요.</p>
+          <p class="ft-lead">친구에게 공개한 기록은 친구 목록에 있는 분들만 볼 수 있어요.<br>기록마다 공개 여부를 고를 수 있어요.</p>
           <ul class="ft-rules">
             <li>친구에게는 내 <b>이름과 파견 학교(국가·도시)</b>가 보여요.</li>
             <li>욕설·혐오·성적인 내용, 타인을 괴롭히거나 사칭하는 글은 올릴 수 없어요.</li>
-            <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요. 차단하면 서로의 기록이 보이지 않아요.</li>
+            <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요.<br>차단하면 서로의 기록이 보이지 않아요.</li>
             <li>신고된 내용은 운영자가 확인해 위반이 맞으면 삭제하고 이용을 제한해요.</li>
             <li>문의 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></li>
           </ul>
@@ -137,7 +137,7 @@ const Friends = (function () {
     const [codeRes, listRes, blockedRes] = await Promise.all([api.inviteCode(), api.list(), api.blocked()]);
     if (!managerScrim || !managerScrim.isConnected) return;
     if (!listRes.ok || !codeRes.ok) {
-      body.innerHTML = `<p class="ft-muted">친구 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`;
+      body.innerHTML = `<p class="ft-muted">친구 정보를 불러오지 못했어요.<br>잠시 후 다시 시도해 주세요.</p>`;
       return;
     }
     const rows = listRes.data || [];
@@ -155,7 +155,7 @@ const Friends = (function () {
           <button type="button" class="btn btn--ghost btn--sm" data-copy>복사</button>
           <button type="button" class="btn btn--primary btn--sm" data-share>공유</button>
         </div>
-        <p class="ft-muted">‘공유’로 보낸 링크를 친구가 누르면 앱이 있는 사람은 바로 친구가 되고, 없는 사람은 App Store로 가요. 코드를 직접 입력하면 요청이 와요. 코드는 친구에게만 알려 주세요.</p>
+        <p class="ft-muted">‘공유’로 보낸 링크를 친구가 누르면 앱이 있는 사람은 바로 친구가 되고, 없는 사람은 App Store로 가요.<br>코드를 직접 입력하면 요청이 와요.<br>코드는 친구에게만 알려 주세요.</p>
       </section>
 
       <section class="ft-sec">
@@ -186,7 +186,7 @@ const Friends = (function () {
             <span class="ft-row__name">${esc(r.name)}${schoolLine(r) ? `<small>${esc(schoolLine(r))}</small>` : ''}</span>
             <button type="button" class="ft-link" data-remove="${esc(r.friendship_id)}" data-name="${esc(r.name)}">삭제</button>
             <button type="button" class="ft-link ft-link--danger" data-block="${esc(r.user_id)}" data-name="${esc(r.name)}">차단</button>
-          </div>`).join('') : `<p class="ft-muted">아직 친구가 없어요. 위 코드를 공유해 보세요.</p>`}
+          </div>`).join('') : `<p class="ft-muted">아직 친구가 없어요.<br>위 코드를 공유해 보세요.</p>`}
         ${outgoing.map(r => `
           <div class="ft-row ft-row--pending">
             <span class="ft-avatar" aria-hidden="true">${esc(initial(r.name))}</span>
@@ -385,7 +385,7 @@ const Friends = (function () {
     const res = await q;
     tl.loading = false;
     if (res.error) {
-      tl.mount.innerHTML = `<p class="ft-muted ft-center">타임라인을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`;
+      tl.mount.innerHTML = `<p class="ft-muted ft-center">타임라인을 불러오지 못했어요.<br>잠시 후 다시 시도해 주세요.</p>`;
       return;
     }
     const rows = res.data || [];

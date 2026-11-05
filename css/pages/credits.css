@@ -200,7 +200,7 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   background: none; font: inherit; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-700); cursor: pointer;
 }
 .match-query__fixed span { margin-left: 4px; font-size: var(--fs-micro); font-weight: 700; color: var(--mint-600); }
-.match-query__cta { width: 100%; margin-top: 2px; }
+.match-query .match-query__cta { flex: none; width: auto; margin: 0; padding: 0 16px; height: 40px; min-height: 0; font-size: 13px; border-radius: 12px; white-space: nowrap; }   /* 파견교 드롭다운(40px)과 같은 높이 */
 .match-query__cta[hidden] { display: none; }
 /* 고른 값이 아직 조회되지 않았다 — 눌러야 목록이 바뀐다는 걸 버튼이 알린다 */
 .match-query__cta.is-dirty { background: var(--ink-900); color: #fff; }

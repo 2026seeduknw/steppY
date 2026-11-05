@@ -365,13 +365,38 @@ const AppState = {
     return id ? MOCK.schools.find(sc => sc.id === id) : null;
   },
 
+  /**
+   * 기본 할 일 — 국제처 책자 일정(js/oia-rules.js TERMS)에서 "할 일"인 것만 지금 단계에 맞게 뽑는다.
+   *   학교 확정 전: 지원 / 확정 후 출국 전: 배정 후 / 파견 중·귀국 후: 귀국 후
+   * 알아둘 일(info)·해당자만(only) 걸러내기와 날짜 계산은 OIA.scheduleFor 가 한다.
+   * 국제처 일정 카드(oia-timeline.js)에서 체크한 것도 완료로 친다.
+   */
+  baseTodos() {
+    if (typeof OIA === 'undefined') return [];
+    const range = this.getProgramRange ? this.getProgramRange() : null;
+    let phases = ['apply'];
+    if (this.getConfirmedSchool()) {
+      const departed = typeof hasDeparted === 'function' && hasDeparted();
+      phases = departed ? ['return'] : ['placed'];
+    }
+    const TAG = { apply: '지원', placed: '서류', abroad: '파견', return: '귀국' };
+    const checked = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+    return OIA.scheduleFor(this.profile, range)
+      .filter(ev => !ev.info && phases.includes(ev.phase))
+      .map(ev => ({
+        id: 'oia-' + ev.id, oiaId: ev.id, title: ev.title,
+        date: ev.due ? ev.due.slice(0, 10) : null,
+        tag: TAG[ev.phase] || '기타', done: checked.has(ev.id)
+      }));
+  },
+
   getTodos() {
     // 로그인 전에는 보여줄 개인 데이터가 없다. MOCK.todos는 계정에 붙는 기본
     // 체크리스트라, 게스트에게 띄우면 남의 일정처럼 보이고 체크해도 남지 않는다.
     if (!this.isAuthed) return [];
     const s = this.load();
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
-    const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
+    const base = this.baseTodos().map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
     // 기한 없는 할 일(체크리스트에서 옮겨 온 것 등)은 맨 뒤로
     return base.concat(s.customTodos).sort((a, b) => {
       if (!a.date || !b.date) return a.date ? -1 : b.date ? 1 : 0;
@@ -536,23 +561,34 @@ const AppState = {
       .upsert({ id: Auth.userId, confirmed_school_id: schoolId }), '확정 학교');
   },
 
+  /** 국제처 일정 카드(oia-timeline.js)의 체크와 To-Do 체크를 같게 맞춘다 */
+  _syncOiaDone(id, done) {
+    if (!String(id).startsWith('oia-') || typeof oiaReadDone !== 'function') return;
+    const set = oiaReadDone();
+    const key = String(id).slice(4);
+    if (done) set.add(key); else set.delete(key);
+    oiaWriteDone(set);
+  },
+
   toggleTodo(id) {
     const s = this.load();
     const base = s.todos.find(t => t.id === id);
     if (base) {
       base.done = !base.done;
       this.save();
+      this._syncOiaDone(id, base.done);
       this._push(() => supabaseClient.from('user_todos')
         .upsert({ user_id: Auth.userId, base_id: id, done: base.done },
                 { onConflict: 'user_id,base_id' }), '할 일');
       return;
     }
-    // MOCK.todos에는 있지만 아직 오버라이드 행이 없는 기본 항목
-    const seed = MOCK.todos.find(t => t.id === id);
+    // 기본 할 일(국제처 일정)인데 아직 오버라이드 행이 없는 항목
+    const seed = this.baseTodos().find(t => t.id === id);
     if (seed) {
       const row = { id, done: !seed.done };
       s.todos.push(row);
       this.save();
+      this._syncOiaDone(id, row.done);
       this._push(() => supabaseClient.from('user_todos')
         .upsert({ user_id: Auth.userId, base_id: id, done: row.done },
                 { onConflict: 'user_id,base_id' }), '할 일');

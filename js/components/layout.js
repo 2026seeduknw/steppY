@@ -66,7 +66,8 @@ const PAGE_TITLES = {
 const TABS_BY_STAGE = {
   // 내 저장(PICKS) — 지망·찜한 학교를 나란히 견주는 화면. 멘토 바로 앞에 둔다
   exploring: ['home', 'search', 'credits', 'saved', 'consult'],
-  confirmed: ['home', 'credits', 'journal', 'saved', 'consult'],
+  // 기록하기는 파견 중·귀국 후에만 탭에 나온다(Figma 기록하기 탭 시안)
+  confirmed: ['home', 'credits', 'saved', 'consult'],
   abroad: ['journal', 'quest', 'saved', 'consult', 'credits'],
   returned: ['credits', 'journal', 'saved', 'consult', 'quest']
 };
@@ -101,7 +102,7 @@ function openDepartureGate({ dismissible = false } = {}) {
       <h2 class="departure-gate__title">${dismissible ? '출국일 변경' : '언제쯤 출국하세요?'}</h2>
       <p class="departure-gate__desc">${dismissible
         ? '날짜를 바꾸면 남은 날과 탭 구성이 그 날짜에 맞춰 바뀌어요.'
-        : `${name ? `${name} ` : ''}${OIA.beforePlacement(AppState.profile) ? '기준으로 미리 준비해봐요!' : '배정을 축하해요!'} 예상 출국일만 알려주세요. 정확하지 않아도 되고, 나중에 바꿀 수 있어요.`}</p>
+        : `${name ? `${name} ` : ''}${OIA.beforePlacement(AppState.profile) ? '기준으로 미리 준비해봐요!' : '배정을 축하해요!'} 예상 출국일만 알려주세요.<br>정확하지 않아도 되고, 나중에 바꿀 수 있어요.`}</p>
       <label class="departure-gate__field">예상 출국일
         <input type="date" id="gateStart" value="${range ? range.start : guess.start}">
       </label>
@@ -385,6 +386,14 @@ function mountFilterSheet() {
     </div>
   `;
   sheet.querySelector('.app-sheet__body').appendChild(panel);
+  // '초기화'는 시트 머리(필터 제목 옆)로 옮긴다 — 필터 목록 위에 한 줄을 따로 쓰지 않게.
+  // 요소를 그대로 옮기므로 search.js 가 단 클릭 처리도 그대로 따라온다.
+  const reset = panel.querySelector('#resetFilters');
+  if (reset) {
+    const titleRow = panel.querySelector('.section-title');
+    sheet.querySelector('.app-sheet__head h2').insertAdjacentElement('afterend', reset);
+    if (titleRow) titleRow.remove();
+  }
   document.body.appendChild(sheet);
 
   const trigger = document.createElement('button');
@@ -427,10 +436,16 @@ document.addEventListener('MOCK:updated', () => {
   const page = document.body.dataset.page;
   if (!page) return;
 
-  // 예전에는 여기서 onboarding.html로 튕겼다. 가입하자마자 낯선 폼이 먼저 뜨니
-  // 무엇을 쓰는 앱인지도 모른 채 네 칸을 채워야 했다. 지금은 홈으로 들여보내고,
-  // 인사말 아래 "기본 정보를 입력해 주세요" 버튼으로 본인이 눌러 들어오게 한다
-  // (js/home.js의 renderProfileCta).
+  // 첫 로그인이면 기본 정보(학과·학점·이수 학기·지원 전형·백분위)부터 받는다.
+  // 학교 찾기에 있던 "내 지원 자격" 카드를 없앤 대신이다. "나중에"를 눌러도
+  // onboarded_at이 찍히므로 다시 튕기지 않는다. 이미 학과·학점을 넣은 옛 가입자는 보내지 않는다.
+  if (AppState.isAuthed && AppState._hydrated && !['onboarding', 'auth', 'privacy', 'invite'].includes(page)) {
+    const prof = AppState.profile || {};
+    if (!AppState.load().onboardedAt && !(prof.major && prof.gpa)) {
+      location.replace('onboarding.html');
+      return;
+    }
+  }
 
   // 프로필 이름(아바타 이니셜)과 확정 여부(홈 탭 목적지)가 하이드레이션 후에
   // 확정되므로 앱바와 탭바를 함께 다시 그린다.

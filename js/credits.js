@@ -650,7 +650,7 @@
     const sliceReq = { school: schoolId, major: schoolId ? null : major };
     if (typeof ensureCourseMatches === 'function' && !isCourseMatchesLoaded(sliceReq) && !isCourseMatchesLoaded({ major })) {
       if (courseMatchesFailed(sliceReq)) {
-        showPanel('학점 인정 과목을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+        showPanel('학점 인정 과목을 불러오지 못했어요.<br>잠시 후 다시 시도해 주세요.');
         ensureCourseMatches(sliceReq);
         return;
       }
@@ -710,19 +710,18 @@
           <p class="v2-xmatch__meta">${metaLine}</p>
         </div>
         <span class="v2-xmatch__arrow" aria-hidden="true">↓</span>
-        <div class="v2-xmatch__home">
-          <span class="v2-xmatch__label">본교 인정 후보</span>
-          <p class="v2-xmatch__home-name">${esc(m.homeMajor)} · 전공 학점</p>
-          ${m.matchedTopics.length ? `
-          <div class="match-card__topics">${m.matchedTopics.map(t => `<button type="button" class="chip" data-topic-jump>${esc(t)}</button>`).join('')}</div>` : ''}
-        </div>
+        ${m.matchedTopics.length ? `
+        <p class="v2-xmatch__home">
+          <span class="v2-xmatch__home-school">${esc(schoolRow ? shortSchoolName(schoolRow.name) : school.name)}의 전공</span>
+          ${m.matchedTopics.map(t => `<button type="button" class="v2-xmatch__topic" data-topic-jump>${esc(t)}</button>`).join('<span aria-hidden="true">, </span>')}
+        </p>` : ''}
         <ul class="xmatch__evidence v2-xmatch__evidence">${evidenceBadges(a)}</ul>
         <button type="button" class="btn btn--ghost btn--sm xmatch__interview" data-interview="${esc(m.id)}">자세히 보기</button>
       </div>
     `;
     }) : `<p class="info-panel__text">${
       selectedCountry || selectedRegion || selectedVerdict
-        ? '조건에 맞는 과목이 없어요. 필터를 바꿔보세요.'
+        ? '조건에 맞는 과목이 없어요.<br>필터를 바꿔보세요.'
         : schoolName
           ? `${esc(schoolName)}에는 ${esc(major)} 전공으로 볼 수 있는 과목 자료가 아직 없어요.`
           : '이 전공은 아직 과목 자료가 없어요.'
@@ -776,7 +775,7 @@
         ${noteBlock(m.note || '')}
       </div>
     `;
-    }) : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요. 관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
+    }) : `<p class="info-panel__text">${selectedCountry || selectedRelevance ? '조건에 맞는 전공이 없어요.<br>관련도를 바꿔보세요.' : confirmed ? `${confirmed.nameKo || confirmed.name}에는 이 전공과 맞는 결과가 아직 없어요.` : '이 전공은 아직 뚜렷한 매칭 결과가 없어요.'}</p>`;
   }
 
   function renderMatches() {
