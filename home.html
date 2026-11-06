@@ -23,38 +23,33 @@
     <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
   </header>
 
-  <div class="v2-widgets">
-    <!-- 왼쪽: 지금 어느 단계인지 -->
-    <section class="v2-widget v2-widget--stage" aria-label="진행 단계">
-      <div id="journeySteps"></div>
-    </section>
+  <!-- 진행 단계 — 화면 폭 전체의 얇은 띠. 발자국 길이 길어야 걸어가는 느낌이 산다 -->
+  <section class="v2-widget v2-widget--stage" aria-label="진행 단계">
+    <div id="journeySteps"></div>
+  </section>
 
-    <!-- 오른쪽: 옆으로 넘기는 바로가기 -->
-    <section class="v2-widget v2-shortcuts" aria-label="바로가기">
-      <div class="v2-shortcuts__track" id="shortcutTrack">
-        <a class="v2-shortcut v2-shortcut--sand" href="credits.html?mode=major">
-          <strong class="v2-shortcut__title">전공 매칭</strong>
-          <span class="v2-shortcut__sub">내 전공과 가까운 파견교 학과 찾기</span>
-        </a>
-        <a class="v2-shortcut v2-shortcut--mint" href="consult.html">
-          <strong class="v2-shortcut__title">Mentor's Step</strong>
-          <span class="v2-shortcut__sub">궁금한 걸 남기면 다녀온 선배가 답해줘요</span>
-        </a>
-        <a class="v2-shortcut v2-shortcut--sky" href="credits.html">
-          <strong class="v2-shortcut__title">과목 찾기</strong>
-          <span class="v2-shortcut__sub">파견교 과목이 학점으로 인정될까?</span>
-        </a>
-        <a class="v2-shortcut v2-shortcut--plum" href="reviews.html">
-          <strong class="v2-shortcut__title">국가별 후기</strong>
-          <span class="v2-shortcut__sub">기숙사·교통·생활비 후기 모아보기</span>
-        </a>
-      </div>
-      <div class="v2-shortcuts__dots" id="shortcutDots" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i></div>
-      <span class="v2-shortcuts__go" aria-hidden="true">→</span>
-    </section>
-  </div>
+  <!-- 바로가기 — 그 아래 색 카드 세 장을 한 줄에(넘기지 않음) -->
+  <section class="v2-shortcuts" aria-label="바로가기">
+    <div class="v2-shortcuts__track" id="shortcutTrack">
+      <a class="v2-shortcut v2-shortcut--sand" href="credits.html?mode=major">
+        <strong class="v2-shortcut__title">전공 매칭</strong>
+        <span class="v2-shortcut__sub">내 전공과 가까운<br>파견교 학과 찾기</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+      <a class="v2-shortcut v2-shortcut--mint" href="consult.html">
+        <strong class="v2-shortcut__title">Mentor's Step</strong>
+        <span class="v2-shortcut__sub">다녀온 선배에게<br>물어보기</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+      <a class="v2-shortcut v2-shortcut--sky" href="credits.html">
+        <strong class="v2-shortcut__title">과목 찾기</strong>
+        <span class="v2-shortcut__sub">파견교 과목<br>학점 인정 확인</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
 
-  <!-- 다가오는 국제처 일정 두 줄 — 단계 상자는 높이가 고정(148px)이라 그 아래 한 줄로 둔다.
+  <!-- 다가오는 국제처 일정 두 줄 —
        js/components/oia-timeline.js renderUpcomingSchedule -->
   <section class="upcoming" id="homeSchedule" aria-label="다가오는 국제처 일정" hidden></section>
 

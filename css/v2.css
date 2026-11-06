@@ -53,56 +53,35 @@
 .v2-home__greet { margin: 10px 0 0 4px; font-size: 13px; color: var(--v2-ink-soft); }
 .v2-home .profile-cta { margin-top: 10px; }
 
-.v2-widgets {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 8px;
-}
-.v2-widget {
-  position: relative;
-  height: 148px;
-  border-radius: var(--v2-radius);
-  overflow: hidden;
-}
-
-/* 왼쪽 상자: 진행 막대(위) + 할 일(아래) */
-.v2-widget--stage {
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 14px 16px;
-  background: var(--v2-stage);
-}
-.v2-widget--stage .journey__labels { font-size: 11px; }
+/* 진행 단계 띠 — 화면 폭 전체, 낮게 */
+.v2-widget { position: relative; border-radius: 22px; overflow: hidden; }
+.v2-widget--stage { padding: 12px 18px 10px; background: var(--v2-stage); }
+.v2-widget--stage .journey__labels { font-size: 12px; }
 /* 할 일 알약 — 두 상자 아래 한 줄 전체 */
 .v2-todo { display: block; margin-top: 8px; }
 /* 알약에 테두리 — 바탕이 흰색이 되면서 면이 사라져 보였다. 위 일정 카드와 같은 선 */
 body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid #E0DCD1; }
 
-/* 오른쪽 상자: 옆으로 넘기는 바로가기 */
-.v2-shortcuts__track {
-  display: flex; height: 100%;
-  overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
-}
-.v2-shortcuts__track::-webkit-scrollbar { display: none; }
+/* 바로가기 — 진행 단계 띠 아래, 색 카드 세 장을 한 줄에. 넘기지 않는다 */
+.v2-shortcuts { margin-top: 8px; }
+.v2-shortcuts__track { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .v2-shortcut {
-  flex: 0 0 100%; scroll-snap-align: start;
+  position: relative; min-width: 0; height: 112px;
   display: flex; flex-direction: column;
-  padding: 14px 18px 44px;
+  padding: 12px 10px 12px 12px; border-radius: 20px;
   color: var(--v2-ink); text-decoration: none;
 }
 .v2-shortcut--sand { background: var(--v2-sand); }
 .v2-shortcut--sky  { background: var(--v2-sky); }
 .v2-shortcut--mint { background: #DCE8E2; }
 .v2-shortcut--plum { background: var(--v2-plum); }
-.v2-shortcut__title { margin-top: 0; font-size: 22px; font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; word-break: keep-all; }
-.v2-shortcut__sub { margin-top: 6px; font-size: 11px; line-height: 1.4; color: #6B5E49; word-break: keep-all; }
-.v2-shortcuts__dots { position: absolute; left: 18px; bottom: 25px; display: flex; gap: 4px; pointer-events: none; }
-.v2-shortcuts__dots i { width: 5px; height: 5px; border-radius: 3px; background: #B9B2A6; transition: width .2s; }
-.v2-shortcuts__dots i.is-on { width: 14px; background: var(--v2-dark); }
-.v2-shortcuts__go {
-  position: absolute; right: 14px; bottom: 14px;
-  display: grid; place-items: center; width: 28px; height: 28px;
-  border-radius: 50%; background: var(--v2-dark); color: #fff; font-size: 14px; font-weight: 700;
-  pointer-events: none;
+.v2-shortcut__title { font-size: 14px;   /* 세 장 한 줄(115px)에 'Mentor's Step'이 한 줄로 들어가는 크기 */
+   font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; white-space: nowrap; }
+.v2-shortcut__sub { margin-top: 5px; font-size: 10.5px; line-height: 1.4; color: #6B5E49; word-break: keep-all; }
+.v2-shortcut__go {
+  position: absolute; right: 10px; bottom: 10px;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--v2-dark); color: #fff; font-size: 13px; font-weight: 700;
 }
 
 /* MY PICKS 원판 */
@@ -463,3 +442,92 @@ body[data-page="credits"] .v2-head { margin-bottom: 15px; }
 .journey__sub { display: block; font-size: 9.5px; font-weight: 500; color: var(--ink-400); letter-spacing: -0.03em; margin-top: 1px; white-space: nowrap; }
 /* 홈 — 다가오는 국제처 일정(단계·바로가기 두 상자 아래) */
 .v2-home .upcoming { margin-top: 8px; padding: 10px 14px; border-radius: var(--v2-radius); background: #fff; border: 1px solid var(--line-100); }
+
+/* ---------------------------------------------------------------- Mentor's Step v2 (Figma "Mentor's Step v2 시안") */
+body[data-page="consult"] .m2-head { margin-top: 6px; }
+.m2 { padding-bottom: 120px; gap: 0; }   /* 간격은 아래 margin 으로만 — 레이아웃 gap(16px)이 덧붙어 47px까지 벌어졌다 */
+.m2-ask { display: flex; gap: 10px; margin-top: 16px; }
+.m2-ask__in {
+  flex: 1; min-width: 0; height: 46px; padding: 0 18px; border: 1.5px solid #E0DCD1; border-radius: 23px; background: #fff;
+  display: flex; align-items: center; font: inherit; font-size: 13.5px; color: var(--v2-ink-faint); text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.m2-ask__btn {
+  flex: none; height: 46px; padding: 0 18px; border: 0; border-radius: 23px; background: var(--v2-dark); color: #fff;
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.m2 .mentor-credit { display: none; }   /* 크레딧은 앱바에 이미 보인다 */
+.m2-chips { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+.m2-chips__scroll { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.m2-chips__scroll::-webkit-scrollbar { display: none; }
+.m2-chips .chip { flex: none; height: 32px; padding: 0 13px; border: 1.5px solid #E0DCD1; border-radius: 16px; background: #fff; font-size: 12px; font-weight: 700; color: var(--v2-ink); }
+.m2-chips .chip.is-selected { background: var(--v2-dark); border-color: var(--v2-dark); color: #fff; }
+.m2-fav { flex: none; }
+.m2-sec { display: flex; justify-content: space-between; align-items: baseline; margin: var(--m2-sec-gap, 19px) 2px 12px; }   /* 위 덩어리 아래 끝 → 제목 글자 위까지 보이는 여백 24px */
+.m2-sec h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--v2-ink); }
+.m2-sec span { font-size: 12px; color: var(--v2-ink-faint); }
+.m2 .mentor-pins { display: block; padding: 0; border: 0; background: none; }
+.m2 .mentor-pins[hidden] { display: none; }
+/* 구역 사이 보이는 여백 24px로 통일(칩 줄 → 선배의 기록, 선배의 기록 카드 → 질문 · 답변) */
+.m2 .mentor-pins .m2-sec, .m2 .mentor-pins[hidden] + .m2-sec { margin-top: 22px; }
+.m2 .mentor-pins:not([hidden]) + .m2-sec { margin-top: 12px; }
+/* 선배의 기록 — 홈 바로가기처럼 색 상자, 화면 오른쪽 끝까지 이어 넘긴다 */
+.m2-cols { display: flex; gap: 10px; margin-right: calc(50% - 50vw); padding-right: 16px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+.m2-cols::-webkit-scrollbar { display: none; }
+.m2-col {
+  position: relative; flex: 0 0 196px; height: 136px; padding: 16px; border: 0; border-radius: 24px; box-sizing: border-box; scroll-snap-align: start;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; text-align: left;
+  font: inherit; color: var(--v2-ink); cursor: pointer; overflow: hidden; background-size: cover; background-position: center;
+}
+.m2-col--sand { background-color: var(--v2-sand); }
+.m2-col--sky { background-color: var(--v2-sky); }
+.m2-col--plum { background-color: var(--v2-plum); }
+/* 사진 카드 — 글자가 사진 위에서도 읽히게 위·아래만 살짝 밝힌다 */
+.m2-col.has-photo::before { content: ''; position: absolute; inset: 0; background: linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,.35) 32%, rgba(255,255,255,.35) 44%, rgba(255,255,255,.88) 66%, rgba(255,255,255,.92)); }
+.m2-col > * { position: relative; }
+.m2-col.has-photo .m2-col__meta { color: var(--v2-ink); font-weight: 600; }   /* 사진 위 출처 — 짙게 */
+.m2-col__top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.m2-col__k { flex: none; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(255, 255, 255, .8); }
+.m2-col__meta { margin-left: auto; text-align: right; min-width: 0; font-size: 11px; color: var(--v2-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m2-col__t { font-size: 14.5px; font-weight: 500; line-height: 1.4; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* 질문 카드 */
+.m2 .mentor-list { display: flex; flex-direction: column; gap: 10px; border: 0; background: none; padding: 0; }
+.m2-q {
+  display: flex; flex-direction: column; width: 100%; padding: 14px 16px; border: 1px solid #E0DCD1; border-radius: 20px; background: #fff;
+  font: inherit; text-align: left; color: var(--v2-ink); cursor: pointer;
+}
+.m2-q__top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 700; color: var(--v2-ink-soft); }
+.m2-q__star { font-size: 16px; color: #C9C4B8; padding: 2px 0 2px 8px; }
+.m2-q__star.is-on { color: #E2A93B; }
+.m2-q__t { margin: 6px 0 10px; font-size: 15px; font-weight: 800; line-height: 1.42; word-break: keep-all; }
+.m2-q__foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11.5px; color: var(--v2-ink-faint); }
+.m2-ans { flex: none; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; background: var(--v2-good-bg); color: var(--v2-good); }
+.m2-ans.is-wait { background: var(--v2-warn-bg); color: var(--v2-warn); }
+.m2-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 40px 0; text-align: center; font-size: 14px; line-height: 1.6; color: var(--v2-ink-soft); }
+.m2-empty p { margin: 0; }
+
+/* Mentor's Step 질문 상세 (Figma "질문 상세") */
+.m2d-page { background: #fff; }
+.m2d-top { flex: none; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; padding: calc(var(--safe-top, 0px) + 14px) 20px 6px; }
+.m2d-back { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #F1EFEA; color: var(--v2-ink); font: inherit; font-size: 22px; line-height: 1; cursor: pointer; }
+.m2d-top__t { text-align: center; line-height: 1.2; }
+.m2d-top__t b { display: block; font-size: 15px; font-weight: 700; }
+.m2d-top__t small { font-size: 9px; font-weight: 700; color: var(--v2-ink-faint); }
+.mentor-page__body.m2d { padding: 14px 20px 24px; color: var(--v2-ink); }
+.m2d-country { margin: 0; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); }
+.m2d-title { margin: 6px 0 0; font-size: 22px; font-weight: 800; line-height: 1.36; letter-spacing: -0.02em; word-break: keep-all; }
+.m2d-body { margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: var(--v2-ink-soft); word-break: keep-all; }
+.m2d-meta { margin-top: 20px; font-size: 11.5px; color: var(--v2-ink-faint); }
+.m2d .m2-sec { margin-top: 19px; }
+.m2d-a { border-radius: 20px; background: #F4F2EE; padding: 15px 16px; margin-bottom: 10px; }
+.m2d-a__who { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; }
+.m2d-a__av { width: 26px; height: 26px; border-radius: 50%; background: var(--v2-dark); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.m2d-a__av.is-alt { background: #8A928E; }
+.m2d-a__body { margin: 10px 0 8px; font-size: 13.5px; line-height: 1.6; word-break: keep-all; }
+.m2d-a__foot { font-size: 11px; color: var(--v2-ink-faint); }
+.m2d-empty { margin: 0; padding: 18px 0; font-size: 13px; color: var(--v2-ink-faint); }
+.m2d-bar { flex: none; display: flex; align-items: flex-end; gap: 10px; padding: 13px 20px calc(var(--safe-bottom, 0px) + 20px); border-top: 1px solid #EFEBE3; background: #fff; margin: 0; }
+.m2d-bar__in { flex: 1; min-width: 0; min-height: 44px; max-height: 120px; padding: 12px 16px; border: 0; border-radius: 22px; background: #F4F2EE; font: inherit; font-size: 13px; line-height: 20px; color: var(--v2-ink); resize: none; box-sizing: border-box; display: flex; align-items: center; }
+span.m2d-bar__in { color: var(--v2-ink-faint); }
+.m2d-bar__in::placeholder { color: var(--v2-ink-faint); }
+.m2d-bar__btn { flex: none; height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }

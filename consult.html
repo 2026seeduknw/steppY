@@ -10,33 +10,36 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/consult.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="consult">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell home-hero">
-  <h1><span class="wm-text">Mentor's Step !</span></h1>
-  <p class="page-lede" id="mentorLede">교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요.<br>질문·답변 모두 이름 없이 올라가요.</p>
+<div class="page-shell">
+  <header class="v2-head m2-head">
+    <p class="v2-head__eyebrow">Ask your</p>
+    <h1 class="v2-head__title">MENTORS</h1>
+  </header>
+  <p class="m2-lede" id="mentorLede" hidden></p>
 </div>
 
-<div class="page-shell mentor-layout" id="mentorQaPanel">
-  <div class="mentor-toolbar">
-    <button type="button" class="mentor-credit" id="mentorCredit" hidden>
-      <span aria-hidden="true">🪙</span><strong id="mentorCreditNum">0</strong>
-    </button>
-    <button type="button" class="btn btn--accent" id="askOpenBtn">질문하기</button>
+<div class="page-shell mentor-layout m2" id="mentorQaPanel">
+  <!-- 질문 입력줄 — 학교 찾기의 검색칸 + 버튼과 같은 꼴. 누르면 질문 쓰기 시트가 열린다 -->
+  <div class="m2-ask">
+    <button type="button" class="m2-ask__in" id="askOpenField">다녀온 선배에게 궁금한 걸 물어보세요</button>
+    <button type="button" class="m2-ask__btn" id="askOpenBtn">✎ 질문</button>
+    <button type="button" class="mentor-credit" id="mentorCredit" hidden><span aria-hidden="true">🪙</span><strong id="mentorCreditNum">0</strong></button>
   </div>
 
-  <div class="mentor-filters">
-    <div class="country-filter" id="mentorCountryFilter" role="group" aria-label="국가 필터"></div>
-    <div class="toggle-row toggle-row--tight">
-      <span>즐겨찾기만</span>
-      <button type="button" class="toggle-switch" id="mentorFavToggle"></button>
-    </div>
+  <div class="m2-chips">
+    <div class="m2-chips__scroll" id="mentorCountryFilter" role="group" aria-label="국가 필터"></div>
+    <button type="button" class="chip m2-fav" id="mentorFavToggle" aria-pressed="false">★ 즐겨찾기</button>
   </div>
 
   <div class="mentor-pins" id="mentorPins" hidden></div>
+
+  <div class="m2-sec"><h2>질문 · 답변</h2><span id="mentorListNote">최신순</span></div>
   <div class="mentor-list" id="mentorList"></div>
 </div>
 
