@@ -359,6 +359,11 @@ function schoolModalTemplate(school, opts = {}) {
         국제처 링크
         <a href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace(/^https?:\/\//, '')} ↗</a>
       </p>
+      <!-- 선배 경험보고서 원문과 학교별 조건·마감일은 국제처 공식 서비스에 있다. 우리가 베끼지 않고 그쪽으로 보낸다. -->
+      <p class="school-modal__official school-modal__official--oia">
+        <a href="${OIA.LINKS.reviews}" target="_blank" rel="noopener">다녀온 길 · 선배 경험보고서 ↗</a>
+        <a href="${OIA.LINKS.univFinder}" target="_blank" rel="noopener">UnivFinder · 조건·마감일 ↗</a>
+      </p>
 
       ${schoolModalFooterOnly(school)}
     </div>
@@ -384,7 +389,7 @@ function confirmWarningTemplate(school, overwriting) {
         ${pre
           ? `<li>배정 결과는 ${when ? `<strong>${when}</strong>에 ` : ''}연세포탈에서 발표돼요.</li>
              <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요.<br>발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
-          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요.<br>취소하면 이후 정규학기 국제처 파견에 다시 지원할 수 없어요.</li>`}
+          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요.<br>취소하면 패널티와 봉사 의무가 생기고, 이후 국제처 해외파견에 다시 지원할 수 없어요.</li>`}
       </ul>
       <div class="confirm-warning__actions">
         <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">${pre ? '그만둘게요' : '아직이에요'}</button>

@@ -37,21 +37,24 @@ const OIA = (function () {
       placementAt: '2027-01-20T10:00',
       cancelBy: '2027-07-30',
       events: [
-        { id: 'list', phase: 'apply', date: '2026-12-15', title: '배정가능 대학 명단 공지', detail: '국제처 홈페이지 공지. 지난 학기 명단은 참고만 하세요.', info: true },
+        { id: 'list', phase: 'apply', date: '2026-12-15', title: '배정가능 대학 명단 공지', detail: '국제처 홈페이지와 UnivFinder(oia.yonsei.ac.kr/univfinder)에 올라와요. 학교별 지원 조건·파견교 마감일·factsheet도 거기 있어요. 지난 학기 명단은 참고만 하세요.', info: true },
+        { id: 'toefl-discount', phase: 'apply', date: '2027-02-28', only: 'english', title: '연세대생 TOEFL 할인 (2월 28일까지)', detail: '응시료 10%·공식 모의고사 30% 할인. 재학생 누구나, 300회 선착순, 계정당 5회까지. etest.chosun.com 또는 \'공식토플모의고사\' 검색. 성적은 공식 PDF 성적표만 내요.', info: true },
         { id: 'passport', phase: 'apply', title: '여권 발급·만료일 확인', detail: '대부분의 파견교가 2차 서류에서 여권을 요구해요. 파견이 끝나기 전에 만료되면 미리 갱신하세요.' },
         { id: 'langcert', phase: 'apply', from: '2026-12-28T10:00', to: '2026-12-31T17:00', only: 'nonEnglish', title: '비영어권 어학증명서 사전 제출', detail: '연세포탈 → 국제학생교류 → (국제처) 비영어권 어학증명서 제출. 이 기간에 내지 않으면 비영어권 전형에 지원할 수 없어요.' },
         // 책자는 '별도 공지'였지만 설명회 슬라이드가 비영어권 어학증명서와 같은 기간으로 못박았다(docs/oia/2027F_OIA_slides.md)
         { id: 'exempt', phase: 'apply', from: '2026-12-28T10:00', to: '2026-12-31T17:00', title: '어학 면제 신청·편입생/대학원생 성적표 제출 (해당자만)', detail: '비영어권 어학증명서와 같은 서류 사전제출 기간이에요. 제출 방법은 국제처 홈페이지 공지를 확인하세요. 기간이 지나면 받지 않아요.' },
-        { id: 'apply', phase: 'apply', from: '2027-01-07T10:00', to: '2027-01-08T17:00', title: '온라인 지원서 제출 + 전형료 10,000원', detail: '연세포탈 → 학사정보시스템 → 학사행정 → 국제학생교류 → (국제처)해외파견프로그램신청. 영문 이름은 여권과 철자·띄어쓰기·하이픈까지 같게. 전형료는 우리은행 126-000350-18-377(연세대학교), 송금자명은 이름+소속(예. 김연세경영). 마감 뒤에는 희망 대학·기간을 바꿀 수 없어요.' },
+        { id: 'apply', phase: 'apply', from: '2027-01-07T10:00', to: '2027-01-08T17:00', title: '온라인 지원서 제출 + 전형료 10,000원', detail: '연세포탈 → 학사정보시스템 → 학사행정 → 국제학생교류 → (국제처)해외파견프로그램신청. 영문 이름은 여권과 철자·띄어쓰기·하이픈까지 같게. 전형료는 우리은행 126-000350-18-377(연세대학교), 송금자명은 이름+소속(예. 김연세경영). 희망대학은 같은 언어권으로 1~25곳(ISEP·GE3는 한 곳으로 쳐요). 지원기간을 먼저 고르고, 지원학과는 듣고 싶은 전공을 영어로 적어요. 1년을 원하면 처음부터 1년으로 — 배정 뒤 연장은 기대하지 마세요. 마감 뒤에는 희망 대학·기간을 바꿀 수 없어요.' },
         { id: 'review', phase: 'apply', from: '2027-01-11', to: '2027-01-15', title: '1차 서류 심사', info: true },
         { id: 'result', phase: 'apply', date: '2027-01-20T10:00', title: '배정 결과 발표', detail: '연세포탈. 배정된 학교는 어떤 이유로도 바꿀 수 없어요.', info: true },
-        { id: 'doc2', phase: 'placed', title: '파견교 2차 서류 제출', detail: '마감은 학교마다 달라요. 파견교 메일을 자주 확인하세요.' },
+        { id: 'host-deadline', phase: 'placed', title: '파견교 지원 마감일을 캘린더에 저장', detail: '배정되면 바로. 학교별 마감일은 UnivFinder(oia.yonsei.ac.kr/univfinder)에서 확인해요.' },
+        { id: 'nomination', phase: 'placed', title: '노미네이션은 입학허가가 아니에요', detail: '국제처가 파견교에 추천(노미네이션)한 뒤 파견교가 입학을 결정해요. 파견교 메일은 스팸함까지 확인하세요.', info: true },
+        { id: 'doc2', phase: 'placed', title: '파견교 2차 서류 제출', detail: '학업계획서·추천서·수강 희망 과목 등. 마감은 학교마다 달라요. 입학허가서(LoA)는 보통 2~3개월 뒤에 와요.' },
         { id: 'acceptance', phase: 'placed', title: '입학허가서 사본을 국제처에 제출', detail: '입학허가서를 직접 받은 경우에만. 국제처로 오면 따로 안내해줘요.' },
         { id: 'visa', phase: 'placed', title: '비자·체류허가 신청', detail: '입학허가서를 받은 뒤 주한 대사관·영사관에 직접 신청해요. 국제처는 대행하지 않아요.' },
         { id: 'scholar-mirae', phase: 'placed', date: '2027-03-01', approx: 'month', title: '미래에셋 해외교환장학생 공고 확인 (3월)', detail: '미래에셋박현주재단 홈페이지에서 직접 접수.', info: true },
         { id: 'scholar-oia', phase: 'placed', date: '2027-04-01', approx: 'month', title: '글로벌리더·교류활성화 장학금 선발 (4월)', info: true },
         { id: 'orientation', phase: 'placed', date: '2027-05-01', approx: 'month', title: '파견예정자 사전교육 (5월 중)', detail: '정확한 날짜는 추후 공지.', info: true },
-        { id: 'cancel', phase: 'placed', date: '2027-07-30', title: '파견 취소 신청 마감', detail: '취소하면 시점과 상관없이 패널티와 봉사 의무가 생기고, 이후 정규학기 국제처 파견에 다시 지원할 수 없어요.', info: true },
+        { id: 'cancel', phase: 'placed', date: '2027-07-30', title: '파견 취소 신청 마감', detail: '취소하면 시점과 상관없이 패널티와 봉사 의무가 생기고, 이후 국제처 해외파견에 다시 지원할 수 없어요(책자는 정규학기, 홈페이지는 모든 프로그램이라고 적어요).', info: true },
         { id: 'tuition', phase: 'placed', title: '연세대 등록금 납부 (휴학 중이면 복학 신청)', detail: '본교 학사일정에 맞춰요. 미납하거나 휴학하면 미등록 제적돼요. 출국한 뒤여도 기간 안에만 하면 돼요.' },
         { id: 'departure-report', phase: 'placed', rel: { from: 'start', days: -7 }, title: '출국신고서 + 여행자보험 증서 제출', detail: '출국 1주일 전까지 연세포탈로.' },
         { id: 'extra-pledge', phase: 'placed', rel: { from: 'start', days: -7 }, only: 'lastSemester', title: '초과학기 서약서 제출', detail: '정규학기 마지막 학기(8학기, 건축 5년제 10학기)에 파견되는 경우.' },
@@ -60,10 +63,24 @@ const OIA = (function () {
         { id: 'return-report', phase: 'return', title: '귀국신고 등록', detail: '연세포탈 → 국제학생교류 → (국제처)귀국신고등록.' },
         { id: 'experience', phase: 'return', title: '경험보고서 등록', detail: '연세포탈 → 국제학생교류 → (국제처)경험보고서 등록. 귀국신고와 경험보고서를 마쳐야 학점인정을 신청할 수 있어요.' },
         { id: 'transcript', phase: 'return', title: '파견교 공식 성적표 제출', detail: '파견교가 국제처(exch@yonsei.ac.kr)로 보내요. 성적표가 와야 국제처가 인정 학점을 환산해 입력해요.' },
-        { id: 'credit-transfer', phase: 'return', title: '학점인정 신청', detail: '학사정보시스템 → 성적 → 인정학점 → 교류학생학점인정(국제처). 이수 학점이 없어도 꼭 신청해야 해요 — 안 하면 졸업·수료에 불이익이 있어요.' }
+        { id: 'credit-transfer', phase: 'return', title: '학점인정 신청', detail: '학사정보시스템 → 성적 → 인정학점 → 교류학생학점인정(국제처). 이수 학점이 없어도 꼭 신청해야 해요 — 안 하면 졸업·수료에 불이익이 있어요.' },
+        { id: 'next-stern', phase: 'return', title: '다음 길: Global STERN (학기 인턴십)', detail: '바르셀로나·밀라노·런던·더블린 인턴십 + 수업. 교환 다녀온 4~7학기 학부생, GPA 3.2·TOEFL 80 이상. 참가비 50%(저소득층 100%) 지원, 일반선택 3학점. 가을 파견은 1월, 봄 파견은 7월 선발. 문의 studyabroad@yonsei.ac.kr', info: true },
+        { id: 'next-summer', phase: 'return', title: '다음 길: 여름·겨울방학 해외파견', detail: '약 18개국 60명, 정착지원금, 최대 7학점 인정. 다른 국제처 프로그램과 합쳐 해외 수학 1년 이내. 매년 2~3월·9월 모집.', info: true }
       ]
     }
   };
+
+  /**
+   * 책자가 아직 없는 학기의 대략적인 일정(국제처 홈페이지 m04_02): 출국 약 8개월 전 지원.
+   * 봄 파견 = 전년도 6월 명단 · 7월 초 지원, 가을 파견 = 12월 명단 · 1월 초 지원.
+   */
+  function roughSchedule(key) {
+    if (!key) return '';
+    const [y, n] = key.split('-').map(Number);
+    return n === 1
+      ? `${y - 1}년 6월쯤 대학 명단 공지, 7월 초 온라인 지원, 11월 사전교육`
+      : `${y - 1}년 12월 중순 대학 명단 공지, ${y}년 1월 초 온라인 지원, 5월 사전교육`;
+  }
 
   /** 교환 시기(profile.exchangeTerm) → 학기 키. 봄·가을만. */
   function termKeyOf(term) {
@@ -128,6 +145,7 @@ const OIA = (function () {
     const a = (profile && profile.academic) || {};
     return data.events.filter(ev => {
       if (ev.only === 'nonEnglish') return track && track !== 'english';
+      if (ev.only === 'english') return !track || track === 'english';
       if (ev.only === 'lastSemester') return !!a.lastSemester;
       return true;
     }).map(ev => {
@@ -423,12 +441,15 @@ const OIA = (function () {
       cond: '한국 국적 · 신촌/국제캠 학부생 · 전체 3.1 이상 · 학자금 3구간 이내',
       check: (p) => (p.gpa == null ? null : p.gpa >= 3.1) },
     { id: 'goabroad', name: '교류활성화 장학금', amount: '학기당 200만 원', when: '4월 대상자에게 개별 안내',
-      cond: '교류활성화 대상 대학으로 가는 교환학생 · 다른 교환 장학금과 중복 불가 (대상 대학은 명단에서 확인)',
+      cond: '교류활성화 대상 대학으로 가는 교환학생 · 다른 교환 장학금과 중복 불가 · 파견 전 지원서·서약서, 파견 후 홍보자료·경험보고서 (대상 대학은 명단에서 확인)',
       check: () => null },
     { id: 'icu', name: '이윤재 글로벌 인재 장학금', amount: '학기당 400만 원', when: '자동 수혜',
       cond: '일본 International Christian University(ICU)로 가는 학부생',
       // ICU 로 가는 사람에게만 '해당'이라고 알린다 — 다른 학교면 미달이 아니라 해당이 없는 것
       check: (p, school) => (school && /International Christian University/i.test(school.name) ? true : null) },
+    { id: 'housing', name: '숙식비 교환대학', amount: '학기당 SK국제학사 2인실 + 식비 약 240만 원을 국제처에 내고 현지 숙식 제공', when: '배정되면 자동 선발',
+      cond: '기숙사+식비: ISEP · Keio University · Amherst College / 기숙사만: Washington College. ISEP는 Placement fee 별도(환불 불가)',
+      check: (p, school) => (school && /(ISEP|Keio University|Amherst College|Washington College)/i.test(school.name) ? true : null) },
     { id: 'vsp', name: 'VSP 장학금', amount: '연세대 등록금의 80%', when: '방문학생 선발 시',
       cond: '방문학생 프로그램(VSP) 참가자 · 교내 다른 장학금과 중복 불가',
       check: () => null }
@@ -437,9 +458,15 @@ const OIA = (function () {
   return {
     TERMS, TRACKS, TESTS, DEGREES, FIELDS, MIN_GPA, GRAD_TOEFL, NOT_ACCEPTED, SCHOLARSHIPS,
     WISHLIST_MAX: 25,
+    // 국제처 공식 서비스 — 학교별 조건·마감일(UnivFinder), 선배 경험보고서(다녀온 길, 연세 계정 로그인)
+    LINKS: {
+      univFinder: 'https://oia.yonsei.ac.kr/univfinder',
+      reviews: 'https://exchange.yonsei.ac.kr/reviews/',
+      notice: 'https://oia.yonsei.ac.kr/outbound.php?mid=m04_01'
+    },
     // 지금 학교 목록(schools 테이블)이 어느 학기 명단인지. 새 명단을 가져오면 바꾼다.
     SCHOOLS_TERM: '2027-1',
-    termKeyOf, termLabel, termOf, kst, fmtDate, daysUntil, addDays,
+    termKeyOf, termLabel, termOf, roughSchedule, kst, fmtDate, daysUntil, addDays,
     scheduleFor, upcoming, beforePlacement,
     trackOf, trackLabel, testFitsTrack, testFor, testText, langPoints, levelAtLeast, testValid,
     minToefl, minSemesters, commonChecks,

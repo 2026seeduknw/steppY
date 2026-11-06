@@ -244,7 +244,7 @@
             </span>
             ${editing === e.schoolId ? `
             <form class="wish-edit" data-edit-form>
-              <input type="text" name="major" maxlength="60" value="${esc(e.major)}" placeholder="파견교 지원 학과 (예: Economics)" aria-label="지원 학과">
+              <input type="text" name="major" maxlength="60" value="${esc(e.major)}" placeholder="듣고 싶은 전공을 영어로 (예: Economics)" aria-label="지원 학과">
               <div class="wish-edit__len" role="group" aria-label="파견 기간">
                 ${[[1, '한 학기'], [2, '1년']].map(([v, l]) => `<button type="button" class="chip${len === v ? ' is-selected' : ''}" data-len="${v}">${l}</button>`).join('')}
               </div>
@@ -256,7 +256,9 @@
           </li>`;
         }).join('')}
       </ol>
-      <p class="saved__note">지원 학과는 '배정가능 대학 명단'의 지원 가능 학과에서 골라요.<br>지원 불가 학과를 쓰면 배정되지 않아요.</p>`;
+      <p class="saved__note">지원 학과는 '배정가능 대학 명단'의 지원 가능 학과에서 골라요.<br>지원 불가 학과를 쓰면 배정되지 않아요. ISEP·GE3는 한 곳으로 쳐요.
+        ${/경영|경제|상경|응용통계|공학|공대/.test(p.major || '') ? '<br>경영·상경·공학 계열은 기초 선수과목을 듣고 가면 파견교 수업 선택이 넓어져요.' : ''}
+        · <a href="${OIA.LINKS.univFinder}" target="_blank" rel="noopener">UnivFinder에서 학교별 조건 보기 ↗</a></p>`;
 
     wishMount.querySelectorAll('[data-open-school]').forEach((el) => {
       el.addEventListener('click', () => openSchoolModal(el.dataset.openSchool, { onChange: renderAll }));

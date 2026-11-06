@@ -988,3 +988,5 @@ select.dd--open { border-color: var(--ink-900); }
 .climit__rules li { display: list-item; }
 .climit__rules li::marker { color: var(--ink-500); }
 .climit__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 8px; word-break: keep-all; }
+/* 국제처 공식 서비스 두 개 — 한 줄에 나란히 */
+.school-modal__official--oia { margin-top: var(--space-2); display: flex; flex-wrap: wrap; gap: 4px 14px; word-break: keep-all; }

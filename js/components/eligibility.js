@@ -95,6 +95,6 @@ function myEligibilityHtml(profile) {
       ${score ? `<p class="my-elig__score">배정 총점 <strong class="tnum">${score.total}</strong> / ${score.max}
         <span>학점 ${score.gpaPart}/${score.gpaMax} + 어학 ${score.langPart}/${score.langMax}${score.estimated ? ' (면제 환산 추정)' : ''}</span></p>`
         : `<p class="my-elig__score my-elig__score--empty">성적표 백분위를 입력하면 배정 총점(${track && track !== 'english' ? '140' : '320'}점 만점)을 계산해요</p>`}
-      ${termData ? '' : termKey ? `<p class="my-elig__note">${OIA.termLabel(termKey)} 국제처 안내가 아직 없어 2027 가을학기 기준으로 판정해요</p>` : ''}
+      ${termData ? '' : termKey ? `<p class="my-elig__note">${OIA.termLabel(termKey)} 국제처 안내가 아직 없어 2027 가을학기 기준으로 판정해요 · 보통 ${OIA.roughSchedule(termKey)}</p>` : ''}
     </div>`;
 }

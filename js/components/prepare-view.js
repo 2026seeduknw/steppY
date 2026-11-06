@@ -593,7 +593,7 @@ function renderPrepareLiving() {
           const fit = s.check(AppState.profile, confirmed);
           return `
           <div class="scholarship-row">
-            <div class="scholarship-row__name">${prepEsc(s.name)}${fit === true ? ` <span class="badge badge--go">${s.id === 'icu' ? '해당' : '학점 기준 충족'}</span>` : fit === false ? ' <span class="badge badge--warn">기준 미달</span>' : ''}</div>
+            <div class="scholarship-row__name">${prepEsc(s.name)}${fit === true ? ` <span class="badge badge--go">${s.id === 'icu' || s.id === 'housing' ? '해당' : '학점 기준 충족'}</span>` : fit === false ? ' <span class="badge badge--warn">기준 미달</span>' : ''}</div>
             <div class="scholarship-row__amount">${prepEsc(s.amount)} · ${prepEsc(s.when)}</div>
             <div class="scholarship-row__elig">${prepEsc(s.cond)}</div>
           </div>`;
