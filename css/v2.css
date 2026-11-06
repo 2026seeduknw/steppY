@@ -19,7 +19,7 @@
   --v2-bad-bg: #F6E0DA;   --v2-bad: #A0473A;
   --v2-radius: 28px;
   /* 화면 맨 위 큰 영어 제목(STEPPY·SCHOOLS…)만 SUIT — 나머지 글자는 전부 Pretendard(tokens.css) */
-  --font-title: 'SUIT Variable', 'Pretendard Variable', sans-serif;
+  --font-title: 'Manrope', 'SUIT Variable', sans-serif;   /* 큰 영어 제목도 Manrope */
 }
 
 /* ---------------------------------------------------------------- 공통 */
@@ -114,6 +114,10 @@ body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid
   text-align: center;
 }
 .v2-picks__label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; color: var(--v2-ink-faint); }
+/* MY PICKS 와 같은 줄 오른쪽 끝. 원판 모서리가 둥글어(반지름 120px) 글자 윗줄(위에서 20px) 높이에서 곡선이 54px 들어와 있다 — 거기서 12px 더 띄워 66px */
+.v2-picks { position: relative; }
+.v2-picks__go { position: absolute; top: 20px; right: 66px; line-height: 20px; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); text-decoration: none; white-space: nowrap; }
+.v2-picks__go:active { opacity: .6; }
 .v2-picks__hint { margin: 6px 16px 0; font-size: 11px; color: var(--v2-ink-faint); }
 
 .v2-wheel {
@@ -459,7 +463,3 @@ body[data-page="credits"] .v2-head { margin-bottom: 15px; }
 .journey__sub { display: block; font-size: 9.5px; font-weight: 500; color: var(--ink-400); letter-spacing: -0.03em; margin-top: 1px; white-space: nowrap; }
 /* 홈 — 다가오는 국제처 일정(단계·바로가기 두 상자 아래) */
 .v2-home .upcoming { margin-top: 8px; padding: 10px 14px; border-radius: var(--v2-radius); background: #fff; border: 1px solid var(--line-100); }
-
-/* 홈: 지망 원판 아래 '나의 픽 비교하러 가기' — 학교 찾기의 학점 인정 카드와 같은 꼴 */
-body[data-page="home"] .v2-picks-cta { margin-top: 16px; background: #F2EFE7; border: 1px solid #EFEED6; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
-body[data-page="home"] .v2-picks-cta .credits-cta__arrow { background: var(--v2-dark); color: #fff; }

@@ -7,6 +7,8 @@
 /* SUIT(SUNN, OFL) 가변 굵기 — 화면 맨 위 큰 영어 제목 전용(v2.css --font-title). 본문은 아래 Pretendard. */
 @font-face { font-family: 'SUIT Variable'; src: url('../assets/fonts/SUIT-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
 /* 본문 글꼴 — Pretendard(OFL). 화면 맨 위 큰 영어 제목(SCHOOLS·STEPPY 등)만 SUIT를 쓴다(v2.css) */
+/* 영문·숫자 글꼴 — Manrope(OFL). 한글 글자가 없어서 한글은 다음 순서의 SUIT 로 그려진다(tokens.css) */
+@font-face { font-family: 'Manrope'; src: url('../assets/fonts/Manrope-Variable.woff') format('woff'); font-weight: 200 800; font-display: swap; }
 @font-face { font-family: 'Pretendard Variable'; src: url('../assets/fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; font-display: swap; }
 
 *, *::before, *::after { box-sizing: border-box; }

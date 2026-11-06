@@ -2135,7 +2135,7 @@ textarea {
 .wishlist-slot__meta,
 .confirmed-card__name,
 .confirmed-card__meta {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-family: var(--font-body);
 }
 
 
