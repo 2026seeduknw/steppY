@@ -31,7 +31,7 @@ const PREPARE_MARKUP = `
 `;
 
 function renderPrepareView() {
-  renderTargetMajorCard(document.getElementById('targetMajorCard'));
+  // 신청 전공 카드는 없앴다 — 지원 학과는 학교를 정할 때(배정 등록 창)와 학교 정보 보기에서 고른다
   renderTodoCard(document.getElementById('todoCard'));
   // 히어로를 먼저 그린다 — 출국 카드가 들어갈 자리(#departureCard)를 히어로가 만든다.
   renderPrepareHero();
@@ -45,13 +45,14 @@ function renderPrepareView() {
 function renderPrepareTimeline() {
   const mount = document.getElementById('oiaTimeline');
   if (!mount || typeof renderOiaTimeline !== 'function') return;
-  if (!AppState.getConfirmedSchool()) { mount.style.display = 'none'; return; }
-  mount.style.display = '';
   const info = typeof departureInfo === 'function' ? departureInfo() : {};
-  const phases = info.phase === 'after' ? ['return']
-    : info.phase === 'abroad' ? ['abroad', 'return']
-    : OIA.beforePlacement(AppState.profile) ? ['apply', 'placed'] : ['placed'];
-  renderOiaTimeline(mount, { phases, title: '국제처 일정' });
+  // 출국 전에는 국제처 할 일이 체크리스트에 녹아 있고, 알아둘 일은 위 두 줄(#prepareSchedule)로 본다.
+  // 이 카드는 파견 중·귀국 후에만 쓴다.
+  const sched = document.getElementById('prepareSchedule');
+  if (sched && typeof renderUpcomingSchedule === 'function') renderUpcomingSchedule(sched);
+  if (!AppState.getConfirmedSchool() || (info.phase !== 'after' && info.phase !== 'abroad')) { mount.style.display = 'none'; return; }
+  mount.style.display = '';
+  renderOiaTimeline(mount, { phases: info.phase === 'after' ? ['return'] : ['abroad', 'return'], title: '국제처 일정' });
 }
 
 function renderPrepareHero() {
@@ -334,10 +335,64 @@ function visaDocsHtml() {
  * 진행 바가 그만큼 차오르고, 오른쪽 위 퍼센트가 따라 오른다. 제목 줄을 누르면
  * 설명이 펼쳐진다. 아직 안 끝낸 첫 단계가 "지금 할 일"로 강조된다.
  */
+/*
+ * 비자 및 서류 체크리스트 = 기본 준비 항목(MOCK.checklist) + 국제처 책자 일정의 "할 일"(js/oia-rules.js).
+ * 같은 일은 하나로 합친다(여권·비자·보험+출국신고서). 국제처 마감일이 있는 항목은 D-day가 붙는다.
+ * 배정 발표가 끝났으면 지원 단계 일(지원서 제출 등)은 뺀다.
+ * 완료 체크는 국제처 일정 체크(oiaReadDone)와 To-Do에도 같이 반영한다.
+ */
+const PREP_OIA_MERGE = { passport: 'passport', visa: 'visa', insurance: 'departure-report' };
+const PREP_ORDER = ['passport', 'oia:langcert', 'oia:exempt', 'oia:apply', 'transcript', 'oia:doc2', 'oia:acceptance', 'visa', 'insurance', 'flight', 'housing', 'oia:tuition', 'oia:extra-pledge'];
+function prepMergedChecklist() {
+  const base = (MOCK.checklist || []).map(it => Object.assign({}, it));
+  if (typeof OIA === 'undefined') return base;
+  const evs = OIA.scheduleFor(AppState.profile, AppState.getProgramRange());
+  const before = OIA.beforePlacement(AppState.profile);
+  const tasks = evs.filter(ev => !ev.info && (ev.phase === 'placed' || (before && ev.phase === 'apply')));
+  const byId = Object.fromEntries(tasks.map(ev => [ev.id, ev]));
+  base.forEach(it => {
+    const ev = byId[PREP_OIA_MERGE[it.id]];
+    if (ev) { it.oia = ev; delete byId[ev.id]; }
+  });
+  const extra = Object.values(byId).map(ev => ({ id: 'oia:' + ev.id, title: ev.title, detail: ev.detail || '', oia: ev, fromOia: true }));
+  const all = base.concat(extra);
+  const rank = (it) => { const i = PREP_ORDER.indexOf(it.id); return i < 0 ? 99 : i; };
+  return all.sort((a, b) => rank(a) - rank(b));
+}
+
+/** 끝의 괄호 설명은 다음 줄에 회색으로 — '연세대 등록금 납부 (휴학 중이면 복학 신청)' */
+function prepTitleHtml(title) {
+  const m = String(title).match(/^(.*\S)\s*\(([^()]+)\)$/);
+  return m ? `${m[1]}<small class="step-item__note">${m[2]}</small>` : title;
+}
+
+/** 체크리스트용 짧은 마감 — 'D-62 1월 7일(목)'. 기간이면 시작일만, 시각은 빼고(홈의 두 줄과 같은 꼴) */
+function prepDueShort(ev) {
+  if (ev.approx === 'month') return `${OIA.kst(ev.due).getMonth() + 1}월 중`;
+  const d = OIA.daysUntil(ev.due), end = OIA.daysUntil(ev.dueTo || ev.due);
+  const dday = end < 0 ? '지남' : d <= 0 && ev.dueTo ? '진행 중' : d === 0 ? '오늘' : `D-${d}`;
+  return `<b class="oia-tl__dday${end < 0 ? ' is-past' : d <= 7 ? ' is-soon' : ''}">${dday}</b> ${OIA.fmtDate(ev.due, { withTime: false })}`;
+}
+
+/** 체크리스트의 국제처 항목을 체크하면 국제처 일정 체크와 To-Do 체크도 같은 상태로 맞춘다 */
+function prepSyncOiaDone(oiaId, isDone) {
+  if (typeof oiaReadDone === 'function') {
+    const set = oiaReadDone();
+    if (isDone) set.add(oiaId); else set.delete(oiaId);
+    oiaWriteDone(set);
+  }
+  if (AppState.isAuthed) {
+    const t = AppState.getTodos().find(x => x.id === 'oia-' + oiaId);
+    if (t && !!t.done !== isDone) AppState.toggleTodo(t.id);
+  }
+}
+
+document.addEventListener('checklist:changed', () => { if (document.getElementById('checklistSection')) renderPrepareChecklist(); });
+
 function renderPrepareChecklist() {
   const section = document.getElementById('checklistSection');
   if (!section) return;
-  const items = MOCK.checklist;
+  const items = prepMergedChecklist();
   if (!items.length) {
     section.innerHTML = prepCardHead('비자 및 서류 체크리스트', 'checklist') +
       `<div class="prep-card__body"><p class="info-panel__text">서비스 준비 중이에요.</p></div>`;
@@ -346,9 +401,13 @@ function renderPrepareChecklist() {
   }
 
   const done = new Set(prepRead('checklist_done', items.filter(i => i.done).map(i => i.id)));
+  // 국제처 일정 카드·To-Do에서 체크한 것도 완료로 친다(예전 기록을 그대로 이어받는다)
+  const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+  items.forEach(it => { if (it.oia && oiaDone.has(it.oia.id)) done.add(it.id); });
   section.innerHTML = prepCardHead('비자 및 서류 체크리스트', 'checklist',
     `<span class="prep-card__pct"><b id="checklistPct">0%</b> 완료</span>`) + `
     <div class="prep-card__body">
+      ${typeof OIA !== 'undefined' && OIA.termOf(AppState.profile).data ? `<p class="prep-card__source">${OIA.termOf(AppState.profile).data.source} 일정 기반이에요.</p>` : ''}
       <div class="prep-progress" role="progressbar" aria-label="체크리스트 진행률" aria-valuemin="0" aria-valuemax="100">
         <div class="prep-progress__fill" id="checklistBar"></div>
       </div>
@@ -360,13 +419,16 @@ function renderPrepareChecklist() {
               <!-- "Step N"은 순서대로 해야 한다는 뜻으로 읽혀서 뺐다. 마감(D-day)도 근거가 없어 지금은 비어 있다 -->
               <div class="step-item__head">
                 <button type="button" class="step-item__row" data-toggle-expand aria-expanded="false">
-                  <span class="step-item__title">${item.title}</span>
-                  ${item.dueOffset ? `<span class="step-item__due">${item.dueOffset}</span>` : ''}
+                  <span class="step-item__title">${prepTitleHtml(item.title)}</span>
+                  ${item.oia && item.oia.due ? `<span class="step-item__due">${prepDueShort(item.oia)}</span>`
+                    : item.oia && item.oia.rel ? `<span class="step-item__due">출국 ${-item.oia.rel.days}일 전</span>`
+                    : item.dueOffset ? `<span class="step-item__due">${item.dueOffset}</span>` : ''}
                 </button>
                 ${todoAddBtnHtml(item)}
               </div>
               <div class="step-item__detail">
-                <p>${item.detail}</p>
+                ${item.detail ? `<p>${item.detail}</p>` : ''}
+                ${item.oia && !item.fromOia && item.oia.detail ? `<p class="step-item__oia"><b>국제처</b> ${item.oia.title} · ${item.oia.detail}</p>` : ''}
                 ${item.id === 'visa' ? visaDocsHtml() : ''}
                 ${item.id === 'flight' && AppState.getProgramRange() ? `
                 <p class="step-item__departure">출국일 <b>${AppState.getProgramRange().start}</b>
@@ -405,6 +467,10 @@ function renderPrepareChecklist() {
       const id = item.dataset.id;
       if (done.has(id)) done.delete(id); else done.add(id);
       prepWrite('checklist_done', [...done]);
+      const it = items.find(x => x.id === id);
+      if (it && it.oia) prepSyncOiaDone(it.oia.id, done.has(id));
+      const todoMount = document.getElementById('todoCard');
+      if (todoMount && typeof renderTodoCard === 'function') renderTodoCard(todoMount);
       refresh();
       return;
     }

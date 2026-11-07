@@ -101,3 +101,10 @@
 .wish-edit__len { display: flex; gap: 6px; }
 .wish-edit__actions { display: flex; justify-content: space-between; align-items: center; }
 .wish-edit__remove { color: var(--coral-600); font-size: var(--fs-micro); }
+
+/* 희망대학표 — 학교 바로 추가 */
+.wish-add { display: flex; align-items: center; gap: 10px; margin: 10px 0 12px; }
+.wish-add__label { flex: none; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-700); }
+.wish-add__mount { flex: 1; min-width: 0; }
+.wish-edit__pick:empty { display: none; }
+.wish-edit__pick { margin-top: 6px; }

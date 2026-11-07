@@ -352,8 +352,11 @@ body[data-page="credits"]::before {
 .profile-stat__value { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); }
 .profile-stat__value em { font-style: normal; font-size: var(--fs-small); font-weight: 400; color: var(--ink-400); }
 
-.profile-stats--compact { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
-.profile-stats--compact .profile-stat { padding: var(--space-3); gap: 2px; }
+.profile-stats--compact { grid-template-columns: repeat(6, 1fr); gap: var(--space-2); }
+/* 칸은 기본 반반. 교환 시기('2027 가을학기 · 한 학기')는 넓게, 학적('학부')은 좁게 — 긴 값이 두 줄로 접히지 않게 */
+.profile-stats--compact .profile-stat { grid-column: span 3; min-width: 0; padding: 10px 14px; gap: 2px; }
+.profile-stats--compact .profile-stat--wide { grid-column: span 4; }
+.profile-stats--compact .profile-stat--narrow { grid-column: span 2; }
 .profile-stats--compact .profile-stat__value { font-size: var(--fs-body); }
 
 .profile-form {
@@ -990,3 +993,20 @@ select.dd--open { border-color: var(--ink-900); }
 .climit__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 8px; word-break: keep-all; }
 /* 국제처 공식 서비스 두 개 — 한 줄에 나란히 */
 .school-modal__official--oia { margin-top: var(--space-2); display: flex; flex-wrap: wrap; gap: 4px 14px; word-break: keep-all; }
+
+/* 지원 학과 고르기 — 배정 등록 창 · 확정 학교의 학교 정보 아래 */
+.major-pick { margin: 10px 0 4px; }
+.major-pick__label { margin: 0 0 6px; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-700); }
+.major-pick__label small { display: block; margin-top: 2px; font-weight: 500; color: var(--ink-400); }
+.major-pick__note { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); }
+.major-pick--row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; width: 100%; margin: 0 0 10px; }
+.major-pick--row .major-pick__label { margin: 0; }
+.major-pick__value { font-size: var(--fs-small); color: var(--ink-900); }
+.major-pick__edit { margin-left: auto; border: 0; background: none; font: inherit; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); text-decoration: underline; cursor: pointer; }
+.major-pick__mount { flex: 1 1 100%; }
+/* 학교 상세 아래 — 칩과 등록 버튼을 한 줄에 */
+.school-modal__footer--compact { gap: 10px; }
+.school-modal__actions { display: flex; align-items: center; gap: 8px; width: 100%; }
+.school-modal__actions .wish-chip { flex: none; height: 44px; padding: 0 14px; white-space: nowrap; }
+.school-modal__actions .btn { flex: 1; min-width: 0; height: 44px; white-space: nowrap; }
+.school-modal__footer--compact .major-pick--row { margin: 0; }

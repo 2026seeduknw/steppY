@@ -377,6 +377,43 @@ function schoolModalTemplate(school, opts = {}) {
  * 학교는 학생이 고르는 게 아니라 국제처가 배정한다(발표 후 변경 불가). 그래서 발표 전에는
  * "이 학교로 미리 준비해보기"로만 받고, 발표 뒤에는 "배정 결과에 나온 학교인지" 묻는다.
  */
+/*
+ * 지원 학과 — 국제처 지원서에서 학교마다 같이 적는 학과(책자 6장). 학점 인정 탭이 이 학과 과목만 보여준다.
+ * 예전엔 교환 준비하기에 따로 '신청 전공' 카드가 있었는데, 학교를 정할 때 같이 고르게 옮겼다.
+ * 후보는 그 학교 과목 매칭의 현지 학과명이고, 희망대학표(PICKS)에 적어 둔 학과와 같으면 미리 골라 둔다.
+ */
+function schoolMajorOptions(schoolId) {
+  return [...new Set((MOCK.courseMatches || []).filter(m => m.school === schoolId).flatMap(m => m.matchedTopics || []))]
+    .sort((a, b) => a.localeCompare(b));
+}
+function wishMajorGuess(schoolId, options) {
+  const e = AppState.getWishlistList().find(x => x.schoolId === schoolId);
+  const want = e && e.major ? e.major.trim().toLowerCase() : '';
+  if (!want) return '';
+  return options.find(o => o.toLowerCase() === want) || options.find(o => o.toLowerCase().includes(want)) || '';
+}
+/** 학과 고르는 칸을 mount 에 그린다. 과목 자료가 없으면 받아 온 뒤 다시 그린다. onPick(value) */
+function mountMajorPicker(mount, schoolId, { selected = '', onPick } = {}) {
+  if (!mount) return;
+  if (typeof ensureCourseMatches === 'function' && typeof isCourseMatchesLoaded === 'function' && !isCourseMatchesLoaded({ school: schoolId })) {
+    mount.innerHTML = '<p class="major-pick__note">학과 목록을 불러오는 중이에요…</p>';
+    ensureCourseMatches({ school: schoolId });
+    const again = () => { document.removeEventListener('courseMatches:updated', again); if (mount.isConnected) mountMajorPicker(mount, schoolId, { selected, onPick }); };
+    document.addEventListener('courseMatches:updated', again);
+    return;
+  }
+  const options = schoolMajorOptions(schoolId);
+  if (!options.length) { mount.innerHTML = '<p class="major-pick__note">이 학교는 과목 자료가 아직 없어 학과를 고를 수 없어요.</p>'; return; }
+  const pre = selected && options.includes(selected) ? selected : wishMajorGuess(schoolId, options);
+  if (pre && onPick) onPick(pre);
+  mount.innerHTML = '';
+  const select = createSearchableSelect({
+    items: options.map(t => ({ value: t, label: t })), selected: pre, multiple: false, placeholder: '지원 학과 검색',
+    onChange: (value) => { if (onPick) onPick(value || ''); }
+  });
+  mount.appendChild(select.el);
+}
+
 function confirmWarningTemplate(school, overwriting) {
   const pre = OIA.beforePlacement(AppState.profile);
   const { data: termData } = OIA.termOf(AppState.profile);
@@ -391,6 +428,10 @@ function confirmWarningTemplate(school, overwriting) {
              <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요.<br>발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
           : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요.<br>취소하면 패널티와 봉사 의무가 생기고, 이후 국제처 해외파견에 다시 지원할 수 없어요.</li>`}
       </ul>
+      <div class="major-pick">
+        <p class="major-pick__label">지원 학과 <small>지원서에 학교와 함께 적은 학과 · 학점 인정 탭이 이 학과 과목을 보여줘요</small></p>
+        <div id="confirmMajorMount"></div>
+      </div>
       <div class="confirm-warning__actions">
         <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">${pre ? '그만둘게요' : '아직이에요'}</button>
         <button class="btn btn--accent btn--sm" id="finalConfirmBtn">${pre ? '미리 준비해볼게요' : '네, 배정됐어요'}</button>
@@ -447,6 +488,23 @@ function wireSchoolModalActions(scrim, school, opts) {
     if (opts.onChange) opts.onChange();
   });
 
+  const editMajor = scrim.querySelector('#editMajorBtn');
+  if (editMajor) editMajor.addEventListener('click', () => {
+    const mount = scrim.querySelector('#myMajorMount');
+    mount.hidden = false; editMajor.hidden = true;
+    mountMajorPicker(mount, school.id, {
+      selected: AppState.profile.targetMajor || '',
+      onPick: (v) => {
+        if (!v || v === AppState.profile.targetMajor) return;
+        AppState.updateProfile({ targetMajor: v });
+        trackEvent('target_major_set', { major: v, school: school.id });
+        showToast('지원 학과를 저장했어요');
+        rerenderFooter();
+        if (opts.onChange) opts.onChange();
+      }
+    });
+  });
+
   const confirmBtn = scrim.querySelector('#confirmSchoolBtn');
   confirmBtn.addEventListener('click', () => {
     const confirmed = AppState.getConfirmedSchool();
@@ -454,8 +512,12 @@ function wireSchoolModalActions(scrim, school, opts) {
     const footer = scrim.querySelector('#modalFooter');
     footer.outerHTML = `<footer class="school-modal__footer school-modal__footer--warning" id="modalFooter">${confirmWarningTemplate(school, confirmed)}</footer>`;
     scrim.querySelector('#cancelConfirmBtn').addEventListener('click', rerenderFooter);
+    let pickedMajor = '';
+    mountMajorPicker(scrim.querySelector('#confirmMajorMount'), school.id, { onPick: (v) => { pickedMajor = v; } });
     scrim.querySelector('#finalConfirmBtn').addEventListener('click', () => {
       AppState.confirmSchool(school.id);
+      // 학교가 바뀌면 예전 학교의 학과는 지운다(안 골랐으면 비워 두고, 학교 정보에서 나중에 고른다)
+      AppState.updateProfile({ targetMajor: pickedMajor || null });
       trackEvent('school_confirm', { schoolId: school.id });
       closeModal(scrim);
       if (opts.onChange) opts.onChange();
@@ -486,15 +548,23 @@ function schoolModalFooterOnly(school) {
   const pre = OIA.beforePlacement(AppState.profile);
   const track = (AppState.profile.exchangeTerm || {}).track;
   const blocked = !rank && track && !OIA.schoolOffersTrack(school, track);
-  return `<footer class="school-modal__footer" id="modalFooter">
-    <div class="school-modal__rank">
-      <span class="school-modal__rank-label">희망대학표</span>
-      <button type="button" class="chip wish-chip ${rank ? 'is-selected' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}>
-        ${rank ? `${rank}순위 · 빼기` : blocked ? `${OIA.trackLabel(track)} 아님` : `담기&nbsp;·&nbsp;<span class="tnum">${count}/${OIA.WISHLIST_MAX}</span>`}
+  // 한 줄에 [희망대학표 칩][배정 등록 버튼] — 확정한 학교면 그 위에 지원 학과 한 줄
+  return `<footer class="school-modal__footer school-modal__footer--compact" id="modalFooter">
+    ${isMine ? `
+    <div class="major-pick major-pick--row" id="myMajorRow">
+      <span class="major-pick__label">지원 학과</span>
+      <b class="major-pick__value">${AppState.profile.targetMajor || '미정'}</b>
+      <button type="button" class="major-pick__edit" id="editMajorBtn">${AppState.profile.targetMajor ? '수정' : '고르기'}</button>
+      <div class="major-pick__mount" id="myMajorMount" hidden></div>
+    </div>` : ''}
+    <div class="school-modal__actions">
+      <button type="button" class="chip wish-chip ${rank ? 'is-selected' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}
+              aria-label="희망대학표 ${rank ? `${rank}순위, 빼기` : '담기'}">
+        ${rank ? `${rank}순위 · 빼기` : blocked ? `${OIA.trackLabel(track)} 아님` : `희망대학표 담기 <span class="tnum">${count}/${OIA.WISHLIST_MAX}</span>`}
       </button>
+      <button class="btn btn--primary" id="confirmSchoolBtn">${isMine
+        ? (pre ? '미리 준비 중 ✓' : '배정된 학교 ✓')
+        : (pre ? '미리 준비해보기' : '배정 결과로 등록')}</button>
     </div>
-    <button class="btn btn--primary" id="confirmSchoolBtn">${isMine
-      ? (pre ? '미리 준비 중인 학교예요 ✓' : '배정된 학교예요 ✓')
-      : (pre ? '이 학교로 미리 준비해보기' : '배정 결과로 등록하기')}</button>
   </footer>`;
 }

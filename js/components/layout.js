@@ -66,10 +66,10 @@ const PAGE_TITLES = {
 const TABS_BY_STAGE = {
   // 내 저장(PICKS) — 지망·찜한 학교를 나란히 견주는 화면. 멘토 바로 앞에 둔다
   exploring: ['home', 'search', 'credits', 'saved', 'consult'],
-  // 기록하기는 파견 중·귀국 후에만 탭에 나온다(Figma 기록하기 탭 시안)
-  confirmed: ['home', 'credits', 'saved', 'consult'],
-  abroad: ['journal', 'quest', 'saved', 'consult', 'credits'],
-  returned: ['credits', 'journal', 'saved', 'consult', 'quest']
+  // 학교를 확정한 뒤에는 지망 비교(PICKS)가 필요 없어서 그 자리에 기록하기를 둔다
+  confirmed: ['home', 'credits', 'journal', 'consult'],
+  abroad: ['journal', 'quest', 'consult', 'credits'],
+  returned: ['credits', 'journal', 'consult', 'quest']
 };
 
 function journeyStage() {

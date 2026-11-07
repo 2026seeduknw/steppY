@@ -60,7 +60,9 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .confirmed-card__logo--empty { border: 1.5px dashed rgba(255, 255, 255, 0.4); }
 .confirmed-card__name { font-family: var(--font-display); font-size: var(--fs-display); margin: 4px 0 6px; }
 .confirmed-card__meta { color: var(--sky-100); font-size: var(--fs-small); }
-.confirmed-card__badges { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+.confirmed-card__badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-3); }
+/* 배지 글자는 한 줄로 — 칸이 모자라면 배지째 다음 줄로 내린다(글자가 두 줄로 깨지지 않게) */
+.confirmed-card__badges .badge { flex: none; white-space: nowrap; padding: 0 10px; }
 .confirmed-card__actions { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); flex: 0 0 auto; }
 .confirmed-card__cancel {
   background: none;
@@ -297,3 +299,17 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   padding: 0 var(--space-3); border: 1.5px solid var(--line-200); border-radius: var(--radius-md);
   background: var(--cloud-0); color: var(--ink-900); font-family: inherit; font-size: 16px;
 }
+
+/* 다가오는 국제처 일정 두 줄 — 학교 카드 아래(홈과 같은 꼴) */
+#prepareSchedule { margin: 12px 0 4px; padding: 10px 14px; border-radius: 22px; background: #fff; border: 1px solid var(--line-100); }
+/* 체크리스트 — 국제처 일정 기반 안내 한 줄, 기본 항목에 합친 국제처 설명 */
+.prep-card__source { margin: 0 0 10px; font-size: var(--fs-micro); color: var(--ink-400); }
+.step-item__oia { margin-top: 6px; font-size: var(--fs-micro); line-height: 1.55; color: var(--ink-600); word-break: keep-all; }
+.step-item__oia b { margin-right: 4px; color: var(--ink-900); }
+.step-item__due .oia-tl__dday { margin-right: 4px; }
+/* 마감은 항목 이름 아래 줄로 — 옆에 두면 이름이 한 글자씩 세로로 깨졌다 */
+.step-item__row { flex-wrap: wrap; row-gap: 2px; }
+.step-item__row .step-item__title { flex: 1 1 100%; }
+.step-item__row .step-item__due { flex: none; font-family: var(--font-body); font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); white-space: nowrap; }
+.step-item__row .step-item__due .oia-tl__dday { font-weight: 800; color: var(--ink-700); }
+.step-item__note { display: block; margin-top: 2px; font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); }

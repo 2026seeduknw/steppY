@@ -373,6 +373,19 @@ const AppState = {
    */
   baseTodos() {
     if (typeof OIA === 'undefined') return [];
+    // 학교 확정 후 출국 전 — 교환 준비하기의 '비자 및 서류 체크리스트'(국제처 일정을 녹인 것)를 그대로 쓴다.
+    // 같은 항목·같은 체크 기록이라 To-Do 숫자와 체크리스트 % 가 어긋나지 않는다.
+    if (this.getConfirmedSchool() && !(typeof hasDeparted === 'function' && hasDeparted())
+        && typeof prepMergedChecklist === 'function' && typeof prepRead === 'function') {
+      const doneSet = new Set(prepRead('checklist_done', []));
+      const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+      return prepMergedChecklist().map(it => ({
+        id: 'chk-' + it.id, checklistId: it.id, title: it.title,
+        date: it.oia && it.oia.due ? it.oia.due.slice(0, 10) : null,
+        tag: it.oia ? '국제처' : '준비',
+        done: doneSet.has(it.id) || !!(it.oia && oiaDone.has(it.oia.id))
+      }));
+    }
     const range = this.getProgramRange ? this.getProgramRange() : null;
     let phases = ['apply'];
     if (this.getConfirmedSchool()) {
@@ -571,6 +584,19 @@ const AppState = {
   },
 
   toggleTodo(id) {
+    // 체크리스트 항목 — 체크 기록은 체크리스트 쪽(이 기기)에 두고, 국제처 일정 체크도 같이 맞춘다
+    if (String(id).startsWith('chk-') && typeof prepRead === 'function') {
+      const cid = String(id).slice(4);
+      const set = new Set(prepRead('checklist_done', []));
+      const it = (typeof prepMergedChecklist === 'function' ? prepMergedChecklist() : []).find(x => x.id === cid);
+      const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+      const was = set.has(cid) || !!(it && it.oia && oiaDone.has(it.oia.id));
+      if (was) set.delete(cid); else set.add(cid);
+      prepWrite('checklist_done', [...set]);
+      if (it && it.oia && typeof oiaWriteDone === 'function') { if (was) oiaDone.delete(it.oia.id); else oiaDone.add(it.oia.id); oiaWriteDone(oiaDone); }
+      document.dispatchEvent(new CustomEvent('checklist:changed'));
+      return;
+    }
     const s = this.load();
     const base = s.todos.find(t => t.id === id);
     if (base) {

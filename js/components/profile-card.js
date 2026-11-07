@@ -17,7 +17,7 @@ function profileViewTemplate() {
   const test = track ? OIA.testFor(p, track) : (p.languageTests || [])[0];
   const degree = (OIA.DEGREES.find(d => d.key === a.degree) || OIA.DEGREES[0]).label;
   const field = (OIA.FIELDS.find(f => f.key === a.field) || {}).label;
-  const stat = (label, value) => `<div class="profile-stat"><span class="profile-stat__label">${label}</span><span class="profile-stat__value">${value}</span></div>`;
+  const stat = (label, value, mod) => `<div class="profile-stat${mod ? ` profile-stat--${mod}` : ''}"><span class="profile-stat__label">${label}</span><span class="profile-stat__value">${value}</span></div>`;
   return `
     <div class="section-title">
       <div><h2>기본 정보</h2></div>
@@ -28,8 +28,8 @@ function profileViewTemplate() {
       ${stat('GPA', p.gpa == null ? '미등록' : `<span class="tnum">${formatGpa(p.gpa)}</span> <em>/ ${formatGpa(p.gpaScale)}</em>${a.percentile != null ? ` <em>· 백분위 ${a.percentile}</em>` : ''}`)}
       ${stat('지원 전형', track ? OIA.trackLabel(track) : '미정')}
       ${stat('어학 성적', a.langExempt ? '면제 대상' : test ? `<span class="tnum">${OIA.testText(test)}</span>${test.date ? ` <em>· ${test.date.replace('-', '.')}</em>` : ''}` : '미등록')}
-      ${stat('교환 시기', `${term.year} ${term.season}${term.length === 2 ? ' · 1년' : ' · 한 학기'}`)}
-      ${stat('학적', [degree, field, a.semesters != null ? `${a.semesters}학기 이수` : null].filter(Boolean).join(' · '))}
+      ${stat('교환 시기', `${term.year} ${term.season}${term.length === 2 ? ' · 1년' : ' · 한 학기'}`, 'wide')}
+      ${stat('학적', [degree, field, a.semesters != null ? `${a.semesters}학기 이수` : null].filter(Boolean).join(' · '), 'narrow')}
       ${stat('재학 학과', p.major || '미등록')}
     </div>
   `;

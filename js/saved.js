@@ -207,6 +207,10 @@
         <h2>희망대학표</h2>
         <span class="saved__meta">${list.length}/${OIA.WISHLIST_MAX}${track ? ` · ${OIA.trackLabel(track)}` : ''}</span>
       </div>
+      ${list.length < OIA.WISHLIST_MAX ? `<div class="wish-add">
+        <span class="wish-add__label">학교 추가</span>
+        <div class="wish-add__mount" id="wishAddMount"></div>
+      </div>` : ''}
       <p class="wish-note">${termData
         ? `${OIA.fmtDate(termData.applyFrom)} ~ ${OIA.fmtDate(termData.applyTo)} 온라인 지원서에 이 순서대로 적어요.<br>마감 뒤에는 바꿀 수 없어요.`
         : '국제처 온라인 지원서에 이 순서대로 적어요.<br>석차 순으로 위에서부터 한 곳에 배정돼요.'}</p>
@@ -217,9 +221,10 @@
       wishMount.innerHTML = head + `
         <div class="saved-empty">
           <p class="saved-empty__title">아직 담은 학교가 없어요</p>
-          <p class="saved-empty__sub">학교 상세에서 '희망대학표 담기'를 누르면 순서대로 쌓여요</p>
+          <p class="saved-empty__sub">위에서 학교를 바로 추가하거나, 학교 상세에서 '희망대학표 담기'를 눌러도 돼요</p>
           <a class="btn btn--accent saved-empty__btn" href="search.html">학교 찾기</a>
         </div>`;
+      wireWishAdd(track, list);
       return;
     }
 
@@ -245,6 +250,7 @@
             ${editing === e.schoolId ? `
             <form class="wish-edit" data-edit-form>
               <input type="text" name="major" maxlength="60" value="${esc(e.major)}" placeholder="듣고 싶은 전공을 영어로 (예: Economics)" aria-label="지원 학과">
+              <div class="wish-edit__pick" data-major-pick></div>
               <div class="wish-edit__len" role="group" aria-label="파견 기간">
                 ${[[1, '한 학기'], [2, '1년']].map(([v, l]) => `<button type="button" class="chip${len === v ? ' is-selected' : ''}" data-len="${v}">${l}</button>`).join('')}
               </div>
@@ -290,8 +296,42 @@
         showToast('저장했어요');
         renderWishlist();
       });
+      // 이 학교 과목 자료에 있는 학과 목록에서 고르면 입력칸에 채운다(목록에 없으면 직접 적는다)
+      const pickMount = form.querySelector('[data-major-pick]');
+      if (pickMount && typeof mountMajorPicker === 'function') {
+        mountMajorPicker(pickMount, id, { selected: form.elements.major.value, onPick: (v) => { if (v) form.elements.major.value = v; } });
+      }
       form.elements.major.focus();
     });
+    wireWishAdd(track, list);
+  }
+
+  /** 희망대학표에서 바로 학교 추가 — 고르면 담고, 그 학교의 지원 학과 입력칸을 바로 연다 */
+  function wireWishAdd(track, list) {
+    const mount = document.getElementById('wishAddMount');
+    if (!mount || typeof createSearchableSelect !== 'function') return;
+    const taken = new Set(list.map((e) => e.schoolId));
+    const items = MOCK.schools
+      .filter((sc) => !taken.has(sc.id) && (!track || OIA.schoolOffersTrack(sc, track)))
+      .map((sc) => ({ value: sc.id, label: `${sc.name} · ${sc.country}` }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const select = createSearchableSelect({
+      items, selected: '', multiple: false, placeholder: '학교 이름으로 검색',
+      onChange: (id) => {
+        if (!id) return;
+        const res = AppState.addToWishlist(id);
+        if (!res.ok) {
+          showToast(res.reason === 'full' ? `희망대학표는 ${OIA.WISHLIST_MAX}개까지 쓸 수 있어요`
+            : res.reason === 'track' ? `${OIA.trackLabel(track)} 전형이라 이 학교는 담을 수 없어요` : '이미 담은 학교예요');
+          return;
+        }
+        showToast(`${res.rank}순위로 담았어요. 지원 학과를 적어 주세요`);
+        editing = id;
+        renderAll();
+      }
+    });
+    mount.innerHTML = '';
+    mount.appendChild(select.el);
   }
 
   function renderAll() { renderWishlist(); renderCompare(); renderFavorites(); }
