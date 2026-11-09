@@ -185,6 +185,8 @@
       <h1 class="v2-head__title" id="recDayTitle">Today</h1>
     </header>
 
+    <section class="rec-streak" id="recStreak"></section>
+
     <section class="rec-hero" id="recHero"></section>
 
     <section class="rec-recent">
@@ -195,15 +197,7 @@
       <div class="rec-recent__row" id="recRecent"></div>
     </section>
 
-    <section class="rec-cta">
-      <p class="rec-cta__text">오늘 사진을 폴더에 담아 보아요</p>
-      <div class="rec-cta__btns">
-        <button type="button" class="rec-pill rec-pill--dark" id="recPutToday">+ 폴더에 담기</button>
-        <button type="button" class="rec-pill" id="recNewFolder">새 폴더 만들기</button>
-      </div>
-    </section>
-
-    <!-- 예전 첫 화면(최근 사진 카드·기록 버튼)은 시안에서 빠졌다. 기록 쓰기 창은 위 버튼과 사진 자리에서 연다 -->
+    <!-- 예전 첫 화면(최근 사진 카드·기록 버튼)은 시안에서 빠졌다. 기록 쓰기 창은 사진 자리에서 연다 -->
     <section class="diary-featured" id="diaryFeaturedSlot" hidden></section>
     <div class="diary-write-bar" hidden>
       <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="-1" aria-hidden="true">
@@ -213,39 +207,50 @@
     </div>
 
     <section class="arc-sec-home" id="archiveFriendsSec">
-      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
+      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends Today</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
       <div id="archiveFriends"></div>
     </section>
+
+    <!-- 달력은 첫 화면에서 빠졌다 — 이번 주 기록 줄의 '자세히 보기'로 여는 전체 화면 -->
+    <div class="rec-layer rec-calpage" id="recCalPage" hidden>
+      <header class="rec-top">
+        <button type="button" class="rec-top__back" id="recCalClose" aria-label="닫기">‹</button>
+        <div class="rec-top__title"><b>캘린더</b><small>CALENDAR</small></div>
+        <div class="rec-top__right"></div>
+      </header>
+      <div class="rec-layer__body">
+        <section class="diary-cal-section">
+          <div class="diary-cal-nav">
+            <h2 class="diary-cal-nav__title" id="calTitle"></h2>
+            <div class="diary-cal-nav__btns">
+              <div class="diary-menu">
+                <button type="button" class="diary-icon-btn" id="calMenuBtn" aria-label="더 보기" aria-haspopup="menu" aria-expanded="false">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
+                  <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
+                  <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
+                  <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
+                </div>
+              </div>
+              <span class="diary-cal-nav__divider"></span>
+              <button type="button" class="diary-icon-btn" id="calPrev" aria-label="이전 달">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button type="button" class="diary-icon-btn" id="calNext" aria-label="다음 달">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="diary-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+          <div class="diary-month" id="calMonth"></div>
+        </section>
+      </div>
+    </div>
 
     <div id="diaryHeroSlot"></div>
     <div id="diaryPhaseToggle" hidden></div>
 
-    <section class="diary-cal-section">
-      <div class="diary-cal-nav">
-        <h2 class="diary-cal-nav__title" id="calTitle"></h2>
-        <div class="diary-cal-nav__btns">
-          <div class="diary-menu">
-            <button type="button" class="diary-icon-btn" id="calMenuBtn" aria-label="더 보기" aria-haspopup="menu" aria-expanded="false">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-            </button>
-            <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
-              <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
-              <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
-              <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
-            </div>
-          </div>
-          <span class="diary-cal-nav__divider"></span>
-          <button type="button" class="diary-icon-btn" id="calPrev" aria-label="이전 달">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <button type="button" class="diary-icon-btn" id="calNext" aria-label="다음 달">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="diary-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-      <div class="diary-month" id="calMonth"></div>
-    </section>
 
   `;
 
@@ -322,6 +327,56 @@
   }
 
   /* --------------------------------------------------------------- 연속 기록 */
+
+  /** 기록이 있는 날 모음 — 연속 기록은 국면 필터와 상관없이 전부 센다 */
+  function recordedDays() { return new Set(entries().map(e => e.date)); }
+  /** 오늘(오늘 기록이 없으면 어제)부터 거꾸로 이어진 날 수 */
+  function streakCount(days) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (!days.has(toIso(d))) d.setDate(d.getDate() - 1);
+    let n = 0;
+    while (days.has(toIso(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  /** D-day 밑 이번 주 줄 — 일~토 칸에 기록한 날을 채우고, 자세히 보기로 달력을 연다 */
+  function renderStreak() {
+    const slot = root.querySelector('#recStreak');
+    if (!slot) return;
+    const days = recordedDays();
+    const n = streakCount(days);
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const WD = ['일', '월', '화', '수', '목', '금', '토'];
+    const cells = WD.map((w, i) => {
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+      const iso = toIso(d);
+      const done = days.has(iso);
+      const cls = ['rec-streak__day', done && 'is-done', iso === todayIso && 'is-today', iso > todayIso && 'is-future'].filter(Boolean).join(' ');
+      return `<span class="${cls}"><i>${w}</i><b>${d.getDate()}</b></span>`;
+    }).join('');
+    slot.innerHTML = `
+      <div class="rec-streak__top">
+        <p class="rec-streak__count">Streak <b>+${n}</b></p>
+        <button type="button" class="rec-streak__more" id="recCalOpen">자세히 보기 →</button>
+      </div>
+      <div class="rec-streak__week">${cells}</div>`;
+  }
+  function openCalPage() {
+    const page = root.querySelector('#recCalPage');
+    if (!page) return;
+    view.year = now.getFullYear(); view.month = now.getMonth();
+    renderMonth();
+    page.hidden = false;
+    page.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => page.classList.add('is-open'));
+  }
+  function closeCalPage() {
+    const page = root && root.querySelector('#recCalPage');
+    if (!page) return;
+    page.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (!page.classList.contains('is-open')) page.hidden = true; }, 330);
+  }
 
 
   /* --------------------------------------------------------------- 최근 사진 */
@@ -1255,20 +1310,18 @@
     return scrim;
   }
 
-  /** 기록 쓰기 창의 폴더 칩 — 손으로 만든 폴더만(Monthly는 날짜로 자동이라 뺀다) */
-  let pendingFolder = null;
+  /** 기록 쓰기 창의 폴더 칩 — 손으로 만든 폴더만(Monthly는 날짜로 자동이라 뺀다). 여러 개 고를 수 있다 */
+  let pendingFolders = new Set();
   function entryFolders() {
     try { return typeof DiaryArchive !== 'undefined' ? DiaryArchive.folders().filter(f => f.type !== 'monthly') : []; }
     catch (e) { return []; }
   }
-  function folderIdOf(entryId) {
-    const f = entryFolders().find(x => (x.entryIds || []).includes(entryId));
-    return f ? f.id : null;
+  function folderIdsOf(entryId) {
+    return entryFolders().filter(x => (x.entryIds || []).includes(entryId)).map(x => x.id);
   }
   function folderChipsHtml() {
-    const list = entryFolders();
-    if (!list.length) return '<span class="entry-v2__empty">아직 폴더가 없어요</span>';
-    return list.map(f => `<button type="button" class="rec-chip${f.id === pendingFolder ? ' is-on' : ''}" data-folder-pick="${esc(f.id)}" aria-pressed="${f.id === pendingFolder}">${esc(f.name)}</button>`).join('');
+    const chips = entryFolders().map(f => `<button type="button" class="rec-chip${pendingFolders.has(f.id) ? ' is-on' : ''}" data-folder-pick="${esc(f.id)}" aria-pressed="${pendingFolders.has(f.id)}">${esc(f.name)}</button>`).join('');
+    return chips + '<button type="button" class="rec-chip entry-v2__chip-add" data-folder-new aria-label="새 폴더 만들기">+</button>';
   }
 
   function openEntryModal(initialFile, prompt, edit) {
@@ -1283,7 +1336,7 @@
 
     const scrim = ensureScrim('entryModalScrim');
     // 기록 쓰기 — 사진 · 제목/캡션 · 담을 폴더 · 그때 듣던 노래만(v2 컨셉: 흰 시트, 큰 제목, 칩)
-    pendingFolder = edit ? folderIdOf(edit.id) : null;
+    pendingFolders = new Set(edit ? folderIdsOf(edit.id) : []);
     scrim.innerHTML = `
       <div class="modal-panel modal-panel--sm diary-modal-pad diary-sheet entry-v2">
         <div class="diary-sheet__handle"></div>
@@ -1534,16 +1587,46 @@
   }
 
   function wireEntryForm(scrim) {
-    // 폴더는 하나만 고른다 — 같은 칩을 다시 누르면 해제
-    scrim.querySelector('#folderChips').addEventListener('click', (e) => {
+    // 폴더는 여러 개 고를 수 있다 — 같은 칩을 다시 누르면 해제
+    const chipBox = scrim.querySelector('#folderChips');
+    // + → 그 자리에 이름 칸이 열리고, 엔터(또는 칸 밖을 누르면) 폴더를 만들어 바로 고른다
+    chipBox.addEventListener('click', (e) => {
+      const add = e.target.closest('[data-folder-new]');
+      if (!add || typeof DiaryArchive === 'undefined') return;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'rec-chip entry-v2__chip-input';
+      input.placeholder = '폴더 이름';
+      input.maxLength = 20;
+      add.replaceWith(input);
+      input.focus();
+      let done = false;
+      const finish = (keep) => {
+        if (done) return;
+        done = true;
+        const name = input.value.trim();
+        if (keep && name) {
+          const f = DiaryArchive.addFolder(name);
+          pendingFolders.add(f.id);
+        }
+        chipBox.innerHTML = folderChipsHtml();
+        const on = chipBox.querySelector('.is-on');
+        if (on) on.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      };
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', () => finish(true));
+    });
+    chipBox.addEventListener('click', (e) => {
       const chip = e.target.closest('[data-folder-pick]');
       if (!chip) return;
-      pendingFolder = pendingFolder === chip.dataset.folderPick ? null : chip.dataset.folderPick;
-      scrim.querySelectorAll('[data-folder-pick]').forEach(c => {
-        const on = c.dataset.folderPick === pendingFolder;
-        c.classList.toggle('is-on', on);
-        c.setAttribute('aria-pressed', String(on));
-      });
+      const id = chip.dataset.folderPick;
+      if (pendingFolders.has(id)) pendingFolders.delete(id); else pendingFolders.add(id);
+      const on = pendingFolders.has(id);
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', String(on));
     });
 
     ['#photoInput'].forEach((sel) => {
@@ -1580,10 +1663,20 @@
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
       const visibility = editingEntry ? (editingEntry.visibility || 'friends') : 'friends';
+      // 고른 폴더에 담고, 수정 중에 고르기를 푼 폴더에서는 뺀다
       const putInFolder = (id) => {
-        if (!pendingFolder || typeof DiaryArchive === 'undefined') return;
-        const hit = DiaryArchive.findNode(pendingFolder);
-        if (hit) DiaryArchive.addEntries(hit.node, [id]);
+        if (typeof DiaryArchive === 'undefined') return;
+        let removed = false;
+        entryFolders().forEach(f => {
+          const list = f.entryIds || (f.entryIds = []);
+          const i = list.indexOf(id);
+          if (!pendingFolders.has(f.id) && i >= 0) { list.splice(i, 1); removed = true; }
+        });
+        pendingFolders.forEach(fid => {
+          const hit = DiaryArchive.findNode(fid);
+          if (hit) DiaryArchive.addEntries(hit.node, [id]);
+        });
+        if (removed) DiaryArchive.save();
       };
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
 
@@ -1917,7 +2010,6 @@
       slot.innerHTML = loading ? '' : `
         <div class="rec-hero__empty">
           <p class="rec-hero__empty-title">오늘의 첫 사진을 남겨 보세요</p>
-          <p class="rec-hero__empty-sub">찍은 사진은 여기에 가장 크게 보여요</p>
           <button type="button" class="rec-pill rec-pill--dark" data-hero-write>+ 사진 기록하기</button>
         </div>`;
       return;
@@ -1958,18 +2050,10 @@
     return { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin(), write: () => openEntryModal() };
   }
 
-  /** + 폴더에 담기 — 오늘 기록이 있으면 담을 폴더를 고르고, 없으면 기록부터 쓴다 */
-  function putTodayInFolder() {
-    if (needLogin()) return;
-    const today = entries().filter(e => e.date === todayIso && (e.photos || []).length);
-    if (!today.length) { openEntryModal(); return; }
-    if (typeof RecordV2 !== 'undefined') RecordV2.chooseFolder(recordCtx(), today.map(e => e.id));
-  }
-
   function wireHome() {
+    root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) openCalPage(); });
+    root.querySelector('#recCalClose').addEventListener('click', closeCalPage);
     root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
-    root.querySelector('#recNewFolder').addEventListener('click', () => { if (!needLogin()) DiaryArchive.createFolder(); });
-    root.querySelector('#recPutToday').addEventListener('click', putTodayInFolder);
     root.querySelector('#recRecent').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-folder]');
       if (!b) return;
@@ -1991,6 +2075,7 @@
 
   function renderHome() {
     renderDayTitle();
+    renderStreak();
     renderHomeHero();
     renderRecent();
   }
@@ -2028,6 +2113,7 @@
   }
 
   function unmountDiaryView() {
+    closeCalPage();
     root = null;
   }
 

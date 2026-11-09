@@ -658,5 +658,38 @@ const Friends = (function () {
     return { posts };
   }
 
-  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts, shareInvite, ensureTerms };
+  /**
+   * 기록하기 첫 화면의 "Friends Today" — 친구들이 오늘 올린 기록(사진·글) 전부, 최근 것부터.
+   * 결과: { hasFriends, posts: [{ who, school, city, time, title, body, url, info }] }
+   */
+  async function todayFeed(limit = 30) {
+    if (!AppState.isAuthed || !me()) return { hasFriends: false, posts: [] };
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const [listRes, res] = await Promise.all([
+      api.list(),
+      supabaseClient.from('user_journal')
+        .select('id, user_id, entry_date, title, body, photos, location, song, now_playing, weather, created_at')
+        .neq('user_id', me()).gte('created_at', start.toISOString())
+        .order('created_at', { ascending: false }).limit(limit)
+    ]);
+    const friends = {};
+    if (listRes.ok) (listRes.data || []).filter(r => r.direction === 'friend').forEach(r => { friends[r.user_id] = r; });
+    const hasFriends = Object.keys(friends).length > 0;
+    if (res.error || !hasFriends) return { hasFriends, posts: [] };
+    const rows = (res.data || []).filter(r => friends[r.user_id]);
+    const urls = await AppState.signPhotoPaths(rows.filter(r => (r.photos || []).length).map(r => r.photos[0]));
+    const posts = rows.map(r => {
+      const f = friends[r.user_id];
+      const entry = { date: r.entry_date, createdAt: r.created_at, title: r.title || '', body: r.body || '', location: r.location, weather: r.weather, song: r.song, nowPlaying: r.now_playing };
+      const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(entry) : { cap: entry.title, date: entry.date };
+      const school = f.school_name ? [f.school_name, f.school_city || f.school_country].filter(Boolean).join(' · ') : '';
+      info.who = f.name; info.school = school;
+      const loc = r.location || {};
+      return { who: f.name, school, city: loc.city || loc.country || '', time: r.created_at, title: entry.title, body: entry.body,
+        url: (r.photos || []).length ? (urls[r.photos[0]] || '') : '', info };
+    });
+    return { hasFriends, posts };
+  }
+
+  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts, todayFeed, shareInvite, ensureTerms };
 })();

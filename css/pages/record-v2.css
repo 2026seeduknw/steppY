@@ -35,8 +35,7 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-hero--empty.is-loading { animation: rec-pulse 1.2s ease-in-out infinite alternate; }
 @keyframes rec-pulse { from { opacity: 0.6; } to { opacity: 1; } }
 .rec-hero__empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px; }
-.rec-hero__empty-title { margin: 0; font-size: 16px; font-weight: 800; color: var(--v2-ink); }
-.rec-hero__empty-sub { margin: 0 0 10px; font-size: 12px; color: var(--v2-ink-soft); }
+.rec-hero__empty-title { margin: 0 0 12px; font-size: 16px; font-weight: 800; color: var(--v2-ink); }
 
 /* ---------------------------------------------------------------- 최근 폴더 */
 .rec-recent { margin-top: 12px; }
@@ -52,9 +51,6 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-folder__meta { font-size: 11px; color: var(--v2-ink-faint); }
 
 /* ---------------------------------------------------------------- 폴더에 담기 */
-.rec-cta { margin: 40px 0 8px; padding: 0 4px; }
-.rec-cta__text { margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--v2-ink); }
-.rec-cta__btns { display: flex; gap: 10px; }
 .rec-pill {
   height: 34px; padding: 0 16px; border-radius: 17px; border: 1px solid #DDD8CF; background: #fff;
   color: var(--v2-ink); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
@@ -281,3 +277,58 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .diary-write-bar[hidden] { display: none !important; }
 /* 달력 — 예전 디자인은 요일·날짜 칸을 화면 끝까지 늘렸다(음수 여백). v2에선 다른 카드와 같은 폭으로 */
 body[data-page="journal"] .diary-weekdays, body[data-page="journal"] .diary-month { margin-left: 0 !important; margin-right: 0 !important; }
+
+/* 담을 폴더 — 끝의 + 와 새 폴더 이름 칸 */
+.entry-v2__chip-add { flex: none; width: 30px; padding: 0; font-size: 16px; font-weight: 500; color: var(--v2-ink); border-style: dashed; }
+.entry-v2__chip-input { flex: none; width: 110px; cursor: text; outline: none; border-color: var(--v2-dark); font-weight: 600; }
+
+/* ---------------------------------------------------------------- D-day 밑 이번 주 기록 */
+.rec-streak { margin-top: 18px; padding: 16px 16px 14px; border-radius: 22px; background: #F6F4EF; }
+.rec-streak__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rec-streak__count { margin: 0; font-family: var(--font-title); font-size: 15px; font-weight: 700; color: var(--v2-ink); }
+.rec-streak__count b { font-size: 20px; font-weight: 800; margin-left: 2px; }
+.rec-streak__count span { font-weight: 500; color: var(--v2-ink-soft); }
+.rec-streak__more { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); cursor: pointer; white-space: nowrap; }
+.rec-streak__week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 12px; }
+.rec-streak__day { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.rec-streak__day i { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--v2-ink-faint); }
+.rec-streak__day b { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: var(--v2-ink); background: #fff; }
+.rec-streak__day.is-done b { background: var(--v2-dark); color: #fff; }
+.rec-streak__day.is-today b { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--v2-dark); }
+.rec-streak__day.is-future b { background: transparent; color: var(--v2-ink-faint); }
+
+/* ---------------------------------------------------------------- 캘린더(전체 화면) */
+.rec-calpage { z-index: 79; }
+body[data-page="journal"][data-theme="v2"] .rec-calpage .diary-cal-section { margin-top: 8px; }
+.rec-calpage .diary-day.has-photo .diary-day__num { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45); }
+
+/* ---------------------------------------------------------------- 친구들의 오늘 타임라인 */
+.ftl { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.ftl__card { min-width: 0; padding: 12px; border-radius: 18px; background: #F6F4EF; }
+.ftl__who { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.ftl__who b { font-size: 13px; font-weight: 800; color: var(--v2-ink); flex: none; }
+.ftl__av { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; font-size: 11px; font-weight: 700; color: #fff; background: var(--v2-dark); }
+.ftl__school { font-size: 11px; color: var(--v2-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ftl__time { margin-left: auto; flex: none; font-family: var(--font-title); font-size: 11px; font-weight: 700; color: var(--v2-ink-faint); }
+.ftl__photo { position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden; background: #ECE9E2; }
+.ftl__photo::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(transparent, rgba(0, 0, 0, 0.5)); pointer-events: none; }
+.ftl__img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; cursor: zoom-in; -webkit-user-drag: none; }
+.ftl__photo .ftl__title { position: absolute; left: 12px; right: 52px; bottom: 11px; z-index: 1; margin: 0; color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 500; line-height: 1.4; word-break: keep-all; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.ftl__toggle { width: 30px; height: 30px; flex: none; border: 0; border-radius: 50%; display: grid; place-items: center; padding: 0; background: rgba(255, 255, 255, 0.92); color: var(--v2-ink); cursor: pointer; }
+.ftl__toggle svg { transition: transform 200ms ease; }
+.ftl__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ftl__photo .ftl__toggle { position: absolute; right: 10px; bottom: 9px; z-index: 1; }
+.ftl__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.ftl__head .ftl__title { margin: 0; font-size: 14px; font-weight: 800; color: var(--v2-ink); }
+.ftl__head .ftl__toggle { background: #fff; }
+.ftl__body { margin: 10px 2px 0; font-size: 13px; line-height: 1.55; color: var(--v2-ink-soft); }
+.ftl__body[hidden] { display: none; }
+.ftl-empty { margin: 4px 0 0; padding: 18px; border-radius: 18px; background: #F6F4EF; text-align: center; font-size: 13px; color: var(--v2-ink-soft); }
+.ftl-mock { margin: 0 0 12px; font-size: 11.5px; line-height: 1.5; color: var(--v2-ink-faint); }
+body[data-page="journal"] .rec-calpage .diary-day:not(.has-photo):not(.is-empty) { background: #F6F4EF; border-color: transparent; box-shadow: none; }
+.rec-calpage .diary-day { border-radius: 12px; box-shadow: none; }
+body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transparent; border-color: transparent; }
+
+/* 큰 사진 카드 — 사진 비율 그대로(잘리지 않게). 세로로 긴 사진은 화면 높이 안으로 줄이고 양옆을 바탕색으로 */
+.rec-hero:not(.rec-hero--empty) { aspect-ratio: auto; }
+.rec-hero:not(.rec-hero--empty) .rec-hero__img { height: auto; max-height: min(480px, 62vh); object-fit: contain; background: var(--v2-plate); }
