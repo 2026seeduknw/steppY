@@ -33,6 +33,8 @@ const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 const FREE_PHOTO_DAILY_LIMIT = 3;
 
 /**
+ * (2026-11-08 크레딧·결제·해금을 모두 없앴다. 아래 값은 더 이상 화면에 쓰이지 않고, 서버 쪽은
+ * supabase/remove_credits.sql 이 질문 차감·답변 적립을 끈다.)
  * 크레딧 배분(BM 1단계). 서버 RPC(supabase/mentor_step.sql, bm_unlocks.sql)에도 같은
  * 값이 박혀 있다 — 화면에 보여주는 숫자일 뿐이고 실제 차감은 서버 값이 기준이다.
  * 여기를 바꾸면 SQL 쪽 상수도 같이 바꿔야 한다.
@@ -252,10 +254,15 @@ const AppState = {
    * localStorage 카운터로 가볍게 막는다. 프리미엄이면 무제한.
    */
   freePhotoUploadsLeft() {
+    // 크레딧·프리미엄을 없앴다(2026-11-08) — 사진은 하루 장수 제한 없이 올린다
+    return Infinity;
+    // eslint-disable-next-line no-unreachable
     if (this.isPremium()) return Infinity;
     return Math.max(0, FREE_PHOTO_DAILY_LIMIT + this._todayExtraPhotos() - this._todayPhotoCount());
   },
   recordPhotoUpload() {
+    return;   // 한도가 없어 셀 필요가 없다
+    // eslint-disable-next-line no-unreachable
     if (this.isPremium()) return;
     try { localStorage.setItem(this._photoCountKey(), String(this._todayPhotoCount() + 1)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
   },
@@ -289,8 +296,8 @@ const AppState = {
 
   /** 이 목록에서 지금 보여줄 수 있는 개수. 게스트는 늘 무료 개수만. */
   visibleMatchCount(listKey) {
-    const steps = this.isAuthed ? (this.load().matchUnlocks[listKey] || 0) : 0;
-    return BM.MATCH_FREE + steps * BM.MATCH_UNLOCK_STEP;
+    // 크레딧 잠금을 없앴다 — 매칭 목록은 모두 보인다
+    return Infinity;
   },
 
   /** 크레딧을 써서 이 목록을 3개 더 연다. 잔액 확인·차감·기록은 서버가 한 번에 한다. */
@@ -338,7 +345,6 @@ const AppState = {
       title: row.title, body: row.body, createdAt: row.created_at, answers: []
     };
     MOCK.mentorQuestions.unshift(question);
-    this.load().credits -= BM.ASK_COST;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, question };
@@ -354,7 +360,6 @@ const AppState = {
     const answer = { id: row.id, authorId: row.author_id, body: row.body, createdAt: row.created_at };
     const question = MOCK.mentorQuestions.find(q => q.id === questionId);
     if (question) question.answers.push(answer);
-    this.load().credits += BM.ANSWER_REWARD;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, answer };

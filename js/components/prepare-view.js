@@ -10,7 +10,7 @@ const PREPARE_MARKUP = `
     <div class="prepare-main">
       <div id="targetMajorCard"></div>
 
-      <section class="card card-pad" id="todoCard"></section>
+      <section id="todoCard" class="prep-todo"></section>
 
       <!-- 국제처 공식 일정(지원·배정 후·출국 전) — js/components/oia-timeline.js -->
       <section class="card card-pad" id="oiaTimeline"></section>
@@ -41,6 +41,48 @@ function renderPrepareView() {
   renderPrepareTimeline();
 }
 
+/**
+ * 체크리스트(서류)와 생활 준비(생활)를 두 칸 전환 버튼으로 나눠 한 번에 하나만 보여 준다.
+ * 고른 칸은 기억한다. To-Do의 '#checklistSection' 링크로 들어오면 서류 칸을 연다.
+ */
+function renderPrepSwitch(on) {
+  const docs = document.getElementById('checklistSection');
+  const life = document.getElementById('livingSection');
+  if (!docs || !life) return;
+  let sw = document.getElementById('prepSwitch');
+  if (!on) { if (sw) sw.hidden = true; return; }
+  if (!sw) {
+    sw = document.createElement('div');
+    sw.id = 'prepSwitch';
+    sw.className = 'prep-switch';
+    sw.setAttribute('role', 'tablist');
+    sw.innerHTML = `
+      <button type="button" role="tab" data-prep-tab="docs">서류</button>
+      <button type="button" role="tab" data-prep-tab="life">생활</button>`;
+    docs.parentNode.insertBefore(sw, docs);
+    sw.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-prep-tab]');
+      if (!b) return;
+      prepWrite('prep_tab', b.dataset.prepTab);
+      applyPrepSwitch();
+    });
+  }
+  sw.hidden = false;
+  if (location.hash === '#checklistSection') prepWrite('prep_tab', 'docs');
+  applyPrepSwitch();
+}
+
+function applyPrepSwitch() {
+  const tab = prepRead('prep_tab', 'docs') === 'life' ? 'life' : 'docs';
+  document.getElementById('checklistSection').style.display = tab === 'docs' ? '' : 'none';
+  document.getElementById('livingSection').style.display = tab === 'life' ? '' : 'none';
+  document.querySelectorAll('#prepSwitch [data-prep-tab]').forEach(b => {
+    const on = b.dataset.prepTab === tab;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+}
+
 /** 국제처 일정 — 배정 발표 전이면 지원 일정부터, 출국 뒤에는 파견 중·귀국 후. */
 function renderPrepareTimeline() {
   const mount = document.getElementById('oiaTimeline');
@@ -69,6 +111,7 @@ function renderPrepareHero() {
       </div>`;
     document.getElementById('checklistSection').style.display = 'none';
     document.getElementById('livingSection').style.display = 'none';
+    renderPrepSwitch(false);
     return;
   }
   // 출국하면 비자·서류 체크리스트를 내린다. 비자는 나오면 끝이라 남겨두면
@@ -76,6 +119,8 @@ function renderPrepareHero() {
   const departed = typeof hasDeparted === 'function' && hasDeparted();
   document.getElementById('checklistSection').style.display = departed ? 'none' : '';
   document.getElementById('livingSection').style.display = '';
+  // 출국 전에는 '서류 | 생활' 중 하나만 보여 준다(출국 뒤엔 생활만 남아 전환이 필요 없다)
+  renderPrepSwitch(!departed);
   mount.innerHTML = `
     <div class="confirmed-card" id="confirmedCardBtn">
       <div class="confirmed-card__identity">
@@ -148,15 +193,15 @@ function prepWrite(name, value) {
 const CHEVRON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
 
 /** 카드 머리줄 — 왼쪽 제목, 오른쪽 [부가 정보][열기/닫기]. 닫혀도 머리줄은 남는다. */
-function prepCardHead(title, key, extraRight = '') {
+function prepCardHead(title, key, extraRight = '', opts = {}) {
   const collapsed = !!prepRead('collapsed', {})[key];
   return `
     <div class="prep-card__head">
       <h2 class="prep-card__title">${title}</h2>
       <div class="prep-card__right">
         ${extraRight}
-        <button type="button" class="prep-card__toggle" data-card-toggle="${key}"
-                aria-expanded="${!collapsed}" aria-label="${collapsed ? '열기' : '닫기'}">${CHEVRON_SVG}</button>
+        ${opts.noToggle ? '' : `<button type="button" class="prep-card__toggle" data-card-toggle="${key}"
+                aria-expanded="${!collapsed}" aria-label="${collapsed ? '열기' : '닫기'}">${CHEVRON_SVG}</button>`}
       </div>
     </div>`;
 }
@@ -165,6 +210,7 @@ function wirePrepCardToggle(section, key) {
   const apply = (collapsed) => {
     section.classList.toggle('is-collapsed', collapsed);
     const btn = section.querySelector('[data-card-toggle]');
+    if (!btn) return;
     btn.setAttribute('aria-expanded', String(!collapsed));
     btn.setAttribute('aria-label', collapsed ? '열기' : '닫기');
   };
@@ -298,6 +344,31 @@ function housingInfoHtml() {
   return `<p class="step-item__housing">${label ? `<b>OIA 자료 · 기숙사 ${prepEsc(label)}</b> ` : ''}${info}</p>`;
 }
 
+/** 두 절(쉼표로 이어진 두 덩이)이면 쉼표 뒤에서 줄을 바꾼다 — '10,000'처럼 붙은 쉼표는 그대로 */
+function prepClauses(text) {
+  return prepEsc(text).replace(/,\s+/g, ',<br>');
+}
+
+/** steppY가 추천하는 내용은 초록 상자에 따로 담는다 */
+function steppyPickHtml(text) {
+  return text ? `<div class="steppy-pick"><span class="steppy-pick__label">steppY 추천</span><p>${prepEsc(text)}</p></div>` : '';
+}
+
+/** 보험 — 예전 '생활 준비' 보험 카드 내용을 체크리스트 '해외여행자보험 가입' 항목 안으로 옮겼다 */
+function insuranceInfoHtml() {
+  const school = AppState.getConfirmedSchool();
+  const c = school && MOCK.countryPrep.find(x => x.countryEn === school.countryEn);
+  if (!c || (!c.insurance && !c.insurancePrice)) return '';
+  const rows = [['요금', c.insurancePrice]].filter(([, v]) => v);
+  // 출처는 항목 아래 checklistSourceHtml 이 이미 달아 준다
+  return `
+    ${steppyPickHtml(c.insurance)}
+    <dl class="living-facts">${rows.map(([l, v]) => `
+      <div class="living-facts__row"><dt>${l}</dt><dd>${prepClauses(v)}</dd></div>`).join('')}
+    </dl>
+    ${c.insuranceNote ? `<p class="living-card__note">${prepClauses(c.insuranceNote)}</p>` : ''}`;
+}
+
 function visaDocsHtml() {
   const school = AppState.getConfirmedSchool();
   const v = school && MOCK.visaRequirements && MOCK.visaRequirements[school.countryEn];
@@ -342,7 +413,18 @@ function visaDocsHtml() {
  * 완료 체크는 국제처 일정 체크(oiaReadDone)와 To-Do에도 같이 반영한다.
  */
 const PREP_OIA_MERGE = { passport: 'passport', visa: 'visa', insurance: 'departure-report' };
-const PREP_ORDER = ['passport', 'oia:langcert', 'oia:exempt', 'oia:apply', 'transcript', 'oia:doc2', 'oia:acceptance', 'visa', 'insurance', 'flight', 'housing', 'oia:tuition', 'oia:extra-pledge'];
+/** 체크리스트를 성격별로 끊어 보여 준다. 목록에 없는 항목은 마지막 묶음으로 */
+const PREP_GROUPS = [
+  { key: 'apply', title: '국제처 지원', ids: ['oia:langcert', 'oia:exempt', 'oia:apply'] },
+  { key: 'host', title: '파견교 서류', ids: ['oia:host-deadline', 'passport', 'transcript', 'oia:doc2', 'oia:acceptance'] },
+  { key: 'visa', title: '비자·보험', ids: ['visa', 'insurance'] },
+  { key: 'go', title: '출국 준비', ids: [] }
+];
+function prepGroupOf(id) {
+  const g = PREP_GROUPS.find(g => g.ids.includes(id));
+  return g ? g.key : 'go';
+}
+const PREP_ORDER = ['oia:host-deadline', 'passport', 'oia:langcert', 'oia:exempt', 'oia:apply', 'transcript', 'oia:doc2', 'oia:acceptance', 'visa', 'insurance', 'flight', 'housing', 'oia:tuition', 'oia:extra-pledge'];
 function prepMergedChecklist() {
   const base = (MOCK.checklist || []).map(it => Object.assign({}, it));
   if (typeof OIA === 'undefined') return base;
@@ -394,9 +476,8 @@ function renderPrepareChecklist() {
   if (!section) return;
   const items = prepMergedChecklist();
   if (!items.length) {
-    section.innerHTML = prepCardHead('비자 및 서류 체크리스트', 'checklist') +
+    section.innerHTML = prepCardHead('비자 및 서류 체크리스트', 'checklist', '', { noToggle: true }) +
       `<div class="prep-card__body"><p class="info-panel__text">서비스 준비 중이에요.</p></div>`;
-    wirePrepCardToggle(section, 'checklist');
     return;
   }
 
@@ -404,15 +485,26 @@ function renderPrepareChecklist() {
   // 국제처 일정 카드·To-Do에서 체크한 것도 완료로 친다(예전 기록을 그대로 이어받는다)
   const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
   items.forEach(it => { if (it.oia && oiaDone.has(it.oia.id)) done.add(it.id); });
+  // 카테고리별로 접은 상태는 기억해 둔다
+  const groupsClosed = prepRead('checklist_groups_closed', []);
   section.innerHTML = prepCardHead('비자 및 서류 체크리스트', 'checklist',
-    `<span class="prep-card__pct"><b id="checklistPct">0%</b> 완료</span>`) + `
+    `<span class="prep-card__pct"><b id="checklistPct">0%</b> 완료</span>`, { noToggle: true }) + `
     <div class="prep-card__body">
-      ${typeof OIA !== 'undefined' && OIA.termOf(AppState.profile).data ? `<p class="prep-card__source">${OIA.termOf(AppState.profile).data.source} 일정 기반이에요.</p>` : ''}
+      ${typeof OIA !== 'undefined' && OIA.termOf(AppState.profile).data ? `<p class="prep-card__source">${OIA.termOf(AppState.profile).data.source} 일정 기반이에요.<br>일정은 바뀔 수 있으니 국제처 공지로 꼭 다시 확인하세요.</p>` : ''}
       <div class="prep-progress" role="progressbar" aria-label="체크리스트 진행률" aria-valuemin="0" aria-valuemax="100">
         <div class="prep-progress__fill" id="checklistBar"></div>
       </div>
-      <ol class="stepper" id="checklistList">
-        ${items.map(item => `
+      <div class="prep-groups" id="checklistList">
+        ${PREP_GROUPS.map(g => ({ g, list: items.filter(it => prepGroupOf(it.id) === g.key) })).filter(x => x.list.length).map(({ g, list }) => `
+        <div class="prep-group${groupsClosed.includes(g.key) ? ' is-collapsed' : ''}" data-group="${g.key}">
+          <h3 class="prep-group__head">
+            <button type="button" class="prep-group__title" data-group-toggle aria-expanded="${!groupsClosed.includes(g.key)}">
+              ${g.title}<span class="prep-group__count" data-group-count></span>
+              <span class="prep-group__caret" aria-hidden="true">${CHEVRON_SVG}</span>
+            </button>
+          </h3>
+          <ol class="stepper">
+        ${list.map(item => `
           <li class="step-item" data-id="${item.id}">
             <button type="button" class="step-item__dot" data-toggle-done aria-label="${item.title} 완료 표시">${CHECK_SVG}</button>
             <div class="step-item__main">
@@ -430,6 +522,7 @@ function renderPrepareChecklist() {
                 ${item.detail ? `<p>${item.detail}</p>` : ''}
                 ${item.oia && !item.fromOia && item.oia.detail ? `<p class="step-item__oia"><b>국제처</b> ${item.oia.title} · ${item.oia.detail}</p>` : ''}
                 ${item.id === 'visa' ? visaDocsHtml() : ''}
+                ${item.id === 'insurance' ? insuranceInfoHtml() : ''}
                 ${item.id === 'flight' && AppState.getProgramRange() ? `
                 <p class="step-item__departure">출국일 <b>${AppState.getProgramRange().start}</b>
                   <button type="button" class="step-item__departure-edit" data-edit-departure>수정</button></p>` : ''}
@@ -438,7 +531,9 @@ function renderPrepareChecklist() {
               </div>
             </div>
           </li>`).join('')}
-      </ol>
+          </ol>
+        </div>`).join('')}
+      </div>
       ${applicationDocsHtml()}
     </div>`;
 
@@ -454,6 +549,12 @@ function renderPrepareChecklist() {
       el.classList.toggle('is-current', isCurrent);
       el.querySelector('[data-toggle-done]').setAttribute('aria-pressed', String(isDone));
     });
+    list.querySelectorAll('.prep-group').forEach(g => {
+      const els = [...g.querySelectorAll('.step-item')];
+      const n = els.filter(el => done.has(el.dataset.id)).length;
+      g.querySelector('[data-group-count]').textContent = `${n}/${els.length}`;
+      g.classList.toggle('is-complete', n === els.length);
+    });
     const pct = Math.round((done.size / items.length) * 100);
     section.querySelector('#checklistBar').style.width = `${pct}%`;
     section.querySelector('#checklistPct').textContent = `${pct}%`;
@@ -461,6 +562,16 @@ function renderPrepareChecklist() {
   };
 
   list.addEventListener('click', (e) => {
+    const gt = e.target.closest('[data-group-toggle]');
+    if (gt) {
+      const g = gt.closest('.prep-group');
+      const closed = g.classList.toggle('is-collapsed');
+      gt.setAttribute('aria-expanded', String(!closed));
+      const set = new Set(prepRead('checklist_groups_closed', []));
+      if (closed) set.add(g.dataset.group); else set.delete(g.dataset.group);
+      prepWrite('checklist_groups_closed', [...set]);
+      return;
+    }
     const item = e.target.closest('.step-item');
     if (!item) return;
     if (e.target.closest('[data-toggle-done]')) {
@@ -492,7 +603,7 @@ function renderPrepareChecklist() {
 
   // 처음 그릴 때도 0%에서 차오르게 — 폭을 0으로 한 프레임 둔 뒤 채운다
   requestAnimationFrame(() => requestAnimationFrame(refresh));
-  wirePrepCardToggle(section, 'checklist');
+  section.classList.remove('is-collapsed');
 }
 
 /**
@@ -638,15 +749,18 @@ function renderPrepareLiving() {
 
   const section = document.getElementById('livingSection');
   if (!section) return;
-  section.innerHTML = prepCardHead('생활 준비 · 준비물', 'living') +
-    `<div class="prep-card__body"><div class="living-grid" id="livingGrid"></div></div>`;
-  wirePrepCardToggle(section, 'living');
+  // 서류|생활 전환으로 이미 한 카드만 보이니 카드 자체를 접는 버튼은 두지 않는다(묶음별 토글만)
+  section.innerHTML = prepCardHead('생활 준비 · 준비물', 'living', '', { noToggle: true }) +
+    `<div class="prep-card__body"><p class="prep-card__source">요금·추천·장학금 조건은 조사 시점 기준이라 바뀌었을 수 있어요.<br>가입·신청 전에 공식 안내에서 꼭 직접 확인하세요.</p><div class="prep-groups" id="livingGrid"></div></div>`;
+  section.classList.remove('is-collapsed');
   const mount = document.getElementById('livingGrid');
-  const keys = ['insurance', 'scholarship', 'telecom', 'bank'].filter(k => cards[k]);
+  // 보험은 체크리스트 '해외여행자보험 가입' 항목에 들어 있어 여기선 뺀다
+  const keys = ['scholarship', 'telecom', 'bank'].filter(k => cards[k]);
   if (!keys.length) {
     mount.innerHTML = `<p class="info-panel__text">서비스 준비 중이에요.</p>`;
     return;
   }
+  const livingOpen = prepRead('living_groups_open', []);
   // 넷을 전부 펼쳐 두면 화면 두 판이 설명문으로 찬다. 제목만 세워 두고 필요한
   // 항목만 열어 보게 한다 — 보험을 알아보는 날과 계좌를 여는 날은 다르다.
   mount.innerHTML = keys.map(k => {
@@ -667,33 +781,41 @@ function renderPrepareLiving() {
         <p class="living-card__note">문의 · 국제처 국제팀 02-2123-4704 / sap@yonsei.ac.kr</p>
       </div>` : '';
     const links = d.source ? prepSourceLinks(d.source) : '';
+    // 서류 체크리스트와 같은 꼴 — 묶음 제목 줄을 눌러 접고 편다. 처음엔 접어 두고, 연 것은 기억한다
+    const open = livingOpen.includes(k);
     return `
-      <div class="card living-card" data-living="${k}">
-        <button type="button" class="living-card__row" aria-expanded="false">
-          <span class="living-card__title">${prepEsc(d.title)}</span>
-          <span class="living-card__caret" aria-hidden="true">⌄</span>
-        </button>
-        <div class="living-card__detail">
+      <div class="prep-group living-group${open ? '' : ' is-collapsed'}" data-living="${k}">
+        <h3 class="prep-group__head">
+          <button type="button" class="prep-group__title" data-living-toggle aria-expanded="${open}">
+            ${prepEsc(d.title)}
+            <span class="prep-group__caret" aria-hidden="true">${CHEVRON_SVG}</span>
+          </button>
+        </h3>
+        <div class="living-group__body">
+          ${steppyPickHtml((d.rows.find(([l]) => l === '추천') || [])[1])}
           <dl class="living-facts">
-            ${d.rows.filter(([, v]) => v).map(([label, v]) => `
-              <div class="living-facts__row"><dt>${label}</dt><dd>${prepEsc(v)}</dd></div>`).join('')}
+            ${d.rows.filter(([l, v]) => v && l !== '추천').map(([label, v]) => `
+              <div class="living-facts__row"><dt>${label}</dt><dd>${prepClauses(v)}</dd></div>`).join('')}
             ${d.docs && d.docs.length ? `
               <div class="living-facts__row"><dt>필요 서류</dt><dd>
                 <ul class="living-docs">${d.docs.map(x => `<li>${prepEsc(x)}</li>`).join('')}</ul>
               </dd></div>` : ''}
           </dl>
           ${scholarshipExtra}
-          ${d.note ? `<p class="living-card__note">${prepEsc(d.note)}</p>` : ''}
+          ${d.note ? `<p class="living-card__note">${prepClauses(d.note)}</p>` : ''}
           ${d.source && (links || survey) ? `<p class="living-card__source">출처 · ${[links, survey].filter(Boolean).join(' · ')}</p>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  mount.querySelectorAll('.living-card').forEach(card => {
-    const row = card.querySelector('.living-card__row');
-    row.addEventListener('click', () => {
-      const open = card.classList.toggle('is-expanded');
-      row.setAttribute('aria-expanded', String(open));
+  mount.querySelectorAll('.living-group').forEach(g => {
+    const btn = g.querySelector('[data-living-toggle]');
+    btn.addEventListener('click', () => {
+      const open = !g.classList.toggle('is-collapsed');
+      btn.setAttribute('aria-expanded', String(open));
+      const set = new Set(prepRead('living_groups_open', []));
+      if (open) set.add(g.dataset.living); else set.delete(g.dataset.living);
+      prepWrite('living_groups_open', [...set]);
     });
   });
 }

@@ -674,3 +674,15 @@ body[data-page="intro"] {
 @media (prefers-reduced-motion: reduce) {
   .splash { display: none; }
 }
+
+/* 소개 화면 본문 속 영어 키워드(Step, Four Steps!, step)는 Manrope로 — 로고 글씨체(SB 어그로)는 히어로의 steppY 에만 */
+.intro__section-title .wm-text,
+.intro__final-title .wm-text {
+  font-family: 'Manrope', var(--font-display);
+  font-weight: 500;            /* 볼드 빼고 보통 굵기 */
+  letter-spacing: -0.02em;
+  -webkit-text-stroke: 0;      /* 테두리도 굵어 보여서 뺀다 */
+}
+
+/* 한글은 SUIT로 못박는다(영어는 Manrope, 히어로 steppY 로고만 SB 어그로) */
+body[data-page="intro"] { font-family: 'Manrope', 'SUIT Variable', sans-serif; }

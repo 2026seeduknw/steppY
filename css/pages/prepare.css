@@ -313,3 +313,38 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .step-item__row .step-item__due { flex: none; font-family: var(--font-body); font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); white-space: nowrap; }
 .step-item__row .step-item__due .oia-tl__dday { font-weight: 800; color: var(--ink-700); }
 .step-item__note { display: block; margin-top: 2px; font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); }
+/* To-Do는 카드 없이 알약만 — 위 국제처 일정 줄과 12px 간격 */
+#targetMajorCard:empty { display: none; }
+.page-shell:has(#prepareSchedule:not([hidden])) + .prepare-grid { padding-top: 8px; }
+/* 체크리스트 묶음(국제처 지원 · 파견교 서류 · 비자·보험 · 출국 준비) */
+.prep-group + .prep-group { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-100); }
+.prep-group__title { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.prep-group__count { font-family: var(--font-mono); font-size: var(--fs-micro); font-weight: 600; color: var(--ink-400); }
+.prep-group.is-complete .prep-group__count { color: var(--key-500); }
+/* steppY 추천 — 초록 상자 */
+.steppy-pick { margin: 8px 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--mint-100); border: 1px solid rgba(47, 158, 130, 0.25); }
+.steppy-pick__label { display: inline-block; margin-bottom: 4px; font-size: var(--fs-micro); font-weight: 800; color: var(--mint-600); }
+.steppy-pick p { margin: 0; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-900); word-break: keep-all; }
+/* 카테고리 토글 */
+.prep-group__head { margin: 0 0 8px; }
+.prep-group__title { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.prep-group__caret { margin-left: auto; display: inline-flex; width: 18px; height: 18px; color: var(--ink-400); transition: transform .2s; }
+.prep-group__caret svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.prep-group.is-collapsed .prep-group__caret { transform: rotate(180deg); }
+.prep-group.is-collapsed .stepper { display: none; }
+.prep-group.is-collapsed .prep-group__head { margin-bottom: 0; }
+.prep-group__title:focus-visible { outline: 2px solid var(--key-500); outline-offset: 2px; border-radius: 6px; }
+/* 서류 | 생활 전환 */
+.prep-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: var(--key-100); border: 1px solid var(--line-100); }
+.prep-switch[hidden] { display: none; }
+.prep-switch button { all: unset; box-sizing: border-box; text-align: center; padding: 9px 0; border-radius: 999px; cursor: pointer; font-size: var(--fs-small); font-weight: 700; color: var(--ink-600); }
+.prep-switch button.is-active { background: var(--key-500); color: #fff; }
+.prep-switch button:focus-visible { outline: 2px solid var(--key-500); outline-offset: 2px; }
+/* 생활 준비 — 서류 체크리스트와 같은 묶음 꼴 */
+.living-group .prep-group__head { margin-bottom: 10px; }
+.living-group.is-collapsed .prep-group__head { margin-bottom: 0; }
+.living-group.is-collapsed .living-group__body { display: none; }
+.living-group__body > :first-child { margin-top: 0; }
+#livingGrid .prep-group:first-child { margin-top: 4px; }
+/* 요금 줄과 아래 안내 상자 사이 여백 */
+.living-facts + .living-card__note, .living-facts + .scholarship-list { margin-top: 12px; }

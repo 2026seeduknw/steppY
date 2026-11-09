@@ -179,7 +179,8 @@ body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid
 .v2-wheel__center.is-changing .v2-wheel__flag { opacity: 0; }
 
 /* ---------------------------------------------------------------- 화면 제목 (학교 찾기 등) */
-.v2-head { text-align: center; margin: 4px 0 -1px; }   /* 아래 검색줄은 붙박이(sticky)라 자기 위 여백 16px을 갖고 있다 — 제목과 사이는 15px */
+.v2-head { text-align: left; margin: 4px 0 -1px; }   /* 큰 영어 제목은 모든 페이지에서 왼쪽 정렬 */
+/* 아래 검색줄은 붙박이(sticky)라 자기 위 여백 16px을 갖고 있다 — 제목과 사이는 15px */
 .v2-head__eyebrow { margin: 0; font-size: 14px; color: var(--v2-ink-soft); }
 .v2-head__title { margin: 0; font-family: var(--font-title); font-size: 54px; font-weight: 900; line-height: 1.05; letter-spacing: -0.04em; color: var(--v2-ink); }
 
@@ -531,3 +532,4 @@ body[data-page="consult"] .m2-head { margin-top: 6px; }
 span.m2d-bar__in { color: var(--v2-ink-faint); }
 .m2d-bar__in::placeholder { color: var(--v2-ink-faint); }
 .m2d-bar__btn { flex: none; height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+

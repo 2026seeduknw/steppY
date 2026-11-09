@@ -370,15 +370,7 @@
     if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
     requestAnimationFrame(() => {
       const el = document.querySelector(`[data-match-id="${CSS.escape(String(target.id))}"]`);
-      if (!el) {
-        // 필터는 풀었으니 안 보이면 잠긴 뒤쪽에 있는 카드다 — 잠금 줄로 데려간다
-        const lock = document.querySelector('.match-lock');
-        if (lock) {
-          lock.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          showToast('그 카드는 잠긴 목록 안에 있어요 · 크레딧으로 더 볼 수 있어요');
-        }
-        return;
-      }
+      if (!el) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('is-jumped');
       setTimeout(() => el.classList.remove('is-jumped'), 1600);
@@ -592,11 +584,9 @@
       </div>`;
   }
 
-  /** 보여줄 만큼 자르고, 남은 게 있으면 잠금 줄을 붙인다. */
+  /** 크레딧 잠금을 없앴다(2026-11-08) — 매칭은 모두 보여 준다. 이름만 예전 그대로 둔다. */
   function withLock(matches, cardHtml) {
-    const limit = AppState.visibleMatchCount(matchListKey());
-    const cards = matches.slice(0, limit).map(cardHtml).join('');
-    return matches.length > limit ? cards + lockRowHtml(matches.length - limit) : cards;
+    return matches.map(cardHtml).join('');
   }
 
   async function unlockMore(btn) {

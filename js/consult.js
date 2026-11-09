@@ -17,8 +17,6 @@
 (function () {
   AppState.load();
 
-  const ASK_COST = BM.ASK_COST;
-  const ANSWER_REWARD = BM.ANSWER_REWARD;
 
   const state = { region: null, country: '', onlyFavorite: false };
 
@@ -79,8 +77,8 @@
       body: '기숙사(CROUS) 월 420유로, 식비는 장보기 위주로 월 250유로 정도였어요.\n교통은 학생 정기권이 월 25유로라 거의 걸어 다녔고, 여행비를 빼면 한 달 평균 80만 원 안팎이었어요.' },
     { id: 'sample-p2', sample: true, kind: 'column', title: '비자 인터뷰\n10분 컷 준비법', author_label: '선배 멘토 · 3일 전', image: 'assets/mock/cafe-laptop.webp', created_at: ago(72),
       body: '입학허가서, 재정 증명, 보험 증서 세 가지를 순서대로 클리어파일에 넣어 가면 질문이 거의 없어요.\n영문 이름 철자가 여권과 같은지 꼭 확인하세요.' },
-    { id: 'sample-p3', sample: true, kind: 'notice', title: '답변하면\n크레딧을 드려요', author_label: '운영진', created_at: ago(120),
-      body: '다녀온 선배가 답변을 남기면 크레딧이 쌓여요.\n질문·답변 모두 이름 없이 올라가요.' }
+    { id: 'sample-p3', sample: true, kind: 'notice', title: '질문·답변은\n이름 없이 올라가요', author_label: '운영진', created_at: ago(120),
+      body: '누가 물었는지, 누가 답했는지 표시하지 않아요.\n다녀온 선배라면 아는 만큼 편하게 답해 주세요.' }
   ];
   const SAMPLE_QUESTIONS = [
     { id: 'sample-q1', sample: true, country: '프랑스', schoolName: 'Sciences Po', title: '기숙사 신청은 언제 열려요? 사설 기숙사도 괜찮을까요', createdAt: ago(2),
@@ -161,8 +159,10 @@
   /* ---------------------------------------------------------------- 목록 */
 
   function renderCreditBadge() {
-    if (!AppState.isAuthed) { creditWrap.hidden = true; return; }
-    creditWrap.hidden = false;
+    // 크레딧을 없앴다 — 배지는 늘 숨긴다
+    if (creditWrap) creditWrap.hidden = true;
+    return;
+    // eslint-disable-next-line no-unreachable
     creditNum.textContent = AppState.getCredits();
   }
 
@@ -377,8 +377,6 @@
   });
   askOpenBtn.addEventListener('click', openAskSheet);
   document.getElementById('askOpenField').addEventListener('click', openAskSheet);
-  creditWrap.addEventListener('click', () => openPaywall({ reason: 'menu' }));
-  document.addEventListener('credits:changed', renderCreditBadge);
 
   /* ---------------------------------------------------------- 바텀시트 공통 */
 
@@ -429,7 +427,6 @@
               <span class="mentor-form__label">내용</span>
               <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
             </label>
-            <div class="mentor-form__cost">질문 등록에 <strong>🪙 ${ASK_COST}</strong> 크레딧이 필요해요 · 내 크레딧 <strong id="askBalance">${AppState.getCredits()}</strong></div>
             <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>
           </form>
         </div>
@@ -469,11 +466,6 @@
             return;
           }
           if (!title || !body) return;
-          if (AppState.getCredits() < ASK_COST) {
-            // 쓴 글은 그대로 두고 결제창을 위에 겹쳐 연다 — 충전하고 돌아와 바로 등록할 수 있게
-            openPaywall({ reason: 'credits', need: ASK_COST });
-            return;
-          }
           submitBtn.disabled = true;
           submitBtn.textContent = '등록 중…';
           const res = await AppState.askQuestion({ country: selectedCountry, schoolId: selectedSchool, title, body });
@@ -636,7 +628,7 @@
       ${q.sample ? `
       <div class="m2d-bar"><span class="m2d-bar__in">예시 질문에는 답변할 수 없어요</span></div>` : isOwn ? '' : `
       <form class="m2d-bar" id="answerForm">
-        <textarea class="m2d-bar__in" name="body" rows="1" required placeholder="아는 만큼 답해 주세요 · 🪙 +${ANSWER_REWARD}"></textarea>
+        <textarea class="m2d-bar__in" name="body" rows="1" required placeholder="아는 만큼 답해 주세요"></textarea>
         <button type="submit" class="m2d-bar__btn" id="answerSubmitBtn">등록</button>
       </form>`}`;
     document.body.appendChild(page);
@@ -674,7 +666,7 @@
         if (typeof trackEvent === 'function') trackEvent('mentor_answer_submitted', { questionId: q.id });
         close();
         renderList();
-        if (typeof showToast === 'function') showToast('답변을 등록했어요. 크레딧을 받았어요');
+        if (typeof showToast === 'function') showToast('답변을 등록했어요');
       });
     }
   }

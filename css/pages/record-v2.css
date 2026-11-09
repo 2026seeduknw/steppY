@@ -16,6 +16,8 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 
 .rec-head { margin: 6px 0 0; }
 .rec-head .v2-head__title { font-size: 50px; }
+/* 기록하기 첫 화면의 D-N · Day N 제목만 가운데 정렬(다른 큰 제목은 왼쪽) */
+#journalRoot > .rec-head { text-align: center; }
 
 /* ---------------------------------------------------------------- 오늘 사진 */
 .rec-hero { margin-top: 14px; border-radius: 28px; overflow: hidden; aspect-ratio: 362 / 345; background: var(--v2-plate); position: relative; }
@@ -248,3 +250,34 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) { .rec-layer { transition: none; } }
+
+/* ---------------------------------------------------------------- 기록 쓰기 창 (v2) — 사진 · 제목/캡션 · 폴더 · 노래 */
+#entryModalScrim .modal-panel.entry-v2 { background: #fff; color: var(--v2-ink); box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.18); padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); }
+.entry-v2 .modal-close { color: var(--v2-ink-soft); }
+.entry-v2__head { margin: 4px 0 18px; }
+.entry-v2__eyebrow { margin: 0; font-size: 13px; color: var(--v2-ink-soft); }
+.entry-v2__title { margin: 2px 0 0; font-family: var(--font-title); font-size: 34px; font-weight: 900; letter-spacing: -0.04em; line-height: 1.05; color: var(--v2-ink); }
+.entry-v2__title span { color: var(--v2-ink-faint, #9AA19D); }
+.entry-v2__form { gap: 20px; }
+.entry-v2__field { display: flex; flex-direction: column; gap: 8px; }
+.entry-v2__label { font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); letter-spacing: 0.01em; }
+.entry-v2 .entry-v2__input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; color: var(--v2-ink); font: inherit; font-size: 15px; }
+.entry-v2 .entry-v2__input--title { font-weight: 700; }
+.entry-v2 .entry-v2__caption { min-height: 84px; resize: vertical; }
+.entry-v2 .entry-v2__input::placeholder { color: #A9AEA9; font-weight: 400; }
+.entry-v2 .entry-v2__input:focus { outline: none; border-color: var(--v2-dark); background: #fff; }
+.entry-v2__chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.entry-v2__chips::-webkit-scrollbar { display: none; }
+.entry-v2__empty { font-size: 13px; color: var(--v2-ink-soft); }
+.entry-v2 .diary-nowplaying-search input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: 14px; color: var(--v2-ink); }
+.entry-v2 .diary-nowplaying-chip { border-radius: 14px; background: #F2F0EA; color: var(--v2-ink); }
+.entry-v2__submit { height: 52px; border: 0; border-radius: 26px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.entry-v2__submit:active { opacity: 0.85; }
+.entry-v2 .diary-photo-picker__add { border-radius: 16px; border: 1.5px dashed #D6D1C7; background: #FAF9F6; color: var(--v2-ink-soft); }
+/* 제목·캡션 상자 — 낮게, 글자 작게 */
+.entry-v2 .entry-v2__input { padding: 9px 12px; font-size: 13.5px; border-radius: 12px; }
+.entry-v2 .entry-v2__caption { min-height: 64px; }
+/* 예전 사진·쓰기 버튼 줄 — 코드에서만 누르는 숨은 버튼이다. display:flex 가 hidden 을 덮어 빈 상자 두 개로 보였다 */
+.diary-write-bar[hidden] { display: none !important; }
+/* 달력 — 예전 디자인은 요일·날짜 칸을 화면 끝까지 늘렸다(음수 여백). v2에선 다른 카드와 같은 폭으로 */
+body[data-page="journal"] .diary-weekdays, body[data-page="journal"] .diary-month { margin-left: 0 !important; margin-right: 0 !important; }

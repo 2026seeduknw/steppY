@@ -1010,3 +1010,7 @@ select.dd--open { border-color: var(--ink-900); }
 .school-modal__actions .wish-chip { flex: none; height: 44px; padding: 0 14px; white-space: nowrap; }
 .school-modal__actions .btn { flex: 1; min-width: 0; height: 44px; white-space: nowrap; }
 .school-modal__footer--compact .major-pick--row { margin: 0; }
+
+/* 참고용 안내 — "꼭 직접 확인하세요" 한마디(학점 인정·매칭·학교 정보 등) */
+.verify-note { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #FFF6E5; border: 1px solid #F1DDB2; font-size: var(--fs-micro); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.verify-note b { display: block; margin-bottom: 2px; font-size: var(--fs-small); color: #8A5A00; }

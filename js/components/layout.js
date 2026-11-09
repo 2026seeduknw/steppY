@@ -164,6 +164,7 @@ function renderAppBar(activeKey) {
 
   // 좌 · 중앙 · 우 세 칸. 좌우 칸의 폭이 같아야 가운데 제목이 실제로 가운데 온다.
   // 오른쪽은 비어 있지만 자리를 남겨둔다 — 없애면 제목이 오른쪽으로 밀린다.
+  // 큰 영어 제목(CREDITS 등)은 이 줄 아래 페이지 안에 왼쪽 정렬로 둔다(.v2-head)
   mount.innerHTML = `
     <div class="appbar__slot">
       ${authed
@@ -176,11 +177,8 @@ function renderAppBar(activeKey) {
       <a class="appbar__brand" href="index.html" aria-label="steppY 소개 화면으로">steppY</a>
     </div>
 
-    <div class="appbar__slot">${authed ? `
-      <button type="button" class="appbar-wallet" id="appbarWallet" aria-label="내 크레딧과 요금제">
-        <span class="appbar-wallet__coin">🪙 <strong id="appbarWalletCredits">0</strong></span>
-        <span class="appbar-wallet__plan" id="appbarWalletPlan">일반</span>
-      </button>` : ''}</div>
+    <!-- 오른쪽 칸 — 예전 크레딧·요금제 자리. 크레딧을 없애서 비워 두되, 제목이 가운데에 오도록 칸은 남긴다 -->
+    <div class="appbar__slot"></div>
   `;
 
   const account = document.getElementById('appbarAccount');
@@ -228,12 +226,6 @@ function openAccountSheet() {
         <div class="account-sheet">
           <p class="account-sheet__label">로그인 계정</p>
           <p class="account-sheet__email">${Auth.email || ''}</p>
-          ${typeof openPaywall === 'function' ? `
-          <button type="button" class="account-sheet__wallet" id="accountWalletBtn">
-            <span class="account-sheet__wallet-coin">🪙 <strong>${AppState.getCredits()}</strong></span>
-            <span class="account-sheet__wallet-plan">${AppState.isPremium() ? '프리미엄 이용 중' : '프리미엄 알아보기'}</span>
-            <span aria-hidden="true">›</span>
-          </button>` : ''}
           <section class="card card-pad account-sheet__profile" id="accountProfileCard"></section>
           ${AppState.getConfirmedSchool() && typeof guessProgramRange === 'function' ? `
           <button type="button" class="btn btn--ghost btn--block account-sheet__departure" id="changeDepartureBtn">출국일 변경</button>` : ''}

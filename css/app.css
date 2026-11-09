@@ -694,7 +694,7 @@ body[data-page="intro"] { padding-bottom: 0; }
    가장 큰 크기를 실제로 재서 골랐다(340px 폭 기준, 24px→2줄 / 25px→3줄).
    문구를 바꾸면 줄 수가 달라지니 다시 재야 한다. */
 .intro__section-title { font-size: 1.5rem; line-height: 1.4; }
-.intro__final-title { font-size: 1.75rem; }
+.intro__final-title { font-size: 1.5rem; }   /* 28px → 24px, 사용자 요청으로 한 단계 작게 */
 
 
 /* ==========================================================================
@@ -2188,3 +2188,15 @@ select:not([multiple]) {
   background: var(--cloud-0); font: inherit; font-weight: 500; color: var(--ink-900);
 }
 .account-sheet__departure { margin-bottom: var(--space-2); }
+
+/* ---- To-Do: 확정 후 출국 전엔 '이번 주' 할 일만(todo-card.js todoWeekView) ---- */
+.todo-pill__scope { align-self: center; font-size: var(--fs-small); color: var(--ink-400); white-space: nowrap; }
+.todo-pill__empty { align-self: center; font-size: var(--fs-body); font-weight: 600; color: var(--ink-600); white-space: nowrap; }
+.todo-item__dday { font-weight: 800; color: var(--key-500); }
+.todo-item__dday.is-past { color: #c2453b; }
+.todo-panel__foot { margin-top: var(--space-3); font-size: var(--fs-small); line-height: 1.7; color: var(--ink-600); word-break: keep-all; }
+.todo-panel__foot b { color: var(--key-500); }
+.todo-panel__foot a { color: var(--sky-700); font-weight: 700; }
+.todo-list[hidden] { display: none; }
+.todo-panel__foot:first-child { margin-top: 0; }
+

@@ -2,10 +2,10 @@
  * 광고(Google AdMob) — 본문 안 한 자리에 붙어 스크롤하면 보이는 배너 하나.
  *
  * 어디에 붙나
- *   학교 확정 전  학교 찾기(페이지 넘기기 아래) · 학점 인정/전공 매칭(목록 아래) ·
+ *   학교 확정 전  홈(맨 아래) · 학교 찾기(페이지 넘기기 아래) · 학점 인정/전공 매칭(목록 아래) ·
  *                 Mentor's Step(질문 목록 아래)
  *   학교 확정 후  준비하기에서 보험·항공권 항목을 펼치면 그 설명 맨 아래
- *   프리미엄 구독 중이면 어디에도 붙지 않는다("광고 없이" 혜택).
+ *   (프리미엄·크레딧은 2026-11-08에 없앴다 — 이제 모두에게 같은 자리에 붙는다)
  *
  * 어떻게 본문에 붙나
  *   배너는 웹 요소가 아니라 웹뷰 위에 얹히는 네이티브 뷰다. 그래서 본문에는 빈
@@ -40,8 +40,7 @@ const Ads = {
   /** 학교 확정 후 준비하기 — 펼쳐진 항목의 설명 맨 아래에 둔다. 체크리스트의 보험·항공권, 생활 준비의 보험 */
   PREPARE_SLOT_IN: [
     '.step-item[data-id="insurance"].is-expanded .step-item__detail',
-    '.step-item[data-id="flight"].is-expanded .step-item__detail',
-    '.living-card[data-living="insurance"].is-expanded .living-card__detail'
+    '.step-item[data-id="flight"].is-expanded .step-item__detail'
   ].join(', '),
   /** 시트·모달은 화면을 덮는데 네이티브 배너는 그 위에 뜬다 — 열려 있는 동안은 숨긴다 */
   OVERLAYS: '.modal-scrim.is-open, .app-sheet.is-open, body.is-sheet-open',
@@ -59,8 +58,13 @@ const Ads = {
 
   /** 광고 자리가 들어갈 곳 — { parent, before } 또는 없으면 null. 서버 상태가 오기 전에는 정하지 않는다 */
   _place() {
-    if (!AppState._hydrated || AppState.isPremium()) return null;
+    if (!AppState._hydrated) return null;
     const page = document.body.dataset.page;
+    // 홈 — 화면 맨 아래(지망 학교·제휴 배너 다음)
+    if (page === 'home') {
+      const home = document.querySelector('.v2-home');
+      return home ? { parent: home, before: null } : null;
+    }
     if (page === 'prepare') {
       const detail = document.querySelector(this.PREPARE_SLOT_IN);
       return detail ? { parent: detail, before: null } : null;

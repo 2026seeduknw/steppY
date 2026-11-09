@@ -354,6 +354,8 @@ function schoolModalTemplate(school, opts = {}) {
         ${livingCostPanelHtml(school)}
       </div>
 
+      <p class="verify-note">학교 정보는 국제처 자료를 정리한 참고용이에요.<br>지원 조건·마감일은 아래 국제처 링크에서 꼭 다시 확인하세요.</p>
+
       <!-- 카드로 감쌀 만한 내용이 아니다. 링크 한 줄이라 한 줄로 둔다. -->
       <p class="school-modal__official">
         국제처 링크

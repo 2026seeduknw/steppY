@@ -1255,6 +1255,22 @@
     return scrim;
   }
 
+  /** 기록 쓰기 창의 폴더 칩 — 손으로 만든 폴더만(Monthly는 날짜로 자동이라 뺀다) */
+  let pendingFolder = null;
+  function entryFolders() {
+    try { return typeof DiaryArchive !== 'undefined' ? DiaryArchive.folders().filter(f => f.type !== 'monthly') : []; }
+    catch (e) { return []; }
+  }
+  function folderIdOf(entryId) {
+    const f = entryFolders().find(x => (x.entryIds || []).includes(entryId));
+    return f ? f.id : null;
+  }
+  function folderChipsHtml() {
+    const list = entryFolders();
+    if (!list.length) return '<span class="entry-v2__empty">아직 폴더가 없어요</span>';
+    return list.map(f => `<button type="button" class="rec-chip${f.id === pendingFolder ? ' is-on' : ''}" data-folder-pick="${esc(f.id)}" aria-pressed="${f.id === pendingFolder}">${esc(f.name)}</button>`).join('');
+  }
+
   function openEntryModal(initialFile, prompt, edit) {
     // 원본은 파견 기간 밖을 막았지만, 여기서는 출국 전 기록이 핵심 용도라 막지 않는다.
     editingEntry = edit || null;
@@ -1266,50 +1282,46 @@
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
     const scrim = ensureScrim('entryModalScrim');
+    // 기록 쓰기 — 사진 · 제목/캡션 · 담을 폴더 · 그때 듣던 노래만(v2 컨셉: 흰 시트, 큰 제목, 칩)
+    pendingFolder = edit ? folderIdOf(edit.id) : null;
     scrim.innerHTML = `
-      <div class="modal-panel modal-panel--sm diary-modal-pad diary-sheet">
+      <div class="modal-panel modal-panel--sm diary-modal-pad diary-sheet entry-v2">
         <div class="diary-sheet__handle"></div>
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
-        <div class="diary-modal-header">
-          <h2${edit ? '' : ' class="is-date"'}>${edit ? '기록 수정' : targetDate}</h2>
-          <p class="diary-modal-header__note">${edit ? targetDate : (departurePhaseFor(targetDate) === 'abroad' ? '파견 중 기록' : '출국 전 기록')}</p>
-        </div>
-        <form class="diary-form" id="entryForm">
+        <header class="entry-v2__head">
+          <p class="entry-v2__eyebrow">${esc(targetDate)}</p>
+          <h2 class="entry-v2__title">${edit ? 'Edit' : 'New'} <span>record</span></h2>
+        </header>
+        <form class="diary-form entry-v2__form" id="entryForm">
           <div class="diary-photo-picker" id="photoPicker">
-            <label class="diary-photo-picker__add">
+            <label class="diary-photo-picker__add" aria-label="사진 추가">
               <span class="diary-photo-picker__add-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </span>
               <input type="file" accept="image/*" multiple id="photoInput" style="display:none;">
             </label>
-            <label class="diary-photo-picker__add diary-photo-picker__camera" aria-label="바로 사진 찍기">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
-              <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
-            </label>
           </div>
-          <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
-          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
-          <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
-          ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
-          <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
-          <div>
-            <span class="diary-form__label">오늘 뭘 했나요? (여러 개 골라도 돼요)</span>
-            <div class="diary-tag-grid" id="tagGrid">
-              ${tagGroupsTemplate(edit ? edit.tags : null)}
-            </div>
-            <p class="diary-form__hint">고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요</p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진이에요.</p>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">제목 · 캡션</span>
+            <input type="text" name="title" class="entry-v2__input entry-v2__input--title" placeholder="사진 제목" maxlength="80">
+            ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
+            <textarea name="caption" class="entry-v2__input entry-v2__caption" placeholder="${prompt ? '한 줄로 답해보세요' : '캡션을 남겨 보세요'}"></textarea>
           </div>
-          <div>
-            <span class="diary-form__label">그때 듣던 노래 (선택)</span>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">담을 폴더</span>
+            <div class="entry-v2__chips" id="folderChips">${folderChipsHtml()}</div>
+          </div>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">그때 듣던 노래</span>
             <div id="nowPlayingPicker"></div>
           </div>
-          <label class="diary-share">
-            <input type="checkbox" name="share" ${!edit || edit.visibility === 'friends' ? 'checked' : ''}>
-            <span class="diary-share__text"><b>친구에게 공개</b><small>친구 목록에 있는 분들이 사진·글·위치·노래를 볼 수 있어요.<br>끄면 나만 봐요.</small></span>
-          </label>
-          ${edit ? '' : '<span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>'}
+
           <input type="hidden" name="date" value="${targetDate}">
-          <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
+          <button type="submit" class="entry-v2__submit" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
         </form>
       </div>`;
 
@@ -1522,28 +1534,19 @@
   }
 
   function wireEntryForm(scrim) {
-    const grid = scrim.querySelector('#tagGrid');
-    // 위임 클릭 하나로 묶음 펼치기/접기와 태그 고르기를 같이 받는다 — 묶음을 펼칠 때마다
-    // 안의 칩이 새로 생기는 게 아니라(이미 DOM에 있고 hidden만 바뀐다) 위임이 아니어도
-    // 되지만, 두 종류 버튼을 한 리스너로 묶어 두는 편이 더 단순하다.
-    grid.addEventListener('click', (e) => {
-      const toggle = e.target.closest('[data-group-toggle]');
-      if (toggle) {
-        const group = toggle.closest('.tag-group');
-        const body = group.querySelector('.tag-group__body');
-        const open = group.classList.toggle('is-open');
-        body.hidden = !open;
-        toggle.setAttribute('aria-expanded', String(open));
-        return;
-      }
-      const chip = e.target.closest('.tag-chip');
-      if (chip) {
-        const on = chip.classList.toggle('is-selected');
-        chip.setAttribute('aria-pressed', String(on));
-      }
+    // 폴더는 하나만 고른다 — 같은 칩을 다시 누르면 해제
+    scrim.querySelector('#folderChips').addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-folder-pick]');
+      if (!chip) return;
+      pendingFolder = pendingFolder === chip.dataset.folderPick ? null : chip.dataset.folderPick;
+      scrim.querySelectorAll('[data-folder-pick]').forEach(c => {
+        const on = c.dataset.folderPick === pendingFolder;
+        c.classList.toggle('is-on', on);
+        c.setAttribute('aria-pressed', String(on));
+      });
     });
 
-    ['#photoInput', '#cameraInput'].forEach((sel) => {
+    ['#photoInput'].forEach((sel) => {
       const input = scrim.querySelector(sel);
       // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
       input.closest('label').addEventListener('click', (e) => {
@@ -1572,10 +1575,16 @@
       e.preventDefault();
       const fd = new FormData(e.target);
       const date = fd.get('date');
-      const tags = Array.from(grid.querySelectorAll('.tag-chip.is-selected')).map(b => b.dataset.tag);
+      // 태그·공개 범위 고르기는 창에서 뺐다 — 수정이면 원래 값을 그대로 두고, 새 기록은 태그 없이·예전 기본값(친구 공개)으로
+      const tags = editingEntry ? (editingEntry.tags || []).filter(t => EVERYDAY_MAP[t]) : [];
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
-      const visibility = fd.get('share') ? 'friends' : 'private';
+      const visibility = editingEntry ? (editingEntry.visibility || 'friends') : 'friends';
+      const putInFolder = (id) => {
+        if (!pendingFolder || typeof DiaryArchive === 'undefined') return;
+        const hit = DiaryArchive.findNode(pendingFolder);
+        if (hit) DiaryArchive.addEntries(hit.node, [id]);
+      };
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
 
       // 수정 — 위치·날씨·오늘의 노래는 그대로 두고 글·태그·사진·그때 듣던 노래만 바꾼다
@@ -1595,6 +1604,7 @@
           nowPlaying: nextNP,
           visibility
         });
+        putInFolder(target.id);
         editingEntry = null;
         pendingPhotos = [];
         pendingNowPlaying = null;
@@ -1621,6 +1631,7 @@
         tags, location: stripCoords(pendingLocation), takenAt,
         nowPlaying, weather: pendingWeather, visibility
       });
+      if (entry) putInFolder(entry.id);
       const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;
       const fxCity = pendingLocation && (pendingLocation.city || pendingLocation.country);
       pendingPhotos = [];
