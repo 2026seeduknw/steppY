@@ -192,12 +192,10 @@ body[data-page="search"] #quickMore svg { display: block; }
 /* 필터 시트: '초기화'는 머리의 '필터' 제목 바로 옆(layout.js mountFilterSheet) */
 body[data-page="search"] .app-sheet__head #resetFilters { margin: 0 auto 0 10px; font-size: 13px; font-weight: 600; color: var(--v2-ink-faint); padding: 6px 4px; }
 
-/* 책장은 페이지 좌우 여백을 무시하고 화면 끝까지 — 넘기는 카드가 화면 가장자리에서 잘려 보이게 */
-.v2-shelf { width: 100vw; margin: 0 0 44px calc(50% - 50vw); }
-/* 데스크탑은 body가 기기 컬럼(--app-width)에 갇히므로 화면 폭 대신 컬럼 폭까지만 */
-@media (min-width: 900px) {
-  .v2-shelf { width: var(--app-width); margin-left: calc(50% - var(--app-width) / 2); }
-}
+/* 책장은 페이지 좌우 여백(.page-shell의 --space-4)을 무시하고 화면 끝까지 — 넘기는 카드가 화면 가장자리에서 잘려 보이게.
+   100vw는 쓰지 않는다: 스크롤바 폭까지 포함해 화면보다 넓어지고(페이지가 옆으로 밀림),
+   데스크탑에서는 기기 컬럼(body) 밖으로 튀어나갔다. 부모 여백만큼만 양옆으로 넓힌다. */
+.v2-shelf { margin: 0 calc(var(--space-4) * -1) 44px; }
 .v2-shelf__head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 24px; }
 .v2-shelf__country { margin: 0; font-size: 19px; font-weight: 800; color: var(--v2-ink); }
 .v2-shelf__count { font-size: 12px; color: var(--v2-ink-faint); }
