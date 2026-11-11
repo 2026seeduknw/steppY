@@ -804,6 +804,7 @@ function renderPrepareLiving() {
           ${scholarshipExtra}
           ${d.note ? `<p class="living-card__note">${prepClauses(d.note)}</p>` : ''}
           ${d.source && (links || survey) ? `<p class="living-card__source">출처 · ${[links, survey].filter(Boolean).join(' · ')}</p>` : ''}
+          ${d.rows.some(([, v]) => v) || (d.docs && d.docs.length) ? '<p class="living-card__verify">조사 시점 기준 정보라 요금·서류가 바뀌었을 수 있어요.<br>신청 전에 공식 사이트에서 꼭 직접 확인하세요.</p>' : ''}
         </div>
       </div>`;
   }).join('');

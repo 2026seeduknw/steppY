@@ -203,6 +203,8 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 }
 .living-card__source { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); }
 .living-card__source a { color: var(--ink-400); text-decoration: underline; }
+/* 출처 아래 — 본인이 직접 확인하라는 안내(학점 인정·체크리스트의 같은 문구와 같은 말투) */
+.living-card__verify { margin: 4px 0 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 
 .scholarship-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
 .scholarship-row { padding: var(--space-3); background: var(--sky-50); border-radius: var(--radius-sm); }
