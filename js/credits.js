@@ -121,7 +121,10 @@
       code: find('과목코드:'),
       credits,
       exchangeOk: parts.some(x => x.startsWith('교환학생 수강 가능 확인')),
-      keyword: !String(note || '').includes('직접적 키워드는 없음')
+      keyword: !String(note || '').includes('직접적 키워드는 없음'),
+      // 개설 학기 표시(데이터 빌드가 과목의 term 칸으로 붙인다): 'closed' 봄 미개설·1년 과목 / 'unknown' 가을 자료뿐이라 미확인
+      spring: parts.some(x => /^봄학기\(\d{4}-1\) (미개설|한 학기 수강 불가)/.test(x)) ? 'closed'
+        : parts.some(x => x.startsWith('봄학기 개설 미확인')) ? 'unknown' : ''
     };
   }
 
@@ -163,6 +166,8 @@
     if (a.info.keyword) out.push(['go', 'Keyword Match', '과목명이 전공 핵심 키워드와 일치']);
     else out.push(['neutral', 'Keyword 약함', '과목명 일치는 없고 개설 학과 기준으로 포함']);
     if (a.info.exchangeOk) out.push(['go', '교환학생 수강 가능', '파견교 공식 목록에서 확인']);
+    if (a.info.spring === 'closed') out.push(['warn', '봄 미개설', '봄학기에 열리지 않는 과목이에요(가을 전용·1년 과목) · 봄 파견이면 들을 수 없어요']);
+    else if (a.info.spring === 'unknown') out.push(['neutral', '봄 개설 미확인', '가을학기 시간표 자료라 봄에 열리는지 아직 확인 안 됐어요']);
     return out.map(([tone, name, why]) => `
       <li class="evidence evidence--${tone}"><span class="evidence__name">${name}</span><span class="evidence__why">${why}</span></li>`).join('');
   }

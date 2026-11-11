@@ -261,6 +261,9 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
+        // 봄(-1) 명단인데 봄에 갈 수 없는 학교 — OIA 명단에서 봄 한 학기·봄 1년이 둘 다 불가이거나 이번 학기 정원 0.
+        // 학교 찾기(search.js)에서 숨긴다. OIA 명단이 봄을 열면 이 값이 바뀌어 다시 보인다.
+        springClosed: (s.spring_available === false && s.spring_calendar_year !== true) || coerce(s.quota) === 0,
         climate, climateTemps, climatePrecip, climateNotes: c ? (c.climate_notes || '') : '',
         scoreBasis: basisBySchool[s.id] || null,
         koreaComparison: c ? (c.korea_comparison || '') : '',

@@ -137,6 +137,8 @@
   }
 
   function matchesFilters(school) {
+    // 봄(-1) 학기 명단: 봄에 갈 수 없는 학교(봄 불가·정원 0)는 학교 찾기에 띄우지 않는다
+    if (school.springClosed && /-1$/.test(school.term || '')) return false;
     if (state.query) {
       const q = state.query.toLowerCase();
       const hay = `${school.name} ${school.nameKo} ${school.country} ${school.majors.join(' ')}`.toLowerCase();
