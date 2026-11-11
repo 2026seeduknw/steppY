@@ -29,6 +29,39 @@
 const STORAGE_KEY = 'steppy_guest_state_v2';
 const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 
+/**
+ * 로그인한 사람의 마지막 상태(서버에서 받은 값 + 아직 못 올린 기록). 서버가 정본이지만
+ * 페이지를 열 때마다 hydrate()가 끝나기 전까지 게스트 상태가 잠깐 보였다가 바뀌어서
+ * ("예전 데이터가 떴다 사라진다"), 그 사이에는 이 사본을 먼저 보여준다.
+ * uid를 같이 적어 두고, 지금 세션의 uid와 같을 때만 쓴다.
+ */
+const USER_SNAPSHOT_KEY = 'steppy_user_snapshot_v1';
+/** 서버 user_journal에 visibility 칸이 없다는 표시(friends.sql 미적용). 하루 지나면 다시 확인한다. */
+const NO_VISIBILITY_KEY = 'steppy_no_journal_visibility';
+
+/** Supabase가 이 기기에 저장해 둔 세션의 uid — Auth.init()을 기다리지 않고 바로 읽는다. */
+function storedSessionUid() {
+  try {
+    if (typeof SUPABASE_URL === 'undefined' || !SUPABASE_URL) return null;
+    const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+    const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+    const parsed = raw && JSON.parse(raw);
+    return (parsed && parsed.user && parsed.user.id) || null;
+  } catch (e) { return null; }
+}
+
+/** 서버가 아직 모르는 기록(저장이 실패해 임시 id 'j…'로 남은 것) */
+const isTempJournalId = (id) => /^j\d+$/.test(String(id || ''));
+
+function journalVisibilityMissing() {
+  try { return Date.now() - Number(localStorage.getItem(NO_VISIBILITY_KEY) || 0) < 864e5; } catch (e) { return false; }
+}
+function markJournalVisibilityMissing(err) {
+  if (!err || !/visibility/.test(err.message || '')) return false;
+  try { localStorage.setItem(NO_VISIBILITY_KEY, String(Date.now())); } catch (e) { /* 무시 */ }
+  return true;
+}
+
 /** 비프리미엄 사용자가 하루에 무료로 올릴 수 있는 사진 수(BM: 나머지는 프리미엄). */
 const FREE_PHOTO_DAILY_LIMIT = 3;
 
@@ -160,6 +193,19 @@ const AppState = {
 
   load() {
     if (this._cache) return this._cache;
+    // 로그인 세션이 남아 있으면 게스트 상태 대신 그 사람의 마지막 상태로 시작한다(USER_SNAPSHOT_KEY)
+    const uid = this._hydrated ? null : storedSessionUid();
+    if (uid) {
+      this._snapshotUid = uid;
+      this._cacheUid = uid;
+      try {
+        const snap = JSON.parse(localStorage.getItem(USER_SNAPSHOT_KEY) || 'null');
+        this._cache = (snap && snap.uid === uid && snap.state) ? Object.assign(emptyState(null), snap.state) : emptyState(null);
+      } catch (e) {
+        this._cache = emptyState(null);
+      }
+      return this._cache;
+    }
     // hydrate() 이전에 동기로 불리면 일단 게스트 상태로 시작한다.
     // 로그인 상태라면 hydrate()가 곧 서버 값으로 통째로 갈아끼운다.
     try {
@@ -189,8 +235,13 @@ const AppState = {
   },
 
   save() {
-    // 로그인 상태에서는 서버가 정본이라 로컬에 남기지 않는다.
-    if (this.isAuthed) return;
+    // 로그인 상태에서는 서버가 정본이다 — 다음에 열 때 먼저 보여줄 사본만 남긴다
+    if (this.isAuthed) {
+      try { localStorage.setItem(USER_SNAPSHOT_KEY, JSON.stringify({ uid: Auth.userId, state: this._cache })); } catch (e) { /* 용량 초과 등 */ }
+      return;
+    }
+    // 세션 확인 전에 로그인한 사람의 사본을 들고 있으면 게스트 저장 칸에 섞지 않는다
+    if (this._snapshotUid && !this._hydrated) return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._cache)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
   },
 
@@ -742,43 +793,55 @@ const AppState = {
     s.journal.push(entry);
     this.save();
 
-    if (this.isAuthed) {
-      this._push(async () => {
-        const res = await supabaseClient.from('user_journal')
-          .insert({
-            user_id: Auth.userId,
-            entry_date: entry.date,
-            phase: entry.phase,
-            title: entry.title || null,
-            body: entry.body,
-            photos: entry.photos,
-            tags: entry.tags,
-            location: entry.location,
-            now_playing: entry.nowPlaying,
-            weather: entry.weather,
-            visibility: entry.visibility,
-            created_at: entry.createdAt
-          })
-          .select('id, created_at')
-          .single();
-        // 수정·삭제가 서버 행을 찾을 수 있도록 실제 id로 교체.
-        // 바꾼 뒤 반드시 다시 그려야 한다 — 목록 DOM에는 임시 id가 박혀 있어서,
-        // 그대로 두면 방금 쓴 기록의 수정/삭제 버튼이 없는 id를 가리킨다.
-        if (!res.error && res.data) {
-          // 화면이 임시 id로 잡아둔 것(예: 방금 만든 기록을 곧바로 수정 중)이
-          // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
-          entry.tempId = entry.id;
-          entry.id = res.data.id;
-          // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
-          document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
-          entry.createdAt = res.data.created_at;
-          this.save();
-          document.dispatchEvent(new CustomEvent('MOCK:updated'));
-        }
-        return res;
-      }, '기록 추가');
-    }
+    this._uploadJournal(entry);
     return entry;
+  },
+
+  /**
+   * 기록 한 건을 서버에 넣고 임시 id를 진짜 uuid로 바꾼다. 새로 쓸 때와, 저장이 실패해
+   * 이 기기에만 남은 기록을 다음 접속 때 다시 올릴 때(hydrate) 함께 쓴다.
+   */
+  _uploadJournal(entry) {
+    if (!this.isAuthed) return;
+    this._push(async () => {
+      const row = {
+        user_id: Auth.userId,
+        entry_date: entry.date,
+        phase: entry.phase,
+        title: entry.title || null,
+        body: entry.body,
+        photos: entry.photos,
+        tags: entry.tags,
+        location: entry.location,
+        now_playing: entry.nowPlaying,
+        weather: entry.weather,
+        visibility: entry.visibility,
+        created_at: entry.createdAt
+      };
+      const insert = (r) => supabaseClient.from('user_journal').insert(r).select('id, created_at').single();
+      if (journalVisibilityMissing()) delete row.visibility;
+      let res = await insert(row);
+      // friends.sql을 안 돌린 서버는 visibility 칸이 없어 통째로 거절한다 — 그 칸만 빼고 다시
+      if (res.error && 'visibility' in row && markJournalVisibilityMissing(res.error)) {
+        delete row.visibility;
+        res = await insert(row);
+      }
+      // 수정·삭제가 서버 행을 찾을 수 있도록 실제 id로 교체.
+      // 바꾼 뒤 반드시 다시 그려야 한다 — 목록 DOM에는 임시 id가 박혀 있어서,
+      // 그대로 두면 방금 쓴 기록의 수정/삭제 버튼이 없는 id를 가리킨다.
+      if (!res.error && res.data) {
+        // 화면이 임시 id로 잡아둔 것(예: 방금 만든 기록을 곧바로 수정 중)이
+        // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
+        entry.tempId = entry.id;
+        entry.id = res.data.id;
+        // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
+        document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
+        entry.createdAt = res.data.created_at;
+        this.save();
+        document.dispatchEvent(new CustomEvent('MOCK:updated'));
+      }
+      return res;
+    }, '기록 추가');
   },
 
   /*
@@ -813,8 +876,8 @@ const AppState = {
     Object.assign(entry, patch);
     this.save();
     if (!this.isAuthed) return;
-    this._push(() => supabaseClient.from('user_journal')
-      .update({
+    this._push(async () => {
+      const row = {
         entry_date: entry.date,
         phase: entry.phase,
         title: entry.title || null,
@@ -824,8 +887,16 @@ const AppState = {
         now_playing: entry.nowPlaying || null,
         visibility: entry.visibility === 'friends' ? 'friends' : 'private',
         updated_at: new Date().toISOString()
-      })
-      .eq('id', entry.id).eq('user_id', Auth.userId), '기록 수정');
+      };
+      const update = (r) => supabaseClient.from('user_journal').update(r).eq('id', entry.id).eq('user_id', Auth.userId);
+      if (journalVisibilityMissing()) delete row.visibility;
+      let res = await update(row);
+      if (res.error && 'visibility' in row && markJournalVisibilityMissing(res.error)) {
+        delete row.visibility;
+        res = await update(row);
+      }
+      return res;
+    }, '기록 수정');
   },
 
   deleteJournalEntry(id) {
@@ -872,34 +943,40 @@ const AppState = {
     await Auth.init();
 
     if (!Auth.isAuthed) {
+      // 세션이 끝났으면 그 사람의 사본을 이 기기에 남기지 않는다
+      try { localStorage.removeItem(USER_SNAPSHOT_KEY); } catch (e) { /* 무시 */ }
+      this._snapshotUid = null;
+      this._hydrated = true;   // load()가 다시 사본을 집지 않게 먼저 표시
       this._cache = null;
       this.load();
-      this._hydrated = true;
       document.dispatchEvent(new CustomEvent('MOCK:updated'));
       return;
     }
 
     const uid = Auth.userId;
     // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
-    const [prof, favs, wish, todos, journal, credits, qFavs, unlocks, creditTotal] = await Promise.all([
+    const JOURNAL_COLS = 'id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at';
+    // 아직 서버에 못 올린 기록 — 아래에서 서버 목록으로 갈아끼운 뒤 다시 올린다
+    // 같은 계정의 상태일 때만(다른 계정·게스트 기록을 이 계정에 올리면 안 된다)
+    const mine = this.load() && this._cacheUid === uid;
+    const unsynced = mine ? (this._cache.journal || []).filter(e => isTempJournalId(e.id)) : [];
+    // 크레딧 조회(user_credits·match_unlocks·my_credit_total)는 뺐다 — 크레딧을 없앴고(2026-11-08) 서버에도 없다
+    const [prof, favs, wish, todos, journal, qFavs] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
       // '*' — oia_2027.sql 전에는 apply_major/apply_length 컬럼이 없어, 이름을 적으면 조회가 통째로 실패한다
       supabaseClient.from('user_wishlist').select('*').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, visibility, created_at').eq('user_id', uid),
-      supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
-      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid),
-      supabaseClient.from('match_unlocks').select('list_key, steps').eq('user_id', uid),
-      // 기한 있는 크레딧(가입 보너스·프리미엄 증정)까지 더한 잔액 — bm_unlocks.sql
-      supabaseClient.rpc('my_credit_total')
+      supabaseClient.from('user_journal').select(journalVisibilityMissing() ? JOURNAL_COLS : JOURNAL_COLS + ', visibility').eq('user_id', uid),
+      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid)
     ]);
 
     // friends.sql(visibility 컬럼)을 아직 안 돌린 서버면 위 조회가 통째로 실패한다 —
     // 기록이 사라진 것처럼 보이지 않게 컬럼 없이 한 번 더 읽는다.
     if (journal.error) {
+      markJournalVisibilityMissing(journal.error);
       const fallback = await supabaseClient.from('user_journal')
-        .select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at')
+        .select(JOURNAL_COLS)
         .eq('user_id', uid);
       journal.data = fallback.data;
     }
@@ -932,14 +1009,7 @@ const AppState = {
         : null;
     }
     if (favs.data) next.favorites = favs.data.map(r => r.school_id);
-    // mentor_step.sql이 아직 적용되지 않았으면 이 두 조회는 조용히 에러만 나고
-    // data는 null이다 — 그대로 기본값(0, [])으로 남아 화면이 깨지지 않는다.
-    if (credits.data) next.credits = credits.data.balance;
-    // bm_unlocks.sql 전에는 이 RPC가 없어 에러 → 위의 기한 없는 잔액 그대로 쓴다
-    if (!creditTotal.error && typeof creditTotal.data === 'number') next.credits = creditTotal.data;
     if (qFavs.data) next.questionFavorites = qFavs.data.map(r => r.question_id);
-    // bm_unlocks.sql 전이면 에러만 나고 빈 객체로 남는다 — 목록은 무료 3개만 보인다.
-    if (unlocks.data) unlocks.data.forEach(r => { next.matchUnlocks[r.list_key] = r.steps; });
     if (wish.data) wish.data.forEach(r => {
       next.wishlist[r.rank] = r.school_id;
       if (r.apply_major || r.apply_length) next.wishlistMeta[r.school_id] = { major: r.apply_major || '', length: r.apply_length || null };
@@ -970,8 +1040,17 @@ const AppState = {
       }));
     }
 
+    // 이 기기에만 남은 기록을 되살려 다시 올린다. 저장 응답을 받기 전에 화면을 옮겨 서버에는
+    // 이미 들어간 것일 수 있어, 같은 시각(created_at)의 서버 기록이 있으면 건너뛴다.
+    const serverTimes = new Set(next.journal.map(e => +new Date(e.createdAt)));
+    const retry = unsynced.filter(e => !serverTimes.has(+new Date(e.createdAt)));
+    next.journal.push(...retry);
+
     this._cache = next;
+    this._cacheUid = uid;
     this._hydrated = true;
+    this.save();
+    retry.forEach(e => this._uploadJournal(e));
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   },
 
@@ -1015,6 +1094,7 @@ const AppState = {
 // 로그아웃/로그인 전환 시 이전 사용자의 상태가 남지 않도록 통째로 다시 읽는다.
 document.addEventListener('auth:changed', () => {
   AppState._cache = null;
+  AppState._cacheUid = null;
   AppState.hydrate();
 });
 

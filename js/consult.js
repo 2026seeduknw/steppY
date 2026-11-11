@@ -1,5 +1,5 @@
 /**
- * Mentor's Step — 공개 질문·답변 게시판.
+ * Talkky(옛 이름 Mentor's Step) — 공개 질문·답변 게시판.
  *
  * 질문·답변은 누구나(비로그인 포함) 읽을 수 있고, 올리려면 로그인이 필요하다.
  * 이름·이메일은 어디에도 표시하지 않는다 — 소수 인원만 가는 학교의 질문이면
@@ -322,13 +322,21 @@
   }
 
   async function loadPins() {
-    try {
-      const res = await supabaseClient.from('mentor_pins')
-        .select('*')   // image_url 열이 생기면 그대로 받는다
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false });
-      pins = res.error ? [] : (res.data || []);
-    } catch (e) { pins = []; }
+    // mentor_pins.sql을 안 돌린 서버면 테이블이 없다(PGRST205) — 하루 동안은 다시 묻지 않고 예시 글을 쓴다
+    const MISSING_KEY = 'steppy_mentor_pins_missing';
+    let missing = false;
+    try { missing = Date.now() - Number(localStorage.getItem(MISSING_KEY) || 0) < 864e5; } catch (e) { /* 무시 */ }
+    pins = [];
+    if (!missing) {
+      try {
+        const res = await supabaseClient.from('mentor_pins')
+          .select('*')   // image_url 열이 생기면 그대로 받는다
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false });
+        if (res.error && res.error.code === 'PGRST205') { try { localStorage.setItem(MISSING_KEY, String(Date.now())); } catch (e) { /* 무시 */ } }
+        pins = res.error ? [] : (res.data || []);
+      } catch (e) { pins = []; }
+    }
     if (!pins.length) pins = SAMPLE_PINS;
     renderPins();
   }
@@ -613,7 +621,7 @@
     page.innerHTML = `
       <div class="m2d-top">
         <button type="button" class="m2d-back" data-page-close aria-label="뒤로">‹</button>
-        <span class="m2d-top__t"><b>질문</b><small>Mentor's Step</small></span>
+        <span class="m2d-top__t"><b>질문</b><small>Talkky</small></span>
         <span></span>
       </div>
       <div class="mentor-page__body m2d">

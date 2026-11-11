@@ -2010,7 +2010,7 @@
       slot.innerHTML = loading ? '' : `
         <div class="rec-hero__empty">
           <p class="rec-hero__empty-title">오늘의 첫 사진을 남겨 보세요</p>
-          <button type="button" class="rec-pill rec-pill--dark" data-hero-write>+ 사진 기록하기</button>
+          <button type="button" class="rec-pill rec-pill--dark" data-hero-write>+ 사진 추가</button>
         </div>`;
       return;
     }
@@ -2023,7 +2023,8 @@
         ${place ? `<span class="rec-hero__place">📍 ${esc(place)}</span>` : ''}
         <span class="rec-hero__label">${hit.isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
         <span class="rec-hero__date">${shortDate(e.date)}</span>
-      </button>`;
+      </button>
+      <button type="button" class="rec-hero__add" data-hero-write>+ 사진 추가</button>`;
   }
 
   /** 최근에 사진이 담긴 순서로 폴더 넷 */

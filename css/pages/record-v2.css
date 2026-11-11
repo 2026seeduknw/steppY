@@ -289,10 +289,10 @@ body[data-page="journal"] .diary-weekdays, body[data-page="journal"] .diary-mont
 .rec-streak__count b { font-size: 20px; font-weight: 800; margin-left: 2px; }
 .rec-streak__count span { font-weight: 500; color: var(--v2-ink-soft); }
 .rec-streak__more { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); cursor: pointer; white-space: nowrap; }
-.rec-streak__week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 12px; }
-.rec-streak__day { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.rec-streak__week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.rec-streak__day { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .rec-streak__day i { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--v2-ink-faint); }
-.rec-streak__day b { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: var(--v2-ink); background: #fff; }
+.rec-streak__day b { width: 100%; max-width: 32px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: var(--v2-ink); background: #fff; }
 .rec-streak__day.is-done b { background: var(--v2-dark); color: #fff; }
 .rec-streak__day.is-today b { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--v2-dark); }
 .rec-streak__day.is-future b { background: transparent; color: var(--v2-ink-faint); }
@@ -332,3 +332,12 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
 /* 큰 사진 카드 — 사진 비율 그대로(잘리지 않게). 세로로 긴 사진은 화면 높이 안으로 줄이고 양옆을 바탕색으로 */
 .rec-hero:not(.rec-hero--empty) { aspect-ratio: auto; }
 .rec-hero:not(.rec-hero--empty) .rec-hero__img { height: auto; max-height: min(480px, 62vh); object-fit: contain; background: var(--v2-plate); }
+
+/* 큰 사진 카드 오른쪽 위 — 사진이 있어도 바로 새 사진을 올린다 */
+.rec-hero__add {
+  position: absolute; right: 12px; top: 12px; z-index: 2; height: 32px; padding: 0 13px;
+  border: 0; border-radius: 16px; background: var(--v2-dark); color: #fff;
+  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.rec-hero__place { max-width: calc(100% - 130px); }

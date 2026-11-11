@@ -47,7 +47,7 @@ const PAGE_TITLES = {
   journal: '기록하기',
   quest: '퀘스트',
   report: '교환보고서',
-  consult: "Mentor's Step",
+  consult: 'Talkky',
   reviews: '국가별 후기'
 };
 

@@ -475,22 +475,6 @@
     }));
   }
 
-  /**
-   * BM 가격표(supabase/premium.sql). 누구나 읽을 수 있는 참고 데이터라
-   * 다른 로더와 똑같이 다룬다 — 마이그레이션 전이면 조용히 빈 배열이 오고
-   * mock-data.js의 자리표시자 가격이 그대로 남는다.
-   */
-  async function loadCreditCatalog() {
-    const [packages, plans] = await Promise.all([
-      fetchAll('credit_packages', { order: [['sort_order'], ['id']] }),
-      fetchAll('premium_plans', { order: [['sort_order'], ['id']] })
-    ]);
-    return {
-      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, bonus: p.bonus || 0, priceKrw: p.price_krw, label: p.label })),
-      premiumPlans: (plans || []).map(p => ({ id: p.id, days: p.days, priceKrw: p.price_krw, label: p.label }))
-    };
-  }
-
   async function loadYonseiMajors() {
     const data = await fetchAll('yonsei_majors', { order: [['sort_order'], ['id']] });
     return (data || []).map(m => ({ college: m.college, division: m.division, majorName: m.major_name }));
@@ -614,15 +598,14 @@
     core: {
       load: async () => {
         const [schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
-          countryPrep, schoolReviews, schoolDocuments, creditCatalog] = await Promise.all([
+          countryPrep, schoolReviews, schoolDocuments] = await Promise.all([
           loadSchools(), loadChecklist(), loadScholarships(), loadLivingPrep(), loadTips(), loadNearbySpots(),
           loadYonseiMajors(), loadVisaRequirements(), loadCountryPrep(), loadSchoolExchangeReports(),
-          loadSchoolDocuments(), loadCreditCatalog()
+          loadSchoolDocuments()
         ]);
         return {
           schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
-          countryPrep, schoolReviews, schoolDocuments,
-          creditPackages: creditCatalog.creditPackages, premiumPlans: creditCatalog.premiumPlans
+          countryPrep, schoolReviews, schoolDocuments
         };
       }
     },

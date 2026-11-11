@@ -21,9 +21,21 @@ const Friends = (function () {
 
   /* ------------------------------------------------------------ 서버 호출 */
 
+  /*
+   * supabase/friends.sql을 아직 안 돌린 서버에는 친구 RPC가 없다(404, PGRST202).
+   * 그러면 기록하기 화면을 열 때마다 같은 실패 요청이 여러 번 나갔다 — 한 번 확인하면
+   * 하루 동안은 묻지 않고 바로 '없음'으로 돌려준다(SQL을 돌리면 다음 날부터 다시 붙는다).
+   */
+  const MISSING_KEY = 'steppy_friends_rpc_missing';
+  const rpcMissing = () => { try { return Date.now() - Number(localStorage.getItem(MISSING_KEY) || 0) < 864e5; } catch (e) { return false; } };
   async function rpc(name, args) {
+    if (rpcMissing()) return { ok: false, error: { code: 'PGRST202', message: 'friends.sql not applied' } };
     const res = await supabaseClient.rpc(name, args);
-    if (res.error) { console.warn('[friends]', name, res.error.message); return { ok: false, error: res.error }; }
+    if (res.error) {
+      if (res.error.code === 'PGRST202') { try { localStorage.setItem(MISSING_KEY, String(Date.now())); } catch (e) { /* 무시 */ } }
+      console.warn('[friends]', name, res.error.message);
+      return { ok: false, error: res.error };
+    }
     return { ok: true, data: res.data };
   }
 

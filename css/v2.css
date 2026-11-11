@@ -75,7 +75,7 @@ body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid
 .v2-shortcut--sky  { background: var(--v2-sky); }
 .v2-shortcut--mint { background: #DCE8E2; }
 .v2-shortcut--plum { background: var(--v2-plum); }
-.v2-shortcut__title { font-size: 14px;   /* 세 장 한 줄(115px)에 'Mentor's Step'이 한 줄로 들어가는 크기 */
+.v2-shortcut__title { font-size: 14px;   /* 세 장 한 줄(115px)에 바로가기 이름이 한 줄로 들어가는 크기 */
    font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; white-space: nowrap; }
 .v2-shortcut__sub { margin-top: 5px; font-size: 10.5px; line-height: 1.4; color: #6B5E49; word-break: keep-all; }
 .v2-shortcut__go {
@@ -194,6 +194,10 @@ body[data-page="search"] .app-sheet__head #resetFilters { margin: 0 auto 0 10px;
 
 /* 책장은 페이지 좌우 여백을 무시하고 화면 끝까지 — 넘기는 카드가 화면 가장자리에서 잘려 보이게 */
 .v2-shelf { width: 100vw; margin: 0 0 44px calc(50% - 50vw); }
+/* 데스크탑은 body가 기기 컬럼(--app-width)에 갇히므로 화면 폭 대신 컬럼 폭까지만 */
+@media (min-width: 900px) {
+  .v2-shelf { width: var(--app-width); margin-left: calc(50% - var(--app-width) / 2); }
+}
 .v2-shelf__head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 24px; }
 .v2-shelf__country { margin: 0; font-size: 19px; font-weight: 800; color: var(--v2-ink); }
 .v2-shelf__count { font-size: 12px; color: var(--v2-ink-faint); }

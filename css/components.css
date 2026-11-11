@@ -710,7 +710,10 @@ body[data-page="credits"]::before {
   flex-shrink: 0;
 }
 .ss__search:focus { outline: none; background: var(--sky-50); }
-.ss__list { overflow-y: auto; padding: var(--space-2); }
+.ss__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: var(--space-2); }
+/* 아래 공간이 좁으면 위로 펼친다(searchable-select.js placePanel) — 검색칸은 목록 아래, 트리거 쪽에 */
+.ss__panel--up { top: auto; bottom: calc(100% + 6px); flex-direction: column-reverse; }
+.ss__panel--up .ss__search { border-bottom: none; border-top: 1px solid var(--line-100); }
 .ss__group {
   padding: var(--space-2) var(--space-2) 4px;
   font-size: var(--fs-micro);
@@ -960,37 +963,10 @@ select.dd--open { border-color: var(--ink-900); }
 .upcoming__name { font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .upcoming__due { flex: none; color: var(--ink-400); }
 
-/* ---------------------------------------------------------------- 학점 인정 한도
-   js/components/credit-limit.js. 네 칸(졸업학점·기간·학제·딴 학점)을 2×2 로 — 한 줄에 하나씩 쌓지 않는다. */
+/* ---------------------------------------------------------------- 학점 인정 탭 위 카드(파견 중·귀국 후 할 일)
+   js/components/credit-limit.js */
 .credits-top { margin-bottom: var(--space-3); }
 .credits-top[hidden] { display: none; }
-.climit__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.climit__body { margin-top: 8px; }
-.climit__body[hidden] { display: none; }
-.climit__right { display: inline-flex; align-items: center; gap: 6px; }
-.climit__toggle { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 1.5px solid #E0DBD2; border-radius: 50%; background: #fff; color: var(--ink-700); cursor: pointer; }
-.climit__toggle svg { transition: transform 200ms ease; }
-.climit__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.climit__title { font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-900); }
-.climit__limit { font-size: var(--fs-small); color: var(--ink-600); }
-.climit__limit strong { color: var(--sky-500); font-size: var(--fs-body); }
-.climit__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
-.climit__field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.climit__field > span { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); }
-.climit__field input { height: 36px; border: 1px solid var(--line-200); border-radius: 10px; padding: 0 10px; font: inherit; font-size: var(--fs-input); min-width: 0; }
-.climit__chips { display: flex; gap: 4px; flex-wrap: nowrap; }
-.climit__chips .chip { min-height: 30px; padding: 4px 8px; font-size: var(--fs-micro); white-space: nowrap; }
-.climit__note { grid-column: 1 / -1; font-size: var(--fs-micro); color: var(--ink-600); }
-.climit__check { display: flex; align-items: center; gap: 6px; font-size: var(--fs-micro); color: var(--ink-600); margin-top: 6px; }
-.climit__result { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: var(--sky-50); font-size: var(--fs-small); color: var(--ink-700); }
-.climit__result strong { font-size: var(--fs-body); color: var(--ink-900); }
-.climit__result span { display: block; font-size: var(--fs-micro); color: var(--ink-400); }
-.climit__rules { margin-top: 8px; font-size: var(--fs-micro); color: var(--ink-600); }
-.climit__rules summary { cursor: pointer; font-weight: 700; color: var(--ink-700); }
-.climit__rules ul { margin: 6px 0 0; padding-left: 16px; list-style: disc; display: flex; flex-direction: column; gap: 3px; line-height: 1.5; word-break: keep-all; }
-.climit__rules li { display: list-item; }
-.climit__rules li::marker { color: var(--ink-500); }
-.climit__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 8px; word-break: keep-all; }
 /* 국제처 공식 서비스 두 개 — 한 줄에 나란히 */
 .school-modal__official--oia { margin-top: var(--space-2); display: flex; flex-wrap: wrap; gap: 4px 14px; word-break: keep-all; }
 
