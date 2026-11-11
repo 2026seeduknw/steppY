@@ -1,5 +1,5 @@
 /**
- * Talkky(옛 이름 Mentor's Step) — 공개 질문·답변 게시판.
+ * Talky(옛 이름 Mentor's Step) — 공개 질문·답변 게시판.
  *
  * 질문·답변은 누구나(비로그인 포함) 읽을 수 있고, 올리려면 로그인이 필요하다.
  * 이름·이메일은 어디에도 표시하지 않는다 — 소수 인원만 가는 학교의 질문이면
@@ -621,7 +621,7 @@
     page.innerHTML = `
       <div class="m2d-top">
         <button type="button" class="m2d-back" data-page-close aria-label="뒤로">‹</button>
-        <span class="m2d-top__t"><b>질문</b><small>Talkky</small></span>
+        <span class="m2d-top__t"><b>질문</b><small>Talky</small></span>
         <span></span>
       </div>
       <div class="mentor-page__body m2d">
