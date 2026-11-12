@@ -57,6 +57,19 @@
       <input type="password" name="password" autocomplete="current-password" required minlength="6">
     </label>
 
+    <!-- 회원가입일 때만 — 정보는 참고용이라 본인이 꼭 확인해야 한다는 안내를 동의 위에 크게 -->
+    <div class="auth__verify" id="authVerify" hidden role="note">
+      <p class="auth__verify-title">⚠️ 꼭 직접 확인하세요</p>
+      <p>steppY의 학교·지원 자격·학점 인정·생활 정보는 국제처 공개 자료와 조사 시점 기준의 <strong>참고 정보</strong>예요.</p>
+      <p>지원·배정·학점 인정은 국제처와 소속 학과가 정해요.<br>신청 전에 <strong>공식 안내를 본인이 꼭 확인</strong>해 주세요.</p>
+    </div>
+
+    <!-- 회원가입일 때만 — 필수 동의(약관·개인정보처리방침)와 만 14세 이상 확인을 한 번에 받는다 -->
+    <label class="auth__agree" id="authAgree" hidden>
+      <input type="checkbox" name="agree">
+      <span>[필수] 만 14세 이상이며, 위 안내를 확인했고 <a href="terms.html">이용약관</a>과 <a href="privacy.html">개인정보처리방침</a>에 동의해요</span>
+    </label>
+
     <p class="auth__error" id="authError" role="alert" hidden></p>
     <p class="auth__notice" id="authNotice" role="status" hidden></p>
 
@@ -65,7 +78,7 @@
 
   <a class="auth__skip" href="home.html">로그인 없이 둘러보기 →</a>
 
-  <p class="auth__legal">가입하면 <a href="privacy.html">개인정보처리방침</a>에 동의하는 것으로 봅니다</p>
+  <p class="auth__legal"><a href="terms.html">이용약관</a> · <a href="privacy.html">개인정보처리방침</a></p>
 </main>
 
 <script src="js/release-flags.js"></script>

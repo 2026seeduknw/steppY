@@ -231,7 +231,7 @@ function openAccountSheet() {
           <button type="button" class="btn btn--ghost btn--block account-sheet__departure" id="changeDepartureBtn">출국일 변경</button>` : ''}
           <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
 
-          <p class="account-sheet__legal"><a href="privacy.html">개인정보처리방침</a></p>
+          <p class="account-sheet__legal"><a href="terms.html">이용약관</a> · <a href="privacy.html">개인정보처리방침</a></p>
 
           <div class="account-danger">
             <button type="button" class="btn btn--text account-danger__open" id="deleteAccountOpen">회원 탈퇴</button>

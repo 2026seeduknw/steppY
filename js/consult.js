@@ -315,7 +315,9 @@
     // 즐겨찾기만 모아 볼 때는 고정 글을 접어 둔다 — 내가 찜한 글만 보이는 화면이라서
     if (!pins.length || state.onlyFavorite) { pinsEl.hidden = true; pinsEl.innerHTML = ''; return; }
     pinsEl.hidden = false;
-    pinsEl.innerHTML = `<div class="m2-sec"><h2>선배의 기록</h2></div><div class="m2-cols">${pins.map(pinRowTemplate).join('')}</div>`;
+    // 예시 글이면 실제 선배 글로 오해하지 않게 질문·답변과 같은 자리에 '예시 글'을 붙인다
+    const sampleNote = pins.every(p => p.sample) ? '<span>예시 글</span>' : '';
+    pinsEl.innerHTML = `<div class="m2-sec"><h2>선배의 기록</h2>${sampleNote}</div><div class="m2-cols">${pins.map(pinRowTemplate).join('')}</div>`;
     pinsEl.querySelectorAll('[data-open-pin]').forEach(el => {
       el.addEventListener('click', () => openPinPage(el.dataset.openPin));
     });

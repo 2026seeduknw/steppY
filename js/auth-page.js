@@ -9,6 +9,7 @@
   const errorEl = document.getElementById('authError');
   const noticeEl = document.getElementById('authNotice');
   const nameField = document.querySelector('.auth__field--name');
+  const agreeField = document.getElementById('authAgree');
   const titleEl = document.getElementById('authTitle');
   const subEl = document.getElementById('authSub');
   const passwordInput = form.elements.password;
@@ -52,6 +53,9 @@
     submit.textContent = copy.submit;
     passwordInput.setAttribute('autocomplete', copy.autocomplete);
     nameField.hidden = next !== 'signup';
+    if (agreeField) agreeField.hidden = next !== 'signup';
+    const verify = document.getElementById('authVerify');
+    if (verify) verify.hidden = next !== 'signup';
     modes.querySelectorAll('.mode-toggle__btn').forEach(btn => {
       btn.classList.toggle('is-active', btn.dataset.mode === next);
     });
@@ -95,6 +99,7 @@
       return showError(`연세대학교 메일(${ALLOWED_EMAIL_DOMAIN})로만 이용할 수 있어요.`);
     }
     if (mode === 'signup' && password.length < 6) return showError('비밀번호는 6자 이상이어야 해요.');
+    if (mode === 'signup' && agreeField && !fd.get('agree')) return showError('필수 항목에 동의해야 가입할 수 있어요.');
 
     submit.disabled = true;
     submit.textContent = mode === 'signin' ? '로그인 중…' : '가입 중…';

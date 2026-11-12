@@ -535,3 +535,27 @@ span.m2d-bar__in { color: var(--v2-ink-faint); }
 .m2d-bar__in::placeholder { color: var(--v2-ink-faint); }
 .m2d-bar__btn { flex: none; height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 
+
+/* ---------------------------------------------------------------- 홈 하단 정보(운영·문의·약관)
+   어두운 띠가 화면 끝까지 닿게 body의 아래 여백(탭바 자리)을 띠가 대신 채운다 */
+body[data-page="home"] .v2-home { padding-bottom: var(--space-6); }
+.site-footer {
+  margin-bottom: calc((var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom) + var(--space-5)) * -1);
+  padding: 32px 24px calc(var(--tabbar-h) + var(--tabbar-gap) * 2 + var(--safe-bottom) + 28px);
+  background: var(--v2-dark); color: #C9D0CC;
+  font-size: 12px; line-height: 1.6; word-break: keep-all;
+}
+.site-footer__brand { margin: 0; font-family: var(--font-title); font-size: 20px; font-weight: 900; letter-spacing: -0.02em; color: #fff; }
+.site-footer__tag { margin: 2px 0 0; color: #C9D0CC; }
+.site-footer__links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin-top: 20px; }
+.site-footer__links a { color: #E6EAE8; text-decoration: none; font-size: 13px; }
+.site-footer__links a + a::before { content: '|'; margin: 0 10px; color: #7E8A85; }
+.site-footer__links strong { color: #fff; font-weight: 800; }
+.site-footer__info { margin: 16px 0 0; display: grid; gap: 2px; }
+.site-footer__info div { display: flex; gap: 8px; }
+.site-footer__info dt { flex: none; width: 40px; color: #A9B3AE; }
+.site-footer__info dd { margin: 0; color: #E6EAE8; }
+.site-footer__info a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.site-footer__note { margin: 14px 0 0; color: #A9B3AE; }
+.site-footer__copy { margin: 14px 0 0; color: #A9B3AE; font-size: 11px; }
+.site-footer a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 2px; }

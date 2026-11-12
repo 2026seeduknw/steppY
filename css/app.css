@@ -1844,6 +1844,17 @@ body[data-page="prepare"] .leg-card {
 
 .auth__legal { margin-top: var(--space-4); text-align: center; font-size: var(--fs-micro); color: var(--ink-400); }
 .auth__legal a { color: var(--ink-600); text-decoration: underline; }
+/* 회원가입 — 참고 정보라 본인이 꼭 확인해야 한다는 안내. 폼에서 가장 먼저 눈에 띄게 경고색 상자로 */
+.auth__verify { margin: 4px 0 6px; padding: 14px 16px; border-radius: 14px; background: #FFF4D6; border: 1.5px solid #E8B64A; color: #5A4512; font-size: var(--fs-small); line-height: 1.55; word-break: keep-all; }
+.auth__verify[hidden] { display: none; }
+.auth__verify-title { margin: 0 0 6px; font-size: 1rem; font-weight: 800; color: #3E2E05; }
+.auth__verify p + p { margin-top: 4px; }
+.auth__verify strong { color: #3E2E05; }
+/* 회원가입 필수 동의 — 체크칸은 글 첫 줄에 맞춘다 */
+.auth__agree { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 4px; font-size: var(--fs-small); line-height: 1.5; color: var(--ink-700); cursor: pointer; word-break: keep-all; }
+.auth__agree[hidden] { display: none; }
+.auth__agree input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ink-900); }
+.auth__agree a { color: var(--ink-900); text-decoration: underline; }
 
 /* ---- 랜딩 푸터 ---- */
 /* 마지막 CTA 와 이어지는 자리라 위 여백은 절반으로. 아래는 고정 버튼이 가리지
@@ -1851,7 +1862,7 @@ body[data-page="prepare"] .leg-card {
 /* 고정된 '밀어서 시작하기'가 화면 아래 90px 가량을 덮는다. 페이지 맨 끝
    요소가 그만큼 비워 줘야 마지막 링크가 버튼 뒤로 들어가지 않는다 —
    앞 섹션에 여백을 주면 소용없다(그 뒤에 이 푸터가 또 오니까). */
-.intro__footer { padding: 0 var(--space-5) calc(var(--space-5) + 92px); text-align: center; }
+.intro__footer { padding: 0 var(--space-5) calc(var(--space-5) + 92px); text-align: center; display: flex; justify-content: center; gap: 16px; }
 /* 개인정보처리방침은 App Store 가 찾아보는 링크라 묻히면 안 된다.
    남색 배경 시절에는 크림색이었는데, 배경을 밝은 하늘색으로 뒤집으면서
    그 크림색이 다시 안 보이게 됐다 — 진한 잉크로 되돌린다. */
