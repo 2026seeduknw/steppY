@@ -527,7 +527,10 @@ body[data-page="consult"] .m2-head { margin-top: 6px; }
 .m2d-a__av { width: 26px; height: 26px; border-radius: 50%; background: var(--v2-dark); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
 .m2d-a__av.is-alt { background: #8A928E; }
 .m2d-a__body { margin: 10px 0 8px; font-size: 13.5px; line-height: 1.6; word-break: keep-all; }
-.m2d-a__foot { font-size: 11px; color: var(--v2-ink-faint); }
+.m2d-a__foot { font-size: 11px; color: var(--v2-ink-faint); display: flex; align-items: center; gap: 10px; }
+/* 내 질문·답변 삭제 — 눈에 띄지 않게 글자 버튼으로(되돌릴 수 없어 누르면 확인을 한 번 더 받는다) */
+.m2d-del { margin-left: auto; padding: 4px 2px; border: 0; background: none; font: inherit; font-size: 11px; font-weight: 600; color: var(--v2-ink-soft); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.m2d-del--top { margin: 0; justify-self: end; font-size: 12.5px; }
 .m2d-empty { margin: 0; padding: 18px 0; font-size: 13px; color: var(--v2-ink-faint); }
 .m2d-bar { flex: none; display: flex; align-items: flex-end; gap: 10px; padding: 13px 20px calc(var(--safe-bottom, 0px) + 20px); border-top: 1px solid #EFEBE3; background: #fff; margin: 0; }
 .m2d-bar__in { flex: 1; min-width: 0; min-height: 44px; max-height: 120px; padding: 12px 16px; border: 0; border-radius: 22px; background: #F4F2EE; font: inherit; font-size: 13px; line-height: 20px; color: var(--v2-ink); resize: none; box-sizing: border-box; display: flex; align-items: center; }

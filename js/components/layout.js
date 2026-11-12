@@ -244,6 +244,7 @@ function openAccountSheet() {
                 <li>학점·어학 성적, 교환 시기 같은 기본 정보</li>
                 <li>준비 체크리스트에서 직접 추가한 할 일</li>
               </ul>
+              <p class="account-danger__note"><strong>Talky에 쓴 질문·답변은 지워지지 않고 이름 없이 남아요.</strong><br>지우고 싶으면 탈퇴 전에 각 글에서 직접 삭제해 주세요.</p>
               <p class="account-danger__note">같은 메일로 다시 가입할 수는 있지만, 지운 내용은 돌아오지 않아요.</p>
               <div class="account-danger__actions">
                 <button type="button" class="btn btn--ghost btn--sm" id="deleteAccountCancel">그만두기</button>

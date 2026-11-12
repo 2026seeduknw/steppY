@@ -583,14 +583,15 @@
       </div>`;
   }
 
-  /** 답변 카드 — 이름 없이 순서대로 A, B, C… 로만 구분한다(작성자를 드러내지 않는다) */
+  /** 답변 카드 — 이름 없이 순서대로 A, B, C… 로만 구분한다(작성자를 드러내지 않는다). 내 답변이면 지울 수 있다 */
   function answerItemTemplate(a, i) {
     const letter = String.fromCharCode(65 + (i % 26));
+    const mine = AppState.isAuthed && typeof Auth !== 'undefined' && a.authorId && a.authorId === Auth.userId;
     return `
       <div class="m2d-a">
-        <div class="m2d-a__who"><span class="m2d-a__av${i ? ' is-alt' : ''}">${letter}</span>답변 ${letter}</div>
+        <div class="m2d-a__who"><span class="m2d-a__av${i ? ' is-alt' : ''}">${letter}</span>답변 ${letter}${mine ? ' · 내 답변' : ''}</div>
         <p class="m2d-a__body">${escapeHtml(a.body).replace(/\n/g, '<br>')}</p>
-        <div class="m2d-a__foot">${timeAgo(a.createdAt)}</div>
+        <div class="m2d-a__foot">${timeAgo(a.createdAt)}${mine ? `<button type="button" class="m2d-del" data-del-answer="${escapeHtml(a.id)}">삭제</button>` : ''}</div>
       </div>`;
   }
 
@@ -624,7 +625,7 @@
       <div class="m2d-top">
         <button type="button" class="m2d-back" data-page-close aria-label="뒤로">‹</button>
         <span class="m2d-top__t"><b>질문</b><small>Talky</small></span>
-        <span></span>
+        ${isOwn && !q.sample ? '<button type="button" class="m2d-del m2d-del--top" data-del-question>삭제</button>' : '<span></span>'}
       </div>
       <div class="mentor-page__body m2d">
         <p class="m2d-country">${flag} ${escapeHtml(q.country)}${sName ? ` · ${escapeHtml(sName)}` : ''}</p>
@@ -650,7 +651,34 @@
       document.body.classList.remove('is-sheet-open');
       setTimeout(() => page.remove(), 300);
     };
-    page.addEventListener('click', (e) => { if (e.target.closest('[data-page-close]')) close(); });
+    page.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-page-close]')) { close(); return; }
+      // 내 글 삭제 — 탈퇴해도 Talky 글은 남으므로(이용약관 제18조) 지우려면 여기서 지운다
+      if (e.target.closest('[data-del-question]')) {
+        const msg = q.answers.length
+          ? `이 질문을 삭제할까요?\n달린 답변 ${q.answers.length}개도 함께 지워지고 되돌릴 수 없어요.`
+          : '이 질문을 삭제할까요?\n되돌릴 수 없어요.';
+        if (!window.confirm(msg)) return;
+        const res = await AppState.deleteQuestion(q.id);
+        if (!res.ok) { if (typeof showToast === 'function') showToast('삭제하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+        close();
+        renderList();
+        if (typeof showToast === 'function') showToast('질문을 삭제했어요');
+        return;
+      }
+      const delA = e.target.closest('[data-del-answer]');
+      if (delA) {
+        if (!window.confirm('이 답변을 삭제할까요?\n되돌릴 수 없어요.')) return;
+        const res = await AppState.deleteAnswer(q.id, delA.dataset.delAnswer);
+        if (!res.ok) { if (typeof showToast === 'function') showToast('삭제하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+        const list = page.querySelector('#mentorAnswerList');
+        list.innerHTML = q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="m2d-empty">아직 답변이 없어요.</p>';
+        const head = list.previousElementSibling && list.previousElementSibling.querySelector('h2');
+        if (head) head.textContent = `답변 ${q.answers.length}`;
+        renderList();
+        if (typeof showToast === 'function') showToast('답변을 삭제했어요');
+      }
+    });
 
     const form = page.querySelector('#answerForm');
     if (form) {

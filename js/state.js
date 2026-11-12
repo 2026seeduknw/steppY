@@ -416,6 +416,32 @@ const AppState = {
     return { ok: true, answer };
   },
 
+  /**
+   * 내 Talky 글 삭제 — 탈퇴해도 글은 남으므로(supabase/mentor_keep_posts.sql) 본인이 지울 수 있어야 한다.
+   * 지워진 행을 돌려받아 확인한다: 정책이 없으면 에러 없이 0행이 지워져서, 그대로 두면 지운 줄 안다.
+   * 질문을 지우면 달린 답변도 서버에서 함께 지워진다.
+   */
+  async deleteQuestion(id) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.from('mentor_questions')
+      .delete().eq('id', id).eq('author_id', Auth.userId).select('id');
+    if (error || !data || !data.length) return { ok: false, error: error || 'not_deleted' };
+    MOCK.mentorQuestions = MOCK.mentorQuestions.filter(q => q.id !== id);
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true };
+  },
+
+  async deleteAnswer(questionId, answerId) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.from('mentor_answers')
+      .delete().eq('id', answerId).eq('author_id', Auth.userId).select('id');
+    if (error || !data || !data.length) return { ok: false, error: error || 'not_deleted' };
+    const q = MOCK.mentorQuestions.find(x => x.id === questionId);
+    if (q) q.answers = q.answers.filter(a => a.id !== answerId);
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true };
+  },
+
   getConfirmedSchool() {
     const id = this.load().confirmedSchoolId;
     return id ? MOCK.schools.find(sc => sc.id === id) : null;
