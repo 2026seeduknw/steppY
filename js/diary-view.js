@@ -215,7 +215,7 @@
     <div class="rec-layer rec-calpage" id="recCalPage" hidden>
       <header class="rec-top">
         <button type="button" class="rec-top__back" id="recCalClose" aria-label="닫기">‹</button>
-        <div class="rec-top__title"><b>캘린더</b><small>CALENDAR</small></div>
+        <div class="rec-top__title"><b>캘린더</b><small>Calendar</small></div>
         <div class="rec-top__right"></div>
       </header>
       <div class="rec-layer__body">

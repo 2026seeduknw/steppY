@@ -92,7 +92,7 @@ body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid
   background: var(--v2-plate);
   text-align: center;
 }
-.v2-picks__label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; color: var(--v2-ink-faint); }
+.v2-picks__label { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; color: var(--v2-ink-faint); }   /* 소문자가 섞여 대문자용 넓은 자간(0.2em)은 뺐다 */
 /* MY PICKS 와 같은 줄 오른쪽 끝. 원판 모서리가 둥글어(반지름 120px) 글자 윗줄(위에서 20px) 높이에서 곡선이 54px 들어와 있다 — 거기서 12px 더 띄워 66px */
 .v2-picks { position: relative; }
 .v2-picks__go { position: absolute; top: 20px; right: 66px; line-height: 20px; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); text-decoration: none; white-space: nowrap; }

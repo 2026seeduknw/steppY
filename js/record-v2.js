@@ -151,7 +151,7 @@
     storage.querySelector('.rec-layer__body').innerHTML = `
       <header class="v2-head rec-head">
         <p class="v2-head__eyebrow">Your</p>
-        <h1 class="v2-head__title">STORAGE</h1>
+        <h1 class="v2-head__title">Storage</h1>
       </header>
       <div class="rec-chips">
         ${SORTS.map(([k, l]) => `<button type="button" class="rec-chip${k === sortKey ? ' is-on' : ''}" data-sort="${k}" aria-pressed="${k === sortKey}">${l}</button>`).join('')}
