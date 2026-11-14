@@ -360,11 +360,13 @@ body[data-page="credits"] .credits-grid { padding-top: 0; }
 /* 위 두 탭 — 회색 알약 안에서 고른 쪽만 흰 알약 */
 body[data-page="credits"] .mode-toggle {
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-  padding: 4px; border-radius: 22px; background: var(--v2-plate); border: 0;
+  padding: 3px; border-radius: 18px; background: var(--v2-plate); border: 0;
 }
+/* 살짝 작게(42 → 34px 높이) — 제목 아래에서 탭보다 무겁게 보이지 않도록 */
 body[data-page="credits"] .mode-toggle__btn {
-  height: 34px; border: 0; border-radius: 18px; background: none;
-  font-size: 13px; font-weight: 600; color: #6B766F;
+  height: 28px; padding: 0; display: grid; place-items: center; line-height: 1;   /* 기본 여백(10px)이 남으면 글자가 아래로 처진다 */
+  border: 0; border-radius: 15px; background: none;
+  font-size: 12.5px; font-weight: 600; color: #6B766F;
 }
 body[data-page="credits"] .mode-toggle__btn.is-active { background: #fff; color: var(--v2-ink); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
 /* 조회 카드 — "소속 학과" 같은 라벨은 값이 이미 말해 주므로 뺀다(app_ui.md 2장) */
