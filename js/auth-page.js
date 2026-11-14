@@ -79,6 +79,21 @@
     errorEl.hidden = true;
   }
 
+  // 동의 목록 — '전체 동의'는 모든 항목을 한 번에, 항목을 하나라도 풀면 '전체 동의'도 풀린다
+  if (agreeField) {
+    const all = agreeField.querySelector('[data-consent-all]');
+    const items = [...agreeField.querySelectorAll('[data-consent]')];
+    all.addEventListener('change', () => items.forEach(i => { i.checked = all.checked; }));
+    items.forEach(i => i.addEventListener('change', () => { all.checked = items.every(x => x.checked); }));
+    const infoBtn = agreeField.querySelector('[data-toggle-ads-info]');
+    const info = document.getElementById('adsConsentInfo');
+    if (infoBtn && info) infoBtn.addEventListener('click', () => {
+      info.hidden = !info.hidden;
+      infoBtn.setAttribute('aria-expanded', String(!info.hidden));
+      infoBtn.textContent = info.hidden ? '보기' : '접기';
+    });
+  }
+
   modes.addEventListener('click', e => {
     const btn = e.target.closest('.mode-toggle__btn');
     if (btn) setMode(btn.dataset.mode);
@@ -99,7 +114,9 @@
       return showError(`연세대학교 메일(${ALLOWED_EMAIL_DOMAIN})로만 이용할 수 있어요.`);
     }
     if (mode === 'signup' && password.length < 6) return showError('비밀번호는 6자 이상이어야 해요.');
-    if (mode === 'signup' && agreeField && !fd.get('agree')) return showError('필수 항목에 동의해야 가입할 수 있어요.');
+    if (mode === 'signup' && agreeField && !['agree_age', 'agree_terms', 'agree_privacy'].every(k => fd.get(k))) {
+      return showError('[필수] 항목에 모두 동의해야 가입할 수 있어요.');
+    }
 
     submit.disabled = true;
     submit.textContent = mode === 'signin' ? '로그인 중…' : '가입 중…';
@@ -110,7 +127,10 @@
         location.replace('home.html');
         return;
       }
-      const { needsConfirmation } = await Auth.signUp(email, password, name);
+      const { needsConfirmation } = await Auth.signUp(email, password, name, {
+        location: !!fd.get('agree_location'),
+        ads: !!fd.get('agree_ads')
+      });
       // 세션이 바로 생기면(이메일 확인 꺼진 프로젝트) 온보딩부터 보여준다.
       // 확인 메일이 필요한 경우는 첫 로그인 때 layout.js의 가드가 잡는다.
       if (needsConfirmation) {

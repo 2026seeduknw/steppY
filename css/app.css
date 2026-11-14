@@ -721,6 +721,10 @@ button.appbar__avatar { border: none; cursor: pointer; }
 }
 
 .account-sheet { padding: var(--space-4) var(--space-5) var(--space-6); }
+.account-sheet__loc { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: var(--space-3); font-size: var(--fs-small); color: var(--ink-700); }
+.account-sheet__loc b { margin-left: 4px; font-weight: 700; color: var(--ink-900); }
+.account-sheet__loc small { font-size: var(--fs-micro); color: var(--ink-400); }
+.account-sheet__loc + .account-sheet__loc { margin-top: 2px; }
 .account-sheet__label {
   font-size: var(--fs-micro);
   font-family: var(--font-mono);
@@ -1850,11 +1854,26 @@ body[data-page="prepare"] .leg-card {
 .auth__verify-title { margin: 0 0 6px; font-size: 1rem; font-weight: 800; color: #3E2E05; }
 .auth__verify p + p { margin-top: 4px; }
 .auth__verify strong { color: #3E2E05; }
-/* 회원가입 필수 동의 — 체크칸은 글 첫 줄에 맞춘다 */
-.auth__agree { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 4px; font-size: var(--fs-small); line-height: 1.5; color: var(--ink-700); cursor: pointer; word-break: keep-all; }
-.auth__agree[hidden] { display: none; }
-.auth__agree input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ink-900); }
-.auth__agree a { color: var(--ink-900); text-decoration: underline; }
+/* 회원가입 동의 목록 — 전체 동의 / [필수] / [선택]. 항목마다 따로 체크하고, 보기는 오른쪽 끝 */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.auth__consents { margin: 2px 0 4px; padding: 4px 14px 12px; border: 1px solid var(--line-200); border-radius: 14px; background: var(--cloud-0); }
+.auth__consents[hidden] { display: none; }
+.auth__consent { display: flex; align-items: flex-start; gap: 8px; padding: 9px 0; }
+.auth__consent + .auth__consent { border-top: 1px solid var(--line-100); }
+.auth__consent--all { padding: 12px 0; }
+.auth__consent--all .auth__consent-label { font-weight: 800; color: var(--ink-900); }
+.auth__consent--all small { font-weight: 500; color: var(--ink-400); }
+.auth__consent-label { flex: 1; display: flex; align-items: flex-start; gap: 8px; font-size: var(--fs-small); line-height: 1.45; color: var(--ink-700); cursor: pointer; word-break: keep-all; }
+.auth__consent-label input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--ink-900); }
+.auth__consent-label b { color: var(--ink-900); }
+.auth__consent-view { flex: none; padding: 1px 2px; border: 0; background: none; font: inherit; font-size: var(--fs-micro); color: var(--ink-500); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.auth__consent-detail { margin: 0 0 8px 26px; padding: 10px 12px; border-radius: 10px; background: var(--cloud-50); }
+.auth__consent-detail[hidden] { display: none; }
+.auth__consent-info { margin: 0; display: grid; gap: 4px; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-700); }
+.auth__consent-info div { display: flex; gap: 8px; }
+.auth__consent-info dt { flex: none; width: 52px; font-weight: 700; color: var(--ink-500); }
+.auth__consent-info dd { margin: 0; word-break: keep-all; }
+.auth__consent-note { margin: 8px 0 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 
 /* ---- 랜딩 푸터 ---- */
 /* 마지막 CTA 와 이어지는 자리라 위 여백은 절반으로. 아래는 고정 버튼이 가리지

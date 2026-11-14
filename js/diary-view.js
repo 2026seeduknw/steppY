@@ -1373,6 +1373,18 @@
             <div id="nowPlayingPicker"></div>
           </div>
 
+          <!-- 공개 범위 — 글에 민감한 내용이 들어가면 친구에게 보일 수 있어 비공개로 고를 수 있게 한다(개인정보 보호법 제23조 제3항) -->
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">공개 범위</span>
+            <div class="entry-v2__chips" id="visibilityChips" role="radiogroup" aria-label="공개 범위">
+              ${[['friends', '친구 공개'], ['private', '나만 보기']].map(([v, l]) => {
+                const on = (edit ? (edit.visibility || 'friends') : 'friends') === v;
+                return `<button type="button" class="rec-chip${on ? ' is-on' : ''}" data-visibility="${v}" role="radio" aria-checked="${on}">${l}</button>`;
+              }).join('')}
+            </div>
+            <p class="entry-v2__note">친구 공개 기록은 친구 목록에 있는 사람에게 보여요.<br>건강·종교·연애처럼 민감한 내용이 있으면 '나만 보기'로 남겨 주세요.</p>
+          </div>
+
           <input type="hidden" name="date" value="${targetDate}">
           <button type="submit" class="entry-v2__submit" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
         </form>
@@ -1549,8 +1561,20 @@
       }
     };
     if (!navigator.geolocation) { fallback('위치 정보를 사용할 수 없어요'); return; }
+    // 개인위치정보는 따로 동의를 받은 뒤에만 읽는다(위치정보법 제18조·제19조). 동의하지 않으면 학교 도시로 대신한다
+    const consent = AppState.locationConsent();
+    if (consent === 'no') { fallback('위치 이용에 동의하지 않았어요'); return; }
+    if (consent !== 'yes') {
+      askLocationConsent().then(ok => {
+        AppState.setLocationConsent(ok ? 'yes' : 'no');
+        if (ok) requestLocation(); else fallback('위치 이용에 동의하지 않았어요');
+      });
+      return;
+    }
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude, longitude } = pos.coords;
+      // 이용사실 확인자료 — 좌표는 남기지 않고 목적과 보낸 곳만(위치정보법 제16조 제2항)
+      AppState.logLocationUse('journal_place_weather', ['BigDataCloud', 'Open-Meteo']);
       // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
       if (typeof SongEngine !== 'undefined') {
         SongEngine.fetchWeather(latitude, longitude).then(w => { pendingWeather = w; }).catch(() => {});
@@ -1581,12 +1605,59 @@
     }, () => fallback('위치 권한이 거부됐어요'), { timeout: 8000 });
   }
 
+  /**
+   * 개인위치정보 이용 동의(선택) — 처음 위치를 쓰려 할 때 한 번 묻는다. 기록 쓰기 창 위에 한 장 더 뜬다.
+   * 동의하지 않아도 기록은 그대로 저장되고, 위치는 확정한 학교 도시로 대신한다.
+   */
+  function askLocationConsent() {
+    return new Promise((resolve) => {
+      const box = document.createElement('div');
+      box.className = 'loc-consent';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', '위치정보 이용 동의');
+      box.innerHTML = `
+        <div class="loc-consent__panel">
+          <p class="loc-consent__title">위치정보 이용 동의 <span>(선택)</span></p>
+          <p class="loc-consent__lead">기록에 지금 있는 도시와 날씨를 붙이려고 기기 위치를 한 번 확인해요.</p>
+          <ul class="loc-consent__list">
+            <li>위치(위도·경도)는 도시와 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
+            <li>기록에는 도시·국가만 저장돼요.</li>
+            <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요.</li>
+            <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요.</li>
+          </ul>
+          <a class="loc-consent__link" href="terms.html#ch9" target="_blank" rel="noopener">이용약관 9장(위치기반서비스) 보기</a>
+          <div class="loc-consent__actions">
+            <button type="button" class="loc-consent__btn" data-loc="no">동의 안 함</button>
+            <button type="button" class="loc-consent__btn loc-consent__btn--yes" data-loc="yes">동의하고 계속</button>
+          </div>
+        </div>`;
+      document.body.appendChild(box);
+      box.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-loc]');
+        if (!b) return;
+        box.remove();
+        resolve(b.dataset.loc === 'yes');
+      });
+    });
+  }
+
   /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
   function stripCoords(loc) {
     return loc ? { country: loc.country || null, city: loc.city || null, countryCode: loc.countryCode || null } : null;
   }
 
   function wireEntryForm(scrim) {
+    const visBox = scrim.querySelector('#visibilityChips');
+    if (visBox) visBox.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-visibility]');
+      if (!b) return;
+      visBox.querySelectorAll('[data-visibility]').forEach(x => {
+        const on = x === b;
+        x.classList.toggle('is-on', on);
+        x.setAttribute('aria-checked', String(on));
+      });
+    });
     // 폴더는 여러 개 고를 수 있다 — 같은 칩을 다시 누르면 해제
     const chipBox = scrim.querySelector('#folderChips');
     // + → 그 자리에 이름 칸이 열리고, 엔터(또는 칸 밖을 누르면) 폴더를 만들어 바로 고른다
@@ -1658,11 +1729,12 @@
       e.preventDefault();
       const fd = new FormData(e.target);
       const date = fd.get('date');
-      // 태그·공개 범위 고르기는 창에서 뺐다 — 수정이면 원래 값을 그대로 두고, 새 기록은 태그 없이·예전 기본값(친구 공개)으로
+      // 태그 고르기는 창에서 뺐다 — 수정이면 원래 값을 그대로 두고, 새 기록은 태그 없이
       const tags = editingEntry ? (editingEntry.tags || []).filter(t => EVERYDAY_MAP[t]) : [];
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
-      const visibility = editingEntry ? (editingEntry.visibility || 'friends') : 'friends';
+      const visBtn = scrim.querySelector('#visibilityChips .is-on');
+      const visibility = visBtn ? visBtn.dataset.visibility : (editingEntry ? (editingEntry.visibility || 'friends') : 'friends');
       // 고른 폴더에 담고, 수정 중에 고르기를 푼 폴더에서는 뺀다
       const putInFolder = (id) => {
         if (typeof DiaryArchive === 'undefined') return;

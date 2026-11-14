@@ -442,6 +442,53 @@ const AppState = {
     return { ok: true };
   },
 
+  /* ------------------------------------------------ 선택 동의(위치·광고)와 위치 이용 기록
+   * 가입 화면에서 [선택] 항목으로 한 번에 받고(auth.html), 계정 메타데이터(user_metadata.consent_*)에 남긴다.
+   * 다른 기기에서도 같아야 하므로 계정 값이 정본이고, 이 기기의 localStorage는 빠른 사본이다.
+   *   'yes' | 'no' | null(아직 안 물음 — 이 동의 목록이 생기기 전에 가입한 계정, 또는 둘러보기)
+   * 위치: 위치를 쓸 때마다 이용사실 확인자료를 남기고(위치정보법 제16조 제2항), 철회하면 지운다(제24조 제4항).
+   * 광고: 동의한 회원에게만 광고를 띄운다(js/ads.js). 둘러보기에는 광고가 없다.
+   */
+  _consentKey(kind) {
+    const uid = (this.isAuthed && typeof Auth !== 'undefined') ? Auth.userId : 'guest';
+    return `steppy_${kind}_consent_${uid}`;
+  },
+  _consent(kind) {
+    try { const v = JSON.parse(localStorage.getItem(this._consentKey(kind)) || 'null'); if (v && v.state) return v.state; } catch (e) { /* 무시 */ }
+    const meta = (this.isAuthed && typeof Auth !== 'undefined' && Auth.user && Auth.user.user_metadata) || {};
+    const v = meta[`consent_${kind}`];
+    return v === 'yes' || v === 'no' ? v : null;
+  },
+  _setConsent(kind, state) {
+    try { localStorage.setItem(this._consentKey(kind), JSON.stringify({ state, at: new Date().toISOString() })); } catch (e) { /* 무시 */ }
+    if (this.isAuthed && typeof supabaseClient !== 'undefined' && supabaseClient) {
+      supabaseClient.auth.updateUser({ data: { [`consent_${kind}`]: state, consent_optional_at: new Date().toISOString() } })
+        .then(({ error }) => { if (error) console.warn('[consent]', error.message); });
+    }
+    document.dispatchEvent(new CustomEvent('consent:changed', { detail: { kind, state } }));
+  },
+  locationConsent() { return this._consent('location'); },
+  setLocationConsent(state) {
+    const was = this.locationConsent();
+    this._setConsent('location', state);
+    if (state === 'yes') { this.logLocationUse('consent'); return; }
+    // 철회하면 그동안의 이용사실 확인자료를 지체 없이 지운다(위치정보법 제24조 제4항)
+    if (was === 'yes' && this.isAuthed && typeof supabaseClient !== 'undefined' && supabaseClient) {
+      supabaseClient.from('location_logs').delete().eq('user_id', Auth.userId)
+        .then(({ error }) => { if (error) console.warn('[location_logs]', error.message); });
+    }
+  },
+  /** 광고 표시를 위한 개인정보 국외 이전(Google) 동의 — 둘러보기는 늘 동의하지 않은 것으로 본다 */
+  adConsent() { return this.isAuthed ? this._consent('ads') : 'no'; },
+  setAdConsent(state) { if (this.isAuthed) this._setConsent('ads', state); },
+  /** 위치정보 수집·이용·제공사실 확인자료 — 무엇을 위해, 어디로 보냈는지. 좌표는 남기지 않는다 */
+  logLocationUse(purpose, providedTo) {
+    if (!this.isAuthed || typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    supabaseClient.from('location_logs')
+      .insert({ user_id: Auth.userId, purpose, provided_to: providedTo || [] })
+      .then(({ error }) => { if (error) console.warn('[location_logs]', error.message); });
+  },
+
   getConfirmedSchool() {
     const id = this.load().confirmedSchoolId;
     return id ? MOCK.schools.find(sc => sc.id === id) : null;

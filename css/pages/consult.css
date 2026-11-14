@@ -153,6 +153,7 @@
 .mentor-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .mentor-form__field { display: flex; flex-direction: column; gap: 6px; }
 .mentor-form__label { font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.mentor-form__note { margin: 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 .mentor-form input[type="text"],
 .mentor-form select,
 .mentor-form textarea {

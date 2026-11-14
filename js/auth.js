@@ -104,12 +104,21 @@ const Auth = {
    * 사용자만 만들어지고 확인 메일을 기다려야 한다 — 그 경우를 호출부가
    * 구분할 수 있도록 needsConfirmation을 함께 돌려준다.
    */
-  async signUp(email, password, name) {
+  async signUp(email, password, name, consents) {
+    const c = consents || {};
+    const at = new Date().toISOString();
     const { data, error } = await supabaseClient.auth.signUp({
       email,
       password,
-      // handle_new_user() 트리거가 이 값을 읽어 profiles.name을 채운다
-      options: { data: { name: name || null } }
+      // handle_new_user() 트리거가 name을 읽어 profiles.name을 채운다.
+      // 가입 때 받은 동의도 계정에 함께 남긴다(필수 동의 시각, 선택 동의 여부) — 어느 기기에서 로그인해도 같다
+      options: { data: {
+        name: name || null,
+        consent_required_at: at,
+        consent_location: c.location ? 'yes' : 'no',
+        consent_ads: c.ads ? 'yes' : 'no',
+        consent_optional_at: at
+      } }
     });
     if (error) throw error;
     return { user: data.user, needsConfirmation: !data.session };

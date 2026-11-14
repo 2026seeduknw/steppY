@@ -257,6 +257,7 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .entry-v2__form { gap: 20px; }
 .entry-v2__field { display: flex; flex-direction: column; gap: 8px; }
 .entry-v2__label { font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); letter-spacing: 0.01em; }
+.entry-v2__note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--v2-ink-faint); word-break: keep-all; }
 .entry-v2 .entry-v2__input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; color: var(--v2-ink); font: inherit; font-size: 15px; }
 .entry-v2 .entry-v2__input--title { font-weight: 700; }
 .entry-v2 .entry-v2__caption { min-height: 84px; resize: vertical; }
@@ -341,3 +342,15 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 .rec-hero__place { max-width: calc(100% - 130px); }
+
+/* 개인위치정보 이용 동의(선택) — 기록 쓰기 창 위에 한 장 더(위치정보법 제18조·제19조) */
+.loc-consent { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 20px; background: rgba(20, 26, 24, 0.45); }
+.loc-consent__panel { width: min(360px, 100%); padding: 22px 20px 18px; border-radius: 22px; background: #fff; color: var(--v2-ink); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); word-break: keep-all; }
+.loc-consent__title { margin: 0; font-size: 17px; font-weight: 800; }
+.loc-consent__title span { font-size: 13px; font-weight: 600; color: var(--v2-ink-faint); }
+.loc-consent__lead { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--v2-ink-soft); }
+.loc-consent__list { margin: 10px 0 0; padding-left: 16px; list-style: disc; display: grid; gap: 4px; font-size: 12.5px; line-height: 1.5; color: var(--v2-ink-soft); }
+.loc-consent__link { display: inline-block; margin-top: 10px; font-size: 12.5px; font-weight: 700; color: var(--v2-ink); text-decoration: underline; text-underline-offset: 2px; }
+.loc-consent__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.loc-consent__btn { height: 44px; border: 1.5px solid #E0DBD2; border-radius: 22px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: var(--v2-ink); cursor: pointer; }
+.loc-consent__btn--yes { border-color: var(--v2-dark); background: var(--v2-dark); color: #fff; }

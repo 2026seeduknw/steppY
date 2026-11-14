@@ -231,6 +231,16 @@ function openAccountSheet() {
           <button type="button" class="btn btn--ghost btn--block account-sheet__departure" id="changeDepartureBtn">출국일 변경</button>` : ''}
           <button type="button" class="btn btn--ghost btn--block" id="signOutBtn">로그아웃</button>
 
+          <!-- 선택 동의 — 언제든 바꿀 수 있어야 한다(위치정보법 제24조, 개인정보 보호법 제37조) -->
+          <div class="account-sheet__loc">
+            <span>위치정보 이용 동의 <b data-consent-state="location"></b></span>
+            <button type="button" class="btn btn--text" data-consent-toggle="location"></button>
+          </div>
+          <div class="account-sheet__loc">
+            <span>광고 표시 동의 <small>(Google, 국외 이전)</small> <b data-consent-state="ads"></b></span>
+            <button type="button" class="btn btn--text" data-consent-toggle="ads"></button>
+          </div>
+
           <p class="account-sheet__legal"><a href="terms.html">이용약관</a> · <a href="privacy.html">개인정보처리방침</a></p>
 
           <div class="account-danger">
@@ -279,6 +289,27 @@ function openAccountSheet() {
   if (walletBtn) walletBtn.addEventListener('click', () => { close(); openPaywall({ reason: 'menu' }); });
   const departureBtn = sheet.querySelector('#changeDepartureBtn');
   if (departureBtn) departureBtn.addEventListener('click', () => { close(); openDepartureGate({ dismissible: true }); });
+  const CONSENT = {
+    location: { get: () => AppState.locationConsent(), set: (v) => AppState.setLocationConsent(v),
+      off: '위치정보 이용 동의를 철회했어요. 앞으로 기록에는 학교 도시가 붙어요', on: '위치정보 이용에 동의했어요' },
+    ads: { get: () => AppState.adConsent(), set: (v) => AppState.setAdConsent(v),
+      off: '광고 표시 동의를 철회했어요. 이제 광고가 보이지 않아요', on: '광고 표시에 동의했어요' }
+  };
+  const drawConsent = (kind) => {
+    const on = CONSENT[kind].get() === 'yes';
+    sheet.querySelector(`[data-consent-state="${kind}"]`).textContent = on ? '동의함' : '동의 안 함';
+    sheet.querySelector(`[data-consent-toggle="${kind}"]`).textContent = on ? '철회' : '동의';
+  };
+  Object.keys(CONSENT).forEach(kind => {
+    drawConsent(kind);
+    sheet.querySelector(`[data-consent-toggle="${kind}"]`).addEventListener('click', () => {
+      const on = CONSENT[kind].get() === 'yes';
+      CONSENT[kind].set(on ? 'no' : 'yes');
+      drawConsent(kind);
+      showToast(on ? CONSENT[kind].off : CONSENT[kind].on);
+    });
+  });
+
   sheet.querySelector('#signOutBtn').addEventListener('click', async () => {
     await Auth.signOut();
     close();

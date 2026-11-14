@@ -12,7 +12,7 @@
 <style>
   /* 앱 안에서도 열리고, App Store Connect에 넣을 URL로도 그대로 쓰는 문서다.
      그래서 탭바·앱바 없이 혼자 서고, 데스크탑 폭에서도 읽을 수 있게 가운데 정렬한다. */
-  body[data-page="terms"] { background: var(--cloud-50); padding-bottom: var(--space-7); }
+  body[data-page="terms"] { background: var(--cloud-0); padding-bottom: var(--space-7); }
   .legal { max-width: 720px; margin: 0 auto; padding: var(--space-6) var(--space-5); }
   .legal__back { display: inline-block; margin-bottom: var(--space-5); color: var(--sky-500); font-weight: 600; font-size: var(--fs-small); }
   .legal__title { font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 800; color: var(--ink-900); }
@@ -40,7 +40,7 @@
     margin-top: var(--space-3);
     padding: var(--space-4);
     border-radius: var(--radius-md);
-    background: var(--cloud-0);
+    background: var(--cloud-50);   /* 흰 바탕 위라 상자는 옅은 회색으로 */
     border: 1px solid var(--line-100);
   }
   .legal__foot { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--line-100); font-size: var(--fs-micro); color: var(--ink-400); }
@@ -52,7 +52,7 @@
   .legal ol > li::before { content: counter(hang, decimal) "."; background: none; width: auto; height: auto; border-radius: 0; top: 0; left: 0; color: var(--ink-500); font-size: var(--fs-small); }
   .legal ol.legal__hang > li::before { content: "(" counter(hang) ")"; }
   .legal ol ol, .legal ol ul { margin-top: 6px; }
-  .legal__toc { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--cloud-0); border: 1px solid var(--line-100); font-size: var(--fs-small); color: var(--ink-700); line-height: 1.8; }
+  .legal__toc { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--cloud-50); border: 1px solid var(--line-100); font-size: var(--fs-small); color: var(--ink-700); line-height: 1.8; }
   .legal__toc a { color: var(--ink-700); }
 </style>
 </head>
@@ -62,11 +62,11 @@
   <a class="legal__back" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">← steppY로 돌아가기</a>
 
   <h1 class="legal__title">이용약관</h1>
-  <p class="legal__meta">시행일 2026년 11월 12일 · 버전 1.1</p>
+  <p class="legal__meta">시행일 2026년 11월 12일 · 버전 1.0</p>
 
   <nav class="legal__toc" aria-label="목차">
     <a href="#ch1">1장 총칙</a> · <a href="#ch2">2장 이용계약</a> · <a href="#ch3">3장 서비스 이용</a> · <a href="#ch4">4장 게시물</a> ·
-    <a href="#ch5">5장 계약 해지와 이용 제한</a> · <a href="#ch6">6장 요금</a> · <a href="#ch7">7장 당사자의 의무</a> · <a href="#ch8">8장 기타</a>
+    <a href="#ch5">5장 계약 해지와 이용 제한</a> · <a href="#ch6">6장 요금</a> · <a href="#ch7">7장 당사자의 의무</a> · <a href="#ch8">8장 기타</a> · <a href="#ch9">9장 위치기반서비스</a>
   </nav>
 
   <h2 class="legal__chapter" id="ch1">1장 총칙</h2>
@@ -93,7 +93,7 @@
   </ol>
 
   <h3>제4조 약관 외 준칙</h3>
-  <p>이 약관에서 정하지 않은 사항은 <a href="privacy.html">개인정보처리방침</a>, 서비스 안의 안내, 관계 법령에 따릅니다.</p>
+  <p>이 약관에서 정하지 않은 사항은 <a href="privacy.html">개인정보처리방침</a>, 서비스 안의 안내, 관계 법령에 따릅니다. 기록에 위치(도시·날씨)를 붙이는 서비스는 따로 동의를 받으며, 그 서비스에는 <a href="#ch9">9장 위치기반서비스</a>가 먼저 적용됩니다.</p>
 
   <h2 class="legal__chapter" id="ch2">2장 이용계약</h2>
 
@@ -169,7 +169,8 @@
 
   <h3>제14조 광고의 게재</h3>
   <ol>
-    <li>운영자는 iOS 앱 화면 일부에 Google AdMob 배너 광고를 게재할 수 있습니다. 웹 버전에는 광고가 없습니다.</li>
+    <li>운영자는 <strong>광고 표시를 위한 개인정보 국외 이전에 따로 동의한 회원</strong>에게만 iOS 앱 화면 일부에 Google AdMob 배너 광고를 게재합니다. 동의는 선택이며, 동의하지 않은 회원과 로그인하지 않은 이용자, 웹 버전에는 광고가 없습니다.</li>
+    <li>회원은 계정 아이콘에서 언제든 광고 표시 동의를 바꿀 수 있습니다.</li>
     <li>광고는 개인 맞춤을 끈 상태로 요청하며, 광고를 누르는 것은 회원의 선택입니다. 광고를 눌러 이동한 외부 사이트에서 생긴 거래나 문제에 대해 운영자는 책임지지 않습니다.</li>
   </ol>
 
@@ -197,7 +198,14 @@
     </li>
     <li>회원은 부적절한 게시물과 회원을 서비스 안에서 바로 <strong>신고</strong>하거나 <strong>차단</strong>할 수 있습니다.</li>
     <li>운영자는 신고를 받으면 <strong>24시간 안에</strong> 검토하여, 제1항에 해당하는 게시물을 삭제하거나 보이지 않게 하고, 필요하면 제19조에 따라 이용을 제한합니다.</li>
-    <li>권리를 침해당했다고 주장하는 사람의 요청이 있으면 운영자는 관계 법령에 따라 해당 게시물을 임시로 보이지 않게 하는 등 필요한 조치를 합니다.</li>
+    <li>게시물로 사생활 침해나 명예훼손 등 권리를 침해당한 사람은 침해 사실을 소명하여 운영자에게 삭제나 반박 내용 게재를 요청할 수 있습니다(「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 제44조의2).
+      <ol class="legal__hang">
+        <li>운영자는 요청을 받으면 지체 없이 삭제·임시조치 등 필요한 조치를 하고, 그 사실을 요청한 사람과 게시물을 쓴 회원에게 알립니다.</li>
+        <li>권리 침해 여부를 판단하기 어렵거나 다툼이 예상되면 운영자는 해당 게시물을 <strong>30일 이내</strong> 보이지 않게 하는 임시조치를 할 수 있습니다.</li>
+        <li>게시물을 쓴 회원은 임시조치 기간 안에 문의처로 다시 게시를 요청하며 이의를 제기할 수 있습니다. 운영자는 양쪽의 소명을 검토해 다시 게시하거나 삭제하고, 그 결과를 양쪽에 알립니다.</li>
+        <li>임시조치 기간이 끝날 때까지 다시 게시 요청이 없으면 운영자는 게시물을 삭제할 수 있습니다.</li>
+      </ol>
+    </li>
   </ol>
 
   <h3>제17조 권리의 귀속</h3>
@@ -273,14 +281,73 @@
   <div class="legal__callout">
     <p><strong>운영</strong> — steppY 운영팀</p>
     <p>이메일 <a class="btn--text" href="mailto:2026.seed.uknw@gmail.com">2026.seed.uknw@gmail.com</a></p>
-    <p>영업일 기준 7일 안에 답변드립니다. 신고는 서비스 안의 신고 기능으로 하면 더 빨리 처리됩니다.</p>
+    <p>10일 안에 답변드립니다. 신고는 서비스 안의 신고 기능으로 하면 더 빨리 처리됩니다.</p>
+  </div>
+
+  <h2 class="legal__chapter" id="ch9">9장 위치기반서비스</h2>
+
+  <h3>제27조 적용 범위</h3>
+  <ol>
+    <li>이 장은 「위치정보의 보호 및 이용 등에 관한 법률」(이하 “위치정보법”)에 따라, 운영자가 제공하는 위치기반서비스에 관한 운영자와 개인위치정보주체의 권리, 의무, 책임을 정합니다.</li>
+    <li>이 장은 <strong>위치정보 이용에 따로 동의한 회원에게만</strong> 적용됩니다. 회원가입 때 이 약관에 동의한 것만으로 위치정보 이용에 동의한 것으로 보지 않습니다.</li>
+    <li>이 장에서 정하지 않은 사항은 위치정보법, 「개인정보 보호법」 등 관계 법령과 이 약관의 다른 장, <a href="privacy.html">개인정보처리방침</a>을 따릅니다.</li>
+  </ol>
+
+  <h3>제28조 서비스 내용</h3>
+  <ol>
+    <li>운영자는 기록(일기)을 쓸 때 회원 기기의 위치를 한 번 확인해, 그 기록에 <strong>도시·국가 이름과 그날 날씨</strong>를 붙이는 서비스를 제공합니다.</li>
+    <li>위치는 기록 쓰기 창을 열 때 한 번만 확인하며, 계속 추적하거나 백그라운드에서 수집하지 않습니다.</li>
+    <li>이 서비스는 무료입니다.</li>
+  </ol>
+
+  <h3>제29조 동의와 철회</h3>
+  <ol>
+    <li>운영자는 개인위치정보를 수집하기 전에 이 장의 내용을 보여주고 회원의 동의를 받습니다. 동의는 회원가입 화면의 [선택] 항목(이 항목이 생기기 전에 가입한 회원은 처음 위치를 쓸 때)에서 받습니다. 동의는 선택이며, 동의하지 않아도 기록은 쓸 수 있고 위치는 회원이 확정한 파견 학교의 도시로 대신 표시됩니다.</li>
+    <li>회원은 언제든 계정 아이콘 → <strong>위치정보 이용 동의 → 철회</strong>, 또는 iOS 설정 → steppY → 위치에서 동의를 전부 또는 일부 철회할 수 있습니다.</li>
+    <li>회원은 개인위치정보 수집·이용의 일시적인 중지를 요구할 수 있으며, 운영자는 이를 거절하지 않습니다.</li>
+  </ol>
+
+  <h3>제30조 개인위치정보의 이용과 보유</h3>
+  <ol>
+    <li>운영자는 개인위치정보를 제28조의 서비스에만 이용합니다.</li>
+    <li>위도·경도는 도시·국가 이름과 날씨를 찾은 즉시 버리며 저장하지 않습니다. 기록에는 도시·국가 이름만 남고, 기록을 지우거나 탈퇴하면 함께 지워집니다.</li>
+    <li>지명 변환과 날씨 조회를 위해 위도·경도를 BigDataCloud(호주)와 Open-Meteo(스위스·유럽연합)에 보냅니다. 계정이나 이메일은 함께 보내지 않습니다.</li>
+    <li>운영자는 개인위치정보를 제3자에게 제공하지 않습니다. 앞으로 제공하게 되면 제공받는 자와 목적을 미리 알리고 따로 동의를 받으며, 제공할 때마다 회원에게 알립니다.</li>
+  </ol>
+
+  <h3>제31조 이용·제공사실 확인자료</h3>
+  <p>운영자는 위치정보법 제16조 제2항에 따라 개인위치정보를 이용한 시각, 목적, 보낸 곳과 동의한 시각을 자동으로 기록하고 <strong>6개월</strong> 보관한 뒤 지웁니다. 이 자료에는 좌표가 들어가지 않습니다. 동의를 철회하거나 탈퇴하면 그 전이라도 바로 지웁니다.</p>
+
+  <h3>제32조 개인위치정보주체의 권리</h3>
+  <ol>
+    <li>회원은 운영자에게 자신의 개인위치정보 이용·제공사실 확인자료의 열람·고지를 요구할 수 있고, 오류가 있으면 정정을 요구할 수 있습니다.</li>
+    <li>동의를 철회하면 운영자는 지체 없이 그때까지 수집한 개인위치정보와 이용·제공사실 확인자료를 파기합니다. 다만 다른 법령에 따라 보관해야 하는 경우는 예외로 합니다.</li>
+    <li>요청은 제36조의 연락처로 할 수 있으며, 운영자는 10일 안에 처리하고 결과를 알립니다.</li>
+  </ol>
+
+  <h3>제33조 만 14세 미만</h3>
+  <p>서비스는 만 14세 미만의 가입을 받지 않으므로(제6조) 만 14세 미만의 개인위치정보를 수집하지 않습니다.</p>
+
+  <h3>제34조 손해배상과 면책</h3>
+  <ol>
+    <li>운영자가 위치정보법을 어겨 회원에게 손해가 생기면 회원은 손해배상을 청구할 수 있습니다. 운영자는 고의나 과실이 없음을 증명하지 못하면 책임을 집니다.</li>
+    <li>천재지변 등 불가항력, 회원의 귀책사유, 기기 위치 측정의 오차로 생긴 손해에 대해서는 운영자의 고의나 과실이 없는 한 책임지지 않습니다.</li>
+  </ol>
+
+  <h3>제35조 분쟁 조정</h3>
+  <p>위치정보와 관련한 분쟁은 운영자와 협의하고, 협의가 되지 않으면 방송통신위원회나 개인정보분쟁조정위원회(1833-6972)에 조정을 신청할 수 있습니다.</p>
+
+  <h3>제36조 사업자 정보와 위치정보관리책임자</h3>
+  <div class="legal__callout">
+    <p><strong>상호</strong> — steppY 운영팀(대표 【성명】)</p>
+    <p><strong>주소</strong> — 【주소】</p>
+    <p><strong>전화</strong> — 【전화번호】</p>
+    <p><strong>위치정보관리책임자</strong> — 【성명·직책】 · <a class="btn--text" href="mailto:2026.seed.uknw@gmail.com">2026.seed.uknw@gmail.com</a></p>
+    <p><strong>위치기반서비스사업 신고</strong> — 【신고 번호】</p>
   </div>
 
   <h2 class="legal__chapter">부칙</h2>
-  <ol>
-    <li>이 약관은 2026년 11월 12일부터 시행합니다.</li>
-    <li>버전 1.0(2026년 11월 11일)을 장·조 형식으로 다시 쓰고, 탈퇴 뒤 Talky 질문·답변을 남기는 내용(제18조 제3항)을 더했습니다.</li>
-  </ol>
+  <p>이 약관은 2026년 11월 12일부터 시행합니다.</p>
 
   <p class="legal__foot">steppY — 연세대학교 교환학생 준비 플랫폼 · <a href="privacy.html">개인정보처리방침</a></p>
 </main>

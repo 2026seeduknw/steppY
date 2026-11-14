@@ -64,11 +64,62 @@
       <p>지원·배정·학점 인정은 국제처와 소속 학과가 정해요.<br>신청 전에 <strong>공식 안내를 본인이 꼭 확인</strong>해 주세요.</p>
     </div>
 
-    <!-- 회원가입일 때만 — 필수 동의(약관·개인정보처리방침)와 만 14세 이상 확인을 한 번에 받는다 -->
-    <label class="auth__agree" id="authAgree" hidden>
-      <input type="checkbox" name="agree">
-      <span>[필수] 만 14세 이상이며, 위 안내를 확인했고 <a href="terms.html">이용약관</a>과 <a href="privacy.html">개인정보처리방침</a>에 동의해요</span>
-    </label>
+    <!-- 회원가입일 때만 — 동의를 한 번에 받는다. 필수와 선택을 나누고 항목마다 따로 체크할 수 있게(개인정보 보호법 제22조).
+         선택 항목(위치·광고)을 거절해도 가입은 된다. 결과는 계정 메타데이터에 남긴다(js/auth.js signUp) -->
+    <fieldset class="auth__consents" id="authAgree" hidden>
+      <legend class="sr-only">약관 동의</legend>
+      <div class="auth__consent auth__consent--all">
+        <label class="auth__consent-label">
+          <input type="checkbox" data-consent-all>
+          <span>전체 동의 <small>(선택 항목 포함)</small></span>
+        </label>
+      </div>
+      <div class="auth__consent">
+        <label class="auth__consent-label">
+          <input type="checkbox" name="agree_age" data-consent required>
+          <span><b>[필수]</b> 만 14세 이상이에요</span>
+        </label>
+      </div>
+      <div class="auth__consent">
+        <label class="auth__consent-label">
+          <input type="checkbox" name="agree_terms" data-consent required>
+          <span><b>[필수]</b> 이용약관 동의 · 위 안내를 확인했어요</span>
+        </label>
+        <a class="auth__consent-view" href="terms.html" target="_blank" rel="noopener">보기</a>
+      </div>
+      <div class="auth__consent">
+        <label class="auth__consent-label">
+          <input type="checkbox" name="agree_privacy" data-consent required>
+          <span><b>[필수]</b> 개인정보 수집·이용 동의</span>
+        </label>
+        <a class="auth__consent-view" href="privacy.html" target="_blank" rel="noopener">보기</a>
+      </div>
+      <div class="auth__consent">
+        <label class="auth__consent-label">
+          <input type="checkbox" name="agree_location" data-consent>
+          <span>[선택] 위치기반서비스 이용 동의</span>
+        </label>
+        <a class="auth__consent-view" href="terms.html#ch9" target="_blank" rel="noopener">보기</a>
+      </div>
+      <div class="auth__consent">
+        <label class="auth__consent-label">
+          <input type="checkbox" name="agree_ads" data-consent>
+          <span>[선택] 광고 표시를 위한 개인정보 국외 이전 동의</span>
+        </label>
+        <button type="button" class="auth__consent-view" data-toggle-ads-info aria-expanded="false" aria-controls="adsConsentInfo">보기</button>
+      </div>
+      <div class="auth__consent-detail" id="adsConsentInfo" hidden>
+        <dl class="auth__consent-info">
+          <div><dt>받는 곳</dt><dd>Google LLC(미국) · policies.google.com/privacy</dd></div>
+          <div><dt>항목</dt><dd>IP 주소, 기기 모델·OS 버전, 광고 노출·클릭 여부</dd></div>
+          <div><dt>목적</dt><dd>iOS 앱의 배너 광고 표시, 광고 성과 측정, 부정 클릭 방지(개인 맞춤 광고는 끔)</dd></div>
+          <div><dt>시기·방법</dt><dd>광고를 띄울 때마다 암호화된 네트워크로 전송</dd></div>
+          <div><dt>보유 기간</dt><dd>Google 개인정보처리방침에 따른 기간</dd></div>
+        </dl>
+        <p class="auth__consent-note">동의하지 않아도 모든 기능을 그대로 쓸 수 있고, 광고만 보이지 않아요.<br>계정 메뉴에서 언제든 바꿀 수 있어요.</p>
+      </div>
+      <p class="auth__consent-note">선택 항목은 동의하지 않아도 가입할 수 있어요.<br>위치에 동의하지 않으면 기록에 확정한 학교 도시가 대신 붙어요.</p>
+    </fieldset>
 
     <p class="auth__error" id="authError" role="alert" hidden></p>
     <p class="auth__notice" id="authNotice" role="status" hidden></p>

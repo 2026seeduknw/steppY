@@ -437,6 +437,8 @@
               <span class="mentor-form__label">내용</span>
               <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
             </label>
+            <!-- 민감정보 공개 가능성 안내(개인정보 보호법 제23조 제3항) — Talky 글은 비공개로 할 수 없다 -->
+            <p class="mentor-form__note">질문은 이름 없이 모든 회원에게 보여요.<br>연락처, 건강·종교처럼 민감한 내용은 쓰지 말아 주세요.</p>
             <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>
           </form>
         </div>
