@@ -72,7 +72,7 @@
   }
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function entries() {
-    const list = AppState.isAuthed ? AppState.getJournal() : guestSample();
+    const list = AppState.isAuthed ? AppState.getJournal() : [];   // 로그인 전에는 예시 기록 없이 빈 화면
     // 같은 날은 기록 시각순 — 먼저 찍은 사진이 앞(왼쪽)에 온다. 시각은 찍은 시점(앨범에서 고른 사진은 EXIF)이다.
     return list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)));
   }
@@ -89,73 +89,6 @@
     return list.filter(e => (e.phase || departurePhaseFor(e.date)) === phaseFilter);
   }
 
-  /*
-   * 둘러보기(로그인 전)에는 저장할 계정이 없어서 기록이 비어 보인다. 화면이 어떤 모양인지
-   * 알 수 있도록 이번 달에 예시 기록을 깔아 보여준다. 읽기 전용이고 어디에도 저장되지 않는다.
-   */
-  let guestCache = null;
-  function guestSample() {
-    if (guestCache) return guestCache;
-    const P = {
-      campus: 'https://images.unsplash.com/photo-1751510397614-e289eb4ce57a?w=900&q=75&auto=format&fit=crop',
-      library: 'https://images.unsplash.com/photo-1741699427799-3fbb70fce948?w=900&q=75&auto=format&fit=crop',
-      cafe: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=900&q=75&auto=format&fit=crop',
-      dorm: 'https://images.unsplash.com/photo-1632119289059-793dd347950f?w=900&q=75&auto=format&fit=crop',
-      eiffel: 'https://images.unsplash.com/photo-1757435755027-91a1a4beb6c5?w=900&q=75&auto=format&fit=crop'
-    };
-    P.sunset = 'assets/mock/campus-sunset.webp';   // 어제·오늘 예시 사진(앱에 들어 있는 파일)
-    P.laptop = 'assets/mock/cafe-laptop.webp';
-    Object.values(P).forEach(u => { photoUrls[u] = u; });
-    const y = now.getFullYear(), m = now.getMonth();
-    const at = (day, h, min) => new Date(y, m, day, h, min).toISOString();
-    const mk = (day, h, min, o) => Object.assign({
-      id: 'guest' + day, date: toIso(new Date(y, m, day)), phase: 'abroad', title: '', body: '',
-      photos: [], tags: [], location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null,
-      weather: null, createdAt: at(day, h, min)
-    }, o);
-    // 예시 기록에도 앨범 표지 있는 노래를 붙인다 — 둘러보기에서 LP가 돌아가는 모습을 보여주기 위해서다.
-    const ART = {
-      indila: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/49/58/30/49583018-308b-431d-c691-4a28e78be8cd/14UMGIM01109.rgb.jpg/300x300bb.jpg',
-      air: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/d1/f9/26/d1f926e7-e996-7166-3744-0710a82177ac/017046664455.jpg/300x300bb.jpg',
-      iu: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/dc/12/fe/dc12fe03-172b-a843-0d96-12819fa05b6c/cover-.jpg/300x300bb.jpg',
-      stromae: 'https://is1-ssl.mzstatic.com/image/thumb/Video5/v4/49/ab/0f/49ab0f2e-9895-b63a-6438-0cf87201f875/13UAAIM09601_1_1.jpg/300x300bb.jpg',
-      ariana: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/300x300bb.jpg',
-      justice: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/e4/01/62e40187-e672-17e5-f31f-9aee262703a3/mzi.bifzeufu.jpg/300x300bb.jpg'
-    };
-    const track = (name, artist, art) => Object.assign({ name, artist, art },
-      (typeof SongEngine !== 'undefined') ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' });
-    guestCache = [
-      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['neighborhood'],
-        song: track('Sexy Boy', 'Air', ART.air) }),
-      mk(2, 19, 40, { title: '기숙사 첫 요리', body: '마트에서 산 바게트가 확실히 다르다.', photos: [P.dorm], tags: ['dorm'],
-        weather: { code: 3, temp: 18 },
-        song: track('Dernière danse', 'Indila', ART.indila) }),
-      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['friends'],
-        song: track('밤편지', 'IU', ART.iu) }),
-      mk(5, 15, 30, { title: '도서관 스터디룸', body: '국제학생 오피스에서 서류 도움 받고 스터디룸도 예약함.', photos: [P.library], tags: ['study', 'admin'],
-        song: track('Formidable', 'Stromae', ART.stromae),
-        nowPlaying: track('밤편지', 'IU', ART.iu) }),
-      mk(7, 17, 45, { title: '파리 당일치기', body: '주말에 에펠탑 보고 옴.', photos: [P.eiffel, P.cafe], tags: ['trip', 'food'], location: { country: '프랑스', city: '파리' },
-        weather: { code: 61, temp: 12 },
-        song: track('Formidable', 'Stromae', ART.stromae) })
-    ];
-    // 어제·오늘 기록 — 달이 바뀌어도 항상 "어제"와 "오늘"이 되도록 날짜를 지금 기준으로 잡는다.
-    const dayAt = (offset, h, min, o) => {
-      const d = new Date(y, m, now.getDate() + offset);
-      return Object.assign({
-        id: 'guestd' + offset, date: toIso(d), phase: 'abroad', title: '', body: '', photos: [], tags: [],
-        location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null, weather: null,
-        createdAt: new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, min).toISOString()
-      }, o);
-    };
-    guestCache.push(
-      dayAt(-1, 18, 40, { title: '노을 지는 캠퍼스', body: '수업 끝나고 계단 위에서 본 노을. 잔디밭이 다 금빛이었다.', photos: [P.sunset], tags: ['campus', 'neighborhood'],
-        weather: { code: 0, temp: 19 }, song: track('Kiss Me', 'Ariana Grande', ART.ariana) }),
-      dayAt(0, 11, 45, { title: '잔디밭 앞 카페', body: '아이스 라떼 두 잔 놓고 과제하는 오후. 날씨가 너무 좋다.', photos: [P.laptop], tags: ['study', 'food'],
-        weather: { code: 1, temp: 22 }, song: track('D.A.N.C.E.', 'Justice', ART.justice) })
-    );
-    return guestCache;
-  }
   /** 필름 카메라 날짜 각인 — 2026-09-12 → '26 9 12 */
   function filmDate(iso) { return `'${iso.slice(2, 4)} ${Number(iso.slice(5, 7))} ${Number(iso.slice(8, 10))}`; }
   function photoUrl(path) { return photoUrls[path] || ''; }
@@ -2082,7 +2015,7 @@
       slot.innerHTML = loading ? '' : `
         <div class="rec-hero__empty">
           <p class="rec-hero__empty-title">오늘의 첫 사진을 남겨 보세요</p>
-          <button type="button" class="rec-pill rec-pill--dark" data-hero-write>+ 사진 추가</button>
+          <button type="button" class="rec-hero__cta" data-hero-write><span aria-hidden="true">+</span>사진 추가</button>
         </div>`;
       return;
     }

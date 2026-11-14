@@ -49,7 +49,7 @@
           <div class="m2-cols">
             ${pin('report', '2026-1 교환보고서 모음')}
             ${pin('column', '교환 가기 전 챙길 서류 TOP 5')}
-            ${pin('notice', '멘토스텝 이용 규칙')}
+            ${pin('notice', 'Talky 이용 규칙')}
           </div>
           <div class="m2-sec"><h2>질문 · 답변</h2><span>최신순</span></div>
           <div class="mentor-list">
@@ -67,41 +67,9 @@
       </div>`;
   }
 
-  /*
-   * 목업 — 아직 서버에 고정 글·질문이 하나도 없을 때만 보여 주는 예시. 진짜 글이 하나라도 생기면
-   * 그쪽만 보이고 이 예시는 사라진다. 예시 질문에는 답변을 달 수 없고 즐겨찾기도 저장하지 않는다.
-   */
-  const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
-  const SAMPLE_PINS = [
-    { id: 'sample-p1', sample: true, kind: 'report', title: '리옹 한 학기,\n월 생활비 정산', author_label: 'Lyon 3 · 2026-1', created_at: ago(30),
-      body: '기숙사(CROUS) 월 420유로, 식비는 장보기 위주로 월 250유로 정도였어요.\n교통은 학생 정기권이 월 25유로라 거의 걸어 다녔고, 여행비를 빼면 한 달 평균 80만 원 안팎이었어요.' },
-    { id: 'sample-p2', sample: true, kind: 'column', title: '비자 인터뷰\n10분 컷 준비법', author_label: '선배 멘토 · 3일 전', image: 'assets/mock/cafe-laptop.webp', created_at: ago(72),
-      body: '입학허가서, 재정 증명, 보험 증서 세 가지를 순서대로 클리어파일에 넣어 가면 질문이 거의 없어요.\n영문 이름 철자가 여권과 같은지 꼭 확인하세요.' },
-    { id: 'sample-p3', sample: true, kind: 'notice', title: '질문·답변은\n이름 없이 올라가요', author_label: '운영진', created_at: ago(120),
-      body: '누가 물었는지, 누가 답했는지 표시하지 않아요.\n다녀온 선배라면 아는 만큼 편하게 답해 주세요.' }
-  ];
-  const SAMPLE_QUESTIONS = [
-    { id: 'sample-q1', sample: true, country: '프랑스', schoolName: 'Sciences Po', title: '기숙사 신청은 언제 열려요? 사설 기숙사도 괜찮을까요', createdAt: ago(2),
-      body: '2027 가을학기 파견 예정이에요.\n학교 기숙사 신청 시기를 놓칠까 봐 걱정돼요.',
-      answers: [
-        { id: 'sa1', body: '합격 메일 오고 2주 뒤에 포털이 열렸어요.\nCROUS는 빨리 차니까 열리자마자 넣으세요.', createdAt: ago(1) },
-        { id: 'sa2', body: '사설은 Studapart가 무난했어요.\n보증인 서비스(Visale)를 미리 신청해 두면 편해요.', createdAt: ago(0.7) },
-        { id: 'sa3', body: '저는 학교 기숙사 떨어져서 홈스테이 했는데 오히려 불어가 많이 늘었어요.', createdAt: ago(0.5) }
-      ] },
-    { id: 'sample-q2', sample: true, country: '덴마크', schoolName: 'Aalborg Univ.', title: '덴마크 거주허가 나오기까지 얼마나 걸렸어요?', createdAt: ago(26),
-      body: '6월 말에 신청하면 8월 출국 전에 받을 수 있을까요?',
-      answers: [{ id: 'sa4', body: '저는 5주 걸렸어요.\n생체정보 등록 예약이 밀리니까 신청하자마자 잡으세요.', createdAt: ago(20) }] },
-    { id: 'sample-q3', sample: true, country: '미국', schoolName: 'UC Riverside', title: '학점 인정 미리 받으려면 실라버스는 어디서 구해요?', createdAt: ago(75),
-      body: '학과 홈페이지에는 과목 설명만 있고 실라버스가 없어요.', answers: [] },
-    { id: 'sample-q4', sample: true, country: '핀란드', schoolName: 'Aalto Univ.', title: '겨울 옷은 한국에서 사 가는 게 나을까요?', createdAt: ago(170),
-      body: '1월 파견이라 패딩이랑 방한화를 어디서 살지 고민이에요.',
-      answers: [
-        { id: 'sa5', body: '패딩은 한국에서 가져가고, 방한화는 현지 세일 때 사는 걸 추천해요.', createdAt: ago(160) },
-        { id: 'sa6', body: '헬싱키 중고 가게(UFF)에 좋은 겨울 옷이 많아요.', createdAt: ago(150) }
-      ] }
-  ];
-  const isSampleMode = () => !MOCK.mentorQuestions.length;
-  const allQuestions = () => (isSampleMode() ? SAMPLE_QUESTIONS : MOCK.mentorQuestions);
+  // 예시 글(목업)은 없앴다 — 서버에 글이 없으면 빈 화면 안내가 보인다
+  const isSampleMode = () => false;
+  const allQuestions = () => MOCK.mentorQuestions;
 
   // 상단 고정 글 — 운영자가 mentor_pins 테이블(supabase/mentor_pins.sql)에 직접 넣는다.
   // 테이블이 없거나 읽지 못하면 조용히 비워 둔다(게시판은 그대로 보인다).
@@ -324,7 +292,7 @@
   }
 
   async function loadPins() {
-    // mentor_pins.sql을 안 돌린 서버면 테이블이 없다(PGRST205) — 하루 동안은 다시 묻지 않고 예시 글을 쓴다
+    // mentor_pins.sql을 안 돌린 서버면 테이블이 없다(PGRST205) — 하루 동안은 다시 묻지 않는다
     const MISSING_KEY = 'steppy_mentor_pins_missing';
     let missing = false;
     try { missing = Date.now() - Number(localStorage.getItem(MISSING_KEY) || 0) < 864e5; } catch (e) { /* 무시 */ }
@@ -339,7 +307,6 @@
         pins = res.error ? [] : (res.data || []);
       } catch (e) { pins = []; }
     }
-    if (!pins.length) pins = SAMPLE_PINS;
     renderPins();
   }
 

@@ -14,6 +14,9 @@
 
 drop policy if exists mentor_questions_public_read on public.mentor_questions;
 drop policy if exists mentor_answers_public_read on public.mentor_answers;
+-- 여러 번 실행해도 안전하게 — 이미 만들어 둔 정책이 있으면 지우고 다시 만든다
+drop policy if exists mentor_questions_authenticated_read on public.mentor_questions;
+drop policy if exists mentor_answers_authenticated_read on public.mentor_answers;
 
 create policy mentor_questions_authenticated_read on public.mentor_questions
   for select to authenticated using (true);

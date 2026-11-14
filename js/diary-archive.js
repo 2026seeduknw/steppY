@@ -189,45 +189,18 @@
   async function renderFriends() {
     const slot = root && root.querySelector('#archiveFriends');
     if (!slot) return;
-    // 웹 브라우저(앱이 아닌 곳)에서 친구가 없으면 친구가 있을 때 모습을 예시로 보여준다
-    const showMock = () => { slot._posts = guestFeed(); slot._hasFriends = true; slot._mock = true; drawFriends(slot, slot._posts, true, true); };
-    const native = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
-    if (!native && typeof AppState !== 'undefined' && !AppState.isAuthed) { showMock(); return; }
     const uid = (typeof Auth !== 'undefined' && Auth.userId) || null;
     if (!uid || typeof Friends === 'undefined' || !Friends.todayFeed) {
       slot.innerHTML = friendsEmpty();
       return;
     }
-    if (friendsLoadedFor === uid && slot._posts) { drawFriends(slot, slot._posts, slot._hasFriends, slot._mock); return; }
+    if (friendsLoadedFor === uid && slot._posts) { drawFriends(slot, slot._posts, slot._hasFriends); return; }
     slot.innerHTML = `<p class="arc-note">불러오는 중…</p>`;
     const res = await Friends.todayFeed(30);
     friendsLoadedFor = uid;
     slot._posts = res.posts || [];
     slot._hasFriends = !!res.hasFriends;
-    slot._mock = false;
-    if (!native && !slot._hasFriends) { showMock(); return; }
     drawFriends(slot, slot._posts, slot._hasFriends);
-  }
-  /** 둘러보기용 예시 — 친구 셋이 오늘 올린 사진·글 */
-  function guestFeed() {
-    // 지금보다 조금 전 시각 — 이른 새벽이면 어제로 넘어가지 않게 오늘 0시 이후로 맞춘다
-    const t = (minAgo) => {
-      const mid = new Date(); mid.setHours(0, 0, 0, 0);
-      const since = Math.max(1, (Date.now() - mid.getTime()) / 60000);
-      return new Date(Date.now() - Math.min(minAgo, since * minAgo / 240) * 60000).toISOString();
-    };
-    const today = new Date();
-    const date = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-    const mk = (who, school, city, minAgo, title, body, url) => {
-      const info = infoOf({ date, createdAt: t(minAgo), title, body, location: { city } });
-      info.who = who; info.school = school;
-      return { who, school, city, time: t(minAgo), title, body, url, info };
-    };
-    return [
-      mk('지민', 'Sciences Po · 파리', '파리', 25, '에펠탑 앞 피크닉', '수업 끝나고 다 같이 샴드마르스에서 바게트랑 치즈.', 'https://images.unsplash.com/photo-1757435755027-91a1a4beb6c5?w=900&q=75&auto=format&fit=crop'),
-      mk('서연', 'Uni Wien · 빈', '빈', 95, '첫 발표 끝', '독일어 발표 떨렸는데 교수님이 잘했다고 해 주셨다.\n오늘은 일찍 자야지.', ''),
-      mk('도윤', 'KU Leuven · 루뱅', '루뱅', 210, '도서관 자리 맡기 성공', '시험 기간이라 아침 8시에 왔는데도 거의 꽉 찼다.', 'https://images.unsplash.com/photo-1741699427799-3fbb70fce948?w=900&q=75&auto=format&fit=crop')
-    ];
   }
   const friendsEmpty = () => `
     <div class="arc-friends-empty">
@@ -239,12 +212,12 @@
     </div>`;
   const clock = (iso) => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   /** 친구들이 오늘 올린 기록을 시간 순 타임라인으로 — 사진이 있으면 사진, 없으면 글만 */
-  function drawFriends(slot, posts, hasFriends, mock) {
+  function drawFriends(slot, posts, hasFriends) {
     if (!hasFriends) { slot.innerHTML = friendsEmpty(); return; }
     if (!posts.length) { slot.innerHTML = `<p class="ftl-empty">오늘은 아직 친구들의 기록이 없어요</p>`; return; }
     let k = 0;
     const caret = (i) => `<button type="button" class="ftl__toggle" data-ftl-toggle="${i}" aria-expanded="false" aria-label="내용 보기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
-    slot.innerHTML = (mock ? `<p class="ftl-mock">예시 화면이에요<br>친구를 추가하면 친구들이 오늘 올린 기록이 여기에 보여요.</p>` : '') + `<ol class="ftl">${posts.map((p, i) => `
+    slot.innerHTML = `<ol class="ftl">${posts.map((p, i) => `
       <li class="ftl__item">
         <article class="ftl__card">
           <div class="ftl__who"><span class="ftl__av">${esc(p.who[0] || '?')}</span><b>${esc(p.who)}</b>${p.school ? `<span class="ftl__school">${esc(p.school)}</span>` : ''}<span class="ftl__time">${clock(p.time)}</span></div>

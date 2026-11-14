@@ -325,7 +325,6 @@ body[data-page="journal"][data-theme="v2"] .rec-calpage .diary-cal-section { mar
 .ftl__body { margin: 10px 2px 0; font-size: 13px; line-height: 1.55; color: var(--v2-ink-soft); }
 .ftl__body[hidden] { display: none; }
 .ftl-empty { margin: 4px 0 0; padding: 18px; border-radius: 18px; background: #F6F4EF; text-align: center; font-size: 13px; color: var(--v2-ink-soft); }
-.ftl-mock { margin: 0 0 12px; font-size: 11.5px; line-height: 1.5; color: var(--v2-ink-faint); }
 body[data-page="journal"] .rec-calpage .diary-day:not(.has-photo):not(.is-empty) { background: #F6F4EF; border-color: transparent; box-shadow: none; }
 .rec-calpage .diary-day { border-radius: 12px; box-shadow: none; }
 body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transparent; border-color: transparent; }
@@ -336,9 +335,9 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
 
 /* 큰 사진 카드 오른쪽 위 — 사진이 있어도 바로 새 사진을 올린다 */
 .rec-hero__add {
-  position: absolute; right: 12px; top: 12px; z-index: 2; height: 32px; padding: 0 13px;
-  border: 0; border-radius: 16px; background: var(--v2-dark); color: #fff;
-  font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  position: absolute; right: 12px; top: 12px; z-index: 2; height: 40px; padding: 0 16px;
+  border: 0; border-radius: 20px; background: var(--v2-dark); color: #fff;
+  font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 .rec-hero__place { max-width: calc(100% - 130px); }
@@ -354,3 +353,13 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
 .loc-consent__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
 .loc-consent__btn { height: 44px; border: 1.5px solid #E0DBD2; border-radius: 22px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: var(--v2-ink); cursor: pointer; }
 .loc-consent__btn--yes { border-color: var(--v2-dark); background: var(--v2-dark); color: #fff; }
+
+/* 사진 추가 버튼 — 크게(첫 사진이 없을 때 카드 가운데) */
+.rec-hero__cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 54px; padding: 0 30px; border: 0; border-radius: 27px; background: var(--v2-dark); color: #fff;
+  font: inherit; font-size: 16px; font-weight: 800; cursor: pointer; white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(30, 42, 38, 0.18);
+}
+.rec-hero__cta span { font-size: 22px; font-weight: 500; line-height: 1; margin-top: -2px; }
+.rec-hero__empty-title { font-size: 17px; margin-bottom: 16px; }

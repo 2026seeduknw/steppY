@@ -186,6 +186,48 @@
 
   let editing = null;   // 지원 학과·기간을 고치고 있는 학교 id
 
+  /** 오른쪽 손잡이를 끌어 순서를 바꾼다 — 놓은 자리의 순위로 옮긴다 */
+  function wireWishDrag(row, id) {
+    const grip = row.querySelector('[data-grip]');
+    if (!grip) return;
+    grip.addEventListener('pointerdown', (ev) => {
+      if (grip.disabled) return;
+      ev.preventDefault();
+      const rows = [...row.parentElement.querySelectorAll(':scope > .wish-row')];
+      const from = rows.indexOf(row);
+      const rects = rows.map((r) => r.getBoundingClientRect());
+      const startY = ev.clientY;
+      let to = from;
+      try { grip.setPointerCapture(ev.pointerId); } catch (e) { /* 캡처가 안 되면 window로 받는다 */ }
+      row.classList.add('is-dragging');
+      const move = (e) => {
+        const dy = e.clientY - startY;
+        row.style.transform = `translateY(${dy}px)`;
+        const mid = rects[from].top + rects[from].height / 2 + dy;
+        // 끌고 있는 줄의 가운데보다 위에 있는 다른 줄의 수 = 새 자리
+        to = rects.filter((r, k) => k !== from && r.top + r.height / 2 < mid).length;
+        rows.forEach((r, k) => {
+          if (r === row) return;
+          let shift = 0;
+          if (from < to && k > from && k <= to) shift = -rects[from].height;
+          if (from > to && k >= to && k < from) shift = rects[from].height;
+          r.style.transform = shift ? `translateY(${shift}px)` : '';
+        });
+      };
+      const end = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+        rows.forEach((r) => { r.style.transform = ''; });
+        row.classList.remove('is-dragging');
+        if (to !== from) { AppState.setWishlistRank(to + 1, id); renderAll(); }
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    });
+  }
+
   function renderWishlist() {
     if (!wishMount) return;
     if (!AppState.isAuthed) { wishMount.innerHTML = ''; return; }
@@ -236,16 +278,20 @@
           const offTrack = track && !OIA.schoolOffersTrack(e.school, track);
           return `
           <li class="wish-row${offTrack ? ' is-off' : ''}" data-id="${esc(e.schoolId)}">
-            <span class="wish-row__rank tnum">${e.rank}</span>
+            <label class="wish-row__rank tnum" aria-label="${e.rank}지망 · 눌러서 순위 바꾸기">
+              <select data-rank aria-label="${esc(e.school.name)} 순위">${list.map((_, k) => `<option value="${k + 1}"${k === i ? ' selected' : ''}>${k + 1}</option>`).join('')}</select>
+              <span aria-hidden="true">${e.rank}</span>
+            </label>
             <button type="button" class="wish-row__main" data-open-school="${esc(e.schoolId)}">
               <span class="wish-row__name">${esc(e.school.name)}</span>
               <span class="wish-row__meta">${countryFlag(e.school.countryEn)} ${esc(e.school.country)} · ${esc(e.major || '지원 학과 미정')} · ${len === 2 ? '1년' : '한 학기'}
                 <span class="wish-row__elig is-${elig.status}">${elig.label}</span></span>
             </button>
             <span class="wish-row__ctrl">
-              <button type="button" data-move="-1" aria-label="한 칸 위로" ${i === 0 ? 'disabled' : ''}>↑</button>
-              <button type="button" data-move="1" aria-label="한 칸 아래로" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
               <button type="button" data-edit aria-label="지원 학과·기간 고치기">✎</button>
+              <button type="button" class="wish-row__grip" data-grip aria-label="끌어서 순서 바꾸기" ${list.length < 2 ? 'disabled' : ''}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+              </button>
             </span>
             ${editing === e.schoolId ? `
             <form class="wish-edit" data-edit-form>
@@ -271,10 +317,13 @@
     });
     wishMount.querySelectorAll('.wish-row').forEach((row) => {
       const id = row.dataset.id;
-      row.querySelectorAll('[data-move]').forEach((b) => b.addEventListener('click', () => {
-        AppState.moveWishlist(id, Number(b.dataset.move));
+      // 순위 숫자를 누르면 1~N 중에서 바로 고른다(25지망까지 한 번에)
+      row.querySelector('[data-rank]').addEventListener('change', (ev) => {
+        AppState.setWishlistRank(Number(ev.target.value), id);
+        showToast(`${ev.target.value}지망으로 옮겼어요`);
         renderAll();
-      }));
+      });
+      wireWishDrag(row, id);
       row.querySelector('[data-edit]').addEventListener('click', () => { editing = editing === id ? null : id; renderWishlist(); });
       const form = row.querySelector('[data-edit-form]');
       if (!form) return;

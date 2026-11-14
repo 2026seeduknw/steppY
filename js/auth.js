@@ -107,12 +107,16 @@ const Auth = {
   async signUp(email, password, name, consents) {
     const c = consents || {};
     const at = new Date().toISOString();
+    // 인증 메일 링크가 돌아올 주소. 지정하지 않으면 Supabase 대시보드의 Site URL(지금은 localhost:3000)로 가서
+    // 휴대폰에서 "사이트에 연결할 수 없음"이 뜬다. 웹이면 지금 연 주소, 앱이면 배포된 웹 주소로 보낸다.
+    const isWeb = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    const base = isWeb ? location.origin : ((typeof AppLinks !== 'undefined' && AppLinks.INVITE_BASE) || location.origin);
     const { data, error } = await supabaseClient.auth.signUp({
       email,
       password,
       // handle_new_user() 트리거가 name을 읽어 profiles.name을 채운다.
       // 가입 때 받은 동의도 계정에 함께 남긴다(필수 동의 시각, 선택 동의 여부) — 어느 기기에서 로그인해도 같다
-      options: { data: {
+      options: { emailRedirectTo: `${base}/auth.html`, data: {
         name: name || null,
         consent_required_at: at,
         consent_location: c.location ? 'yes' : 'no',
