@@ -236,10 +236,6 @@ function openAccountSheet() {
             <span>위치정보 이용 동의 <b data-consent-state="location"></b></span>
             <button type="button" class="btn btn--text" data-consent-toggle="location"></button>
           </div>
-          <div class="account-sheet__loc">
-            <span>광고 표시 동의 <small>(Google, 국외 이전)</small> <b data-consent-state="ads"></b></span>
-            <button type="button" class="btn btn--text" data-consent-toggle="ads"></button>
-          </div>
 
           <p class="account-sheet__legal"><a href="terms.html">이용약관</a> · <a href="privacy.html">개인정보처리방침</a></p>
 
@@ -291,9 +287,7 @@ function openAccountSheet() {
   if (departureBtn) departureBtn.addEventListener('click', () => { close(); openDepartureGate({ dismissible: true }); });
   const CONSENT = {
     location: { get: () => AppState.locationConsent(), set: (v) => AppState.setLocationConsent(v),
-      off: '위치정보 이용 동의를 철회했어요. 앞으로 기록에는 학교 도시가 붙어요', on: '위치정보 이용에 동의했어요' },
-    ads: { get: () => AppState.adConsent(), set: (v) => AppState.setAdConsent(v),
-      off: '광고 표시 동의를 철회했어요. 이제 광고가 보이지 않아요', on: '광고 표시에 동의했어요' }
+      off: '위치정보 이용 동의를 철회했어요. 앞으로 기록에는 학교 도시가 붙어요', on: '위치정보 이용에 동의했어요' }
   };
   const drawConsent = (kind) => {
     const on = CONSENT[kind].get() === 'yes';

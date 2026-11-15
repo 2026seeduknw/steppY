@@ -49,9 +49,9 @@
 /* ---------------------------------------------------------------- 홈 */
 
 .v2-home { padding-top: var(--space-2); padding-bottom: 120px; }
-.v2-home__head { margin-bottom: 18px; }
-.v2-home__greet { margin: 10px 0 0 4px; font-size: 13px; color: var(--v2-ink-soft); }
-.v2-home .profile-cta { margin-top: 10px; }
+.v2-home__head { margin-bottom: 16px; }   /* 여백 규칙: 머리 ↔ 첫 카드는 다른 성격 16px. 워드마크가 소문자(steppY)라 p 아래로 내려온 꼬리 밑에서 인사말까지 보이는 거리를 8px로 — margin은 18px */
+.v2-home__greet { margin: 18px 0 0 4px; font-size: 13px; color: var(--v2-ink-soft); }
+.v2-home .profile-cta { margin-top: 8px; }
 
 /* 진행 단계 띠 — 화면 폭 전체, 낮게 */
 .v2-widget { position: relative; border-radius: 22px; overflow: hidden; }
@@ -451,7 +451,7 @@ body[data-page="credits"] .v2-head { margin-bottom: 15px; }
 /* ---------------------------------------------------------------- Mentor's Step v2 (Figma "Mentor's Step v2 시안") */
 body[data-page="consult"] .m2-head { margin-top: 6px; }
 .m2 { padding-bottom: 120px; gap: 0; }   /* 간격은 아래 margin 으로만 — 레이아웃 gap(16px)이 덧붙어 47px까지 벌어졌다 */
-.m2-ask { display: flex; gap: 10px; margin-top: 16px; }
+.m2-ask { display: flex; gap: 8px; margin-top: 16px; }
 .m2-ask__in {
   flex: 1; min-width: 0; height: 46px; padding: 0 18px; border: 1.5px solid #E0DCD1; border-radius: 23px; background: #fff;
   display: flex; align-items: center; font: inherit; font-size: 13.5px; color: var(--v2-ink-faint); text-align: left; cursor: pointer;
@@ -462,8 +462,8 @@ body[data-page="consult"] .m2-head { margin-top: 6px; }
   display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap;
 }
 .m2 .mentor-credit { display: none; }   /* 크레딧은 앱바에 이미 보인다 */
-.m2-chips { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
-.m2-chips__scroll { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.m2-chips { display: flex; align-items: center; gap: 8px; margin-top: 8px; }   /* 질문창 ↔ 칩은 한 묶음 조작이라 8px(여백 규칙) */
+.m2-chips__scroll { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .m2-chips__scroll::-webkit-scrollbar { display: none; }
 .m2-chips .chip { flex: none; height: 32px; padding: 0 13px; border: 1.5px solid #E0DCD1; border-radius: 16px; background: #fff; font-size: 12px; font-weight: 700; color: var(--v2-ink); }
 .m2-chips .chip.is-selected { background: var(--v2-dark); border-color: var(--v2-dark); color: #fff; }
@@ -496,7 +496,7 @@ body[data-page="consult"] .m2-head { margin-top: 6px; }
 .m2-col__meta { margin-left: auto; text-align: right; min-width: 0; font-size: 11px; color: var(--v2-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m2-col__t { font-size: 14.5px; font-weight: 500; line-height: 1.4; word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* 질문 카드 */
-.m2 .mentor-list { display: flex; flex-direction: column; gap: 10px; border: 0; background: none; padding: 0; }
+.m2 .mentor-list { display: flex; flex-direction: column; gap: 8px; border: 0; background: none; padding: 0; }
 .m2-q {
   display: flex; flex-direction: column; width: 100%; padding: 14px 16px; border: 1px solid #E0DCD1; border-radius: 20px; background: #fff;
   font: inherit; text-align: left; color: var(--v2-ink); cursor: pointer;
@@ -566,3 +566,77 @@ body[data-page="home"] .v2-home { padding-bottom: var(--space-6); }
 .site-footer__note { margin: 12px 0 0; color: #9AA49F; }
 .site-footer__copy { margin: 12px 0 0; color: #9AA49F; font-size: 10.5px; }
 .site-footer a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 2px; }
+
+/* 여백 규칙(app_ui.md) — 같은 종류끼리 8px, 같은 구역 안 다른 성격끼리 16px, 구역 사이 24px.
+   학교 찾기: 검색창↔필터 8px, 필터 줄↔학점 인정 카드↔명단 안내↔목록 머리 16px */
+body[data-page="search"] .search-toolbar { row-gap: 8px; }
+body[data-page="search"] .sim-banner { margin-top: 0; }
+body[data-page="search"] .quick-filters { gap: 8px; }
+
+/* 여백 규칙(app_ui.md 8/16/24) — Picks(내 저장).
+   구역 제목 ↔ 내용 12, 학교 추가 ↔ 안내 글 ↔ 경고 8, 안내 ↔ 목록 16, 구역 사이 24(보이는 거리) */
+body[data-page="saved"] .saved__head { margin-bottom: 12px; }
+body[data-page="saved"] .wish-add { margin: 0 0 8px; gap: 8px; }
+body[data-page="saved"] .wish-note { margin: 0 0 16px; }
+body[data-page="saved"] .wish-note + .wish-warn { margin-top: -8px; }
+body[data-page="saved"] .wish-warn { margin-bottom: 16px; }
+body[data-page="saved"] .wish-warn + .wish-warn { margin-top: -8px; }
+body[data-page="saved"] .saved__section + .saved__section { margin-top: 22px; }   /* 제목 줄 높이 위 여유 2px을 빼 보이는 거리 24 */
+
+/* 여백 규칙(app_ui.md 8/16/24) — 학점 인정. 검색 칸·조회 버튼끼리 8px, 직접 확인 안내 ↔ 결과 16px */
+body[data-page="credits"] .match-query { gap: 8px; }
+body[data-page="credits"] .match-query__row { gap: 8px; }
+body[data-page="credits"] .verify-note + #matchList { margin-top: 16px; }
+
+/* [테스트] 학교 찾기 나라 이름을 SB 어그로체로 — 큰 제목(Schools)은 원래 글꼴로 되돌렸다. 마음에 안 들면 이 블록만 지운다 */
+body[data-page="search"] .v2-shelf__country { font-family: 'SB Aggro Light', var(--font-title); font-weight: 700; letter-spacing: -0.02em; -webkit-text-stroke: 0.028em currentColor; paint-order: stroke fill; }
+
+/* ---------------------------------------------------------------- 학교 찾기 — 지구본 보기 */
+.view-globe-toggle {
+  flex: none; width: 34px; height: 34px; margin-left: 6px; margin-right: auto; display: grid; place-items: center;
+  border: 1.5px solid #E0DCD1; border-radius: 50%; background: #fff; color: var(--v2-ink); cursor: pointer;
+}
+.view-globe-toggle.is-on { background: var(--v2-dark); border-color: var(--v2-dark); color: #fff; }
+.school-globe[hidden] { display: none; }
+.sglobe { margin-top: 8px; }
+.sglobe__stage { position: relative; width: 100%; max-width: 440px; margin: 0 auto; aspect-ratio: 1; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; overflow: hidden; border-radius: 50%; }
+.sglobe__stage:active { cursor: grabbing; }
+.sglobe__earth { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sglobe__logos { position: absolute; inset: 0; }
+.sglobe__logo {
+  position: absolute; left: 0; top: 0; width: 30px; height: 30px; padding: 3px; border: 1.5px solid #fff; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28); display: grid; place-items: center; cursor: pointer; transform-origin: center;
+}
+.sglobe__logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; pointer-events: none; }
+.sglobe__logo span { font-size: 9px; font-weight: 800; color: var(--v2-ink); letter-spacing: -0.02em; }
+.sglobe__logo.has-more { border-color: var(--v2-dark); }
+.sglobe__more {
+  position: absolute; right: -7px; top: -6px; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px;
+  background: var(--v2-dark); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 16px; text-align: center;
+}
+.sglobe__pop {
+  position: absolute; z-index: 300; width: 220px; max-height: 200px; overflow-y: auto; padding: 10px; border-radius: 14px;
+  background: #fff; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22); cursor: default;
+}
+.sglobe__pop[hidden] { display: none; }
+.sglobe__pop-title { margin: 0 0 6px; font-size: 11px; font-weight: 800; color: var(--v2-ink-soft); }
+.sglobe__pop ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.sglobe__pop li button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px 4px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--v2-ink); text-align: left; cursor: pointer; }
+.sglobe__pop li button:active { background: #F6F4EF; }
+.sglobe__pop-logo { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 1px solid #E8E4DB; display: grid; place-items: center; overflow: hidden; }
+.sglobe__pop-logo img { width: 100%; height: 100%; object-fit: contain; }
+.sglobe__pop-logo span { font-size: 8px; font-weight: 800; }
+.sglobe__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.sglobe__hint { margin: 0; font-size: 11px; line-height: 1.5; color: var(--v2-ink-faint); }
+.sglobe__zoom { display: flex; gap: 8px; }
+.sglobe__zoom button { width: 36px; height: 36px; border: 1.5px solid #E0DCD1; border-radius: 50%; background: #fff; font-size: 18px; font-weight: 700; color: var(--v2-ink); cursor: pointer; }
+.sglobe__zoom button:disabled { opacity: .35; cursor: default; }
+#schoolGrid[hidden] { display: none !important; }
+.sglobe__stage { box-shadow: inset 0 0 0 1px rgba(30, 42, 38, 0.06); }
+.sglobe__logo.is-light, .sglobe__pop-logo.is-light { background: var(--v2-dark); }
+/* 로고 z-index(깊이 순서)가 globe 안에서만 통하게 — 스크롤하면 위로 올라오는 검색 띠(z-index 30) 위로 튀어나오지 않게. 원 밖도 잘라 낸다 */
+.sglobe__stage { isolation: isolate; z-index: 0; clip-path: circle(50% at 50% 50%); }
+.sglobe { position: relative; }
+/* 지구본은 목록 위 — 지구본 아래 안내 줄 ↔ 첫 나라 목록은 구역 사이 24px */
+.school-globe { margin-bottom: 24px; }
+.sim-banner[hidden] { display: none !important; }

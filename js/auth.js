@@ -15,6 +15,8 @@
 
 /** 가입 가능한 메일 도메인. 서버(auth.users의 enforce_yonsei_email 트리거)와 같은 규칙. */
 const ALLOWED_EMAIL_DOMAIN = '@yonsei.ac.kr';
+/** 베타 테스트 계정 도메인. 로그인만 된다 — 계정은 운영진이 Supabase 대시보드에서 만든다(supabase/test_accounts.sql). */
+const TEST_EMAIL_DOMAIN = '@steppy.test';
 
 /**
  * "로그인해 본 적이 있다"는 표시. 지금 세션이 살아 있는지(isAuthed)와는 다르다 —
@@ -34,7 +36,14 @@ const Auth = {
    * 그냥 건너뛰어진다.
    */
   isAllowedEmail(email) {
-    return typeof email === 'string' && email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
+    if (typeof email !== 'string') return false;
+    const e = email.trim().toLowerCase();
+    return e.endsWith(ALLOWED_EMAIL_DOMAIN) || e.endsWith(TEST_EMAIL_DOMAIN);
+  },
+
+  /** 테스트 계정 주소인지 — 화면에서 가입은 막고 로그인만 받는다 */
+  isTestEmail(email) {
+    return typeof email === 'string' && email.trim().toLowerCase().endsWith(TEST_EMAIL_DOMAIN);
   },
 
   /**
@@ -120,7 +129,6 @@ const Auth = {
         name: name || null,
         consent_required_at: at,
         consent_location: c.location ? 'yes' : 'no',
-        consent_ads: c.ads ? 'yes' : 'no',
         consent_optional_at: at
       } }
     });

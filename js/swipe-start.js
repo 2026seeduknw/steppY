@@ -14,6 +14,7 @@
   const track = root.querySelector('.swipe-start__track');
   const knob = document.getElementById('swipeKnob');
   const trail = document.getElementById('swipeTrail');
+  // 로그인 화면으로 — 로그인이 남아 있으면 auth-page.js가 곧장 홈으로 보낸다
   const DEST = 'auth.html';
 
   let dragging = false;

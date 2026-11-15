@@ -483,7 +483,7 @@ function wireSchoolModalActions(scrim, school, opts) {
           : res.reason === 'track' ? `${OIA.trackLabel(track)} 전형이라 이 학교는 담을 수 없어요` : '이미 담은 학교예요');
         return;
       }
-      showToast(`희망대학표 ${res.rank}순위로 담았어요`);
+      showToast(`희망대학표에 담았어요 ${res.rank}/${OIA.WISHLIST_MAX}\n순서는 Picks에서 정해요`);
       trackEvent('wishlist_rank_select', { schoolId: school.id, rank: res.rank });
     }
     rerenderFooter();
@@ -560,9 +560,15 @@ function schoolModalFooterOnly(school) {
       <div class="major-pick__mount" id="myMajorMount" hidden></div>
     </div>` : ''}
     <div class="school-modal__actions">
-      <button type="button" class="chip wish-chip ${rank ? 'is-selected' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}
-              aria-label="희망대학표 ${rank ? `${rank}순위, 빼기` : '담기'}">
-        ${rank ? `${rank}순위 · 빼기` : blocked ? `${OIA.trackLabel(track)} 아님` : `희망대학표 담기 <span class="tnum">${count}/${OIA.WISHLIST_MAX}</span>`}
+      <!-- 희망대학표 담기 — 장바구니 아이콘 하나. 순위(1·2·3지망…)는 Picks에서 정한다 -->
+      <button type="button" class="wish-cart ${rank ? 'is-on' : ''}${blocked ? ' is-blocked' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}
+              aria-pressed="${!!rank}"
+              aria-label="${rank ? '희망대학표에서 빼기' : blocked ? `${OIA.trackLabel(track)} 전형이라 담을 수 없어요` : `희망대학표에 담기 (${count}/${OIA.WISHLIST_MAX})`}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20.5 8H6.3"/>
+          <circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>
+          ${rank ? '<path d="M10.5 10.8l2 2 3.6-3.8"/>' : '<path d="M13.3 9.3v4.4M11.1 11.5h4.4"/>'}
+        </svg>
       </button>
       <button class="btn btn--primary" id="confirmSchoolBtn">${isMine
         ? (pre ? '미리 준비 중 ✓' : '배정된 학교 ✓')

@@ -142,11 +142,11 @@
         ${input}
         <input type="month" id="obLangDate" value="${esc(t.date || '')}" aria-label="응시 연월">
       </div>
-      <p class="ob__hint">${draft.track === 'english'
-        ? `TOEFL iBT만 인정돼요. ${OIA.NOT_ACCEPTED}는 낼 수 없어요.`
-        : `${tr.lang}는 ${tr.tests.join(' · ')} 성적을 40점 만점으로 환산해요.`} 응시 연월은 유효기간(파견 시작 2년 이내) 확인에 써요.</p>
+      <p class="ob__hint ob__hint--lang">${draft.track === 'english'
+        ? `TOEFL iBT만 인정돼요.<br>${OIA.NOT_ACCEPTED}는 낼 수 없어요.`
+        : `${tr.lang}는 ${tr.tests.join(' · ')} 성적을 40점 만점으로 환산해요.`}<br>응시 연월은 유효기간(파견 시작 2년 이내) 확인에 써요.</p>
       <label class="ob__check"><input type="checkbox" id="obExempt" ${draft.academic.langExempt ? 'checked' : ''}>
-        어학 면제 대상이에요 <span>(${tr.lang} 모국어 또는 그 언어로 초·중등 12년 이수)</span></label>`;
+        <span class="ob__check-text">어학 면제 대상 <small>(${tr.lang} 모국어 또는 그 언어로 초·중등 12년 이수)</small></span></label>`;
   }
 
   function renderAcademic() {

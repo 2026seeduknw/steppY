@@ -40,3 +40,17 @@ function showToast(message) {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => toast.classList.remove('is-visible'), 2200);
 }
+
+/**
+ * 긴 설명 글에 줄바꿈을 넣는다(app_ui.md: 문장·절이 이어지면 줄을 바꾼다).
+ * 데이터에서 온 긴 문장은 " · ", "; ", ") (" 로 이어 붙어 있는 경우가 많아 그 자리에서 끊는다.
+ * HTML이 들어 있지 않은 평문에만 쓴다.
+ */
+function readableText(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/\s+·\s+/g, '<br>')
+    .replace(/;\s+/g, ';<br>')
+    .replace(/\)\s+\(/g, ')<br>(')
+    .replace(/(?<=[가-힣])\.\s+/g, '.<br>');   // 한국어 문장 끝만(Univ. of 같은 약어는 그대로)
+}

@@ -229,9 +229,40 @@
     else view.classList.add('is-open');
   }
 
+  /* 지구본 — 목록 위에 기본으로 펼쳐 두고, 🌐 버튼으로 접는다(접은 상태는 이 기기에 기억).
+     같은 필터 결과를 학교 로고로 지구 위에 올린다(js/components/school-globe.js) */
+  const GLOBE_HIDDEN_KEY = 'steppy_globe_hidden';
+  let globeOn = (() => { try { return localStorage.getItem(GLOBE_HIDDEN_KEY) !== '1'; } catch (e) { return true; } })();
+  let globeMounted = false, globeKey = '';
+  function updateGlobe(list) {
+    if (!globeOn || typeof SchoolGlobe === 'undefined') return;
+    const el = document.getElementById('schoolGlobe');
+    if (!globeMounted) {
+      globeMounted = true;
+      SchoolGlobe.mount(el, { onOpen: (id) => openSchoolModal(id, { onChange: renderGrid }) });
+    }
+    // 필터가 바뀌어 학교 묶음이 달라지면 그쪽으로 돌려 준다(하트만 바뀐 경우는 그대로)
+    const key = list.map(s => s.id).join(',');
+    SchoolGlobe.update(list, { recenter: key !== globeKey });
+    globeKey = key;
+  }
+  function setGlobe(on, rerender = true) {
+    globeOn = on;
+    try { localStorage.setItem(GLOBE_HIDDEN_KEY, on ? '0' : '1'); } catch (e) { /* 저장 못 해도 동작은 한다 */ }
+    const btn = document.getElementById('globeToggle');
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-label', on ? '지구본 접기' : '지구본 펼치기');
+    btn.classList.toggle('is-on', on);
+    document.getElementById('schoolGlobe').hidden = !on;
+    if (rerender) renderGrid();
+  }
+  document.getElementById('globeToggle').addEventListener('click', () => setGlobe(!globeOn));
+  setGlobe(globeOn, false);
+
   function renderGrid() {
     const filtered = sortSchools(MOCK.schools.filter(matchesFilters));
     document.getElementById('resultCount').innerHTML = `<strong>${filtered.length}</strong>개 학교`;
+    updateGlobe(filtered);
     const grid = document.getElementById('schoolGrid');
     const pager = document.getElementById('schoolPager');
     if (!filtered.length) {
@@ -423,16 +454,12 @@
    * 이제 하이드레이션 후 MOCK:updated에서 다시 판단한다.
    */
   const simBanner = document.querySelector('.sim-banner');
-  const SIM_BANNER_CTA_HTML = simBanner ? simBanner.innerHTML : '';
 
   function renderBanner() {
     if (!simBanner) return;
-    if (AppState.isAuthed) {
-      if (simBanner.querySelector('.credits-cta')) return;
-      simBanner.className = 'sim-banner sim-banner--cta';
-      simBanner.innerHTML = SIM_BANNER_CTA_HTML;
-      return;
-    }
+    // 로그인하면 이 자리는 비운다(학점 인정 안내 카드는 없앴다)
+    if (AppState.isAuthed) { simBanner.hidden = true; simBanner.innerHTML = ''; return; }
+    simBanner.hidden = false;
     if (simBanner.querySelector('#guestScoreForm')) return;
     renderGuestScorePanel();
   }

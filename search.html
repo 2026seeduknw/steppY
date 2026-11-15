@@ -40,17 +40,8 @@
     </div>
   </div>
 
-  <!-- 로그인 상태에서는 학점 인정으로 보내고, 게스트에게는 js/search.js가
-       이 자리를 점수 입력 패널로 바꾼다(renderGuestScorePanel). -->
-  <div class="sim-banner sim-banner--cta">
-    <a class="credits-cta" href="credits.html">
-      <div class="credits-cta__body">
-        <h2>고민 중인 학교, 학점은 인정될까요?</h2>
-        <p>내 전공과 파견교 과목을 비교해 인정 가능성을 미리 확인해요</p>
-      </div>
-      <span class="credits-cta__arrow" aria-hidden="true">→</span>
-    </a>
-  </div>
+  <!-- 게스트에게만 점수 입력 패널(js/search.js renderGuestScorePanel). 로그인하면 숨긴다 — 학점 인정 안내 카드는 없앴다 -->
+  <div class="sim-banner" hidden></div>
 
   <!-- 지금 명단의 학기 안내(내 학기 명단이 아닐 때만) — js/search.js renderMyElig -->
   <div id="myEligibility"></div>
@@ -104,6 +95,10 @@
     <main>
       <div class="result-meta">
         <span class="result-meta__count" id="resultCount"></span>
+        <!-- 목록 ↔ 지구본(학교 로고를 실제 위치에) — js/components/school-globe.js -->
+        <button type="button" class="view-globe-toggle" id="globeToggle" aria-pressed="false" aria-label="지구본으로 보기">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        </button>
         <!-- 지원 가능만·즐겨찾기만은 필터 시트 안에 있었다. 가장 자주 켜는 두 개라
              시트를 열지 않고 결과 수 옆에서 바로 켜고 끄게 꺼냈다. -->
         <div class="result-meta__quick">
@@ -112,6 +107,7 @@
           <button type="button" class="chip" id="onlyFavoriteToggle" aria-pressed="false">즐겨찾기만</button>
         </div>
       </div>
+      <div class="school-globe" id="schoolGlobe" hidden></div>
       <div class="school-grid" id="schoolGrid"></div>
       <div class="school-pager" id="schoolPager"></div>
     </main>
@@ -152,6 +148,7 @@
 <script src="js/components/prepare-view.js"></script>
 <script src="js/components/major-credit.js"></script>
 <script src="js/components/logo-fit.js"></script>
+<script src="js/components/school-globe.js"></script>
 <script src="js/search.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

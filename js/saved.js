@@ -57,7 +57,7 @@
         <div class="saved__head"><h2>관심 학교 1:1 비교</h2></div>
         <div class="saved-empty">
           <p class="saved-empty__title">아직 찜한 학교가 없어요</p>
-          <p class="saved-empty__sub">학교 찾기에서 하트를 누르거나 지망 순위를 정하면 여기서 나란히 견줄 수 있어요</p>
+          <p class="saved-empty__sub">학교 찾기에서 하트를 누르거나 희망대학표에 담으면<br>여기서 나란히 견줄 수 있어요</p>
           <a class="btn btn--accent saved-empty__btn" href="search.html">학교 찾기</a>
         </div>`;
       return;
@@ -263,7 +263,7 @@
       wishMount.innerHTML = head + `
         <div class="saved-empty">
           <p class="saved-empty__title">아직 담은 학교가 없어요</p>
-          <p class="saved-empty__sub">위에서 학교를 바로 추가하거나, 학교 상세에서 '희망대학표 담기'를 눌러도 돼요</p>
+          <p class="saved-empty__sub">위에서 학교를 바로 추가하거나,<br>학교 상세 아래 장바구니를 눌러 담아요.<br>1·2·3지망 순서는 여기서 정해요</p>
           <a class="btn btn--accent saved-empty__btn" href="search.html">학교 찾기</a>
         </div>`;
       wireWishAdd(track, list);

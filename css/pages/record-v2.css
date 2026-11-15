@@ -363,3 +363,20 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
 }
 .rec-hero__cta span { font-size: 22px; font-weight: 500; line-height: 1; margin-top: -2px; }
 .rec-hero__empty-title { font-size: 17px; margin-bottom: 16px; }
+
+/* 기록하기 온보딩(diary-intro.js) — 실제 화면 카드를 그림으로 쓴다 */
+.dintro-hero { width: 100%; margin-top: 0; }
+.dintro-hero .rec-hero__btn { cursor: default; }
+.rec-hero.dintro-hero .rec-hero__img { height: 240px; max-height: none; object-fit: cover; }
+.dintro-streak { margin-top: 0; }
+.dintro-timeline .arc-sec-home__label { margin: 0 0 4px; }
+.dintro-timeline .ftl__img { cursor: default; height: 170px; max-height: none; object-fit: cover; }
+
+/* 여백 규칙(app_ui.md 8/16/24) — 기록하기 첫 화면.
+   제목 ↔ Streak 16, 카드끼리(Streak ↔ 사진) 8, 구역 사이(Recent · Friends Today) 24, 구역 제목 ↔ 내용 12.
+   구역 제목은 줄 높이 위쪽 여유(약 4px·3px)를 빼서 "보이는" 거리가 24가 되게 margin을 잡았다 */
+#journalRoot > .rec-streak { margin-top: 16px; }
+#journalRoot > .rec-hero { margin-top: 8px; }
+#journalRoot > .rec-recent { margin-top: 20px; }
+body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 19px; gap: 12px; }
+.rec-recent__row { margin-top: 12px; }

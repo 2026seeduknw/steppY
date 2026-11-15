@@ -841,6 +841,7 @@ body[data-page="auth"] {
 .auth__error { background: var(--coral-100); color: var(--coral-600); }
 .auth__notice { background: var(--mint-100); color: var(--mint-600); }
 .auth__error[hidden], .auth__notice[hidden] { display: none; }
+.auth__error { white-space: pre-line; }
 
 .auth__form .btn--primary {
   height: 52px;
@@ -1047,7 +1048,7 @@ body[data-page="onboarding"] {
 }
 
 .ob__form { display: flex; flex-direction: column; gap: var(--space-4); }
-.ob__group { display: flex; flex-direction: column; gap: 7px; }
+.ob__group { display: flex; flex-direction: column; gap: 8px; }
 /* 입력칸 위 라벨은 .field > span, .filter-group__title 과 같은 위계다.
    800 은 카드 제목(.section-title h2)의 무게라 이 자리에서는 과하다. */
 .ob__label {
@@ -1060,7 +1061,7 @@ body[data-page="onboarding"] {
   color: var(--amber-700); background: var(--amber-100);
   padding: 2px 7px; border-radius: var(--radius-pill);
 }
-.ob__row { display: flex; gap: 10px; }
+.ob__row { display: flex; gap: 8px; }
 .ob__row > input { flex: 1; min-width: 0; }
 .ob__row > select { flex: 0 0 116px; }
 .ob__suffix { flex: none; align-self: center; font-size: var(--fs-body); font-weight: 700; color: var(--ink-400); padding: 0 4px; }
@@ -1849,9 +1850,9 @@ body[data-page="prepare"] .leg-card {
 .auth__legal { margin-top: var(--space-4); text-align: center; font-size: var(--fs-micro); color: var(--ink-400); }
 .auth__legal a { color: var(--ink-600); text-decoration: underline; }
 /* 회원가입 — 참고 정보라 본인이 꼭 확인해야 한다는 안내. 폼에서 가장 먼저 눈에 띄게 경고색 상자로 */
-.auth__verify { margin: 4px 0 6px; padding: 14px 16px; border-radius: 14px; background: #FFF4D6; border: 1.5px solid #E8B64A; color: #5A4512; font-size: var(--fs-small); line-height: 1.55; word-break: keep-all; }
+.auth__verify { margin: 4px 0 6px; padding: 12px 14px; border-radius: 14px; background: #FFFAEB; border: 1px solid #F2DDA4; color: #5A4512; font-size: 12px; line-height: 1.55; word-break: keep-all; }
 .auth__verify[hidden] { display: none; }
-.auth__verify-title { margin: 0 0 6px; font-size: 1rem; font-weight: 800; color: #3E2E05; }
+.auth__verify-title { margin: 0 0 5px; font-size: 14px; font-weight: 800; color: #3E2E05; }
 .auth__verify p + p { margin-top: 4px; }
 .auth__verify strong { color: #3E2E05; }
 /* 회원가입 동의 목록 — 전체 동의 / [필수] / [선택]. 항목마다 따로 체크하고, 보기는 오른쪽 끝 */
@@ -1867,12 +1868,6 @@ body[data-page="prepare"] .leg-card {
 .auth__consent-label input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--ink-900); }
 .auth__consent-label b { color: var(--ink-900); }
 .auth__consent-view { flex: none; padding: 1px 2px; border: 0; background: none; font: inherit; font-size: var(--fs-micro); color: var(--ink-500); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
-.auth__consent-detail { margin: 0 0 8px 26px; padding: 10px 12px; border-radius: 10px; background: var(--cloud-50); }
-.auth__consent-detail[hidden] { display: none; }
-.auth__consent-info { margin: 0; display: grid; gap: 4px; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-700); }
-.auth__consent-info div { display: flex; gap: 8px; }
-.auth__consent-info dt { flex: none; width: 52px; font-weight: 700; color: var(--ink-500); }
-.auth__consent-info dd { margin: 0; word-break: keep-all; }
 .auth__consent-note { margin: 8px 0 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 
 /* ---- 랜딩 푸터 ---- */
@@ -2230,3 +2225,24 @@ select:not([multiple]) {
 .todo-list[hidden] { display: none; }
 .todo-panel__foot:first-child { margin-top: 0; }
 
+
+/* 로그인 화면 — "로그인 없이 둘러보기"는 가입 버튼 바로 밑 작은 글씨 링크 */
+.auth__skip { margin-top: var(--space-3); }
+.auth__sub { white-space: pre-line; }
+/* 어학 면제 체크 — 위 안내 글과 띄우고, 설명은 한 덩어리로 아래 줄에 */
+/* 어학 성적 안의 요소도 그룹·칩·나란한 칸과 같은 간격(8px)으로 */
+#obLangMount { display: flex; flex-direction: column; gap: 8px; }
+#obLangMount .ob__check { align-items: flex-start; }
+#obLangMount .ob__check input { margin-top: 1px; }
+.ob__check-text { display: block; line-height: 1.5; font-weight: 600; color: var(--ink-700) !important; }
+.ob__check-text small { font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); }
+/* 계열·편입 — 작은 라벨과 칩 사이도 다른 요소들과 같은 8px */
+#obFieldRow, #obTransferRow { display: flex; flex-direction: column; gap: 8px; }
+#obFieldRow .ob__sub, #obTransferRow .ob__sub { margin: 0; }
+
+/* 여백 규칙(app_ui.md 8/16/24) — 준비하기.
+   위쪽 작은 카드(확정 학교·일정·To-Do)는 같은 종류라 8px, 그 아래 성격이 다른 덩어리(서류|생활 전환·체크리스트·생활 카드)는 16px */
+body[data-page="prepare"] #prepareSchedule { margin: 8px 0 0; }
+body[data-page="prepare"] .page-shell:has(#prepareSchedule:not([hidden])) + .prepare-grid { padding-top: 8px; }
+body[data-page="prepare"] .prepare-grid { gap: 16px; }
+body[data-page="prepare"] .prepare-main, body[data-page="prepare"] .prepare-aside { gap: 16px; }

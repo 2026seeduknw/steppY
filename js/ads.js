@@ -17,7 +17,7 @@
  *   탭 이동은 페이지를 새로 여는 것이라 이 스크립트의 상태는 사라지지만 배너 뷰는
  *   그대로다. 그래서 화면을 떠날 때 숨기고, 열릴 때마다 자리를 다시 맞춘다.
  *
- * 광고 표시를 위한 개인정보 국외 이전(Google)에 동의한 회원에게만 띄운다(sync 맨 앞).
+ * 로그인한 회원에게만 띄운다(sync 맨 앞). 따로 동의는 받지 않고 개인정보처리방침에 국외 이전을 공개한다.
  *
  * 웹(브라우저)에서는 플러그인이 없어 아무 일도 하지 않는다.
  * 이 파일은 state.js·layout.js 뒤에 실려야 한다.
@@ -105,8 +105,8 @@ const Ads = {
   sync() {
     const plugin = this.plugin;
     if (!plugin) return;
-    // 광고 표시를 위한 국외 이전(Google)에 동의한 회원에게만 — 동의 전에는 SDK도 켜지 않는다(_init이 show 직전에만 불린다).
-    // 동의는 가입 화면의 [선택] 항목과 계정 메뉴에서 받는다. 둘러보기에는 광고가 없다(AppState.adConsent)
+    // 로그인한 회원에게만 — 그 전에는 SDK도 켜지 않는다(_init이 show 직전에만 불린다).
+    // 로그인한 회원에게만 띄운다(따로 동의는 받지 않고 개인정보처리방침에 국외 이전을 공개). 둘러보기에는 광고가 없다
     if (typeof AppState === 'undefined' || AppState.adConsent() !== 'yes') {
       if (this._slot || this._sent !== 'hidden') this._hide(plugin);
       return;

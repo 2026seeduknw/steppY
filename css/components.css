@@ -990,3 +990,12 @@ select.dd--open { border-color: var(--ink-900); }
 /* 참고용 안내 — "꼭 직접 확인하세요" 한마디(학점 인정·매칭·학교 정보 등) */
 .verify-note { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #FFF6E5; border: 1px solid #F1DDB2; font-size: var(--fs-micro); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
 .verify-note b { display: block; margin-bottom: 2px; font-size: var(--fs-small); color: #8A5A00; }
+
+/* 학교 상세 아래 — 희망대학표 담기(장바구니). 담으면 진하게 채우고 + 대신 ✓ */
+.school-modal__actions .wish-cart {
+  flex: none; width: 44px; height: 44px; padding: 0; display: grid; place-items: center;
+  border-radius: 50%; border: 1.5px solid var(--line-200); background: #fff; color: var(--ink-800, #22302D); cursor: pointer;
+}
+.school-modal__actions .wish-cart.is-on { background: var(--v2-dark, #2F3B37); border-color: var(--v2-dark, #2F3B37); color: #fff; }
+.school-modal__actions .wish-cart.is-blocked { opacity: .35; }
+.toast { white-space: pre-line; }

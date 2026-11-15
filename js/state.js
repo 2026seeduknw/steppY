@@ -447,7 +447,8 @@ const AppState = {
    * 다른 기기에서도 같아야 하므로 계정 값이 정본이고, 이 기기의 localStorage는 빠른 사본이다.
    *   'yes' | 'no' | null(아직 안 물음 — 이 동의 목록이 생기기 전에 가입한 계정, 또는 둘러보기)
    * 위치: 위치를 쓸 때마다 이용사실 확인자료를 남기고(위치정보법 제16조 제2항), 철회하면 지운다(제24조 제4항).
-   * 광고: 동의한 회원에게만 광고를 띄운다(js/ads.js). 둘러보기에는 광고가 없다.
+   * 광고: 따로 동의받지 않는다 — 로그인한 iOS 앱 회원에게 띄우고, 국외 이전은 개인정보처리방침에 공개한다
+   *   (개인정보 보호법 제28조의8 제1항 제3호). 둘러보기·웹에는 광고가 없다.
    */
   _consentKey(kind) {
     const uid = (this.isAuthed && typeof Auth !== 'undefined') ? Auth.userId : 'guest';
@@ -478,9 +479,8 @@ const AppState = {
         .then(({ error }) => { if (error) console.warn('[location_logs]', error.message); });
     }
   },
-  /** 광고 표시를 위한 개인정보 국외 이전(Google) 동의 — 둘러보기는 늘 동의하지 않은 것으로 본다 */
-  adConsent() { return this.isAuthed ? this._consent('ads') : 'no'; },
-  setAdConsent(state) { if (this.isAuthed) this._setConsent('ads', state); },
+  /** 광고를 띄워도 되는지 — 로그인한 회원이면 'yes'(동의 대신 처리방침 공개), 둘러보기는 'no' */
+  adConsent() { return this.isAuthed ? 'yes' : 'no'; },
   /** 위치정보 수집·이용·제공사실 확인자료 — 무엇을 위해, 어디로 보냈는지. 좌표는 남기지 않는다 */
   logLocationUse(purpose, providedTo) {
     if (!this.isAuthed || typeof supabaseClient === 'undefined' || !supabaseClient) return;

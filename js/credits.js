@@ -274,7 +274,7 @@
     if (!text) return '';
     const isLong = text.length > NOTE_CLAMP_THRESHOLD;
     return `
-      <div class="match-card__note${isLong ? ' is-clamped' : ''}">${text}</div>
+      <div class="match-card__note${isLong ? ' is-clamped' : ''}">${typeof readableText === 'function' ? readableText(text) : text}</div>
       ${isLong ? '<button type="button" class="match-card__note-toggle" data-note-toggle>더보기</button>' : ''}`;
   }
 
