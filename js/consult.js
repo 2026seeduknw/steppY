@@ -139,7 +139,7 @@
    * 같은 순서로 고른다: 먼저 대륙 칩, 그중 하나를 누르면 그 대륙의 국가 칩으로
    * 바뀐다("← 대륙" 칩으로 되돌아갈 수 있다) — 32개국을 한 줄에 다 늘어놓지
    * 않고 먼저 좁힌 뒤 고르게 한다. 실제로 목록을 거르는 건 국가를 골랐을 때뿐이고,
-   * 대륙은 그 목록을 좁히는 중간 단계일 뿐이다(눌러도 아래 글은 안 걸러짐).
+   * 대륙을 누르면 거르지 않고 그 대륙 글을 맨 앞으로 올린다(filteredQuestions).
    */
   function renderCountryFilter() {
     if (!countryFilterMount) return;
@@ -215,12 +215,25 @@
     });
   }
 
+  /** 질문의 나라(한글) → 대륙. 학교 데이터의 country·region 으로 만든다 */
+  function regionOfCountry(country) {
+    const sc = (MOCK.schools || []).find(x => x.country === country);
+    return (sc && sc.region) || '기타';
+  }
+
   function filteredQuestions() {
-    return allQuestions().filter(q => {
+    const list = allQuestions().filter(q => {
       if (state.country && q.country !== state.country) return false;
       if (state.onlyFavorite && (q.sample || !AppState.isQuestionFavorite(q.id))) return false;
       return true;
     });
+    // 대륙만 골랐으면(나라는 아직) 거르지 않고 그 대륙 글을 앞으로 — 안에서는 원래 순서(최신순) 그대로
+    if (state.region && !state.country) {
+      const inRegion = list.filter(q => regionOfCountry(q.country) === state.region);
+      const rest = list.filter(q => regionOfCountry(q.country) !== state.region);
+      return inRegion.concat(rest);
+    }
+    return list;
   }
 
   /**
@@ -315,7 +328,8 @@
     renderPins();
     const items = filteredQuestions();
     const secNote = document.getElementById('mentorListNote');
-    if (secNote) secNote.textContent = isSampleMode() ? '예시 글' : '최신순';
+    if (secNote) secNote.textContent = isSampleMode() ? '예시 글'
+      : (state.region && !state.country) ? `${REGION_LABEL_EN[state.region] || state.region} 먼저 · 최신순` : '최신순';
     if (!items.length) {
       listEl.innerHTML = `
         <div class="m2-empty">
