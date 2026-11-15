@@ -453,13 +453,14 @@
    */
   async function loadMentorQuestions() {
     const [questions, answers] = await Promise.all([
+      // strict — 받기에 실패하면 던져서 저장본을 지키고, 정말 0개면 0개로 받아들인다(아래 allowEmpty)
       fetchAll('mentor_questions', {
         columns: 'id, author_id, country, school_id, title, body, created_at',
-        order: [['created_at', { ascending: false }], ['id']]
+        order: [['created_at', { ascending: false }], ['id']], strict: true
       }),
       fetchAll('mentor_answers', {
         columns: 'id, question_id, author_id, body, created_at',
-        order: [['created_at', { ascending: true }], ['id']]
+        order: [['created_at', { ascending: true }], ['id']], strict: true
       })
     ]);
     const answersByQuestion = {};
@@ -610,7 +611,8 @@
       }
     },
     majorMatches: { load: async () => ({ majorMatches: await loadMajorMatches() }) },
-    mentor: { load: async () => ({ mentorQuestions: await loadMentorQuestions() }), alwaysRefresh: true }
+    // 사용자 글이라 "0개"도 올바른 답이다 — 비어 와도 저장본으로 덮지 않는다(allowEmpty). 실패는 strict로 따로 던진다
+    mentor: { load: async () => ({ mentorQuestions: await loadMentorQuestions() }), alwaysRefresh: true, allowEmpty: true }
   };
 
   // course_matches는 여기서 받지 않는다 — 위 ensureCourseMatches가 필요한 조각만 받는다
@@ -627,9 +629,10 @@
     }
     // 이번에 비어 온 컬렉션은 저장본의 값을 그대로 둔다(위 applyToMock과 같은 이유)
     const merged = Object.assign({}, cached ? cached.data : null);
-    Object.keys(fresh).forEach(k => { if (!isEmpty(fresh[k])) merged[k] = fresh[k]; });
+    Object.keys(fresh).forEach(k => { if (group.allowEmpty || !isEmpty(fresh[k])) merged[k] = fresh[k]; });
     const changed = !cached || JSON.stringify(merged) !== JSON.stringify(cached.data);
     cacheWrite(name, merged);
+    if (group.allowEmpty) { if (changed) { Object.assign(MOCK, fresh); announce(); } return; }
     if (changed && applyToMock(fresh)) announce();
   }
 

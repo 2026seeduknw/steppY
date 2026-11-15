@@ -60,8 +60,8 @@ const SchoolGlobe = (function () {
     const w = host.querySelector('.sglobe__stage').clientWidth;
     if (!w || w === size) return;
     size = w;
-    // 픽셀마다 삼각함수를 쓰니 해상도는 적당히 — 화면 2배를 넘기지 않고 520px에서 멈춘다
-    res = Math.min(520, Math.round(size * Math.min(2, window.devicePixelRatio || 1)));
+    // 가만히 있을 때는 휴대폰 화면 밀도(3배)까지 선명하게, 최대 900px. 끄는 동안은 drawEarth가 절반으로 낮춘다
+    res = Math.min(900, Math.round(size * Math.min(3, window.devicePixelRatio || 1)));
     canvas.width = canvas.height = res;
   }
 
@@ -129,7 +129,7 @@ const SchoolGlobe = (function () {
   function drawEarth() {
     if (!mask || !res) return;
     // 끄는 동안에는 절반 해상도로 빠르게, 손을 떼면 원래 해상도로 다시 그린다(움직일 때 끊기지 않게)
-    const want = drag && moved ? Math.round(res / 2) : res;
+    const want = drag && moved ? Math.min(400, Math.round(res / 2)) : res;
     if (canvas.width !== want) canvas.width = canvas.height = want;
     const res_ = want;
     const img = ctx.createImageData(res_, res_);
