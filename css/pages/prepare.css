@@ -210,7 +210,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .scholarship-row { padding: var(--space-3); background: var(--sky-50); border-radius: var(--radius-sm); }
 .scholarship-row__name { font-weight: 700; font-size: var(--fs-small); }
 .scholarship-row__amount { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--amber-700); }
-.scholarship-row__elig { font-size: var(--fs-micro); color: var(--ink-600); margin-top: 2px; }
+.scholarship-row__elig { font-size: var(--fs-micro); color: var(--ink-600); margin-top: 2px; white-space: pre-line; }
 
 /* ---- 꿀강 / 주변 ---- */
 .tip-row { display: flex; flex-direction: column; gap: var(--space-2); }

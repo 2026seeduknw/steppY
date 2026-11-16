@@ -348,9 +348,22 @@
       // 이 학교 과목 자료에 있는 학과 목록에서 고르면 입력칸에 채운다(목록에 없으면 직접 적는다)
       const pickMount = form.querySelector('[data-major-pick]');
       if (pickMount && typeof mountMajorPicker === 'function') {
-        mountMajorPicker(pickMount, id, { selected: form.elements.major.value, onPick: (v) => { if (v) form.elements.major.value = v; } });
+        // 이 학교 학과 목록이 있으면 검색 칸으로만 고르고 직접 쓰는 칸은 숨긴다(값은 그 칸에 담아 저장).
+        // 목록이 없을 때("과목 자료가 아직 없어…")만 직접 쓰는 칸을 보여 준다
+        const input = form.elements.major;
+        input.hidden = true;
+        const sync = () => {
+          const hasList = !!pickMount.querySelector('input, button, [role="combobox"], [role="listbox"]');
+          const loading = /불러오는 중/.test(pickMount.textContent);
+          input.hidden = hasList || loading;
+          if (!input.hidden) input.focus();
+        };
+        new MutationObserver(sync).observe(pickMount, { childList: true, subtree: true });
+        mountMajorPicker(pickMount, id, { selected: input.value, onPick: (v) => { input.value = v || ''; } });
+        sync();
+      } else {
+        form.elements.major.focus();
       }
-      form.elements.major.focus();
     });
     wireWishAdd(track, list);
   }

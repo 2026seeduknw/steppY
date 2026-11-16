@@ -90,3 +90,6 @@ img { max-width: 100%; display: block; }
     scroll-behavior: auto !important;
   }
 }
+
+/* 화면이 옆으로 밀리지 않게 — 어느 기종에서든 화면 폭에 고정. clip 은 hidden 과 달리 스크롤 상자를 만들지 않아 sticky(위 검색 띠 등)가 그대로 동작한다 */
+html, body { overflow-x: clip; }

@@ -2,7 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
 <title>steppY · 교환학생 준비 플랫폼 (클릭 데모)</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
@@ -62,116 +65,169 @@
   <div class="splash__stage"></div>
 </div>
 
-<main class="intro">
+<main class="intro intro--pager">
   <nav class="intro__nav">
     <a class="intro__brand" href="index.html">
       <img class="intro__brand-mark" src="assets/logo-mark-circle.png" width="28" height="28" alt="">
       <svg viewBox="0 0 3411.02 1300.0" class="intro__wordmark" role="img" aria-label="steppY"><use href="#wm-steppy"/></svg>
     </a>
+    <button type="button" class="ob-skip" id="obSkip">건너뛰기</button>
   </nav>
 
-  <div class="intro__hero">
-    <div class="intro__earth-wrap">
-      <div class="intro__earth" id="heroGlobe"></div>
-    </div>
+  <!-- 한 장씩 옆으로 넘긴다. 첫 장은 지구와 숫자, 다음 네 장은 Four Steps 하나씩(js/onboarding-pager.js) -->
+  <div class="ob-track" id="obTrack">
+    <section class="ob-slide ob-slide--hero" aria-roledescription="slide" aria-label="1 / 5">
+      <div class="intro__hero">
+        <div class="intro__earth-wrap">
+          <div class="intro__earth" id="heroGlobe"></div>
+        </div>
 
-    <div class="intro__globe-band">
-    <div class="intro__content">
-      <h1 class="intro__heading">교환학생 준비<br><span class="wordmark-svg wm-text" role="img" aria-label="steppY">s<span class="wm-kern-te">t</span>eppY</span>로 한번에<span class="wordmark-svg wordmark-svg--bang wm-text" role="img" aria-label="!">!</span></h1>
-    </div>
-    </div>
+        <div class="intro__globe-band">
+        <div class="intro__content">
+          <h1 class="intro__heading">교환학생 준비<br><span class="wordmark-svg wm-text" role="img" aria-label="steppY">s<span class="wm-kern-te">t</span>eppY</span>로 한번에<span class="wordmark-svg wordmark-svg--bang wm-text" role="img" aria-label="!">!</span></h1>
+        </div>
+        </div>
 
-  </div>
-
-  <section class="intro__stats">
-    <div class="intro__stat-grid">
-      <div class="intro__stat">
-        <span class="intro__stat-num"><strong data-count-to="271">0</strong><em>개</em></span>
-        <span>파견교</span>
       </div>
-      <div class="intro__stat">
-        <span class="intro__stat-num"><strong data-count-to="76">0</strong><em>개</em></span>
-        <span>전공</span>
-      </div>
-      <div class="intro__stat">
-        <span class="intro__stat-num"><strong data-count-to="32">0</strong><em>개국</em></span>
-        <span>생활 정보</span>
-      </div>
-    </div>
-    <h2 class="intro__section-title">교환학생 준비부터 추억 정리까지,<br>교환학생의 모든 <span class="wordmark-svg wm-text" role="img" aria-label="Step">Step</span>을 도와줍니다</h2>
-  </section>
 
-  <section class="intro__steps">
-    <h2 class="intro__section-title"><span class="wordmark-svg wordmark-svg--solo wm-text" role="img" aria-label="Four Steps!">Four Steps!</span></h2>
-    <ol class="intro__step-list">
-      <li class="intro__step-item">
-        <span class="intro__step-num">01</span>
-        <div>
-          <h3>내가 원하는 학교 찾기</h3>
-          <p>기후, 물가 등 내가 원하는 조건에 맞는 필터를 설정해 그에 맞는 학교들을 볼 수 있어요.</p>
-          <div class="intro__step-sub">
-            <h4>학교 정보를 한눈에</h4>
-            <p>steppY에서 수치화한 치안, 교통 편리성 정보 등이 한눈에 보기 좋게 정리되어 있어요.</p>
+      <section class="intro__stats">
+        <div class="intro__stat-grid">
+          <div class="intro__stat">
+            <span class="intro__stat-num"><strong data-count-to="271">0</strong><em>개</em></span>
+            <span>파견교</span>
           </div>
-          <div class="intro__step-sub">
+          <div class="intro__stat">
+            <span class="intro__stat-num"><strong data-count-to="76">0</strong><em>개</em></span>
+            <span>전공</span>
+          </div>
+          <div class="intro__stat">
+            <span class="intro__stat-num"><strong data-count-to="32">0</strong><em>개국</em></span>
+            <span>생활 정보</span>
+          </div>
+        </div>
+        <h2 class="intro__section-title">교환학생 준비부터 추억 정리까지,<br>교환학생의 모든 <span class="wordmark-svg wm-text" role="img" aria-label="Step">Step</span>을 도와줍니다</h2>
+      </section>
+    </section>
+
+    <section class="ob-slide ob-slide--step" aria-roledescription="slide" aria-label="2 / 5">
+      <!-- 실제 화면 캡처 두 장: 학교 찾기 첫 화면 + 학교 카드를 눌렀을 때 -->
+      <div class="ob-shots" aria-hidden="true">
+        <div class="ob-phone ob-phone--back">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step1-search.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+        <div class="ob-phone ob-phone--front">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step1-school.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <p class="ob-step__eyebrow"><span class="wm-text">Four Steps!</span> · 01</p>
+        <h2 class="ob-step__title">내가 원하는 학교 찾기</h2>
+        <p class="ob-step__desc">기후, 물가 등 원하는 조건으로 필터를 걸고<br>맞는 학교들을 볼 수 있어요.</p>
+          <div class="ob-step__sub">
+            <h4>학교 정보를 한눈에</h4>
+            <p>steppY에서 수치화한 치안, 교통 편리성 정보 등이<br>한눈에 보기 좋게 정리되어 있어요.</p>
+          </div>
+          <div class="ob-step__sub">
             <h4>희망대학표 Picks</h4>
             <p>1지망부터 25지망까지 담고, 순서를 끌어서 바꿔요.<br>위 세 학교는 슬롯·생활비·GPA 컷으로 나란히 비교해요.</p>
           </div>
+      </div>
+    </section>
+
+    <section class="ob-slide ob-slide--step" aria-roledescription="slide" aria-label="3 / 5">
+      <!-- 실제 화면 캡처 두 장: 준비하기 첫 화면 + 서류 체크리스트 -->
+      <div class="ob-shots" aria-hidden="true">
+        <div class="ob-phone ob-phone--back">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step2-home.jpg" alt="" width="662" height="1434">
+          </div>
         </div>
-      </li>
-      <li class="intro__step-item">
-        <span class="intro__step-num">02</span>
-        <div>
-          <h3>파견 준비하기</h3>
-          <p>국제처 지원 일정에 맞춰 이번 주에 할 일을 알려 드려요.<br>서류·비자부터 통신·계좌·장학금까지, 교환 준비의 A to Z를 함께해요.</p>
-          <div class="intro__step-sub">
+        <div class="ob-phone ob-phone--front">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step2-checklist.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <p class="ob-step__eyebrow"><span class="wm-text">Four Steps!</span> · 02</p>
+        <h2 class="ob-step__title">파견 준비하기</h2>
+        <p class="ob-step__desc">국제처 지원 일정에 맞춰 이번 주에 할 일을 알려 드려요.<br>서류·비자부터 통신·계좌·장학금까지,<br>교환 준비의 A to Z를 함께해요.</p>
+          <div class="ob-step__sub">
             <h4>Talky</h4>
             <p>궁금한 건 서로 나누고,<br>다녀온 선배에게도 바로 물어봐요.</p>
           </div>
-        </div>
-      </li>
-      <li class="intro__step-item">
-        <span class="intro__step-num">03</span>
-        <div>
-          <h3>학점 인정 확인하기</h3>
-          <p>파견교 과목의 수준(Level)과 전공 키워드를 분석해 학점 인정 가능성을 예측하고, 그 판단 근거를 함께 보여드려요.</p>
-        </div>
-      </li>
-      <li class="intro__step-item">
-        <span class="intro__step-num">04</span>
-        <div>
-          <h3>교환 생활 기록하기</h3>
-          <p>기억하고 싶은 순간들을 저장하고,<br>친구들과 함께 실시간으로 공유해요.<br>파견 기간 동안의 소중한 기억들을 생생하게 꾸미고 저장해요.</p>
-        </div>
-      </li>
-    </ol>
-  </section>
+      </div>
+    </section>
 
-  <section class="intro__final">
-    <h2 class="intro__final-title">교환학생을 준비하는<br>연세대학교 학생이라면<br>지금 한 <span class="wordmark-svg wm-text" role="img" aria-label="step">step</span>을 나아가요</h2>
-    <a class="intro__cta intro__cta--final" href="auth.html">로그인 · 회원가입</a>
-    <a class="intro__final-skip" href="home.html">로그인 없이 둘러보기 →</a>
-  </section>
+    <section class="ob-slide ob-slide--step" aria-roledescription="slide" aria-label="4 / 5">
+      <!-- 실제 화면 캡처 두 장: 과목 찾기 + 인정 근거 카드 -->
+      <div class="ob-shots" aria-hidden="true">
+        <div class="ob-phone ob-phone--back">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step3-credits.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+        <div class="ob-phone ob-phone--front">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step3-match.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <p class="ob-step__eyebrow"><span class="wm-text">Four Steps!</span> · 03</p>
+        <h2 class="ob-step__title">학점 인정 확인하기</h2>
+        <p class="ob-step__desc">파견교 과목의 수준(Level)과 전공 키워드를 분석해<br>학점 인정 가능성을 예측하고,<br>그 판단 근거를 함께 보여드려요.</p>
+      </div>
+    </section>
 
-  <footer class="intro__footer">
-    <a href="terms.html">이용약관</a>
-    <a href="privacy.html">개인정보처리방침</a>
-  </footer>
-</main>
-
-<!-- 화면 아래 고정. 스크롤해도 따라다닌다 — 랜딩이 길어서 버튼이 위에만 있으면
-     끝까지 읽은 사람이 다시 올라가야 한다. -->
-<div class="swipe-start" id="swipeStart">
-  <div class="swipe-start__track" role="button" tabindex="0"
-       aria-label="밀어서 시작하기. 누르거나 스페이스로도 시작할 수 있어요">
-    <span class="swipe-start__trail" id="swipeTrail" aria-hidden="true"></span>
-    <span class="swipe-start__label">밀어서 시작하기</span>
-    <span class="swipe-start__chevrons" aria-hidden="true">›››</span>
-    <span class="swipe-start__knob" id="swipeKnob">
-      <img src="assets/logo-mark-circle.png" alt="" width="50" height="50" draggable="false">
-    </span>
+    <section class="ob-slide ob-slide--step" aria-roledescription="slide" aria-label="5 / 5">
+      <!-- 실제 화면 캡처 두 장: 기록하기 첫 화면 + 다이어리 -->
+      <div class="ob-shots" aria-hidden="true">
+        <div class="ob-phone ob-phone--back">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step4-journal.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+        <div class="ob-phone ob-phone--front">
+          <div class="ob-phone__screen">
+            <span class="ob-phone__status"><span>9:41</span><i></i></span>
+            <img src="assets/onboarding/step4-diary.jpg" alt="" width="662" height="1434">
+          </div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <p class="ob-step__eyebrow"><span class="wm-text">Four Steps!</span> · 04</p>
+        <h2 class="ob-step__title">교환 생활 기록하기</h2>
+        <p class="ob-step__desc">기억하고 싶은 순간들을 저장하고,<br>친구들과 함께 실시간으로 공유해요.<br>파견 기간 동안의 소중한 기억들을<br>생생하게 꾸미고 저장해요.</p>
+      </div>
+    </section>
   </div>
-</div>
+
+  <div class="ob-bar" id="obBar">
+    <div class="ob-dots" id="obDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="ob-actions">
+      <button type="button" class="ob-back" id="obBack" aria-label="이전">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <button type="button" class="ob-next" id="obNext">다음</button>
+    </div>
+    <div class="ob-final" id="obFinal">
+      <a class="ob-final__skip" href="home.html">로그인 없이 둘러보기 →</a>
+      <span class="ob-final__legal"><a href="terms.html">이용약관</a><a href="privacy.html">개인정보처리방침</a></span>
+    </div>
+  </div>
+</main>
 
 <script src="js/globe.js" defer></script>
 <script src="js/splash-data.js"></script>
@@ -183,7 +239,7 @@
 <script src="js/country-flags.js"></script>
 <script src="js/mock-data.js"></script>
 <script src="js/intro.js"></script>
-<script src="js/swipe-start.js"></script>
+<script src="js/onboarding-pager.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>
 </body>

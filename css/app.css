@@ -1969,15 +1969,21 @@ textarea {
    선 하나만 그어도 다시 "위아래가 나뉜 판"으로 보인다. */
 .confirmed-card__trip { margin-top: var(--space-2); }
 
-/* D-day는 출발·도착 이름과 한 줄에 낀다 — 따로 줄을 두면 카드가 길어진다.
-   두 도시명의 폭이 서로 달라서 flex 가운데(space-between의 빈 칸)에 맡기면
-   카드 중앙을 벗어난다 — 흐름에서 빼서 카드 폭 기준 정중앙에 겹쳐 올린다. */
-.confirmed-card__trip .leg-card__ends { position: relative; }
+/* D-day는 비행 막대 바로 아래 가운데. "출국일 수정"과 같은 줄에 두어 카드가 길어지지 않게 한다.
+   수정 버튼이 오른쪽에 있어 flex 가운데에 맡기면 중앙을 벗어나므로, 줄 기준 정중앙에 겹쳐 올린다. */
+.confirmed-card__trip-foot {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 28px;
+  margin-top: var(--space-2);
+}
 .confirmed-card__dday {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 1.05rem;
@@ -1986,6 +1992,7 @@ textarea {
   white-space: nowrap;
   pointer-events: none;
 }
+.confirmed-card__trip-foot .confirmed-card__trip-edit { margin-top: 0; }
 
 .confirmed-card__trip .leg-card__place { font-size: 0.95rem; }
 .confirmed-card__trip .leg-card__end { gap: 0; }

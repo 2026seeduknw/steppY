@@ -197,9 +197,9 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-sel__bar button:active { background: rgba(255, 255, 255, 0.15); }
 
 .rec-etools { flex: none; border-top: 1px solid #EFEBE3; background: #fff; box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.04); padding: 12px 20px max(14px, env(safe-area-inset-bottom, 0px)); }
-.rec-etools__row { display: grid; grid-template-columns: repeat(5, 1fr); }
+.rec-etools__row { display: grid; grid-template-columns: repeat(6, 1fr); }
 .rec-tool { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; font: inherit; cursor: pointer; padding: 0; color: var(--v2-ink); }
-.rec-tool__ic { width: 44px; height: 44px; border-radius: 50%; background: #F4F2EE; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
+.rec-tool__ic { width: 42px; height: 42px; border-radius: 50%; background: #F4F2EE; display: grid; place-items: center; font-size: 18px; font-weight: 700; }
 .rec-tool__lb { font-size: 11px; font-weight: 700; color: var(--v2-ink-soft); }
 .rec-tool.is-on .rec-tool__ic { background: var(--v2-dark); color: #fff; }
 .rec-tool.is-on .rec-tool__lb { color: var(--v2-ink); }
@@ -284,7 +284,7 @@ body[data-page="journal"] .diary-weekdays, body[data-page="journal"] .diary-mont
 .entry-v2__chip-input { flex: none; width: 110px; cursor: text; outline: none; border-color: var(--v2-dark); font-weight: 600; }
 
 /* ---------------------------------------------------------------- D-day 밑 이번 주 기록 */
-.rec-streak { margin-top: 18px; padding: 16px 16px 14px; border-radius: 22px; background: #F6F4EF; }
+.rec-streak { margin-top: 18px; padding: 8px 8px 7px; border-radius: 22px; background: #F6F4EF; }
 .rec-streak__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .rec-streak__count { margin: 0; font-family: var(--font-title); font-size: 15px; font-weight: 700; color: var(--v2-ink); }
 .rec-streak__count b { font-size: 20px; font-weight: 800; margin-left: 2px; }
@@ -380,3 +380,275 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
 #journalRoot > .rec-recent { margin-top: 20px; }
 body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 19px; gap: 12px; }
 .rec-recent__row { margin-top: 12px; }
+
+/* ---------------------------------------------------------------- 하루 다이어리(Recent 밑 Diary) */
+#journalRoot > .rec-diary { margin-top: 20px; }   /* 구역 사이 보이는 거리 24(제목 줄 높이 위 여유 4) */
+.rec-diary__new { border: 0; background: none; padding: 6px 4px; font: inherit; font-size: 12.5px; font-weight: 800; color: var(--v2-ink); cursor: pointer; }
+.rec-diary__row { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; padding: 2px 4px 6px; }
+.rec-diary__row::-webkit-scrollbar { display: none; }
+.rec-diary__item { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; }
+.rec-diary__thumb { display: block; width: 100%; pointer-events: none; }
+.rec-diary__thumb .rec-page { border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+.rec-diary__date { font-size: 11.5px; font-weight: 700; color: var(--v2-ink-soft); }
+.rec-diary__empty {
+  width: 100%; display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1.5px dashed #DDD8CF; border-radius: 18px;
+  background: #FBFAF6; font: inherit; text-align: left; cursor: pointer; color: var(--v2-ink);
+}
+.rec-diary__empty b { font-size: 14px; font-weight: 800; }
+.rec-diary__empty span { font-size: 12px; line-height: 1.5; color: var(--v2-ink-soft); }
+
+/* 페이지 위 노래 스티커 — 작은 LP + 곡·가수 */
+.rec-it--song { display: flex; align-items: center; gap: 2.4cqw; padding: 0 3cqw 0 1.6cqw; border-radius: 999px; background: #22302D; color: #fff; box-shadow: 0 1cqw 2.4cqw rgba(0, 0, 0, 0.18); overflow: hidden; }
+.rec-it__lp { flex: none; width: 6.4cqw; height: 6.4cqw; border-radius: 50%; background: radial-gradient(circle, #E9C46A 0 18%, #111 19% 100%); box-shadow: inset 0 0 0 0.5cqw rgba(255, 255, 255, 0.12); }
+.rec-it--song .rec-it__text { display: flex; flex-direction: column; min-width: 0; font-size: 2.6cqw; line-height: 1.25; color: rgba(255, 255, 255, 0.75); white-space: nowrap; }
+.rec-it--song .rec-it__text b { font-size: 3.1cqw; color: #fff; overflow: hidden; text-overflow: ellipsis; }
+
+/* 꾸미기 — 노래 고르기 */
+.rec-songpick { display: flex; align-items: center; gap: 8px; }
+.rec-songpick__input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 20px; font: inherit; font-size: 16px; background: #fff; }
+.rec-songpick__now { flex: 1; min-width: 0; font-size: 13.5px; color: var(--v2-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-songpick__clear { flex: none; height: 32px; padding: 0 12px; border: 1.5px solid #E0DCD1; border-radius: 16px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.rec-songpick__hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--v2-ink-faint); }
+.rec-songpick__list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 150px; overflow-y: auto; }
+.rec-songpick__list button { width: 100%; padding: 9px 6px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 13px; color: var(--v2-ink-soft); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-songpick__list button b { color: var(--v2-ink); }
+.rec-songpick__list button:active { background: #F6F4EF; }
+.rec-songpick__empty { padding: 9px 6px; font-size: 12.5px; color: var(--v2-ink-faint); }
+
+/* 다이어리 보기 — 위에 노래 막대(누르면 멈춤·재생) */
+.rec-diaryview__page { margin-top: 12px; }
+.rec-songbar {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border: 0; border-radius: 999px;
+  background: #22302D; color: #fff; font: inherit; text-align: left; cursor: pointer;
+}
+.rec-songbar__lp { flex: none; width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle, #E9C46A 0 18%, #111 19% 100%); }
+.rec-songbar.is-playing .rec-songbar__lp { animation: rec-spin 3s linear infinite; }
+@keyframes rec-spin { to { transform: rotate(360deg); } }
+.rec-songbar__t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 11.5px; color: rgba(255, 255, 255, 0.7); white-space: nowrap; overflow: hidden; }
+.rec-songbar__t b { font-size: 14px; color: #fff; overflow: hidden; text-overflow: ellipsis; }
+.rec-songbar__ic { flex: none; font-size: 13px; letter-spacing: -1px; }
+
+/* v2(흰 바탕)에서는 시간대(밤·저녁) 색을 쓰지 않는다 — 밤에는 글자가 밝은색으로 바뀌어 흰 바탕에서 안 보였다(친구 초대 안내 등) */
+body[data-page="journal"][data-theme="v2"],
+body[data-page="journal"][data-theme="v2"][data-tod],
+body[data-page="journal"][data-theme="v2"] .diary-view,
+body[data-page="journal"][data-theme="v2"][data-tod] .diary-view {
+  --diary-text: var(--v2-ink);
+  --diary-text-dim: var(--v2-ink-soft);
+  --diary-text-faint: var(--v2-ink-faint);
+  --diary-line: #E6E2DA;
+  --diary-line-strong: #DDD8CF;
+  --diary-surface: #fff;
+  --diary-surface-alt: #F6F4EF;
+}
+body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #DDD8CF; background: #FBFAF6; border-radius: 18px; }
+
+/* 큰 사진 카드 오른쪽 위 + — 글자 없이 동그라미 하나 */
+.rec-hero__add { width: 40px; padding: 0; display: grid; place-items: center; font-size: 22px; font-weight: 500; line-height: 1; }
+
+/* 다이어리 만들기 시트 */
+.rec-dnew { display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
+.rec-dnew__field { display: flex; flex-direction: column; gap: 8px; }
+.rec-dnew__field > span { font-size: 13px; font-weight: 800; color: var(--v2-ink); }
+.rec-dnew__field input[type="text"] { height: 46px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: 16px; background: #fff; }
+.rec-dnew__mode { margin: 0; padding: 0; }
+.rec-dnew__dates { display: flex; align-items: center; gap: 8px; }
+.rec-dnew__dates input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: 15px; background: #fff; }
+.rec-dnew__dates input[hidden], .rec-dnew__tilde[hidden] { display: none; }
+.rec-dnew__tilde { color: var(--v2-ink-faint); }
+.rec-dnew__hint { margin: 0; font-size: 12px; line-height: 1.55; color: var(--v2-ink-faint); }
+.rec-dnew__go { height: 50px; border: 0; border-radius: 25px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+.rec-diary__title { max-width: 100%; font-size: 12px; font-weight: 800; color: var(--v2-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: -4px; }
+.rec-diaryview__del { display: block; margin: 16px auto 0; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--v2-ink-faint); text-decoration: underline; cursor: pointer; padding: 8px; }
+
+/* 다이어리 보기 위 — 날짜 | 노래 두 칸 */
+.rec-dtop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); align-items: center; gap: 12px; }   /* 날짜 칸을 넉넉히(26.11.15 · 기간) */
+.rec-dtop.is-solo { grid-template-columns: 1fr; }
+.rec-dtop__date { display: flex; flex-direction: column; padding-left: 4px; line-height: 1.1; }
+.rec-dtop__date b { font-family: var(--font-title); font-size: 24px; font-weight: 800; color: var(--v2-ink); letter-spacing: -0.02em; white-space: nowrap; }
+.rec-dtop__date small { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--v2-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-dtop .rec-songbar { min-width: 0; padding: 6px 12px 6px 6px; }
+.rec-dtop .rec-songbar__lp { width: 30px; height: 30px; }
+.rec-dtop .rec-songbar__t b { font-size: 13px; }
+.rec-dtop .rec-songbar__t { font-size: 11px; }
+/* Streak 글자 대신 불꽃 */
+.rec-streak__count { display: inline-flex; align-items: center; gap: 4px; }
+.rec-streak__flame { flex: none; color: var(--v2-ink); }
+.rec-streak__count b { margin-left: 0; }
+
+/* ---------------------------------------------------------------- 큰 사진 — 시간순 줄(왼쪽이 과거) */
+.rec-hero.rec-hero--reel { --rec-gutter: 21px; aspect-ratio: auto; background: none; border-radius: 0; overflow: visible; position: relative; }
+.rec-hero__track {
+  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  margin: 0 calc(-1 * var(--rec-gutter, 16px)); padding: 0 calc(var(--rec-gutter, 16px) + 6%);
+  scroll-padding: 0 calc(var(--rec-gutter, 16px) + 6%); overscroll-behavior-x: contain;
+}
+.rec-hero__track::-webkit-scrollbar { display: none; }
+.rec-hero__slide {
+  flex: 0 0 100%; scroll-snap-align: center; position: relative; display: flex; flex-direction: column; justify-content: center;
+  opacity: 0.4; transform: scale(0.94); transition: opacity 220ms ease, transform 220ms ease;
+}
+.rec-hero__slide.is-active { opacity: 1; transform: none; }
+/* 칸(바탕) 없이 사진 비율 그대로 — 사진만 둥글게 */
+.rec-hero--reel .rec-hero__btn { height: auto; border-radius: 24px; overflow: hidden; }
+.rec-hero--reel .rec-hero__btn::after { display: none; }
+.rec-hero--reel .is-latest .rec-hero__btn::after { display: block; }
+.rec-hero--reel .rec-hero__img { width: 100%; height: auto; max-height: min(440px, 58vh); object-fit: cover; }
+.rec-hero__track { align-items: center; }
+.rec-hero__cap { margin: 8px 4px 0; font-size: 12px; font-weight: 600; color: var(--v2-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-hero--reel .rec-hero__add { top: 12px; right: calc(6% + 12px); }
+
+/* 기록하기 제목 — 왼쪽 정렬, 오른쪽에 사진 추가 버튼(사진 위 + 대신) */
+#journalRoot > .rec-head { text-align: left; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.rec-head__text { min-width: 0; }
+.rec-head__add {
+  flex: none; height: 40px; margin-bottom: 6px; padding: 0 16px; border: 0; border-radius: 20px;
+  background: var(--v2-dark); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.rec-head__add span { font-size: 18px; font-weight: 500; line-height: 1; }
+/* 사진 테두리 빼기 — 흰 여백·그림자 없이 사진만(모서리만 살짝 둥글게) */
+.rec-it--photo.is-noframe { padding: 0; background: none; box-shadow: none; }
+.rec-it--photo.is-noframe img { border-radius: 2cqw; }
+
+/* 다이어리 보기 — 오른쪽 위 "수정하기"(연필) */
+.rec-top__action--edit { display: inline-grid; place-items: center; width: 34px; padding: 0; }
+
+/* 다이어리 보기에서 노래 스티커를 누르면 뜨는 작은 메뉴 — 숨기기 / 노래 빼기 */
+.rec-songmenu {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--v2-dark, #22302D);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  white-space: nowrap;
+}
+.rec-songmenu button {
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.rec-songmenu button:active { background: rgba(255, 255, 255, 0.14); }
+/* 스티커 자체는 overflow: hidden 이라 메뉴가 잘린다 — 메뉴가 떠 있는 동안만 풀고, 다른 것 위로 */
+.rec-it--song:has(.rec-songmenu) { overflow: visible; z-index: 50 !important; }
+.rec-diaryview__page .rec-it--song { cursor: pointer; pointer-events: auto; }
+
+/* 다이어리 보기 위 칸 — 제목 → 날짜 → 요일. 맨 위 머리말은 "Diary" */
+.rec-dtop__title { margin-bottom: 6px; font-size: 15px; font-weight: 800; color: var(--v2-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------------------------------------------------------------- 속지 꾸미기: 머리말 · 스티커 · 손글씨 */
+/* 맨 위 작은 머리말 — NOVEMBER '26 · 제목 · @steppY (아이템보다 뒤) */
+.rec-page__head {
+  position: absolute; left: 6cqw; right: 6cqw; top: 4cqw; z-index: 0;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 3cqw;
+  font-family: 'Manrope', var(--font-title), sans-serif; font-size: 2.5cqw; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: #3B3A33;
+}
+.rec-page__head span:last-child { text-align: right; }
+.rec-page__head b { font-weight: 800; max-width: 40cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-page__items { z-index: 1; }
+
+/* 그림 스티커(기본·내 스티커) — 배경 없이 그림만, 살짝 그림자 */
+.rec-it--art img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0.5cqw 0.8cqw rgba(0, 0, 0, 0.14)); pointer-events: none; }
+
+/* 손글씨 */
+.rec-it__text.is-hand { font-family: 'Gaegu', 'Nanum Pen Script', cursive; font-weight: 700; color: #2E2B26; line-height: 1.3; }
+.rec-opt__hand { font-family: 'Gaegu', cursive; font-size: 19px; font-weight: 700; }
+
+/* 스티커 패널 */
+.rec-stabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.rec-stabs button { padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: var(--v2-ink-faint, #7B847F); background: #F1EFE9; }
+.rec-stabs button[aria-selected="true"] { background: var(--v2-dark, #22302D); color: #fff; }
+.rec-opts--art .rec-opt--art { padding: 6px; background: #FAF8F2; }
+.rec-opt--art img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.rec-opt--mine { position: relative; display: block; }
+.rec-opt--mine > button:first-child { width: 100%; height: 100%; }
+.rec-opt__x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--v2-dark, #22302D); color: #fff; font-size: 13px; line-height: 20px; text-align: center; }
+.rec-headtoggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--v2-ink, #22302D); }
+.rec-headtoggle input { width: 18px; height: 18px; accent-color: var(--v2-dark, #22302D); }
+/* 스티커는 많아서 두 줄 이상으로 펼치고 그 안에서 위아래로 */
+.rec-opts--art { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; max-height: 124px; overflow-x: hidden; overflow-y: auto; padding: 6px 6px 2px 0; }
+.rec-opts--art .rec-opt { width: auto; height: 52px; }
+
+.rec-mcal__nav { width: 26px; height: 26px; border-radius: 50%; font-size: 18px; line-height: 1; color: #2E2B26; }
+.rec-mcal__nav:active { background: rgba(0, 0, 0, 0.06); }
+.rec-mcal__empty { text-align: center; font-size: 13px; color: var(--v2-ink-faint, #7B847F); margin-top: -8px; }
+
+/* 앱 안 확인창(지우기 등) — 기본 confirm 이 안 뜨는 환경이 있어 직접 그린다 */
+.rec-ask { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 24px; background: rgba(20, 26, 24, 0); transition: background .18s ease; }
+.rec-ask.is-open { background: rgba(20, 26, 24, 0.42); }
+.rec-ask__box { width: min(320px, 100%); padding: 22px 18px 14px; border-radius: 20px; background: #fff; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2); transform: scale(.96); opacity: 0; transition: transform .18s ease, opacity .18s ease; }
+.rec-ask.is-open .rec-ask__box { transform: none; opacity: 1; }
+.rec-ask__msg { text-align: center; font-size: 15px; font-weight: 600; line-height: 1.55; color: var(--v2-ink, #22302D); word-break: keep-all; }
+.rec-ask__btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.rec-ask__btns button { height: 46px; border-radius: 14px; font-size: 15px; font-weight: 700; background: #F1EFE9; color: var(--v2-ink, #22302D); }
+.rec-ask__btns button[data-ask="yes"] { background: var(--v2-dark, #22302D); color: #fff; }
+.rec-ask__btns button.is-danger { background: #D9534A; }
+
+/* 다이어리 보기 위 칸 — 날짜 | 제목 | 노래 세 칸 (노래가 없으면 두 칸) */
+.rec-dtop { grid-template-columns: auto minmax(0, 1fr) minmax(0, 132px); gap: 10px; }
+.rec-dtop.is-nosong { grid-template-columns: auto minmax(0, 1fr); }
+.rec-dtop__date b { font-size: 20px; }
+.rec-dtop__date b i { font-style: normal; }
+.rec-dtop__date small { margin-top: 3px; }
+.rec-dtop .rec-dtop__title {
+  margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3; color: var(--v2-ink); text-align: center;
+  white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: keep-all;
+}
+.rec-dtop .rec-songbar { padding: 5px 10px 5px 5px; gap: 6px; }
+.rec-dtop .rec-songbar__lp { width: 26px; height: 26px; flex: none; }
+.rec-dtop .rec-songbar__t { min-width: 0; font-size: 10px; }
+.rec-dtop .rec-songbar__t b { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-dtop .rec-songbar__ic { font-size: 10px; }
+
+/* ---------------------------------------------------------------- Monthly recap — 잡지 "이달의 favorites" 느낌 */
+.rec-recap {
+  /* 화면 폭을 꽉 채운다 — 카드 테두리 없이 한 장의 지면처럼 */
+  margin: 0 calc(-1 * var(--rec-gutter, 21px)) 28px; padding: 22px var(--rec-gutter, 21px) 26px;
+  background: #F3F1EC; --recap-red: #D9532F;
+}
+.rec-recap__head { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; }
+.rec-recap__title { text-align: center; }
+.rec-recap__title h3 { font-family: 'DM Serif Display', Georgia, serif; font-size: 38px; font-weight: 400; line-height: 1; color: var(--recap-red); letter-spacing: -0.01em; }
+.rec-recap__title h3 b { font-weight: 400; }
+.rec-recap__title p { margin-top: 8px; }
+.rec-recap__title p span {
+  position: relative; font-family: 'Manrope', sans-serif; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--recap-red);
+}
+.rec-recap__title p span::before { content: ''; position: absolute; inset: -4px -10px; border: 1px solid var(--recap-red); border-radius: 50%; transform: rotate(-3deg); opacity: .7; }
+.rec-recap__list { display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
+/* 사진은 크게, 테두리·기울기 없이. 글은 검은색으로 짧게(번호 · 제목 · 찍은 곳 · 날짜) */
+.rec-recap__item { display: grid; grid-template-columns: 62% 1fr; gap: 14px; align-items: end; cursor: pointer; }
+.rec-recap__item.is-right { grid-template-columns: 1fr 62%; }
+.rec-recap__item.is-right .rec-recap__photo { order: 2; }
+.rec-recap__item.is-right .rec-recap__text { text-align: right; }
+.rec-recap__photo { position: relative; aspect-ratio: 4 / 5; }
+.rec-recap__photo > img:first-child { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 4px; }
+.rec-recap__deco { position: absolute; right: -12px; top: -12px; width: 36px; height: 36px; }
+.rec-recap__text { min-width: 0; padding-bottom: 4px; color: #1E2A26; }
+.rec-recap__no { font-family: 'DM Serif Display', Georgia, serif; font-size: 30px; line-height: 1; }
+.rec-recap__text h4 { margin-top: 6px; font-size: 14px; font-weight: 800; line-height: 1.35; word-break: keep-all; }
+.rec-recap__place { margin-top: 6px; font-size: 12px; font-weight: 600; line-height: 1.4; word-break: keep-all; }
+.rec-recap__meta { margin-top: 4px; font-size: 11px; font-weight: 600; color: #5E6662; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------------------------------------------------------- 기록하기 탭 한글 = Pretendard (시험 적용 2026-11-16)
+   영문·숫자는 그대로 Manrope, 한글만 SUIT·마루부리 대신 Pretendard 로. 되돌리려면 이 블록만 지운다.
+   (다이어리 손글씨 Gaegu, recap 제목 DM Serif Display 처럼 따로 정한 글꼴은 그대로) */
+body[data-page="journal"] {
+  --kr-font: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  --font-display: 'Manrope', var(--kr-font);
+  --font-body: 'Manrope', var(--kr-font);
+  --font-mono: 'Manrope', var(--kr-font);
+  --font-title: 'Manrope', var(--kr-font);
+  --f-title: 'Manrope', var(--kr-font);
+  --f-body: 'Manrope', var(--kr-font);
+  font-family: var(--font-body);
+}

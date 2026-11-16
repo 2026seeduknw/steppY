@@ -102,7 +102,7 @@ function openDepartureGate({ dismissible = false } = {}) {
       <h2 class="departure-gate__title">${dismissible ? '출국일 변경' : '언제쯤 출국하세요?'}</h2>
       <p class="departure-gate__desc">${dismissible
         ? '날짜를 바꾸면 남은 날과 탭 구성이 그 날짜에 맞춰 바뀌어요.'
-        : `${name ? `${name} ` : ''}${OIA.beforePlacement(AppState.profile) ? '기준으로 미리 준비해봐요!' : '배정을 축하해요!'} 예상 출국일만 알려주세요.<br>정확하지 않아도 되고, 나중에 바꿀 수 있어요.`}</p>
+        : `${name ? `${name} ` : ''}${OIA.beforePlacement(AppState.profile) ? '기준으로 미리 준비해봐요!' : '배정을 축하해요!'}<br>예상 출국일만 알려주세요.<br>정확하지 않아도 되고, 나중에 바꿀 수 있어요.`}</p>
       <label class="departure-gate__field">예상 출국일
         <input type="date" id="gateStart" value="${range ? range.start : guess.start}">
       </label>

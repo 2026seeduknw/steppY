@@ -105,7 +105,6 @@ function tripPathHtml({ fromLabel, fromSub, toLabel, toSub, pct, dday, editLabel
           <span class="leg-card__place">${fromLabel}</span>
           <span class="leg-card__date">${fromSub}</span>
         </div>
-        <div class="confirmed-card__dday tnum">${dday}</div>
         <div class="leg-card__end leg-card__end--to">
           <span class="leg-card__place">${toLabel}</span>
           <span class="leg-card__date">${toSub}</span>
@@ -120,7 +119,10 @@ function tripPathHtml({ fromLabel, fromSub, toLabel, toSub, pct, dday, editLabel
         </span>
       </div>
 
-      <button type="button" class="confirmed-card__trip-edit" id="depEdit">${editLabel}</button>
+      <div class="confirmed-card__trip-foot">
+        <div class="confirmed-card__dday tnum">${dday}</div>
+        <button type="button" class="confirmed-card__trip-edit" id="depEdit">${editLabel}</button>
+      </div>
     </div>`;
 }
 

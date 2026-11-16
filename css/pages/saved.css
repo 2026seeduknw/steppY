@@ -118,3 +118,7 @@
 .wish-row__grip:active { cursor: grabbing; }
 .wish-row { position: relative; transition: transform 160ms ease; background: var(--surface, #fff); }
 .wish-row.is-dragging { transition: none; z-index: 2; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14); border-radius: 12px; }
+/* 순위 숫자가 카드 왼쪽 끝에 붙어 보였다 — 왼쪽에 여백을 두고 이름과도 띄운다 */
+.wish-row { grid-template-columns: 44px 1fr auto; padding-left: 6px; }
+.wish-row__rank span { min-width: 26px; height: 26px; border-radius: 13px; }
+.wish-row__main { padding-left: 6px; }

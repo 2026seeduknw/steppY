@@ -166,3 +166,4 @@ body[data-page="journal"][data-theme="film"] .diary-write-bar { border-top: 0; p
 .arc-friends-empty__actions { display: flex; align-items: center; gap: var(--space-3); }
 .arc-btn--sm { flex: 0 0 auto; padding: 9px 16px; font-size: 13.5px; border-radius: var(--radius-pill); }
 .arc-link { border: 0; background: none; color: var(--diary-text-dim); font: inherit; font-size: var(--fs-small); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 4px 2px; }
+.arc-song__rec { display: block; margin-top: 2px; font-style: normal; font-size: 10.5px; opacity: 0.7; }

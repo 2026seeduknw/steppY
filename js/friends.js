@@ -455,7 +455,7 @@ const Friends = (function () {
     const loadingPhotos = (e.photos || []).length > 0 && !urls.length;
     const loc = e.location && (e.location.city || e.location.country);
     const meta = [loc ? `📍 ${esc(loc)}` : '', esc(weatherText(e.weather)), ...(e.tags || []).map(tagText).filter(Boolean).slice(0, 3).map(esc)].filter(Boolean);
-    const track = e.song || e.now_playing;
+    const track = e.now_playing || e.song;   // 직접 고른 노래가 먼저
     const likes = tl.likes[e.id] || [];
     const liked = likes.includes(me());
     const cc = tl.commentCounts[e.id] || 0;
@@ -681,7 +681,8 @@ const Friends = (function () {
       api.list(),
       supabaseClient.from('user_journal')
         .select('id, user_id, entry_date, title, body, photos, location, song, now_playing, weather, created_at')
-        .neq('user_id', me()).gte('created_at', start.toISOString())
+        // 기록 날짜(entry_date)가 오늘인 글 — created_at 은 사진을 찍은 시각이라(옛 사진이면 몇 년 전) 오늘 올린 글도 빠졌다
+        .neq('user_id', me()).eq('entry_date', `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`)
         .order('created_at', { ascending: false }).limit(limit)
     ]);
     const friends = {};
@@ -696,7 +697,7 @@ const Friends = (function () {
       const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(entry) : { cap: entry.title, date: entry.date };
       const school = f.school_name ? [f.school_name, f.school_city || f.school_country].filter(Boolean).join(' · ') : '';
       info.who = f.name; info.school = school;
-      const loc = r.location || {};
+      const loc = typeof placeEn === 'function' ? placeEn(r.location) : (r.location || {});
       return { who: f.name, school, city: loc.city || loc.country || '', time: r.created_at, title: entry.title, body: entry.body,
         url: (r.photos || []).length ? (urls[r.photos[0]] || '') : '', info };
     });

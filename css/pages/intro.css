@@ -686,3 +686,238 @@ body[data-page="intro"] {
 
 /* 한글은 SUIT로 못박는다(영어는 Manrope, 히어로 steppY 로고만 SB 어그로) */
 body[data-page="intro"] { font-family: 'Manrope', 'SUIT Variable', sans-serif; }
+
+
+/* ==========================================================================
+   온보딩 넘기기 (js/onboarding-pager.js)
+   첫 장 = 지구·숫자, 다음 네 장 = Four Steps 하나씩.
+   화면은 위아래로 움직이지 않는다. 넘기는 칸만 옆으로 스냅되고,
+   글이 긴 장(01)만 그 장 안에서 위아래로 읽힌다.
+   ========================================================================== */
+
+body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
+.intro--pager {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.intro--pager .intro__nav { justify-content: space-between; flex: 0 0 auto; }
+
+.ob-skip {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-600);
+  padding: 8px 4px;
+}
+.ob-skip[hidden] { display: none; }
+
+.ob-track {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ob-track::-webkit-scrollbar { display: none; }
+
+.ob-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 아래 고정 막대(점·버튼)에 가리지 않게 */
+  padding-bottom: 168px;
+  scrollbar-width: none;
+}
+.ob-slide::-webkit-scrollbar { display: none; }
+
+/* 첫 장 — 지구·숫자는 원래 랜딩 그대로. 섹션 사이 여백만 정리 */
+.intro--pager .intro__stats { padding-top: var(--space-3); padding-bottom: 0; }
+
+/* 단계 장 — 위에 그림(아치 창), 아래에 글 */
+.ob-slide--step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+.ob-art {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(68%, 260px);
+  aspect-ratio: 5 / 6;
+  margin-top: var(--space-3);
+  border-radius: 999px 999px 28px 28px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.95) 0 22%, transparent 56%),
+    linear-gradient(180deg, var(--sky-50) 0%, var(--sky-100) 100%);
+  border: 1.5px solid var(--line-200);
+  display: grid;
+  place-items: center;
+  color: var(--key-ink);
+  overflow: hidden;
+}
+.ob-art__icon { width: 46%; height: auto; }
+.ob-art__num {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Manrope', var(--font-display);
+  font-weight: 800;
+  font-size: 3.4rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(34, 48, 45, 0.08);
+}
+
+.ob-step {
+  width: 100%;
+  max-width: 34ch;
+  margin-top: var(--space-4);
+  text-align: center;
+  word-break: keep-all;
+}
+.ob-step__eyebrow {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--sky-700);
+  letter-spacing: 0.01em;
+}
+.ob-step__eyebrow .wm-text {
+  font-family: 'Manrope', var(--font-display);
+  font-weight: 700;
+  -webkit-text-stroke: 0;
+  color: inherit;
+}
+.ob-step__title {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+.ob-step__desc {
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  line-height: 1.7;
+  color: var(--ink-700);
+}
+.ob-step__sub {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-200);
+}
+.ob-step__sub h4 { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); margin-bottom: 2px; }
+.ob-step__sub p { font-size: var(--fs-small); line-height: 1.7; color: var(--ink-600); }
+
+/* ---- 아래 고정 막대: 점 → 버튼 → (마지막 장) 둘러보기·약관 ---- */
+.ob-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: var(--space-3) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 22%);
+}
+.ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-3); }
+.ob-dots span {
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--ink-300, #c5ccc9);
+  transition: width .25s ease, background-color .25s ease;
+}
+.ob-dots span.is-on { width: 22px; background: var(--key-500); }
+
+.ob-actions { display: flex; gap: 8px; max-width: 440px; margin: 0 auto; }
+.ob-back {
+  flex: 0 0 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-200);
+  color: var(--ink-900);
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+.ob-bar.is-first .ob-back { display: none; }
+.ob-next {
+  flex: 1 1 auto;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: var(--key-500);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-body);
+}
+
+.ob-final { display: none; text-align: center; margin-top: var(--space-3); }
+.ob-bar.is-last .ob-final { display: block; }
+.ob-final__skip {
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ob-final__legal { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+.ob-final__legal a { font-size: var(--fs-micro); color: var(--ink-400, #8a9592); }
+/* 마지막 장은 아래 막대가 두 줄 더 길다 */
+.ob-slide:last-child { padding-bottom: 230px; }
+
+/* 실제 화면 캡처 — 폰 화면 두 장을 살짝 겹쳐 세운다(뒤: 학교 찾기, 앞: 학교 카드) */
+.ob-shots {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(84%, 320px);
+  aspect-ratio: 1 / 1.3;
+  margin-top: var(--space-3);
+}
+/* 아이폰 모양 — 검은 테두리 + 둥근 화면 + 위쪽 상태 표시줄(시간·다이내믹 아일랜드) */
+.ob-phone {
+  position: absolute;
+  top: 0;
+  width: 54%;
+  padding: 2.6%;
+  border-radius: 17% / 8%;
+  background: #15191a;
+  box-shadow: 0 0 0 1.5px #3a4043 inset, 0 16px 36px rgba(34, 48, 45, 0.22);
+}
+.ob-phone__screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14% / 6.6%;
+  background: #fff;
+}
+.ob-phone__status {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 14%;
+  font-family: 'Manrope', sans-serif;
+  font-size: 6px;
+  font-weight: 700;
+  color: #111;
+}
+/* 다이내믹 아일랜드 */
+.ob-phone__status i {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 9px;
+  border-radius: 999px;
+  background: #15191a;
+}
+.ob-phone__screen img { display: block; width: 100%; height: auto; }
+.ob-phone--back { left: 0; transform: rotate(-5deg); transform-origin: 100% 100%; }
+.ob-phone--front { right: 0; top: 6%; transform: rotate(4deg); transform-origin: 0 100%; }

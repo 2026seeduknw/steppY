@@ -130,7 +130,8 @@
   // 비어 있는 지망 자리는 'empty:<순위>' 로 원판에 남긴다 — 그 자리를 찜한 학교로 채워
   // 그리면 저장되지 않은 지망을 저장된 것처럼 보여주게 된다.
   function isEmptySlot(id) { return typeof id === 'string' && /^(empty|add):/.test(id); }
-  const isAddSlot = (id) => typeof id === 'string' && id.startsWith('add:');
+  // 함수 선언으로 — renderAll이 이 줄보다 먼저 불려도(파일 위쪽에서 바로 그림) 쓸 수 있게(const면 초기화 전 접근 오류)
+  function isAddSlot(id) { return typeof id === 'string' && id.startsWith('add:'); }
   function wheelSource() {
     const wish = AppState.getWishlist();
     const exists = (id) => id && MOCK.schools.some(s => s.id === id);

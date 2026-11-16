@@ -452,7 +452,14 @@ const OIA = (function () {
       check: (p, school) => (school && /(ISEP|Keio University|Amherst College|Washington College)/i.test(school.name) ? true : null) },
     { id: 'vsp', name: 'VSP 장학금', amount: '연세대 등록금의 80%', when: '방문학생 선발 시',
       cond: '방문학생 프로그램(VSP) 참가자 · 교내 다른 장학금과 중복 불가',
-      check: () => null }
+      check: () => null },
+    // 산업통상자원부·한국산업기술진흥원(KIAT) 사업. 미국 대학으로 가는 이공계만 해당 — 다른 나라면 표시하지 않는다
+    { id: 'kusa', name: '한미 첨단분야 청년교류 장학금', amount: '장학금 + 첨단산업 체험 프로그램 (금액은 해마다 공고문 확인)', when: '봄 예비 장학생 모집 (2025년 3월 31일~5월 9일)',
+      cond: '미국 대학 교환학생 파견 예정인 한국 국적 이공계 학부생 (복수·부전공 포함)\n전체 3.00/4.5 (2.87/4.3) 이상 · 공인영어성적 보유\n예비 장학생으로 뽑힌 뒤 본교 미국 교환학생 선발을 통과해야 확정\n사업 문의 · KIAT 02-6009-3224',
+      check: (p, school) => {
+        if (!school || !/미국|United States|USA/i.test(`${school.country || ''} ${school.countryEn || ''}`)) return null;
+        return p.gpa == null ? null : p.gpa >= 2.87;
+      } }
   ];
 
   return {

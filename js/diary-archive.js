@@ -481,19 +481,37 @@
     });
   }
 
+  /* ------------------------------------------------------------ 위치는 영어로
+   * 새 기록은 지명을 영어로 받는다(diary-view.js reverse geocode). 예전에 한국어로 저장된 기록도
+   * 나라는 countryCode → 영어 이름으로 바꿔 보여준다. 도시는 좌표를 저장하지 않아 다시 바꿀 수 없어 그대로 둔다. */
+  const regionEn = (() => { try { return new Intl.DisplayNames(['en'], { type: 'region' }); } catch (e) { return null; } })();
+  function placeEn(loc) {
+    if (!loc) return { city: null, country: null };
+    let country = loc.country || null;
+    if (loc.countryCode && regionEn) { try { country = regionEn.of(String(loc.countryCode).toUpperCase()) || country; } catch (e) { /* 그대로 */ } }
+    else if (country && typeof MOCK !== 'undefined') {
+      const sc = (MOCK.schools || []).find(x => x.country === country);
+      if (sc && sc.countryEn) country = sc.countryEn;
+    }
+    return { city: loc.city || loc.place || loc.name || null, country };
+  }
+  global.placeEn = placeEn;
+
   /* ------------------------------------------------------------ 확대: 사진 + 위치·날씨·노래 */
   function infoOf(e) {
-    const loc = e.location || {};
+    const loc = placeEn(e.location);
     const place = loc.city || loc.country ? [loc.city || loc.country, loc.city && loc.country ? loc.country : ''] : null;
     let weather = null;
     if (e.weather && typeof e.weather.code === 'number' && typeof SongEngine !== 'undefined') {
       const w = SongEngine.weatherLabel(e.weather.code);
       if (w) weather = { emoji: w.emoji, label: w.ko, temp: typeof e.weather.temp === 'number' ? Math.round(e.weather.temp) : null };
     }
-    const song = e.song || e.nowPlaying || null;
+    // 직접 고른 노래(그때 듣던 노래)가 먼저, 없을 때만 추천 노래
+    const song = e.nowPlaying || e.song || null;
+    const songRecommended = !e.nowPlaying && !!e.song;   // 직접 고른 게 아니면 '추천' 표시
     const t = e.createdAt ? new Date(e.createdAt) : null;
     const date = `${e.date.replace(/-/g, '.')}${t && !isNaN(t) ? ` · ${pad(t.getHours())}:${pad(t.getMinutes())}` : ''}`;
-    return { cap: e.title || e.body || '', date, place, weather, song };
+    return { cap: e.title || e.body || '', date, place, weather, song, songRecommended };
   }
 
   /*
@@ -612,7 +630,7 @@
     const s = info && info.song;
     q('.arc-lb__info--3').innerHTML = s
       ? `<div class="arc-song">${s.art ? `<img class="arc-song__art" src="${esc(s.art)}" alt="">` : `<span class="arc-song__art arc-song__art--empty">🎵</span>`}
-         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small></span></div>` : '';
+         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small>${info.songRecommended ? '<em class="arc-song__rec">날씨·위치 기반 추천 노래</em>' : ''}</span></div>` : '';
   }
   function placeInfo(rect) {
     const els = [q('.arc-lb__info--1'), q('.arc-lb__info--2'), q('.arc-lb__info--3')];
@@ -644,11 +662,13 @@
   }
   function closeLightbox() {
     if (!lb || lb.hidden) return;
-    const r = lbThumb.getBoundingClientRect();
     const th = lbThumb;
+    // 화면에 없는 사진(그날의 다른 사진을 넘겨 본 경우)은 돌아갈 자리가 없어 제자리에서 사라진다
+    const onScreen = th.isConnected;
+    const r = th.getBoundingClientRect();
     lb.classList.remove('is-on');
     lbImgs.forEach((el, i) => {
-      if (i === lbIndex) Object.assign(el.style, px(r));
+      if (i === lbIndex && onScreen) Object.assign(el.style, px(r));
       else el.style.opacity = '0';
     });
     setTimeout(() => { lb.hidden = true; th.style.visibility = ''; lbImgs.forEach(el => el.remove()); lbImgs.clear(); }, 430);
@@ -658,7 +678,7 @@
     lbThumb.style.visibility = '';
     lbThumb = lbCtx.thumbs[n];
     lbThumb.style.visibility = 'hidden';
-    if (lbThumb.scrollIntoView) lbThumb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
+    if (lbThumb.isConnected && lbThumb.scrollIntoView) lbThumb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
     // 정보는 잠깐 사라졌다가 새 사진의 것으로 다시 나타난다
     const infoEls = lb.querySelectorAll('.arc-lb__info');
     infoEls.forEach(el => { el.style.transition = 'opacity 140ms ease'; el.style.opacity = '0'; });

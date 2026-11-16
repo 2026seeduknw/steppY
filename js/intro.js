@@ -33,12 +33,12 @@
 
     const countUp = (el) => {
       const to = Number(el.dataset.countTo);
-      const DURATION = 1100;
+      const DURATION = 500;
       const start = performance.now();
       const tick = (now) => {
         const t = Math.min(1, (now - start) / DURATION);
-        // 빠르게 올라갔다가 끝에서 멎는다(easeOutCubic). 선형이면 끝이 뚝 끊긴다.
-        const eased = 1 - Math.pow(1 - t, 3);
+        // 짧게 돌되 처음에 확 튀지 않게, 처음부터 끝까지 고르게 느려진다(easeOutQuad)
+        const eased = 1 - Math.pow(1 - t, 2);
         el.textContent = Math.round(to * eased);
         if (t < 1) requestAnimationFrame(tick);
       };

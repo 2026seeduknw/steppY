@@ -835,7 +835,9 @@ function morphToPreparePage() {
   if (document.body.dataset.page === 'prepare') return;
   ensurePrepareStylesLoaded();
   document.querySelectorAll('body > .page-shell').forEach(el => el.remove());
-  document.getElementById('mentor-float').insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
+  // 홈의 하단 정보(.site-footer)는 맨 아래에 남아야 한다 — 그 앞에 끼운다(뒤에 넣으면 정보 영역이 맨 위로 올라왔다)
+  const anchor = document.querySelector('body > .site-footer') || document.getElementById('mentor-float');
+  anchor.insertAdjacentHTML('beforebegin', PREPARE_MARKUP);
   document.body.dataset.page = 'prepare';
   document.title = '교환 준비하기 · steppY';
   // 앱 셸로 바꾸면서 renderAppNav()가 renderAppBar()/renderTabBar() 둘로 갈렸는데

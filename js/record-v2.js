@@ -31,6 +31,34 @@
 
   let ctx = null;
 
+  /**
+   * 앱 안에서 그리는 확인창. window.confirm 은 앱 안 브라우저·일부 웹뷰에서 뜨지 않고
+   * 바로 '취소'로 돌아와서 "지우기를 눌러도 아무 일이 없는" 문제가 있었다.
+   * ask('지울까요?', '지우기').then(ok => …)
+   */
+  function ask(message, okLabel, danger) {
+    return new Promise((resolve) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'rec-ask';
+      wrap.innerHTML = `<div class="rec-ask__box" role="alertdialog" aria-modal="true">
+          <p class="rec-ask__msg">${esc(message).replace(/\n/g, '<br>')}</p>
+          <div class="rec-ask__btns">
+            <button type="button" data-ask="no">취소</button>
+            <button type="button" data-ask="yes" class="${danger ? 'is-danger' : ''}">${esc(okLabel || '확인')}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+      requestAnimationFrame(() => wrap.classList.add('is-open'));
+      const done = (v) => { wrap.remove(); resolve(v); };
+      wrap.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-ask]');
+        if (b) done(b.dataset.ask === 'yes');
+        else if (e.target === wrap) done(false);
+      });
+      wrap.querySelector('[data-ask="yes"]').focus();
+    });
+  }
+
   /* ------------------------------------------------------------ 저장 */
   const storeKey = () => `steppy_pages_v1_${(typeof Auth !== 'undefined' && Auth.userId) || 'guest'}`;
   function loadPages() { try { return JSON.parse(localStorage.getItem(storeKey()) || '{}') || {}; } catch (e) { return {}; } }
@@ -55,8 +83,8 @@
     { x: 0.090, y: 1.200, w: 0.380, h: 0.280, rot: 2 }
   ];
   function placeOf(e) {
-    const loc = e.location || {};
-    return loc.city || loc.place || loc.name || loc.country || '';
+    const loc = typeof placeEn === 'function' ? placeEn(e.location) : (e.location || {});
+    return loc.city || loc.country || '';
   }
   function defaultPage(e) {
     const items = [];
@@ -84,17 +112,34 @@
       const src = srcOf(it);
       return src ? `<img src="${esc(src)}" alt="" draggable="false">` : '<span class="rec-it__ph" aria-hidden="true"></span>';
     }
-    if (it.type === 'memo' || it.type === 'text') return `<span class="rec-it__text" style="font-size:${(it.fs || (it.type === 'memo' ? 0.036 : 0.05)) * 100}cqw">${esc(it.text)}</span>`;
+    if (it.type === 'memo' || it.type === 'text') return `<span class="rec-it__text${it.font === 'hand' ? ' is-hand' : ''}" style="font-size:${(it.fs || (it.type === 'memo' ? 0.036 : 0.05)) * (it.font === 'hand' ? 1.25 : 1) * 100}cqw">${esc(it.text)}</span>`;
+    if (it.type === 'art') {
+      const src = typeof DiaryStickers !== 'undefined' ? DiaryStickers.url(it.art) : '';
+      return src ? `<img src="${esc(src)}" alt="" draggable="false">` : '';
+    }
     if (it.type === 'sticker') return `<span class="rec-it__emoji" style="font-size:${it.w * 72}cqw">${esc(it.emoji)}</span>`;
     if (it.type === 'place') return `<span class="rec-it__text">📍 ${esc(it.text)}</span>`;
+    if (it.type === 'song') return `<span class="rec-it__lp" aria-hidden="true"></span><span class="rec-it__text"><b>${esc(it.name)}</b>${esc(it.artist)}</span>`;
     return '';
+  }
+  /** 속지 맨 위 작은 머리말 — NOVEMBER '26 · 제목 · @steppY. 다이어리는 기본으로 켜고, 하루 기록은 켤 때만 */
+  const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+  function headStrip(page) {
+    const meta = page.meta || {};
+    const on = page.head === true || (page.head !== false && meta.start);
+    if (!on) return '';
+    const iso = meta.start || page.date || '';
+    const left = iso ? `${MONTHS[Number(iso.slice(5, 7)) - 1]} '${iso.slice(2, 4)}` : '';
+    const title = meta.title || page.title || 'DIARY';
+    return `<div class="rec-page__head" aria-hidden="true"><span>${esc(left)}</span><b>${esc(title)}</b><span>@steppY</span></div>`;
   }
   function pageHtml(page, extraClass) {
     const bgStyle = page.bg === 'upload' && page.bgImg ? ` style="background-image:url('${page.bgImg}')"` : '';
     return `
       <div class="rec-page rec-page--${esc(page.bg || 'cream')}${extraClass ? ' ' + extraClass : ''}"${bgStyle}>
+        ${headStrip(page)}
         <div class="rec-page__items">
-          ${page.items.map(it => `<div class="rec-it rec-it--${it.type}" data-it="${esc(it.id)}" style="${itemStyle(it)}">${itemInner(it)}</div>`).join('')}
+          ${page.items.map(it => `<div class="rec-it rec-it--${it.type}${it.type === 'photo' && it.frame === false ? ' is-noframe' : ''}" data-it="${esc(it.id)}" style="${itemStyle(it)}">${itemInner(it)}</div>`).join('')}
         </div>
       </div>`;
   }
@@ -210,9 +255,10 @@
   }
 
   /* ------------------------------------------------------------ 폴더 안(다이어리 보기) */
-  let folderView = null, folderNode = null, folderIndex = 0;
+  let folderView = null, folderNode = null, folderIndex = 0, folderMonth = '';
   function folderEntries() {
-    return DiaryArchive.entriesOfNode(folderNode).slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+    const ym = folderNode && folderNode.type === 'monthly' ? monthOfNode(folderNode) : '';
+    return DiaryArchive.entriesOfNode(folderNode).filter(e => !ym || e.date.startsWith(ym)).slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
   }
   function metaLine(e) {
     const info = DiaryArchive.infoOf(e);
@@ -224,10 +270,8 @@
     const list = folderEntries();
     folderIndex = Math.min(folderIndex, Math.max(0, list.length - 1));
     folderView.querySelector('.rec-top__title b').textContent = folderNode.name;
-    const editBtn = folderView.querySelector('[data-decorate]');
-    editBtn.hidden = !list.length;
     const body = folderView.querySelector('.rec-layer__body');
-    if (!list.length) {
+    if (!list.length && !monthOfNode(folderNode)) {
       body.innerHTML = `
         <div class="rec-fempty">
           ${DiaryArchive.folderIcon(folderNode, 'fe-' + folderNode.id)}
@@ -237,7 +281,9 @@
         </div>`;
       return;
     }
-    body.innerHTML = `
+    const ym = monthOfNode(folderNode);
+    if (!list.length) { body.innerHTML = monthSheetHtml(ym, list) + '<p class="rec-mcal__empty">이 달에는 아직 기록이 없어요</p>'; return; }
+    body.innerHTML = (ym ? monthSheetHtml(ym, list) : '') + `
       <div class="rec-ftitle">
         <h2 class="rec-ftitle__h" id="recFTitle"></h2>
         <p class="rec-ftitle__meta" id="recFMeta"></p>
@@ -258,6 +304,61 @@
     requestAnimationFrame(() => { track.scrollLeft = folderIndex * track.clientWidth; syncPager(); });
     syncPager();
   }
+  /* ---- Monthly: 그 달을 콜라주 달력 한 장으로 — 날마다 첫 사진을 오려 붙인 느낌 ---- */
+  /** Monthly 아래 자동 폴더(이름 YYYY.MM)면 'YYYY-MM' */
+  function monthOfNode(node) {
+    if (!node) return '';
+    if (node.virtual && /^\d{4}\.\d{2}$/.test(node.name)) return node.name.replace('.', '-');
+    if (node.type !== 'monthly') return '';
+    // Monthly 폴더는 한 달씩 넘겨 본다 — 처음엔 기록이 있는 가장 최근 달(없으면 이번 달)
+    if (!folderMonth) {
+      const dates = DiaryArchive.entriesOfNode(node).map(e => e.date).sort();
+      const t = new Date();
+      folderMonth = dates.length ? dates[dates.length - 1].slice(0, 7) : `${t.getFullYear()}-${pad(t.getMonth() + 1)}`;
+    }
+    return folderMonth;
+  }
+  const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  /**
+   * 한 달 recap — 잡지 "이달의 favorites"처럼 그 달 사진을 오려 붙이고 번호(01.)·제목·위치·노래를 단다.
+   * 하루에 한 장(그날 첫 사진), 최대 8일. 사진을 누르면 아래에서 그날 페이지로 간다.
+   */
+  function monthSheetHtml(ym, list) {
+    const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
+    const days = {};
+    list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)))
+      .forEach(e => { if (!days[e.date] && (e.photos || []).some(p => ctx.photoUrl(p))) days[e.date] = e; });
+    const picks = Object.values(days).slice(0, 8);
+    const nav = folderNode && folderNode.type === 'monthly';
+    const head = `
+        <div class="rec-recap__head">
+          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
+          <div class="rec-recap__title">
+            <h3><b>${MONTH_EN[m]}</b> Recap</h3>
+            <p><span>CRAFTED BY STEPPY · ${y}</span></p>
+          </div>
+          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="1" aria-label="다음 달">›</button>' : '<span></span>'}
+        </div>`;
+    if (!picks.length) return `<section class="rec-recap" aria-label="${y}년 ${m + 1}월 recap">${head}</section>`;
+    const DECO = ['b:smile', 'b:star', 'b:sparkle', 'b:heart'];
+    const items = picks.map((e, i) => {
+      const url = (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean);
+      const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(e) : {};
+      const place = info.place ? info.place.filter(Boolean).join(', ') : '';
+      const deco = i % 3 === 1 && typeof DiaryStickers !== 'undefined' ? `<img class="rec-recap__deco" src="${esc(DiaryStickers.url(DECO[i % DECO.length]))}" alt="" aria-hidden="true">` : '';
+      return `
+        <article class="rec-recap__item${i % 2 ? ' is-right' : ''}" data-goto="${list.indexOf(e)}" role="button" tabindex="0" aria-label="${Number(e.date.slice(5, 7))}월 ${Number(e.date.slice(8, 10))}일 기록 보기">
+          <div class="rec-recap__photo"><img src="${esc(url)}" alt="" draggable="false" loading="lazy">${deco}</div>
+          <div class="rec-recap__text">
+            <span class="rec-recap__no">${String(i + 1).padStart(2, '0')}.</span>
+            <h4>${esc(e.title || place || enD(e.date))}</h4>
+            ${place ? `<p class="rec-recap__place">📍 ${esc(place)}</p>` : ''}
+            <p class="rec-recap__meta">${esc(enD(e.date))}${info.song ? ` · ♪ ${esc(info.song.name)}` : ''}</p>
+          </div>
+        </article>`;
+    }).join('');
+    return `<section class="rec-recap" aria-label="${y}년 ${m + 1}월 recap">${head}<div class="rec-recap__list">${items}</div></section>`;
+  }
   function syncPager() {
     const list = folderEntries();
     const e = list[folderIndex];
@@ -271,13 +372,29 @@
   }
   function openFolder(c, node) {
     ctx = c;
-    folderNode = node; folderIndex = 0;
+    folderNode = node; folderIndex = 0; folderMonth = '';
     if (!folderView) {
       folderView = openLayer('rec-folderview', node.name);
-      folderView.innerHTML = headHtml(node.name, '<button type="button" class="rec-top__action" data-decorate>꾸미기</button>') + '<div class="rec-layer__body"></div>';
+      // 꾸미기는 폴더가 아니라 '하루 기록하기'(다이어리)에서 한다 — 폴더는 사진을 모아 보는 곳
+      folderView.innerHTML = headHtml(node.name, '') + '<div class="rec-layer__body"></div>';
       folderView.addEventListener('click', (ev) => {
         if (ev.target.closest('[data-close]')) { const f = folderView; folderView = null; closeLayer(f); return; }
         if (ev.target.closest('[data-pick]')) { if (!ctx.needLogin()) DiaryArchive.openPicker(folderNode); return; }
+        const mn = ev.target.closest('[data-mnav]');
+        if (mn) {
+          const [yy, mm] = folderMonth.split('-').map(Number);
+          const d = new Date(yy, mm - 1 + Number(mn.dataset.mnav), 1);
+          folderMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+          folderIndex = 0; renderFolder(); return;
+        }
+        const go = ev.target.closest('[data-goto]');
+        if (go) {
+          const tr = folderView.querySelector('#recPages');
+          folderIndex = Number(go.dataset.goto);
+          if (tr) { tr.scrollTo({ left: folderIndex * tr.clientWidth, behavior: 'smooth' }); tr.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          syncPager();
+          return;
+        }
         if (ev.target.closest('[data-decorate]')) {
           if (ctx.needLogin()) return;
           const e = folderEntries()[folderIndex];
@@ -340,14 +457,18 @@
   const TOOLS = [
     { key: 'photo', label: '사진 추가', icon: '+' },
     { key: 'text', label: '텍스트', icon: '✎' },
-    { key: 'sticker', label: '스티커', icon: '☺' },
+    { key: 'sticker', label: '스티커', icon: '✦' },
+    { key: 'song', label: '노래', icon: '♪' },
     { key: 'template', label: '템플릿', icon: '▦' },
     { key: 'bg', label: '배경', icon: '▤' }
   ];
 
-  function openEditor(entry) {
+  function openEditor(entry, onSaved) {
     const el = openLayer('rec-editor', '페이지 꾸미기');
-    ed = { el, entry, page: pageOf(entry), sel: null, tool: 'sticker', hist: [], at: -1, dirty: false };
+    ed = { el, entry, page: pageOf(entry), sel: null, tool: 'photo', hist: [], at: -1, dirty: false, onSaved };
+    if (entry.meta) ed.page.meta = Object.assign({}, entry.meta);   // 다이어리 제목·기간을 페이지와 함께 저장
+    if (entry.date) ed.page.date = entry.date;
+    if (entry.title && !ed.page.title) ed.page.title = entry.title;
     el.innerHTML = `
       <div class="rec-etop">
         <button type="button" class="rec-etop__cancel" data-cancel>취소</button>
@@ -409,6 +530,8 @@
     if (!node) return;
     node.classList.add('is-selected');   // 고르는 동안은 맨 위로 — 손잡이와 삭제 막대가 다른 것에 가리지 않게
     const editable = /memo|text|place/.test(node.className);
+    const isPhoto = /rec-it--photo/.test(node.className);
+    const framed = isPhoto && item(ed.sel) && item(ed.sel).frame !== false;
     node.insertAdjacentHTML('beforeend', `
       <span class="rec-sel" aria-hidden="true">
         <span class="rec-sel__stem"></span>
@@ -421,6 +544,7 @@
           <button type="button" data-del>삭제</button>
           <button type="button" data-front>맨 앞으로</button>
           ${editable ? '<button type="button" data-edit-text>글 고치기</button>' : ''}
+          ${isPhoto ? `<button type="button" data-frame>${framed ? '테두리 빼기' : '테두리 넣기'}</button>` : ''}
         </span>
       </span>`);
   }
@@ -440,9 +564,50 @@
       p.innerHTML = `<div class="rec-opts">
         <button type="button" class="rec-opt rec-opt--wide" data-add-text="memo"><span class="rec-opt__memo">메모지</span></button>
         <button type="button" class="rec-opt rec-opt--wide" data-add-text="text"><span class="rec-opt__plain">Aa 글자</span></button>
+        <button type="button" class="rec-opt rec-opt--wide" data-add-text="hand"><span class="rec-opt__hand">손글씨</span></button>
       </div>`;
     } else if (ed.tool === 'sticker') {
-      p.innerHTML = `<div class="rec-opts rec-opts--scroll">${STICKERS.map(s => `<button type="button" class="rec-opt" data-add-sticker="${s}">${s}</button>`).join('')}</div>`;
+      const tab = ed.stickerTab || 'basic';
+      const DS = typeof DiaryStickers !== 'undefined' ? DiaryStickers : null;
+      const mine = DS ? DS.mine() : [];
+      const grid = tab === 'basic'
+        ? (DS ? DS.LIST.map(x => `<button type="button" class="rec-opt rec-opt--art" data-add-art="b:${x.key}" aria-label="${esc(x.label)} 스티커"><img src="${esc(DS.builtinUrl(x.key))}" alt="" draggable="false"></button>`).join('') : '')
+        : `<button type="button" class="rec-opt rec-opt--upload" data-upload="sticker" aria-label="스티커 올리기">+</button>` +
+          mine.map(x => `<span class="rec-opt rec-opt--art rec-opt--mine"><button type="button" data-add-art="u:${esc(x.id)}" aria-label="내 스티커 붙이기"><img src="${esc(x.src)}" alt="" draggable="false"></button><button type="button" class="rec-opt__x" data-del-mine="${esc(x.id)}" aria-label="내 스티커에서 지우기">×</button></span>`).join('');
+      p.innerHTML = `<div class="rec-stabs" role="tablist">
+          <button type="button" role="tab" data-stab="basic" aria-selected="${tab === 'basic'}">기본 스티커</button>
+          <button type="button" role="tab" data-stab="mine" aria-selected="${tab === 'mine'}">내 스티커</button>
+        </div>
+        <div class="rec-opts rec-opts--scroll rec-opts--art">${grid}</div>
+        ${tab === 'mine' ? '<p class="rec-songpick__hint">핀터레스트 등에서 받은 SVG·PNG(배경 투명)를 올리면<br>내 스티커가 되고 다른 다이어리에서도 쓸 수 있어요.</p>' : ''}`;
+    } else if (ed.tool === 'song') {
+      const sg = ed.page.song;
+      const shown = ed.page.items.some(i => i.type === 'song');
+      p.innerHTML = sg ? `<div class="rec-songpick">
+          <span class="rec-songpick__now">♪ <b>${esc(sg.name)}</b> · ${esc(sg.artist)}</span>
+          <button type="button" class="rec-songpick__clear" data-song-sticker aria-pressed="${shown}">${shown ? '스티커 숨기기' : '스티커 보이기'}</button>
+          <button type="button" class="rec-songpick__clear" data-song-clear>빼기</button>
+        </div>
+        <p class="rec-songpick__hint">다이어리를 열면 이 노래가 재생돼요.<br>스티커를 숨겨도 노래는 그대로 재생돼요.</p>` : `<div class="rec-songpick">
+          <input type="text" class="rec-songpick__input" id="recSongInput" placeholder="곡 제목이나 가수로 검색" autocomplete="off">
+        </div>
+        <ul class="rec-songpick__list" id="recSongList"></ul>`;
+      const input = p.querySelector('#recSongInput');
+      if (input && typeof SongEngine !== 'undefined') {
+        let timer = 0;
+        input.addEventListener('input', () => {
+          clearTimeout(timer);
+          timer = setTimeout(async () => {
+            const q = input.value.trim();
+            const list = p.querySelector('#recSongList');
+            if (!q) { list.innerHTML = ''; return; }
+            const found = await SongEngine.searchTracks(q);
+            ed && (ed.songResults = found);
+            list.innerHTML = found.slice(0, 6).map((m, i) => `<li><button type="button" data-pick-song="${i}"><b>${esc(m.name)}</b> · ${esc(m.artist)}</button></li>`).join('')
+              || '<li class="rec-songpick__empty">찾는 노래가 없어요</li>';
+          }, 300);
+        });
+      }
     } else if (ed.tool === 'template') {
       p.innerHTML = `<div class="rec-opts">${TEMPLATES.map(t => `
         <button type="button" class="rec-opt rec-opt--tpl" data-template="${t.key}"><span class="rec-tpl rec-tpl--${t.key}" aria-hidden="true"><i></i><i></i><i></i></span><small>${t.label}</small></button>`).join('')}</div>`;
@@ -451,7 +616,8 @@
         <button type="button" class="rec-opt rec-opt--bg${(ed.page.bg || 'cream') === b.key ? ' is-on' : ''}" data-bg="${b.key}" aria-pressed="${(ed.page.bg || 'cream') === b.key}">
           <span class="rec-bgsw rec-page--${b.key}"${b.key === 'upload' && ed.page.bgImg ? ` style="background-image:url('${ed.page.bgImg}')"` : ''}>${b.key === 'upload' && !ed.page.bgImg ? '+' : ''}</span>
           <small>${b.label}</small>
-        </button>`).join('')}</div>`;
+        </button>`).join('')}</div>
+      <label class="rec-headtoggle"><input type="checkbox" data-head-toggle ${headStrip(ed.page) ? 'checked' : ''}> 맨 위에 날짜·제목 작게 표시</label>`;
     }
   }
 
@@ -474,15 +640,18 @@
   function onEditorClick(ev) {
     const t = ev.target;
     if (t.closest('[data-cancel]')) {
-      if (ed.dirty && !window.confirm('꾸민 내용을 저장하지 않고 나갈까요?')) return;
-      const el = ed.el; ed = null; closeLayer(el); return;
+      const leave = () => { const el = ed.el; ed = null; closeLayer(el); };
+      if (ed.dirty) ask('꾸민 내용을 저장하지 않고 나갈까요?', '나가기').then(ok => { if (ok && ed) leave(); });
+      else leave();
+      return;
     }
     if (t.closest('[data-save]')) {
       const all = loadPages();
       all[ed.entry.id] = ed.page;
       if (!savePages(all)) return;
-      const el = ed.el; ed = null; closeLayer(el);
+      const el = ed.el, done = ed.onSaved; ed = null; closeLayer(el);
       renderFolder();
+      if (done) done();
       toast('저장했어요');
       return;
     }
@@ -493,18 +662,80 @@
     const ph = t.closest('[data-add-photo]');
     if (ph) { const h = 0.5; addItem({ type: 'photo', path: ph.dataset.addPhoto, x: 0.25, y: centerY(h), w: 0.42, h, rot: 0 }); return; }
     const up = t.closest('[data-upload]');
-    if (up) { const f = ed.el.querySelector('#recEdFile'); f.dataset.for = up.dataset.upload; f.click(); return; }
+    if (up) {
+      const f = ed.el.querySelector('#recEdFile');
+      f.dataset.for = up.dataset.upload;
+      f.accept = up.dataset.upload === 'sticker' ? 'image/svg+xml,.svg,image/png,image/webp,image/gif' : 'image/*';
+      f.click(); return;
+    }
     const tx = t.closest('[data-add-text]');
     if (tx) {
       const memo = tx.dataset.addText === 'memo';
+      const hand = tx.dataset.addText === 'hand';
       const text = window.prompt(memo ? '메모지에 적을 말' : '넣을 글자', '');
       if (!text || !text.trim()) return;
-      const h = memo ? 0.3 : 0.12;
-      addItem({ type: memo ? 'memo' : 'text', text: text.trim(), x: memo ? 0.3 : 0.15, y: centerY(h), w: memo ? 0.4 : 0.7, h, rot: memo ? -1.5 : 0 });
+      const h = memo ? 0.3 : hand ? 0.22 : 0.12;
+      const it = { type: memo ? 'memo' : 'text', text: text.trim(), x: memo ? 0.3 : 0.15, y: centerY(h), w: memo ? 0.4 : 0.7, h, rot: memo ? -1.5 : 0 };
+      if (hand) Object.assign(it, { font: 'hand', fs: 0.042 });
+      addItem(it);
       return;
     }
+    const stab = t.closest('[data-stab]');
+    if (stab) { ed.stickerTab = stab.dataset.stab; drawPanel(); return; }
+    const art = t.closest('[data-add-art]');
+    if (art) {
+      const key = art.dataset.addArt;
+      const r = typeof DiaryStickers !== 'undefined' ? DiaryStickers.ratioOf(key) : 1;
+      const w = r > 1.5 ? 0.14 : r < 0.5 ? 0.5 : 0.26;
+      const h = w * r;
+      addItem({ type: 'art', art: key, x: 0.5 - w / 2, y: centerY(h), w, h, rot: 0 });
+      return;
+    }
+    const dm = t.closest('[data-del-mine]');
+    if (dm) {
+      const id = dm.dataset.delMine;
+      ask('이 스티커를 내 스티커에서 지울까요?\n이미 붙인 다이어리에서도 사라져요.', '지우기', true)
+        .then(ok => { if (ok && ed) { DiaryStickers.removeMine(id); drawPanel(); drawEditor(); } });
+      return;
+    }
+    const ht = t.closest('[data-head-toggle]');
+    if (ht) { ed.page.head = ht.checked; pushHist(); drawEditor(); return; }
     const st = t.closest('[data-add-sticker]');
     if (st) { addItem({ type: 'sticker', emoji: st.dataset.addSticker, x: 0.44, y: centerY(0.12), w: 0.12, h: 0.12, rot: 0 }); return; }
+    const ps = t.closest('[data-pick-song]');
+    if (ps) {
+      const m = (ed.songResults || [])[Number(ps.dataset.pickSong)];
+      if (!m) return;
+      ed.page.song = { name: m.name, artist: m.artist, preview: null };
+      ed.page.items = ed.page.items.filter(i => i.type !== 'song');
+      addItem({ type: 'song', name: m.name, artist: m.artist, x: 0.5, y: centerY(0.1), w: 0.44, h: 0.1, rot: -2 });
+      drawPanel();
+      // 열 때 바로 틀 수 있게 미리듣기 주소를 지금 받아 둔다(누른 순간 기다리면 휴대폰이 재생을 막는다)
+      if (typeof SongEngine !== 'undefined') {
+        const page = ed.page;
+        SongEngine.fetchPreviewUrl(m.name, m.artist).then(u => { if (page.song && page.song.name === m.name) page.song.preview = u || null; });
+      }
+      return;
+    }
+    if (t.closest('[data-song-sticker]')) {
+      const sg = ed.page.song;
+      if (!sg) return;
+      if (ed.page.items.some(i => i.type === 'song')) {
+        ed.page.items = ed.page.items.filter(i => i.type !== 'song'); ed.sel = null;
+        sg.hidden = true; pushHist(); drawEditor();
+      } else {
+        sg.hidden = false;
+        addItem({ type: 'song', name: sg.name, artist: sg.artist, x: 0.5, y: centerY(0.1), w: 0.44, h: 0.1, rot: -2 });
+      }
+      drawPanel();
+      return;
+    }
+    if (t.closest('[data-song-clear]')) {
+      ed.page.song = null;
+      ed.page.items = ed.page.items.filter(i => i.type !== 'song');
+      pushHist(); drawEditor(); drawPanel();
+      return;
+    }
     const tp = t.closest('[data-template]');
     if (tp) { applyTemplate(tp.dataset.template); return; }
     const bg = t.closest('[data-bg]');
@@ -514,10 +745,17 @@
       ed.page.bg = bg.dataset.bg; pushHist(); drawEditor(); drawPanel(); return;
     }
     if (t.closest('[data-del]')) {
-      ed.page.items = ed.page.items.filter(i => i.id !== ed.sel); ed.sel = null; pushHist(); drawEditor(); return;
+      // 노래 스티커를 지우면 노래는 남기고 스티커만 숨긴 것으로 친다(노래 도구의 '스티커 보이기'와 맞게)
+      const gone = item(ed.sel);
+      if (gone && gone.type === 'song' && ed.page.song) ed.page.song.hidden = true;
+      ed.page.items = ed.page.items.filter(i => i.id !== ed.sel); ed.sel = null; pushHist(); drawEditor();
+      if (gone && gone.type === 'song' && ed.tool === 'song') drawPanel();
+      return;
     }
     if (t.closest('[data-front]')) { const it = item(ed.sel); if (it) { it.z = topZ(); pushHist(); drawEditor(); } return; }
     if (t.closest('[data-edit-text]')) { editText(item(ed.sel)); return; }
+    // 사진의 흰 테두리(필름·폴라로이드 느낌)는 사진마다 켜고 끈다
+    if (t.closest('[data-frame]')) { const it = item(ed.sel); if (it) { it.frame = it.frame === false ? true : false; pushHist(); drawEditor(); } return; }
   }
   function editText(it) {
     if (!it) return;
@@ -545,12 +783,49 @@
       img.src = url;
     });
   }
+  /** 내 스티커 올리기 — SVG는 그대로(작을 때만), 그림 파일은 투명함을 살려 PNG로 줄인다 */
+  function addMySticker(file) {
+    const isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
+    const done = (src, ratio) => {
+      const s = DiaryStickers.addMine(src, ratio);
+      if (!s) { window.alert('이 기기의 저장 공간이 부족해요. 쓰지 않는 내 스티커를 지운 뒤 다시 올려 주세요.'); return; }
+      ed.stickerTab = 'mine'; drawPanel();
+      const w = ratio > 1.5 ? 0.18 : 0.3;
+      addItem({ type: 'art', art: 'u:' + s.id, x: 0.5 - w / 2, y: centerY(w * ratio), w, h: w * ratio, rot: 0 });
+    };
+    if (isSvg) {
+      if (file.size > 300 * 1024) { window.alert('SVG가 너무 커요(300KB까지). 더 단순한 파일로 올려 주세요.'); return; }
+      const rd = new FileReader();
+      rd.onload = () => {
+        const src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(String(rd.result))));
+        const img = new Image();
+        img.onload = () => done(src, img.naturalWidth && img.naturalHeight ? img.naturalHeight / img.naturalWidth : 1);
+        img.onerror = () => window.alert('SVG를 읽지 못했어요. 다른 파일로 해 볼까요?');
+        img.src = src;
+      };
+      rd.readAsText(file);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      done(c.toDataURL('image/png'), c.height / c.width);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); window.alert('그림을 읽지 못했어요. 다른 파일로 해 볼까요?'); };
+    img.src = url;
+  }
   async function onFile(ev) {
     const input = ev.target;
     const file = input.files && input.files[0];
     const target = input.dataset.for;
     input.value = '';
     if (!file || !ed) return;
+    if (target === 'sticker') { addMySticker(file); return; }
     try {
       const { data, ratio } = await shrink(file, 900);
       if (target === 'bg') { ed.page.bg = 'upload'; ed.page.bgImg = data; pushHist(); drawEditor(); drawPanel(); return; }
@@ -686,5 +961,208 @@
   document.addEventListener('record:photos', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); });
   document.addEventListener('archive:changed', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); });
 
-  global.RecordV2 = { openStorage, openFolder, chooseFolder };
+  /* ------------------------------------------------------------ 다이어리 (Recent 밑 'Diary')
+   * 다이어리 한 장 = 인상 깊었던 하루 또는 기간(여행 등). 제목과 날짜(하루 / 시작~끝)를 받고,
+   * 그 기간에 남긴 기록의 사진·글로 첫 배치를 만든다. 꾸미기에서 사진·글·스티커·노래를 얹고, 열면 노래가 재생된다.
+   * 저장은 페이지 저장소에 'diary:<id>' 키로(이 기기). page.meta = { title, start, end }.
+   * 예전 'day:YYYY-MM-DD' 다이어리도 하루짜리로 그대로 읽는다. */
+  const isDiaryKey = (k) => k.startsWith('diary:') || k.startsWith('day:');
+  function metaOf(key, page) {
+    if (page && page.meta) return page.meta;
+    const d = key.startsWith('day:') ? key.slice(4) : '';
+    return { title: '', start: d, end: d };
+  }
+  function rangeEntry(c, key, meta) {
+    const items = (c.entries() || []).filter(e => e.date >= meta.start && e.date <= meta.end)
+      .sort((x, y) => x.date.localeCompare(y.date) || String(x.createdAt).localeCompare(String(y.createdAt)));
+    const first = items.find(e => (e.body || '').trim()) || items[0] || {};
+    return { id: key, date: meta.start, meta, photos: items.flatMap(e => e.photos || []), body: first.body || '', location: first.location || null, title: meta.title || first.title || '' };
+  }
+  function listDiaries() {
+    const all = loadPages();
+    return Object.keys(all).filter(isDiaryKey).map(k => ({ key: k, page: all[k], meta: metaOf(k, all[k]) }))
+      .sort((a, b) => (b.meta.end || '').localeCompare(a.meta.end || '') || (b.meta.start || '').localeCompare(a.meta.start || ''));
+  }
+  const shortD = (iso) => iso ? `${Number(iso.slice(5, 7))}.${Number(iso.slice(8, 10))}` : '';
+  function rangeLabel(meta) {
+    if (!meta.start) return '';
+    if (!meta.end || meta.end === meta.start) return shortD(meta.start);
+    return `${shortD(meta.start)}–${shortD(meta.end)}`;
+  }
+  function diaryThumbHtml(c, d) { ctx = c; return pageHtml(d.page, 'rec-page--thumb'); }
+
+  /** 새 다이어리 — 제목 + 하루/기간을 받는 작은 시트. 만들면 바로 꾸미기로 */
+  function createDiary(c, today, onSaved) {
+    ctx = c;
+    const el = openLayer('rec-diarynew', '다이어리 만들기');
+    let mode = 'day';
+    el.innerHTML = headHtml('다이어리 만들기', '') + `
+      <div class="rec-layer__body">
+        <form class="rec-dnew" id="recDNew">
+          <label class="rec-dnew__field"><span>제목</span>
+            <input type="text" name="title" maxlength="30" placeholder="예: 파리 여행, 첫 수업 날, 생일" autocomplete="off">
+          </label>
+          <div class="rec-dnew__field"><span>날짜</span>
+            <div class="rec-chips rec-dnew__mode" role="group" aria-label="하루 또는 기간">
+              <button type="button" class="rec-chip is-on" data-mode="day" aria-pressed="true">하루</button>
+              <button type="button" class="rec-chip" data-mode="range" aria-pressed="false">기간</button>
+            </div>
+            <div class="rec-dnew__dates">
+              <input type="date" name="start" value="${today}" max="${today}" required aria-label="날짜">
+              <span class="rec-dnew__tilde" hidden>~</span>
+              <input type="date" name="end" value="${today}" max="${today}" aria-label="끝 날짜" hidden>
+            </div>
+          </div>
+          <p class="rec-dnew__hint">그 날짜에 남긴 사진과 글로 첫 장을 만들어 드려요.<br>사진·글·스티커·노래는 꾸미기에서 더할 수 있어요.</p>
+          <button type="submit" class="rec-dnew__go">만들고 꾸미기</button>
+        </form>
+      </div>`;
+    const form = el.querySelector('#recDNew');
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-close]')) { closeLayer(el); return; }
+      const m = ev.target.closest('[data-mode]');
+      if (!m) return;
+      mode = m.dataset.mode;
+      el.querySelectorAll('[data-mode]').forEach(b => { const on = b.dataset.mode === mode; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', String(on)); });
+      form.elements.end.hidden = mode === 'day';
+      el.querySelector('.rec-dnew__tilde').hidden = mode === 'day';
+      form.elements.start.setAttribute('aria-label', mode === 'day' ? '날짜' : '시작 날짜');
+    });
+    form.elements.start.addEventListener('change', () => { if (form.elements.end.value < form.elements.start.value) form.elements.end.value = form.elements.start.value; form.elements.end.min = form.elements.start.value; });
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const start = form.elements.start.value || today;
+      const end = mode === 'range' ? (form.elements.end.value || start) : start;
+      const meta = { title: form.elements.title.value.trim(), start, end: end < start ? start : end };
+      const key = 'diary:' + uid();
+      closeLayer(el);
+      openEditor(rangeEntry(c, key, meta), onSaved);
+    });
+    setTimeout(() => form.elements.title.focus(), 350);
+  }
+
+  /** 26.11.15 — 연도까지(기간이 해를 넘길 수도 있다) */
+  const fullD = (iso) => iso ? `${iso.slice(2, 4)}.${iso.slice(5, 7)}.${iso.slice(8, 10)}` : '';
+  /** Nov.16 — 기간 끝이 같은 달이면 날짜만(Nov.10 – 16), 다른 달이면 Dec.2 */
+  const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function enD(iso, from) {
+    if (!iso) return '';
+    const d = Number(iso.slice(8, 10)), m = Number(iso.slice(5, 7)) - 1;
+    if (from && from.slice(0, 7) === iso.slice(0, 7)) return String(d);
+    return `${MON3[m]}.${d}`;
+  }
+  /** 날짜 칸 아래 작은 줄 — 하루면 요일(영어), 기간이면 며칠인지 */
+  function dayWord(meta) {
+    if (!meta.start) return '';
+    const a = new Date(meta.start + 'T00:00:00'), b = new Date((meta.end || meta.start) + 'T00:00:00');
+    const days = Math.round((b - a) / 864e5) + 1;
+    if (days > 1) return `${days} days`;
+    return a.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+  let diaryAudio = null;
+  function stopDiarySong() { if (diaryAudio) { diaryAudio.pause(); diaryAudio = null; } }
+  function openDiary(c, key, onChange) {
+    ctx = c;
+    if (!loadPages()[key]) return;
+    const el = openLayer('rec-diaryview', '다이어리');
+    const draw = () => {
+      const pg = loadPages()[key];
+      if (!pg) return null;
+      const meta = metaOf(key, pg);
+      const sg = pg.song;
+      el.innerHTML = headHtml('Diary', '<button type="button" class="rec-top__action rec-top__action--edit" data-edit-day aria-label="수정하기"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>') + `
+        <div class="rec-layer__body">
+          <!-- 위: 날짜 | 제목 | 노래 세 칸 -->
+          <div class="rec-dtop${sg ? '' : ' is-nosong'}">
+            <div class="rec-dtop__date">
+              <b>${enD(meta.start)}${meta.end && meta.end !== meta.start ? `<i> – ${enD(meta.end, meta.start)}</i>` : ''}</b>
+              <small>${(meta.start || '').slice(0, 4)}${dayWord(meta) ? ` · ${dayWord(meta)}` : ''}</small>
+            </div>
+            <strong class="rec-dtop__title">${esc(meta.title || rangeLabel(meta))}</strong>
+            ${sg ? `<button type="button" class="rec-songbar" data-song-toggle aria-label="노래 재생·멈춤">
+              <span class="rec-songbar__lp" aria-hidden="true"></span>
+              <span class="rec-songbar__t"><b>${esc(sg.name)}</b>${esc(sg.artist)}</span>
+              <span class="rec-songbar__ic" data-song-ic>▶</span>
+            </button>` : ''}
+          </div>
+          <div class="rec-diaryview__page">${pageHtml(pg)}</div>
+          <button type="button" class="rec-diaryview__del" data-del-diary>이 다이어리 지우기</button>
+        </div>`;
+      return sg;
+    };
+    const setPlaying = (on) => { const b = el.querySelector('.rec-songbar'); if (!b) return; b.classList.toggle('is-playing', on); b.querySelector('[data-song-ic]').textContent = on ? '❚❚' : '▶'; };
+    const play = (sg) => {
+      stopDiarySong();
+      if (!sg) return;
+      const start = (url) => {
+        if (!url) return;
+        diaryAudio = new Audio(url);
+        diaryAudio.addEventListener('ended', () => setPlaying(false));
+        diaryAudio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      };
+      // 미리 받아 둔 주소가 있으면 누른 그 순간 바로 튼다(휴대폰은 기다린 뒤의 재생을 막는다)
+      if (sg.preview) start(sg.preview);
+      else if (typeof SongEngine !== 'undefined') SongEngine.fetchPreviewUrl(sg.name, sg.artist).then(start);
+    };
+    play(draw());
+    // 노래 스티커를 누르면 그 자리에서 숨기거나 노래를 뺄 수 있다(꾸미기에 들어가지 않아도)
+    const closeSongMenu = () => el.querySelectorAll('.rec-songmenu').forEach(n => n.remove());
+    const updateSong = (fn) => {
+      const all = loadPages(); const pg = all[key]; if (!pg) return;
+      fn(pg); savePages(all); draw(); if (onChange) onChange();
+    };
+    el.addEventListener('click', (ev) => {
+      const menuBtn = ev.target.closest('[data-songmenu]');
+      if (menuBtn) {
+        const act = menuBtn.dataset.songmenu;
+        closeSongMenu();
+        if (act === 'hide') {
+          const wasPlaying = diaryAudio && !diaryAudio.paused;
+          updateSong(pg => { pg.items = (pg.items || []).filter(i => i.type !== 'song'); if (pg.song) pg.song.hidden = true; });
+          setPlaying(!!wasPlaying);
+        } else if (act === 'remove') {
+          ask('이 다이어리에서 노래를 뺄까요?', '빼기', true).then(ok => {
+            if (!ok) return;
+            stopDiarySong();
+            updateSong(pg => { pg.items = (pg.items || []).filter(i => i.type !== 'song'); pg.song = null; });
+          });
+        }
+        return;
+      }
+      const sticker = ev.target.closest('.rec-diaryview__page .rec-it--song');
+      if (sticker) {
+        const had = sticker.querySelector('.rec-songmenu');
+        closeSongMenu();
+        if (!had) sticker.insertAdjacentHTML('beforeend', `<span class="rec-songmenu">
+          <button type="button" data-songmenu="hide">스티커 숨기기</button>
+          <button type="button" data-songmenu="remove">노래 빼기</button>
+        </span>`);
+        return;
+      }
+      closeSongMenu();
+      if (ev.target.closest('[data-close]')) { stopDiarySong(); closeLayer(el); if (onChange) onChange(); return; }
+      if (ev.target.closest('[data-song-toggle]')) {
+        if (diaryAudio && !diaryAudio.paused) { diaryAudio.pause(); setPlaying(false); }
+        else if (diaryAudio) { diaryAudio.play().then(() => setPlaying(true)).catch(() => {}); }
+        else play((loadPages()[key] || {}).song);
+        return;
+      }
+      if (ev.target.closest('[data-del-diary]')) {
+        ask('이 다이어리를 지울까요?\n기록과 사진은 그대로 남아요.', '지우기', true).then(ok => {
+          if (!ok) return;
+          stopDiarySong();
+          const all = loadPages(); delete all[key]; savePages(all);
+          closeLayer(el); if (onChange) onChange();
+        });
+        return;
+      }
+      if (ev.target.closest('[data-edit-day]')) {
+        stopDiarySong(); setPlaying(false);
+        const pg = loadPages()[key];
+        openEditor(rangeEntry(c, key, metaOf(key, pg)), () => { draw(); if (onChange) onChange(); });
+      }
+    });
+  }
+
+  global.RecordV2 = { openStorage, openFolder, chooseFolder, listDiaries, diaryThumbHtml, createDiary, openDiary, rangeLabel };
 })(window);

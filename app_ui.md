@@ -380,8 +380,10 @@ flex 는 BFC 라 위에 뜬 `float` 만큼 폭이 줄어든다. 제목 옆 버�
 
 확대된 배율은 포커스를 잃어도 돌아오지 않아, 한 번 검색어를 치면 화면이 옆으로
 밀린 채 남는다. 토큰이 15px이라 앱의 모든 입력칸이 여기 걸렸다.
-→ `font-size: max(16px, var(--fs-body))`. `maximum-scale=1` 은 쓰지 않는다
-  (손가락으로 키우는 것까지 막힌다).
+→ `font-size: max(16px, var(--fs-body))`.
+→ **2026-11-15 결정: 앱 전체에서 확대·축소와 옆으로 밀리는 것을 잠근다**(모든 기기). 각 페이지 머리의 viewport 에
+  `maximum-scale=1.0, user-scalable=no`, 그리고 iOS 사파리용으로 `gesturestart`·더블탭을 막는 짧은 스크립트.
+  html·body 는 `overflow-x: clip`(css/base.css). 손가락 확대가 막히니 글씨 크기는 처음부터 읽기 좋게 잡는다.
 
 ### 위계가 같으면 크기도 같아야 한다
 

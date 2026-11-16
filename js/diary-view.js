@@ -114,8 +114,11 @@
 
   const MARKUP = `
     <header class="v2-head rec-head">
-      <p class="v2-head__eyebrow">Archive your memories</p>
-      <h1 class="v2-head__title" id="recDayTitle">Today</h1>
+      <div class="rec-head__text">
+        <p class="v2-head__eyebrow">Archive your memories</p>
+        <h1 class="v2-head__title" id="recDayTitle">Today</h1>
+      </div>
+      <button type="button" class="rec-head__add" id="recHeadAdd"><span aria-hidden="true">+</span> 사진 추가</button>
     </header>
 
     <section class="rec-streak" id="recStreak"></section>
@@ -128,6 +131,15 @@
         <button type="button" class="rec-sec-head__more" id="recOpenStorage" aria-label="저장소 전체 보기">→</button>
       </div>
       <div class="rec-recent__row" id="recRecent"></div>
+    </section>
+
+    <!-- 하루 다이어리 — 하루를 한 장으로 꾸민다(사진·글·스티커·노래). 열면 넣은 노래가 재생된다. js/record-v2.js -->
+    <section class="rec-diary">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Diary</h2>
+        <button type="button" class="rec-diary__new" id="recDiaryNew">+ 다이어리 만들기</button>
+      </div>
+      <div class="rec-diary__row" id="recDiaryRow"></div>
     </section>
 
     <!-- 예전 첫 화면(최근 사진 카드·기록 버튼)은 시안에서 빠졌다. 기록 쓰기 창은 사진 자리에서 연다 -->
@@ -288,7 +300,10 @@
     }).join('');
     slot.innerHTML = `
       <div class="rec-streak__top">
-        <p class="rec-streak__count">Streak <b>+${n}</b></p>
+        <p class="rec-streak__count" aria-label="연속 기록 ${n}일">
+          <svg class="rec-streak__flame" width="22" height="26" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.6 0.6c.6 3.3-.6 5.6-2.7 7.9C5.6 11 3 13.6 3 17.2 3 21 6.1 24 10 24s7-3 7-6.8c0-2.9-1.2-5.2-2.6-7.1-.4 1.3-1.2 2.3-2.3 2.8.7-4.4-.1-8.9-1.5-12.3zM10.3 22.3c-1.9 0-3.4-1.4-3.4-3.3 0-1.8 1.1-3 2.4-4.4.7-.8 1.3-1.6 1.5-2.7 1.5 1.7 2.9 3.8 2.9 6.6 0 2.1-1.5 3.8-3.4 3.8z"/></svg>
+          <b>+${n}</b>
+        </p>
         <button type="button" class="rec-streak__more" id="recCalOpen">자세히 보기 →</button>
       </div>
       <div class="rec-streak__week">${cells}</div>`;
@@ -811,8 +826,8 @@
     const d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
-  const locText = (loc) => (loc && (loc.city || loc.country))
-    ? [loc.city, loc.country].filter(Boolean).join(', ') : '';
+  const locText = (raw) => { const loc = typeof placeEn === 'function' ? placeEn(raw) : raw;
+    return (loc && (loc.city || loc.country)) ? [loc.city, loc.country].filter(Boolean).join(', ') : ''; };
 
   /* --------------------------------------------------------------- 미리듣기 */
 
@@ -885,7 +900,7 @@
     const alt = esc(heading || `${e.date} 기록 사진`);
     const city0 = (e.location && (e.location.city || e.location.country)) || '';
     // 오늘의 노래를 우선하되, 없으면 그때 듣던 노래. 표지가 없어도 LP는 보인다.
-    const lpTrack = e.song || e.nowPlaying || null;
+    const lpTrack = e.nowPlaying || e.song || null;   // 직접 고른 노래가 먼저
     let photo;
     if (!urls.length && photosLoading(e)) {
       photo = `<div class="diary-stamp__skeleton" aria-label="사진 불러오는 중"></div>`;
@@ -985,7 +1000,7 @@
           ${bodyText ? `<p class="diary-ticket-text">${esc(bodyText)}</p>` : ''}
           ${infoRows(e, tags)}
           ${(e.song || e.nowPlaying) ? '<div class="diary-ticket-perf"></div>' : ''}
-          ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
+          ${songRow(e.song, '🎵 추천 노래 · 날씨·위치 기반', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
           ${AppState.isAuthed ? `<div class="diary-entry__actions">
             <button type="button" class="diary-entry__edit-link" data-edit="${esc(e.id)}">수정</button>
@@ -1474,7 +1489,7 @@
     if (!school) return null;
     const iso2 = (typeof COUNTRY_ISO2 !== 'undefined' && school.countryEn) ? COUNTRY_ISO2[school.countryEn] : null;
     if (!iso2) return null;
-    return { country: school.country || school.countryEn, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
+    return { country: school.countryEn || school.country, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
   }
 
   function requestLocation() {
@@ -1513,7 +1528,7 @@
         SongEngine.fetchWeather(latitude, longitude).then(w => { pendingWeather = w; }).catch(() => {});
       }
       try {
-        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ko`);
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);   // 위치는 영어로(도시·나라)
         const data = await res.json();
         // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
         // (날씨는 위에서 GPS 값으로 이미 받아 두었고, 저장 직전에 stripCoords가 한 번 더 거른다)
@@ -1755,6 +1770,7 @@
   async function recommendSongFor(entry, tags) {
     if (typeof SongEngine === 'undefined') return;
     if (!entry || !pendingLocation || !pendingLocation.countryCode) return;
+    if (entry.nowPlaying) return;   // 직접 고른 노래가 있으면 추천하지 않는다
     try {
       const { mood, moodKo, keywords } = SongEngine.computeMood({
         tags,
@@ -1788,7 +1804,8 @@
     popup.className = 'song-popup';
     popup.innerHTML = `
       <button type="button" class="song-popup__close" aria-label="닫기">✕</button>
-      <span class="song-popup__mood">🎵 이 순간의 노래</span>
+      <span class="song-popup__mood">🎵 steppY 추천 노래</span>
+      <span class="song-popup__why">지금 날씨와 위치에 어울리는 곡을 골랐어요</span>
       <span class="song-popup__title">${esc(song.name)}</span>
       <span class="song-popup__artist">${esc(song.artist)}</span>
       <div class="song-popup__links">
@@ -2001,8 +2018,8 @@
   }
   const shortDate = (iso) => `${iso.slice(2, 4)}.${iso.slice(5, 7)}.${iso.slice(8, 10)}.`;
   function placeText(e) {
-    const loc = e.location || {};
-    return [loc.city, loc.place || loc.name || loc.country].filter(Boolean).join(' · ');
+    const loc = typeof placeEn === 'function' ? placeEn(e.location) : (e.location || {});
+    return [loc.city, loc.country].filter(Boolean).join(' · ');
   }
   function renderHomeHero() {
     const slot = root.querySelector('#recHero');
@@ -2019,17 +2036,52 @@
         </div>`;
       return;
     }
-    const e = hit.entry;
-    const place = placeText(e);
-    slot.className = 'rec-hero';
+    // 지금까지 남긴 사진을 모두 시간순으로(왼쪽이 과거) — 옆으로 쓸어 넘겨 보고, 양옆 사진이 은은하게 비친다.
+    // 처음에는 가장 최근 사진이 가운데에 온다.
+    heroShots = allShots();
+    slot.className = 'rec-hero rec-hero--reel';
     slot.innerHTML = `
-      <button type="button" class="rec-hero__btn" data-hero-open aria-label="${hit.isToday ? '오늘' : '최근'} 사진 크게 보기">
-        <img class="rec-hero__img" src="${esc(url)}" alt="${esc(e.title || '')}" draggable="false">
-        ${place ? `<span class="rec-hero__place">📍 ${esc(place)}</span>` : ''}
-        <span class="rec-hero__label">${hit.isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
-        <span class="rec-hero__date">${shortDate(e.date)}</span>
-      </button>
-      <button type="button" class="rec-hero__add" data-hero-write>+ 사진 추가</button>`;
+      <div class="rec-hero__track" id="recHeroTrack">
+        ${heroShots.map((x, i) => {
+          const isToday = x.entry.date === todayIso;
+          const place = placeText(x.entry);
+          const latest = i === heroShots.length - 1;
+          // 가장 최근 사진만 큰 글씨(위치 칩 · Today's Memories · 날짜), 지난 사진은 아래에 날짜·위치만 작게
+          return `<div class="rec-hero__slide${latest ? ' is-latest' : ''}" data-i="${i}">
+            <button type="button" class="rec-hero__btn" data-hero-open="${i}" aria-label="${esc(shortDate(x.entry.date))} 사진 크게 보기">
+              <img class="rec-hero__img" src="${esc(x.url)}" alt="${esc(x.entry.title || '')}" draggable="false" loading="${i >= heroShots.length - 3 ? 'eager' : 'lazy'}">
+              ${latest ? `${place ? `<span class="rec-hero__place">📍 ${esc(place)}</span>` : ''}
+              <span class="rec-hero__label">${isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
+              <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
+            </button>
+            ${latest ? '' : `<p class="rec-hero__cap">${shortDate(x.entry.date)}${place ? ` · ${esc(place)}` : ''}</p>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+    const track = slot.querySelector('#recHeroTrack');
+    const mark = () => {
+      const mid = track.scrollLeft + track.clientWidth / 2;
+      let best = null, bd = Infinity;
+      track.querySelectorAll('.rec-hero__slide').forEach(sl => {
+        const d = Math.abs(sl.offsetLeft - track.offsetLeft + sl.offsetWidth / 2 - mid);
+        if (d < bd) { bd = d; best = sl; }
+      });
+      track.querySelectorAll('.rec-hero__slide').forEach(sl => sl.classList.toggle('is-active', sl === best));
+    };
+    let ticking = false;
+    track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(); }); } }, { passive: true });
+    // 가장 최근(맨 오른쪽)에서 시작 — 자리가 다 잡힌 뒤에(바로 하면 폭이 0이라 안 먹는다)
+    const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
+    requestAnimationFrame(toLatest);
+    setTimeout(toLatest, 120);
+  }
+
+  /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
+  let heroShots = [];
+  function allShots() {
+    const out = [];
+    entries().forEach(e => (e.photos || []).forEach(p => { const u = photoUrl(p); if (u) out.push({ url: u, entry: e }); }));
+    return out;
   }
 
   /** 최근에 사진이 담긴 순서로 폴더 넷 */
@@ -2052,11 +2104,39 @@
       </button>`).join('');
   }
 
+  /** Diary 줄 — 꾸민 하루 다이어리를 최근 날짜부터 작은 페이지로 */
+  function renderDiaryRow() {
+    const row = root && root.querySelector('#recDiaryRow');
+    if (!row || typeof RecordV2 === 'undefined' || !RecordV2.listDiaries) return;
+    const list = RecordV2.listDiaries();
+    if (!list.length) {
+      row.innerHTML = `<button type="button" class="rec-diary__empty" data-diary-new>
+        <b>인상 깊었던 하루나 여행을 한 장의 다이어리로</b>
+        <span>사진·글·스티커를 붙이고 노래도 넣어요.<br>열면 그 노래가 흘러나와요.</span>
+      </button>`;
+      return;
+    }
+    row.innerHTML = list.map(d => `
+      <button type="button" class="rec-diary__item" data-diary="${esc(d.key)}" aria-label="${esc(d.meta.title || RecordV2.rangeLabel(d.meta))} 다이어리 열기">
+        <span class="rec-diary__thumb">${RecordV2.diaryThumbHtml(recordCtx(), d)}</span>
+        ${d.meta.title ? `<span class="rec-diary__title">${esc(d.meta.title)}</span>` : ''}
+        <span class="rec-diary__date">${RecordV2.rangeLabel(d.meta)}${d.page.song ? ' ♪' : ''}</span>
+      </button>`).join('');
+  }
+
   function recordCtx() {
     return { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin(), write: () => openEntryModal() };
   }
 
   function wireHome() {
+    root.querySelector('#recHeadAdd').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
+    const newDiary = () => { if (!needLogin()) RecordV2.createDiary(recordCtx(), todayIso, renderDiaryRow); };
+    root.querySelector('#recDiaryNew').addEventListener('click', newDiary);
+    root.querySelector('#recDiaryRow').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-diary-new]')) { newDiary(); return; }
+      const b = ev.target.closest('[data-diary]');
+      if (b) RecordV2.openDiary(recordCtx(), b.dataset.diary, renderDiaryRow);
+    });
     root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) openCalPage(); });
     root.querySelector('#recCalClose').addEventListener('click', closeCalPage);
     root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
@@ -2068,13 +2148,21 @@
     });
     root.querySelector('#recHero').addEventListener('click', (ev) => {
       if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
-      if (!ev.target.closest('[data-hero-open]')) return;
-      const hit = heroEntry();
-      if (!hit) return;
-      const urls = (hit.entry.photos || []).map(photoUrl).filter(Boolean);
-      const img = root.querySelector('.rec-hero__img');
-      const info = DiaryArchive.infoOf(hit.entry);
-      DiaryArchive.openPhotos(urls.map(u => ({ url: u, info })), 0, urls.map(() => img));
+      const btn = ev.target.closest('[data-hero-open]');
+      if (!btn) return;
+      const start = Number(btn.dataset.heroOpen) || 0;
+      // 쓸어 넘긴 사진이 옆에 있을 때 누르면 먼저 그 사진을 가운데로
+      const slide = btn.closest('.rec-hero__slide');
+      if (slide && !slide.classList.contains('is-active')) {
+        const track = slide.parentElement;
+        track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
+        return;
+      }
+      // 확대 화면도 같은 줄(시간순 전체)로 — 양옆 사진이 비치고 넘겨 볼 수 있다
+      const imgs = [...root.querySelectorAll('#recHeroTrack .rec-hero__img')];
+      const shots = heroShots.map(x => ({ url: x.url, info: DiaryArchive.infoOf(x.entry) }));
+      if (!shots.length || !imgs[start]) return;
+      DiaryArchive.openPhotos(shots, start, imgs);
     });
     if (!wireHome._doc) { wireHome._doc = true; document.addEventListener('archive:changed', () => { if (root) renderRecent(); }); }
   }
@@ -2082,6 +2170,7 @@
   function renderHome() {
     renderDayTitle();
     renderStreak();
+    renderDiaryRow();
     renderHomeHero();
     renderRecent();
   }
