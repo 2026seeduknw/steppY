@@ -730,6 +730,10 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   scroll-snap-stop: always;
   overflow-y: auto;
   overflow-x: hidden;
+  /* 휴대폰에서 세로로 미는 손가락을 가로 넘기기(바깥 트랙)가 가져가지 않게 — 두 방향 다 허용하고, 끝에 닿아도 바깥으로 안 넘긴다 */
+  touch-action: pan-x pan-y;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   /* 아래 고정 막대(점·버튼)에 가리지 않게 */
   padding-bottom: 168px;
   scrollbar-width: none;
@@ -828,7 +832,10 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   z-index: 20;
   padding: var(--space-3) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
   background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 22%);
+  /* 막대가 화면 아래 1/4을 덮는다 — 버튼 말고 빈 곳(흐린 띠·여백)을 밀면 뒤의 장이 스크롤되게 터치를 통과시킨다 */
+  pointer-events: none;
 }
+.ob-bar .ob-dots, .ob-bar .ob-actions, .ob-bar .swipe-start, .ob-bar .ob-final { pointer-events: auto; }
 .ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-3); }
 .ob-dots span {
   width: 6px; height: 6px;
