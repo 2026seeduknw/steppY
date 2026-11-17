@@ -922,8 +922,9 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
 .ob-phone--back { left: 0; transform: rotate(-5deg); transform-origin: 100% 100%; }
 .ob-phone--front { right: 0; top: 6%; transform: rotate(4deg); transform-origin: 0 100%; }
 
-/* 온보딩 첫 장 — "다음" 대신 밀어서 시작하기. 아래 바 안에 놓으므로 고정 위치를 푼다 */
+/* 온보딩 마지막 장 — Four Steps를 다 본 뒤에 밀어서 시작하기(로그인·회원가입으로). 앞 장들은 "다음" 버튼.
+   아래 바 안에 놓으므로 고정 위치를 푼다 */
 .ob-bar .swipe-start { position: static; transform: none; width: auto; max-width: 440px; margin: 0 auto; }
 .ob-bar .swipe-start__track { box-shadow: none; }
-.ob-bar:not(.is-first) .swipe-start { display: none; }
-.ob-bar.is-first .ob-actions { display: none; }
+.ob-bar:not(.is-last) .swipe-start { display: none; }
+.ob-bar.is-last .ob-actions { display: none; }
