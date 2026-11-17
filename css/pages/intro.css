@@ -675,17 +675,17 @@ body[data-page="intro"] {
   .splash { display: none; }
 }
 
-/* 소개 화면 본문 속 영어 키워드(Step, Four Steps!, step)는 Manrope로 — 로고 글씨체(SB 어그로)는 히어로의 steppY 에만 */
+/* 소개 화면 본문 속 영어 키워드(Step, Four Steps!, step)는 본문 고딕으로 — 로고 글씨체(SB 어그로)는 히어로의 steppY 에만 */
 .intro__section-title .wm-text,
 .intro__final-title .wm-text {
-  font-family: 'Manrope', var(--font-display);
+  font-family: var(--font-display);
   font-weight: 500;            /* 볼드 빼고 보통 굵기 */
   letter-spacing: -0.02em;
   -webkit-text-stroke: 0;      /* 테두리도 굵어 보여서 뺀다 */
 }
 
-/* 한글은 SUIT로 못박는다(영어는 Manrope, 히어로 steppY 로고만 SB 어그로) */
-body[data-page="intro"] { font-family: 'Manrope', 'SUIT Variable', sans-serif; }
+/* 소개 화면도 앱과 같은 고딕(히어로 steppY 로고만 SB 어그로) */
+body[data-page="intro"] { font-family: var(--font-body); }
 
 
 /* ==========================================================================
@@ -769,7 +769,7 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: 'Manrope', var(--font-display);
+  font-family: var(--font-display);
   font-weight: 800;
   font-size: 3.4rem;
   line-height: 1;
@@ -791,7 +791,7 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   letter-spacing: 0.01em;
 }
 .ob-step__eyebrow .wm-text {
-  font-family: 'Manrope', var(--font-display);
+  font-family: var(--font-display);
   font-weight: 700;
   -webkit-text-stroke: 0;
   color: inherit;
@@ -902,7 +902,7 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   align-items: center;
   height: 18px;
   padding: 0 14%;
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-display);
   font-size: 6px;
   font-weight: 700;
   color: #111;
@@ -921,3 +921,9 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
 .ob-phone__screen img { display: block; width: 100%; height: auto; }
 .ob-phone--back { left: 0; transform: rotate(-5deg); transform-origin: 100% 100%; }
 .ob-phone--front { right: 0; top: 6%; transform: rotate(4deg); transform-origin: 0 100%; }
+
+/* 온보딩 첫 장 — "다음" 대신 밀어서 시작하기. 아래 바 안에 놓으므로 고정 위치를 푼다 */
+.ob-bar .swipe-start { position: static; transform: none; width: auto; max-width: 440px; margin: 0 auto; }
+.ob-bar .swipe-start__track { box-shadow: none; }
+.ob-bar:not(.is-first) .swipe-start { display: none; }
+.ob-bar.is-first .ob-actions { display: none; }

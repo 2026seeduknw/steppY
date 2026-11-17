@@ -216,6 +216,18 @@
 
   <div class="ob-bar" id="obBar">
     <div class="ob-dots" id="obDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <!-- 첫 장에서만: 밀어서 시작하기(로그인·회원가입으로). 옆으로 넘기면 Four Steps를 볼 수 있다 -->
+    <div class="swipe-start" id="swipeStart">
+      <div class="swipe-start__track" role="button" tabindex="0"
+           aria-label="밀어서 시작하기. 누르거나 스페이스로도 시작할 수 있어요">
+        <span class="swipe-start__trail" id="swipeTrail" aria-hidden="true"></span>
+        <span class="swipe-start__label">밀어서 시작하기</span>
+        <span class="swipe-start__chevrons" aria-hidden="true">›››</span>
+        <span class="swipe-start__knob" id="swipeKnob">
+          <img src="assets/logo-mark-circle.png" alt="" width="50" height="50" draggable="false">
+        </span>
+      </div>
+    </div>
     <div class="ob-actions">
       <button type="button" class="ob-back" id="obBack" aria-label="이전">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
@@ -240,6 +252,7 @@
 <script src="js/mock-data.js"></script>
 <script src="js/intro.js"></script>
 <script src="js/onboarding-pager.js"></script>
+<script src="js/swipe-start.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>
 </body>

@@ -59,12 +59,42 @@
     });
   }
 
+  /**
+   * 글 입력 — window.prompt 대신. prompt도 confirm처럼 앱 안 브라우저·일부 웹뷰에서 막혀 아무것도 안 뜬다.
+   * 확인을 누르면 적은 글(앞뒤 공백 그대로), 취소·바깥을 누르면 null.
+   */
+  function askText(title, value, okLabel) {
+    return new Promise((resolve) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'rec-ask';
+      wrap.innerHTML = `<form class="rec-ask__box rec-ask__box--input" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+          <p class="rec-ask__msg">${esc(title)}</p>
+          <textarea class="rec-ask__input" rows="3" maxlength="200">${esc(value || '')}</textarea>
+          <div class="rec-ask__btns">
+            <button type="button" data-ask="no">취소</button>
+            <button type="submit">${esc(okLabel || '넣기')}</button>
+          </div>
+        </form>`;
+      document.body.appendChild(wrap);
+      requestAnimationFrame(() => wrap.classList.add('is-open'));
+      const input = wrap.querySelector('textarea');
+      const done = (v) => { wrap.remove(); resolve(v); };
+      wrap.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); done(input.value); });
+      wrap.addEventListener('click', (e) => {
+        if (e.target.closest('[data-ask="no"]') || e.target === wrap) done(null);
+      });
+      // 엔터는 넣기, 줄바꿈은 Shift+엔터
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); done(input.value); } });
+      setTimeout(() => { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 50);
+    });
+  }
+
   /* ------------------------------------------------------------ 저장 */
   const storeKey = () => `steppy_pages_v1_${(typeof Auth !== 'undefined' && Auth.userId) || 'guest'}`;
   function loadPages() { try { return JSON.parse(localStorage.getItem(storeKey()) || '{}') || {}; } catch (e) { return {}; } }
   function savePages(all) {
     try { localStorage.setItem(storeKey(), JSON.stringify(all)); return true; }
-    catch (e) { window.alert('이 기기의 저장 공간이 부족해요. 올린 사진을 줄이거나 지운 뒤 다시 저장해 주세요.'); return false; }
+    catch (e) { toast('이 기기의 저장 공간이 부족해요. 올린 사진을 줄이거나 지운 뒤 다시 저장해 주세요.'); return false; }
   }
   // 방금 만든 기록은 서버 uuid가 도착하면 id가 바뀐다 — 꾸며 둔 페이지도 따라 옮긴다
   document.addEventListener('journal:idchanged', (ev) => {
@@ -88,7 +118,8 @@
   }
   function defaultPage(e) {
     const items = [];
-    (e.photos || []).slice(0, 4).forEach((p, i) => items.push(Object.assign({ id: uid(), type: 'photo', path: p }, PHOTO_SLOTS[i])));
+    // fit: 사진이 도착하면 그 사진의 원래 비율로 높이를 맞춘다(칸 모양대로 잘리지 않게, fitPhotos)
+    (e.photos || []).slice(0, 4).forEach((p, i) => items.push(Object.assign({ id: uid(), type: 'photo', path: p, fit: true }, PHOTO_SLOTS[i])));
     const text = (e.body || '').trim();
     if (text) items.push({ id: uid(), type: 'memo', text: text.length > 70 ? text.slice(0, 68) + '…' : text, x: 0.066, y: 0.818, w: 0.387, h: 0.354, rot: -1.5 });
     const place = placeOf(e);
@@ -110,7 +141,9 @@
   function itemInner(it) {
     if (it.type === 'photo') {
       const src = srcOf(it);
-      return src ? `<img src="${esc(src)}" alt="" draggable="false">` : '<span class="rec-it__ph" aria-hidden="true"></span>';
+      // 자른 사진은 사용자가 옮긴 자리(pos, %)를 보여 준다
+      const pos = it.crop && it.pos ? ` style="object-position:${Number(it.pos.x) || 50}% ${Number(it.pos.y) || 50}%"` : '';
+      return src ? `<img src="${esc(src)}" alt="" draggable="false"${pos}>` : '<span class="rec-it__ph" aria-hidden="true"></span>';
     }
     if (it.type === 'memo' || it.type === 'text') return `<span class="rec-it__text${it.font === 'hand' ? ' is-hand' : ''}" style="font-size:${(it.fs || (it.type === 'memo' ? 0.036 : 0.05)) * (it.font === 'hand' ? 1.25 : 1) * 100}cqw">${esc(it.text)}</span>`;
     if (it.type === 'art') {
@@ -139,7 +172,12 @@
       <div class="rec-page rec-page--${esc(page.bg || 'cream')}${extraClass ? ' ' + extraClass : ''}"${bgStyle}>
         ${headStrip(page)}
         <div class="rec-page__items">
-          ${page.items.map(it => `<div class="rec-it rec-it--${it.type}${it.type === 'photo' && it.frame === false ? ' is-noframe' : ''}" data-it="${esc(it.id)}" style="${itemStyle(it)}">${itemInner(it)}</div>`).join('')}
+          ${page.items.map(it => {
+            // 사진은 원래 비율 그대로(높이를 사진에 맡긴다). 템플릿으로 일부러 자른 사진(crop)만 칸 모양대로
+            const fit = it.type === 'photo' && !it.crop;
+            const style = fit ? itemStyle(it).replace(/height:[^;]*;/, '') : itemStyle(it);
+            return `<div class="rec-it rec-it--${it.type}${it.type === 'photo' && it.frame === false ? ' is-noframe' : ''}${fit ? ' is-fit' : ''}" data-it="${esc(it.id)}" style="${style}">${itemInner(it)}</div>`;
+          }).join('')}
         </div>
       </div>`;
   }
@@ -491,6 +529,7 @@
     pushHist();
     drawEditor();
     drawPanel();
+    fitPhotos();
     el.addEventListener('click', onEditorClick);
     el.querySelector('#recEdFile').addEventListener('change', onFile);
     wireCanvas(el.querySelector('#recEdPage'));
@@ -544,9 +583,37 @@
           <button type="button" data-del>삭제</button>
           <button type="button" data-front>맨 앞으로</button>
           ${editable ? '<button type="button" data-edit-text>글 고치기</button>' : ''}
+          ${isPhoto ? '<button type="button" data-crop>자르기</button>' : ''}
           ${isPhoto ? `<button type="button" data-frame>${framed ? '테두리 빼기' : '테두리 넣기'}</button>` : ''}
         </span>
       </span>`);
+  }
+  /**
+   * 기록 사진은 처음에 정해진 칸 크기로 놓여 칸 모양대로 잘려 보였다.
+   * 크기 손잡이는 가로세로를 같이 늘리므로 사용자가 비율을 바꿀 길이 없다 — 그래서 사진 칸 비율이
+   * 실제 사진과 다르면(기본 배치·템플릿 때문) 가로 폭은 두고 높이를 원래 비율로 맞춘다(가운데 기준).
+   * 예전에 저장한 다이어리도 꾸미기를 열면 맞춰진다.
+   */
+  function fitPhotos() {
+    if (!ed) return;
+    const cur = ed;
+    cur.page.items.filter(it => it.type === 'photo' && !it.crop).forEach(it => {
+      const src = srcOf(it);
+      if (!src) return;   // 사진 주소가 아직 없으면 다음에(record:photos) 다시
+      const img = new Image();
+      img.onload = () => {
+        if (ed !== cur || !img.naturalWidth || !cur.page.items.includes(it)) return;
+        const h = Math.min(1.1, it.w * img.naturalHeight / img.naturalWidth);
+        delete it.fit;
+        if (Math.abs(h - it.h) / it.h < 0.02) return;
+        it.y = Math.max(0, it.y + (it.h - h) / 2);
+        it.h = h;
+        // 처음 배치를 고치는 것이라 되돌리기 기록은 새로 쌓지 않고 마지막 기록을 바꾼다
+        cur.hist[cur.at] = JSON.stringify(cur.page);
+        drawEditor();
+      };
+      img.src = src;
+    });
   }
   const item = (id) => ed.page.items.find(i => i.id === id);
   const topZ = () => ed.page.items.reduce((m, i) => Math.max(m, i.z || 0), 0) + 1;
@@ -660,7 +727,12 @@
     const tool = t.closest('[data-tool]');
     if (tool) { ed.tool = tool.dataset.tool; drawPanel(); return; }
     const ph = t.closest('[data-add-photo]');
-    if (ph) { const h = 0.5; addItem({ type: 'photo', path: ph.dataset.addPhoto, x: 0.25, y: centerY(h), w: 0.42, h, rot: 0 }); return; }
+    if (ph) {
+      const h = 0.5;
+      addItem({ type: 'photo', path: ph.dataset.addPhoto, x: 0.25, y: centerY(h), w: 0.42, h, rot: 0, fit: true });
+      fitPhotos();
+      return;
+    }
     const up = t.closest('[data-upload]');
     if (up) {
       const f = ed.el.querySelector('#recEdFile');
@@ -672,12 +744,13 @@
     if (tx) {
       const memo = tx.dataset.addText === 'memo';
       const hand = tx.dataset.addText === 'hand';
-      const text = window.prompt(memo ? '메모지에 적을 말' : '넣을 글자', '');
-      if (!text || !text.trim()) return;
-      const h = memo ? 0.3 : hand ? 0.22 : 0.12;
-      const it = { type: memo ? 'memo' : 'text', text: text.trim(), x: memo ? 0.3 : 0.15, y: centerY(h), w: memo ? 0.4 : 0.7, h, rot: memo ? -1.5 : 0 };
-      if (hand) Object.assign(it, { font: 'hand', fs: 0.042 });
-      addItem(it);
+      askText(memo ? '메모지에 적을 말' : '넣을 글자', '').then(text => {
+        if (!ed || !text || !text.trim()) return;
+        const h = memo ? 0.3 : hand ? 0.22 : 0.12;
+        const it = { type: memo ? 'memo' : 'text', text: text.trim(), x: memo ? 0.3 : 0.15, y: centerY(h), w: memo ? 0.4 : 0.7, h, rot: memo ? -1.5 : 0 };
+        if (hand) Object.assign(it, { font: 'hand', fs: 0.042 });
+        addItem(it);
+      });
       return;
     }
     const stab = t.closest('[data-stab]');
@@ -754,16 +827,108 @@
     }
     if (t.closest('[data-front]')) { const it = item(ed.sel); if (it) { it.z = topZ(); pushHist(); drawEditor(); } return; }
     if (t.closest('[data-edit-text]')) { editText(item(ed.sel)); return; }
+    if (t.closest('[data-crop]')) { cropPhoto(item(ed.sel)); return; }
     // 사진의 흰 테두리(필름·폴라로이드 느낌)는 사진마다 켜고 끈다
     if (t.closest('[data-frame]')) { const it = item(ed.sel); if (it) { it.frame = it.frame === false ? true : false; pushHist(); drawEditor(); } return; }
   }
+  /**
+   * 사진 자르기 — 원본 / 4:3 / 3:4 / 1:1 중에 고르고, 잘린 틀 안에서 사진을 끌어 보일 부분을 정한다.
+   * 원본이면 자르지 않는다(crop 없음, 높이는 사진 비율). 자르면 it.crop = '4:3' 처럼 비율 이름, it.pos = {x,y}(%).
+   */
+  const CROPS = [{ key: '', label: '원본' }, { key: '4:3', r: 3 / 4 }, { key: '3:4', r: 4 / 3 }, { key: '1:1', r: 1 }];
+  function cropPhoto(it) {
+    if (!it || it.type !== 'photo') return;
+    const src = srcOf(it);
+    if (!src) return;
+    const img0 = new Image();
+    img0.onload = () => {
+      const natural = img0.naturalHeight / img0.naturalWidth;
+      // 템플릿이 정한 칸(crop:true)은 그 칸 비율 그대로 시작
+      let key = typeof it.crop === 'string' ? it.crop : '';
+      let custom = it.crop === true ? it.h / it.w : null;
+      const pos = { x: it.pos ? Number(it.pos.x) : 50, y: it.pos ? Number(it.pos.y) : 50 };
+      const ratioOf = () => (key ? CROPS.find(c => c.key === key).r : custom || natural);
+      const wrap = document.createElement('div');
+      wrap.className = 'rec-ask';
+      wrap.innerHTML = `<div class="rec-ask__box rec-crop" role="dialog" aria-modal="true" aria-label="사진 자르기">
+          <p class="rec-ask__msg">사진 자르기</p>
+          <div class="rec-crop__chips" role="group" aria-label="비율">
+            ${CROPS.map(c => `<button type="button" class="rec-chip" data-crop-key="${c.key}">${c.label || c.key}</button>`).join('')}
+          </div>
+          <div class="rec-crop__stage"><div class="rec-crop__frame"><img src="${esc(src)}" alt="" draggable="false"></div></div>
+          <p class="rec-crop__hint"></p>
+          <div class="rec-ask__btns">
+            <button type="button" data-ask="no">취소</button>
+            <button type="button" data-ask="yes">적용</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+      requestAnimationFrame(() => wrap.classList.add('is-open'));
+      const frame = wrap.querySelector('.rec-crop__frame');
+      const fimg = frame.querySelector('img');
+      const hint = wrap.querySelector('.rec-crop__hint');
+      const paint = () => {
+        const r = ratioOf();
+        // 무대(최대 260×300) 안에 들어가는 틀 크기
+        const W = Math.min(260, 300 / r);
+        frame.style.width = W + 'px'; frame.style.height = W * r + 'px';
+        fimg.style.objectPosition = `${pos.x}% ${pos.y}%`;
+        wrap.querySelectorAll('[data-crop-key]').forEach(b => b.classList.toggle('is-on', b.dataset.cropKey === key && !(custom && !key)));
+        const cutting = !!key || !!custom;
+        frame.classList.toggle('is-cut', cutting);
+        hint.textContent = cutting ? '사진을 끌어 보일 부분을 정해요' : '사진 그대로 넣어요';
+      };
+      // 끌기 — 틀 안에서 사진을 옮긴다(손가락 방향대로 사진이 따라오게 %를 반대로)
+      let drag = null;
+      frame.addEventListener('pointerdown', (e) => {
+        if (!key && !custom) return;
+        drag = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+        frame.setPointerCapture(e.pointerId);
+      });
+      frame.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const fw = frame.clientWidth, fh = frame.clientHeight, r = ratioOf();
+        // 넘치는 양(px) — 사진이 틀보다 큰 쪽으로만 움직일 수 있다
+        const overX = natural < r ? fh / natural - fw : 0;
+        const overY = natural > r ? fw * natural - fh : 0;
+        if (overX > 0) pos.x = Math.max(0, Math.min(100, drag.px - (e.clientX - drag.x) / overX * 100));
+        if (overY > 0) pos.y = Math.max(0, Math.min(100, drag.py - (e.clientY - drag.y) / overY * 100));
+        fimg.style.objectPosition = `${pos.x}% ${pos.y}%`;
+      });
+      const endDrag = () => { drag = null; };
+      frame.addEventListener('pointerup', endDrag);
+      frame.addEventListener('pointercancel', endDrag);
+      const close = () => wrap.remove();
+      wrap.addEventListener('click', (e) => {
+        const c = e.target.closest('[data-crop-key]');
+        if (c) { key = c.dataset.cropKey; custom = null; pos.x = 50; pos.y = 50; paint(); return; }
+        const b = e.target.closest('[data-ask]');
+        if (!b && e.target !== wrap) return;
+        if (b && b.dataset.ask === 'yes' && ed) {
+          const r = ratioOf();
+          const h = Math.min(1.1, it.w * r);
+          it.y = Math.max(0, it.y + (it.h - h) / 2);
+          it.h = h;
+          if (key) { it.crop = key; it.pos = { x: Math.round(pos.x), y: Math.round(pos.y) }; }
+          else if (custom) { it.crop = true; it.pos = { x: Math.round(pos.x), y: Math.round(pos.y) }; }
+          else { delete it.crop; delete it.pos; }
+          pushHist(); drawEditor();
+        }
+        close();
+      });
+      paint();
+    };
+    img0.src = src;
+  }
+
   function editText(it) {
     if (!it) return;
-    const text = window.prompt('글 고치기', it.text || '');
-    if (text == null) return;
-    if (!text.trim()) { ed.page.items = ed.page.items.filter(i => i.id !== it.id); ed.sel = null; }
-    else it.text = text.trim();
-    pushHist(); drawEditor();
+    askText('글 고치기 (다 지우면 이 글이 빠져요)', it.text || '', '고치기').then(text => {
+      if (text == null || !ed) return;
+      if (!text.trim()) { ed.page.items = ed.page.items.filter(i => i.id !== it.id); ed.sel = null; }
+      else it.text = text.trim();
+      pushHist(); drawEditor();
+    });
   }
 
   /** 올린 사진은 긴 변 900px JPEG로 줄여서 이 기기에 넣는다 */
@@ -788,19 +953,19 @@
     const isSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name);
     const done = (src, ratio) => {
       const s = DiaryStickers.addMine(src, ratio);
-      if (!s) { window.alert('이 기기의 저장 공간이 부족해요. 쓰지 않는 내 스티커를 지운 뒤 다시 올려 주세요.'); return; }
+      if (!s) { toast('이 기기의 저장 공간이 부족해요. 쓰지 않는 내 스티커를 지운 뒤 다시 올려 주세요.'); return; }
       ed.stickerTab = 'mine'; drawPanel();
       const w = ratio > 1.5 ? 0.18 : 0.3;
       addItem({ type: 'art', art: 'u:' + s.id, x: 0.5 - w / 2, y: centerY(w * ratio), w, h: w * ratio, rot: 0 });
     };
     if (isSvg) {
-      if (file.size > 300 * 1024) { window.alert('SVG가 너무 커요(300KB까지). 더 단순한 파일로 올려 주세요.'); return; }
+      if (file.size > 300 * 1024) { toast('SVG가 너무 커요(300KB까지). 더 단순한 파일로 올려 주세요.'); return; }
       const rd = new FileReader();
       rd.onload = () => {
         const src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(String(rd.result))));
         const img = new Image();
         img.onload = () => done(src, img.naturalWidth && img.naturalHeight ? img.naturalHeight / img.naturalWidth : 1);
-        img.onerror = () => window.alert('SVG를 읽지 못했어요. 다른 파일로 해 볼까요?');
+        img.onerror = () => toast('SVG를 읽지 못했어요. 다른 파일로 해 볼까요?');
         img.src = src;
       };
       rd.readAsText(file);
@@ -816,7 +981,7 @@
       URL.revokeObjectURL(url);
       done(c.toDataURL('image/png'), c.height / c.width);
     };
-    img.onerror = () => { URL.revokeObjectURL(url); window.alert('그림을 읽지 못했어요. 다른 파일로 해 볼까요?'); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('그림을 읽지 못했어요. 다른 파일로 해 볼까요?'); };
     img.src = url;
   }
   async function onFile(ev) {
@@ -825,13 +990,16 @@
     const target = input.dataset.for;
     input.value = '';
     if (!file || !ed) return;
-    if (target === 'sticker') { addMySticker(file); return; }
+    let ready = file;
+    try { if (window.HeicFix) ready = await HeicFix.prepare(file); }   // 아이폰 HEIC → JPEG(필요할 때만)
+    catch (e) { toast('아이폰 사진(HEIC)을 바꾸지 못했어요. JPG·PNG로 올려 주세요.'); return; }
+    if (target === 'sticker') { addMySticker(ready); return; }
     try {
-      const { data, ratio } = await shrink(file, 900);
+      const { data, ratio } = await shrink(ready, 900);
       if (target === 'bg') { ed.page.bg = 'upload'; ed.page.bgImg = data; pushHist(); drawEditor(); drawPanel(); return; }
       const w = 0.46, h = Math.min(0.9, w * ratio);
       addItem({ type: 'photo', src: data, x: 0.27, y: centerY(h), w, h, rot: 0 });
-    } catch (e) { window.alert('사진을 읽지 못했어요. 다른 사진으로 해 볼까요?'); }
+    } catch (e) { toast('사진을 읽지 못했어요. 다른 사진으로 해 볼까요?'); }
   }
 
   /** 템플릿 — 사진·메모 자리를 정해진 배치로 다시 놓는다(스티커·글자는 그대로) */
@@ -849,6 +1017,7 @@
       const s = SLOTS[i];
       if (s) Object.assign(p, s);
       else Object.assign(p, { x: 0.1 + (i % 3) * 0.28, y: 1.3, w: 0.26, h: 0.2, rot: (i % 2 ? 3 : -3) });
+      p.crop = true;   // 템플릿은 일부러 칸 모양대로 자른다 — fitPhotos가 되돌리지 않게
     });
     if (memo && MEMO) Object.assign(memo, MEMO);
     if (key === 'film') ed.page.bg = 'white';
@@ -866,7 +1035,7 @@
     const applyTo = (it) => {
       const node = host.querySelector(`[data-it="${it.id}"]`);
       if (!node) return;
-      node.style.cssText = itemStyle(it);
+      node.style.cssText = node.classList.contains('is-fit') ? itemStyle(it).replace(/height:[^;]*;/, '') : itemStyle(it);
       const emo = node.querySelector('.rec-it__emoji');
       if (emo) emo.style.fontSize = `${it.w * 72}cqw`;
     };
@@ -958,7 +1127,7 @@
   }
 
   // 사진 주소가 늦게 도착하면 열려 있는 화면을 다시 그린다
-  document.addEventListener('record:photos', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); });
+  document.addEventListener('record:photos', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); if (ed) { drawEditor(); fitPhotos(); } });
   document.addEventListener('archive:changed', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); });
 
   /* ------------------------------------------------------------ 다이어리 (Recent 밑 'Diary')

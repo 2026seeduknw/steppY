@@ -43,7 +43,7 @@
     {
       key: 'wrapup',
       title: '돌아볼 수 있게 정리해 드려요',
-      desc: 'Streak로 기록 습관을 이어 가고, 캘린더에서 날짜마다 첫 사진으로 돌아봐요.<br>쌓인 기록은 Wrap-up으로 모아 교환보고서를 쓸 때 꺼내 봐요.',
+      desc: '며칠 기록했는지 쌓이는 걸 보고, 캘린더에서 날짜마다 첫 사진으로 돌아봐요.<br>쌓인 기록은 Wrap-up으로 모아 교환보고서를 쓸 때 꺼내 봐요.',
       // D-day 밑 이번 주 줄(diary-view.js renderStreak)과 같은 클래스
       visual: () => {
         const d = new Date();
@@ -58,7 +58,7 @@
         <div class="dintro-wrap" aria-hidden="true">
           <div class="rec-streak dintro-streak">
             <div class="rec-streak__top">
-              <p class="rec-streak__count">Streak <b>+${done.size}</b></p>
+              <p class="rec-streak__count"><b>12</b>days recorded</p>
               <span class="rec-streak__more">자세히 보기 →</span>
             </div>
             <div class="rec-streak__week">${cells}</div>

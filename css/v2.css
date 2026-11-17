@@ -18,8 +18,8 @@
   --v2-warn-bg: #F3E7CC;  --v2-warn: #8A6420;
   --v2-bad-bg: #F6E0DA;   --v2-bad: #A0473A;
   --v2-radius: 28px;
-  /* 화면 맨 위 큰 영어 제목(STEPPY·SCHOOLS…)만 SUIT — 나머지 글자는 전부 Pretendard(tokens.css) */
-  --font-title: 'Manrope', 'SUIT Variable', sans-serif;   /* 큰 영어 제목도 Manrope */
+  /* 화면 맨 위 큰 영어 제목도 본문과 같은 고딕(tokens.css) */
+  --font-title: var(--font-display);
 }
 
 /* ---------------------------------------------------------------- 공통 */
@@ -395,8 +395,7 @@ body[data-page="credits"] .match-query__label { display: none; }
 }
 .v2-xmatch__meta {
   grid-column: 2; grid-row: 2; margin: 0;
-  font-size: 11px; color: var(--v2-ink-soft);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; line-height: 1.4; color: var(--v2-ink-soft);   /* 과목 코드·학점이 "…"로 잘려 줄을 바꿔 다 보이게 */
 }
 .v2-xmatch__arrow {
   display: grid; place-items: center; width: 26px; height: 26px; margin: 10px auto;
@@ -411,7 +410,8 @@ body[data-page="credits"] .match-query__label { display: none; }
 /* 검색줄 칸 글씨는 가운데 — ⌄ 표시가 오른쪽 여백(36px)을 차지하므로 왼쪽도 같은 만큼 비워야 진짜 가운데다 */
 /* 빠른 필터 칸 글씨는 가운데 — ⌄ 그림이 오른쪽 여백 안에 있으므로 좌우 여백을 같게 둬야 진짜 가운데다
    (search.css 가 오른쪽 여백을 !important 로 잡고 있다) */
-body[data-page="search"] .quick-filters select.quick-filter { padding-left: 24px !important; padding-right: 24px !important; text-align: center; text-align-last: center; }
+/* 좁은 화면(폭 331px)에서 "대륙/…"처럼 잘려 여백을 줄였다. 화살표(오른쪽 8px)만큼 오른쪽을 조금 더 비운다 */
+body[data-page="search"] .quick-filters select.quick-filter { padding-left: 8px !important; padding-right: 20px !important; background-position: right 8px center !important; text-align: center; text-align-last: center; }
 
 /* 학점 인정 카드의 긴 설명 상자 — 두 줄로 접으면 세 번째 줄이 아래 안쪽 여백(padding)에 비쳐
    글자가 상자 밖으로 삐져나온 것처럼 보였다. 줄 수 제한(line-clamp)은 여백까지 잘라 주지 않는다.
@@ -454,8 +454,8 @@ body[data-page="consult"] .m2-head { margin-top: 6px; }
 .m2-ask { display: flex; gap: 8px; margin-top: 16px; }
 .m2-ask__in {
   flex: 1; min-width: 0; height: 46px; padding: 0 18px; border: 1.5px solid #E0DCD1; border-radius: 23px; background: #fff;
-  display: flex; align-items: center; font: inherit; font-size: 13.5px; color: var(--v2-ink-faint); text-align: left; cursor: pointer;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: block; line-height: 43px; font: inherit; font-size: 13.5px; color: var(--v2-ink-faint); text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;   /* flex면 말줄임이 안 되고 글자가 잘린다 */
 }
 .m2-ask__btn {
   flex: none; height: 46px; padding: 0 18px; border: 0; border-radius: 23px; background: var(--v2-dark); color: #fff;

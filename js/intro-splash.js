@@ -110,7 +110,8 @@
   /* ---- 흩어진 배치 만들기 ----
      폭을 꽉 채우면 기울어진 글자(±13°)의 모서리가 화면 밖으로 잘린다.
      양옆에 숨 쉴 자리를 남긴다. */
-  const LW = Math.min(innerWidth * 0.80, 560);
+  // 0.80 이면 좁은 휴대폰(폭 375 이하)에서 기울어진 s·! 가 화면 끝에 붙어 잘려 보였다 — 양옆을 더 비운다
+  const LW = Math.min(innerWidth * 0.68, 520);
   const LH = LW / SPLASH_LAYOUT_RATIO;
   stage.style.width = LW + 'px';
   stage.style.height = LH + 'px';

@@ -1712,7 +1712,7 @@ body[data-page="journal"][data-theme="film"] .diary-featured__title,
 body[data-page="journal"][data-theme="film"] .diary-stamp__title,
 body[data-page="journal"][data-theme="film"] .stamp-fx__cap b,
 body[data-page="journal"][data-theme="film"] .diary-stamp__blank p {
-  font-family: 'SUIT Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-family: var(--font-body);
   font-weight: 700; letter-spacing: -0.02em;
 }
 body[data-page="journal"][data-theme="film"] .diary-featured__title { font-size: 1.05rem; }

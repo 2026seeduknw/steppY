@@ -148,7 +148,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
   width: 100%; min-height: 30px; padding: 0; border: 0; background: none;
   text-align: left; cursor: pointer; font: inherit;
 }
-.step-item__title { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.step-item__title { flex: 1; min-width: 0; font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); word-break: keep-all; overflow-wrap: anywhere; }
 .step-item__due { flex: none; font-family: var(--font-mono); font-size: 1.1rem; font-weight: 800; color: var(--ink-900); }
 .step-item.is-done .step-item__due { color: var(--ink-400); }
 .step-item.is-done .step-item__title { color: var(--ink-400); text-decoration: line-through; }

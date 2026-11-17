@@ -44,7 +44,7 @@
     panelEl.innerHTML = `
       <div class="mentor-preview">
         <div class="mentor-preview__blur" aria-hidden="true" inert>
-          <div class="m2-ask"><span class="m2-ask__in">다녀온 선배에게 궁금한 걸 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
+          <div class="m2-ask"><span class="m2-ask__in">선배에게 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
           <div class="m2-sec"><h2>선배의 기록</h2></div>
           <div class="m2-cols">
             ${pin('report', '2026-1 교환보고서 모음')}

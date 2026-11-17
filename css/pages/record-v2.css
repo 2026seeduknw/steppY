@@ -239,9 +239,10 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 
 /* ---------------------------------------------------------------- 알림 */
 .rec-toast {
-  position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); z-index: 320;
+  position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); z-index: 2100;   /* 꾸미기 화면·확인창 위로 */
   transform: translate(-50%, 10px); opacity: 0; transition: opacity 200ms ease, transform 200ms ease;
-  padding: 10px 18px; border-radius: 999px; background: var(--v2-dark); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap;
+  padding: 10px 18px; border-radius: 999px; background: var(--v2-dark); color: #fff; font-size: 13px; font-weight: 700;
+  white-space: pre-line; text-align: center; max-width: calc(100% - 32px); width: max-content;   /* 긴 안내(예전 alert 문구)도 잘리지 않게 */
 }
 .rec-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
@@ -471,9 +472,8 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-dtop .rec-songbar__lp { width: 30px; height: 30px; }
 .rec-dtop .rec-songbar__t b { font-size: 13px; }
 .rec-dtop .rec-songbar__t { font-size: 11px; }
-/* Streak 글자 대신 불꽃 */
-.rec-streak__count { display: inline-flex; align-items: center; gap: 4px; }
-.rec-streak__flame { flex: none; color: var(--v2-ink); }
+/* 지금까지 기록한 날 수 — "12 days recorded" */
+.rec-streak__count { display: inline-flex; align-items: baseline; gap: 4px; }
 .rec-streak__count b { margin-left: 0; }
 
 /* ---------------------------------------------------------------- 큰 사진 — 시간순 줄(왼쪽이 과거) */
@@ -509,6 +509,9 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-head__add span { font-size: 18px; font-weight: 500; line-height: 1; }
 /* 사진 테두리 빼기 — 흰 여백·그림자 없이 사진만(모서리만 살짝 둥글게) */
 .rec-it--photo.is-noframe { padding: 0; background: none; box-shadow: none; }
+/* 사진은 넣은 그대로의 비율 — 칸 높이를 정하지 않고 사진 높이를 따른다(템플릿으로 자른 사진만 칸 모양대로) */
+.rec-it--photo.is-fit img { height: auto; }
+.rec-it--photo.is-fit .rec-it__ph { aspect-ratio: 4 / 3; height: auto; }
 .rec-it--photo.is-noframe img { border-radius: 2cqw; }
 
 /* 다이어리 보기 — 오른쪽 위 "수정하기"(연필) */
@@ -549,7 +552,7 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-page__head {
   position: absolute; left: 6cqw; right: 6cqw; top: 4cqw; z-index: 0;
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 3cqw;
-  font-family: 'Manrope', var(--font-title), sans-serif; font-size: 2.5cqw; font-weight: 700;
+  font-family: var(--font-title); font-size: 2.5cqw; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase; color: #3B3A33;
 }
 .rec-page__head span:last-child { text-align: right; }
@@ -592,6 +595,10 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-ask__btns button { height: 46px; border-radius: 14px; font-size: 15px; font-weight: 700; background: #F1EFE9; color: var(--v2-ink, #22302D); }
 .rec-ask__btns button[data-ask="yes"] { background: var(--v2-dark, #22302D); color: #fff; }
 .rec-ask__btns button.is-danger { background: #D9534A; }
+/* 글 입력 창(askText) — prompt 대신 */
+.rec-ask__input { display: block; width: 100%; margin-top: 12px; padding: 12px 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: 16px; line-height: 1.5; color: var(--v2-ink, #22302D); resize: none; }
+.rec-ask__input:focus { outline: none; border-color: var(--v2-dark, #22302D); background: #fff; }
+.rec-ask__box--input .rec-ask__btns button[type="submit"] { background: var(--v2-dark, #22302D); color: #fff; }
 
 /* 다이어리 보기 위 칸 — 날짜 | 제목 | 노래 세 칸 (노래가 없으면 두 칸) */
 .rec-dtop { grid-template-columns: auto minmax(0, 1fr) minmax(0, 132px); gap: 10px; }
@@ -621,7 +628,7 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-recap__title h3 b { font-weight: 400; }
 .rec-recap__title p { margin-top: 8px; }
 .rec-recap__title p span {
-  position: relative; font-family: 'Manrope', sans-serif; font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--recap-red);
+  position: relative; font-family: var(--font-title); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--recap-red);
 }
 .rec-recap__title p span::before { content: ''; position: absolute; inset: -4px -10px; border: 1px solid var(--recap-red); border-radius: 50%; transform: rotate(-3deg); opacity: .7; }
 .rec-recap__list { display: flex; flex-direction: column; gap: 24px; margin-top: 24px; }
@@ -639,16 +646,30 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-recap__place { margin-top: 6px; font-size: 12px; font-weight: 600; line-height: 1.4; word-break: keep-all; }
 .rec-recap__meta { margin-top: 4px; font-size: 11px; font-weight: 600; color: #5E6662; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ---------------------------------------------------------------- 기록하기 탭 한글 = Pretendard (시험 적용 2026-11-16)
-   영문·숫자는 그대로 Manrope, 한글만 SUIT·마루부리 대신 Pretendard 로. 되돌리려면 이 블록만 지운다.
+/* ---------------------------------------------------------------- 기록하기 탭 글꼴
+   앱 전체 글꼴(tokens.css의 애플 고딕 → 없으면 Pretendard)을 그대로 쓰고, 기록하기에만 있던
+   SUIT·마루부리·Manrope 지정을 덮는다. --font-body 를 여기서 다시 정하면 --kr-font 와 서로를 가리켜
+   글꼴이 통째로 Times 로 무너진다(2026-11-18) — 토큰 이름(--font-*)은 건드리지 않는다.
    (다이어리 손글씨 Gaegu, recap 제목 DM Serif Display 처럼 따로 정한 글꼴은 그대로) */
 body[data-page="journal"] {
-  --kr-font: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
-  --font-display: 'Manrope', var(--kr-font);
-  --font-body: 'Manrope', var(--kr-font);
-  --font-mono: 'Manrope', var(--kr-font);
-  --font-title: 'Manrope', var(--kr-font);
-  --f-title: 'Manrope', var(--kr-font);
-  --f-body: 'Manrope', var(--kr-font);
+  --kr-font: var(--font-body);
+  --f-title: var(--kr-font);
+  --f-body: var(--kr-font);
+  --diary-font-mono: var(--kr-font);
+  --diary-font-display: var(--kr-font);
+  --diary-font-body: var(--kr-font);
   font-family: var(--font-body);
 }
+
+/* 사진 자르기 창 — 원본 / 4:3 / 3:4 / 1:1, 틀 안에서 사진을 끌어 보일 부분을 정한다 */
+.rec-crop { width: min(340px, 100%); }
+.rec-crop__chips { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.rec-crop__stage { display: grid; place-items: center; height: 300px; margin-top: 16px; border-radius: 14px; background: #F1EFE9; }
+.rec-crop__frame { position: relative; overflow: hidden; border-radius: 4px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); touch-action: none; }
+.rec-crop__frame img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
+.rec-crop__frame.is-cut { cursor: grab; outline: 2px solid #fff; }
+.rec-crop__frame.is-cut::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, transparent 33.2%, rgba(255,255,255,.55) 33.3%, transparent 33.6%, transparent 66.5%, rgba(255,255,255,.55) 66.6%, transparent 66.9%),
+              linear-gradient(to bottom, transparent 33.2%, rgba(255,255,255,.55) 33.3%, transparent 33.6%, transparent 66.5%, rgba(255,255,255,.55) 66.6%, transparent 66.9%); }
+.rec-crop__hint { margin-top: 8px; text-align: center; font-size: 12px; color: var(--v2-ink-soft, #6B7470); }
+.rec-crop .rec-ask__btns button[data-ask="yes"] { background: var(--v2-dark, #22302D); color: #fff; }

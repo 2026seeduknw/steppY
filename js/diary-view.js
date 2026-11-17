@@ -273,22 +273,15 @@
 
   /* --------------------------------------------------------------- 연속 기록 */
 
-  /** 기록이 있는 날 모음 — 연속 기록은 국면 필터와 상관없이 전부 센다 */
+  /** 기록이 있는 날 모음 — 국면 필터와 상관없이 전부 센다 */
   function recordedDays() { return new Set(entries().map(e => e.date)); }
-  /** 오늘(오늘 기록이 없으면 어제)부터 거꾸로 이어진 날 수 */
-  function streakCount(days) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (!days.has(toIso(d))) d.setDate(d.getDate() - 1);
-    let n = 0;
-    while (days.has(toIso(d))) { n++; d.setDate(d.getDate() - 1); }
-    return n;
-  }
   /** D-day 밑 이번 주 줄 — 일~토 칸에 기록한 날을 채우고, 자세히 보기로 달력을 연다 */
   function renderStreak() {
     const slot = root.querySelector('#recStreak');
     if (!slot) return;
     const days = recordedDays();
-    const n = streakCount(days);
+    // 연속 일수 대신 지금까지 기록한 날 수(하루에 여러 번 써도 하루)
+    const n = days.size;
     const base = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
     const WD = ['일', '월', '화', '수', '목', '금', '토'];
     const cells = WD.map((w, i) => {
@@ -300,9 +293,8 @@
     }).join('');
     slot.innerHTML = `
       <div class="rec-streak__top">
-        <p class="rec-streak__count" aria-label="연속 기록 ${n}일">
-          <svg class="rec-streak__flame" width="22" height="26" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.6 0.6c.6 3.3-.6 5.6-2.7 7.9C5.6 11 3 13.6 3 17.2 3 21 6.1 24 10 24s7-3 7-6.8c0-2.9-1.2-5.2-2.6-7.1-.4 1.3-1.2 2.3-2.3 2.8.7-4.4-.1-8.9-1.5-12.3zM10.3 22.3c-1.9 0-3.4-1.4-3.4-3.3 0-1.8 1.1-3 2.4-4.4.7-.8 1.3-1.6 1.5-2.7 1.5 1.7 2.9 3.8 2.9 6.6 0 2.1-1.5 3.8-3.4 3.8z"/></svg>
-          <b>+${n}</b>
+        <p class="rec-streak__count" aria-label="${n} ${n === 1 ? 'day' : 'days'} recorded">
+          <b>${n}</b>${n === 1 ? 'day' : 'days'} recorded
         </p>
         <button type="button" class="rec-streak__more" id="recCalOpen">자세히 보기 →</button>
       </div>
@@ -1142,16 +1134,17 @@
       reader.onerror = () => reject(new Error('파일을 읽지 못했어요'));
       reader.onload = () => {
         const img = new Image();
-        img.onerror = () => reject(new Error('이미지를 열지 못했어요'));
+        // 아이폰 사진(HEIC)은 Safari·iOS 앱은 열지만 크롬 계열 브라우저는 못 연다
+        const heic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
+        img.onerror = () => reject(new Error(heic
+          ? '아이폰 사진(HEIC)은 이 브라우저에서 열 수 없어요.\nJPG·PNG로 바꿔 올리거나 휴대폰 앱에서 올려 주세요.'
+          : '이미지를 열지 못했어요'));
         img.onload = () => {
           /*
-           * 사진 비율: 4:3(가로) ~ 3:4(세로) 사이면 그대로 둔다. 16:9처럼 더 납작하거나 9:16처럼 더 길쭉하면
-           * 가운데를 기준으로 4:3(또는 3:4)까지만 잘라 저장한다.
+           * 사진은 원본 비율 그대로 저장한다(예전에는 4:3~3:4 밖이면 가운데를 잘랐다).
+           * 다이어리에서 4:3·3:4·1:1로 보이고 싶으면 꾸미기의 "자르기"에서 사용자가 직접 정한다.
            */
-          let sx = 0, sy = 0, sw = img.width, sh = img.height;
-          const ratio = sw / sh;
-          if (ratio > 4 / 3) { sw = Math.round(sh * 4 / 3); sx = Math.round((img.width - sw) / 2); }
-          else if (ratio < 3 / 4) { sh = Math.round(sw * 4 / 3); sy = Math.round((img.height - sh) / 2); }
+          const sx = 0, sy = 0, sw = img.width, sh = img.height;
           const maxDim = 900;
           const scale = Math.min(1, maxDim / Math.max(sw, sh));
           const canvas = document.createElement('canvas');
@@ -1212,7 +1205,7 @@
 
   async function addPendingPhoto(file, takenAt) {
     if (takenAt === undefined) takenAt = await readTakenAt(file);
-    const blob = await resizeImage(file);
+    const blob = await resizeImage(window.HeicFix ? await HeicFix.prepare(file) : file);   // 아이폰 HEIC → JPEG(필요할 때만)
     const path = await AppState.uploadDiaryPhoto(blob);
     const url = URL.createObjectURL(blob);   // 방금 올린 건 서명 URL을 기다릴 것 없이 바로 보여준다
     photoUrls[path] = url;

@@ -960,7 +960,7 @@ select.dd--open { border-color: var(--ink-900); }
 .upcoming__title span { font-weight: 600; color: var(--ink-400); margin-left: 4px; }
 .upcoming__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .upcoming__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-micro); min-width: 0; }
-.upcoming__name { font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.upcoming__name { font-weight: 700; color: var(--ink-900); min-width: 0; word-break: keep-all; line-height: 1.4; }   /* 긴 일정 이름도 다 보이게 줄바꿈 */
 .upcoming__due { flex: none; color: var(--ink-400); }
 
 /* ---------------------------------------------------------------- 학점 인정 탭 위 카드(파견 중·귀국 후 할 일)

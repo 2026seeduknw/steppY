@@ -1338,10 +1338,10 @@ a.todo-pill__add { text-decoration: none; }
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 2px;
-  gap: 6px;
+  gap: 4px;
 }
-/* 네 개를 한 줄에 담으려면 좌우 여백이 16px씩은 과하다 */
-.school-modal__badges .badge { padding: 0 9px; }
+/* 네 개를 한 줄에 담으려면 좌우 여백이 16px씩은 과하다(고딕은 글자가 넓어 폭 331px에서 TOEFL이 잘렸다) */
+.school-modal__badges .badge { padding: 0 7px; letter-spacing: -0.02em; }
 .school-modal__badges::-webkit-scrollbar { display: none; }
 .school-modal__badges .badge { flex: 0 0 auto; }
 .school-modal__badges--extra { flex-wrap: wrap; overflow: visible; }
@@ -2223,6 +2223,11 @@ select:not([multiple]) {
 
 /* ---- To-Do: 확정 후 출국 전엔 '이번 주' 할 일만(todo-card.js todoWeekView) ---- */
 .todo-pill__scope { align-self: center; font-size: var(--fs-small); color: var(--ink-400); white-space: nowrap; }
+/* 고딕은 글자가 넓어 폭 331px에서 "이번 주"가 ⌄ 밑으로 겹쳤다 — 간격을 줄이고, 더 좁은 화면에서는 "이번 주"를 뺀다 */
+.todo-pill__summary { gap: 8px; }
+.todo-pill__text { gap: 6px; }
+.todo-pill__caret { padding-right: 4px; }
+@media (max-width: 330px) { .todo-pill__scope { display: none; } }
 .todo-pill__empty { align-self: center; font-size: var(--fs-body); font-weight: 600; color: var(--ink-600); white-space: nowrap; }
 .todo-item__dday { font-weight: 800; color: var(--key-500); }
 .todo-item__dday.is-past { color: #c2453b; }

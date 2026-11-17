@@ -123,7 +123,8 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
   font-size: var(--fs-micro);
   color: var(--ink-600);
 }
-.relevance-filter .chip { white-space: nowrap; min-height: 28px; padding: 5px var(--space-3); font-size: var(--fs-micro); }
+/* 고딕은 글자가 넓어 폭 331px에서 "위험"이 다음 줄로 밀렸다 — 좌우 여백을 줄여 한 줄에 */
+.relevance-filter .chip { white-space: nowrap; min-height: 28px; padding: 5px 10px !important; font-size: var(--fs-micro); }
 .relevance-filter .chip[disabled] {
   opacity: 0.4;
   cursor: default;
