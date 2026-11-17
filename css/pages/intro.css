@@ -696,6 +696,10 @@ body[data-page="intro"] { font-family: var(--font-body); }
    ========================================================================== */
 
 body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
+/* iOS Safari는 body의 overflow:hidden을 무시하고 문서 전체를 밀어 올린다(머리줄이 사라지고 그림이 상태표시줄 밑으로).
+   문서는 고정하고, 스크롤은 각 장(.ob-slide) 안에서만 일어나게 한다 */
+html:has(.intro--pager) { overflow: hidden; height: 100%; overscroll-behavior: none; }
+body[data-page="intro"]:has(.intro--pager) { position: fixed; inset: 0; width: 100%; }
 .intro--pager {
   height: 100dvh;
   display: flex;
@@ -734,8 +738,8 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
   touch-action: pan-x pan-y;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  /* 아래 고정 막대(점·버튼)에 가리지 않게 */
-  padding-bottom: 168px;
+  /* 아래 막대는 장 밖(아래 칸)에 있으니 끝 여백만 */
+  padding-bottom: var(--space-6);
   scrollbar-width: none;
 }
 .ob-slide::-webkit-scrollbar { display: none; }
@@ -824,18 +828,20 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
 .ob-step__sub p { font-size: var(--fs-small); line-height: 1.7; color: var(--ink-600); }
 
 /* ---- 아래 고정 막대: 점 → 버튼 → (마지막 장) 둘러보기·약관 ---- */
+/* 화면 위에 떠서(fixed) 글을 덮지 않고, 세로 줄(.intro--pager)의 맨 아래 칸을 차지한다.
+   예전에는 떠 있는 막대 밑에 3·4단계 마지막 글줄이 깔렸고, 장 안에 넘치는 게 없어 밀어도 안 움직였다(iOS Safari). */
 .ob-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  flex: 0 0 auto;
   z-index: 20;
   padding: var(--space-3) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
-  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 22%);
-  /* 막대가 화면 아래 1/4을 덮는다 — 버튼 말고 빈 곳(흐린 띠·여백)을 밀면 뒤의 장이 스크롤되게 터치를 통과시킨다 */
-  pointer-events: none;
+  background: #fff;
 }
-.ob-bar .ob-dots, .ob-bar .ob-actions, .ob-bar .swipe-start, .ob-bar .ob-final { pointer-events: auto; }
+/* 위로 살짝 흐린 띠 — 장 글이 막대 쪽으로 사라지는 느낌만(터치는 통과) */
+.ob-bar::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), #fff); pointer-events: none;
+}
 .ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-3); }
 .ob-dots span {
   width: 6px; height: 6px;
@@ -877,8 +883,6 @@ body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
 }
 .ob-final__legal { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
 .ob-final__legal a { font-size: var(--fs-micro); color: var(--ink-400, #8a9592); }
-/* 마지막 장은 아래 막대가 두 줄 더 길다 */
-.ob-slide:last-child { padding-bottom: 230px; }
 
 /* 실제 화면 캡처 — 폰 화면 두 장을 살짝 겹쳐 세운다(뒤: 학교 찾기, 앞: 학교 카드) */
 .ob-shots {
