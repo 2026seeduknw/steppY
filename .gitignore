@@ -26,3 +26,6 @@ __pycache__/
 
 # UI 비교용 스크래치 페이지 — 로컬에서만 쓴다(빌드에도 안 섞이게 밖에 둔다)
 _mock/
+
+# Supabase CLI 임시 파일
+supabase/.temp/
