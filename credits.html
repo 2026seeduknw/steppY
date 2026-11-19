@@ -47,8 +47,13 @@
         <button type="button" class="btn btn--accent match-query__cta" id="runMatchBtn">조회하기</button>
       </div>
     </div>
-    <div id="relevanceFilterMount"></div>
-    <div id="countryFilterMount"></div>
+    <!-- 결과 필터 — 관련도(또는 인정 가능성) · 대륙/국가를 드롭다운 두 칸으로 한 줄에. ?를 누르면 아래에 기준이 열린다(js/credits.js) -->
+    <div class="credit-filters" id="creditFilters" hidden>
+      <div id="relevanceFilterMount" class="credit-filters__cell"></div>
+      <div id="countryFilterMount" class="credit-filters__cell"></div>
+      <button type="button" class="credit-filters__help" id="criteriaToggle" aria-expanded="false" aria-controls="criteriaBox" aria-label="기준 보기">?</button>
+    </div>
+    <div class="credit-criteria" id="criteriaBox" hidden></div>
     <p id="confirmedSchoolNote" class="major-match-confirmed-note" hidden></p>
     <!-- 매칭은 참고용 — 실제 인정은 학과·국제처가 정한다 -->
     <p class="verify-note"><b>꼭 직접 확인하세요</b>매칭 결과는 선배 기록과 강의계획서를 바탕으로 한 참고용이에요.<br>실제 학점 인정 여부는 소속 학과와 국제처에 꼭 다시 확인하세요.</p>

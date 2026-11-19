@@ -29,17 +29,21 @@
     <button type="button" class="quick-filter quick-filter--more" id="quickMore" aria-label="필터">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
     </button>
-    <!-- 가장 자주 거르는 세 가지(어디·얼마·날씨)는 시트를 열지 않고 여기서 바로 고른다.
-         나머지(학과·자격·언어·상권·치안·QS·정렬)는 '상세 필터' 시트에 있다. -->
+    <!-- 가장 자주 거르는 세 가지(어디·QS·내 전공)는 시트를 열지 않고 여기서 바로 고른다.
+         나머지(한 달 물가·기후·학과·자격·언어·상권·치안·정렬)는 '상세 필터' 시트에 있다. -->
     <div class="quick-filters" role="group" aria-label="빠른 필터">
       <select class="quick-filter" id="quickRegion" aria-label="대륙/국가"></select>
-      <select class="quick-filter" id="quickCost" aria-label="한 달 물가">
-        <option value="">한 달 물가</option>
-        <option value="low">250만 원 이하</option>
-        <option value="mid">250만~350만 원</option>
-        <option value="high">350만 원 이상</option>
+      <select class="quick-filter" id="qsSelect" aria-label="QS 순위">
+        <option value="">QS 순위</option>
+        <option value="50">QS Top 50</option>
+        <option value="100">QS Top 100</option>
+        <option value="200">QS Top 200</option>
       </select>
-      <select class="quick-filter" id="quickClimate" aria-label="기후/날씨"></select>
+      <!-- 내 전공과 맞는 파견교 학과가 있는 학교만(major_matches · 인정 예상 과목) — js/search.js -->
+      <button type="button" class="quick-switch" id="onlyMyMajorToggle" role="switch" aria-checked="false">
+        <span class="quick-switch__label">내 전공만</span>
+        <span class="toggle-switch" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
 
@@ -56,7 +60,7 @@
         <button class="btn--text filter-reset" id="resetFilters">초기화</button>
       </div>
 
-      <div class="filter-group filter-group--half">
+      <div class="filter-group">
         <span class="filter-group__title">정렬</span>
         <select class="sort-select" id="sortSelect" style="height:36px;">
           <option value="default">기본순</option>
@@ -64,14 +68,13 @@
           <option value="slot">정원 많은 순</option>
         </select>
       </div>
-      <div class="filter-group filter-group--half">
-        <span class="filter-group__title">QS 순위</span>
-        <select class="sort-select" id="qsSelect" style="height:36px;">
-          <option value="">전체</option>
-          <option value="50">Top 50</option>
-          <option value="100">Top 100</option>
-          <option value="200">Top 200</option>
-        </select>
+      <div class="filter-group">
+        <span class="filter-group__title">한 달 물가</span>
+        <div class="filter-chip-list" id="costFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">기후 · 날씨</span>
+        <div class="filter-chip-list" id="climateFilters"></div>
       </div>
       <div class="filter-group">
         <span class="filter-group__title">학과</span>

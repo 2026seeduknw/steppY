@@ -18,6 +18,7 @@
   /* ------------------------------------------------------------ 꾸밈 팔레트 */
   const COLORS = {
     beige:    { back: '#cdc2b3', f1: '#e8e0d4', f2: '#ddd3c5', dot: '#8a7a68', sw: '#e3d9cb' },
+    sand:     { back: '#d8c29a', f1: '#f3e7cf', f2: '#e9d7b6', dot: '#7d6538', sw: '#ead9b8' },
     pink:     { back: '#ecc0c8', f1: '#fde7eb', f2: '#f7d4db', dot: '#5a1f1f', sw: '#f7d4db' },
     lavender: { back: '#c7c1df', f1: '#e9e5f6', f2: '#dad4ee', dot: '#5b4f86', sw: '#dad4ee' },
     mint:     { back: '#b6d6c6', f1: '#e2f3ea', f2: '#d0e9dd', dot: '#2f6b55', sw: '#d0e9dd' },
@@ -29,14 +30,24 @@
   const PATTERNS = { none: '없음', dots: '물방울', stripes: '줄무늬', grid: '격자', checks: '체크' };
   const EMOJIS = ['', '📸', '☕', '🍽️', '✈️', '🏫', '👭', '📄', '🎵', '🌿', '⭐', '🛍️', '🌆', '💌', '🎞️'];
 
+  // 처음에는 Monthly(파란색) 하나만 — 나머지 폴더는 사용자가 이름·색을 정해 직접 만든다(피드백 2026-11).
   const defaults = () => [
-    { id: 'daily',   name: 'Daily',    color: 'beige',    pattern: 'none',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'trip',    name: 'Trip',     color: 'sky',      pattern: 'none',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'campus',  name: 'Campus',   color: 'mint',     pattern: 'stripes', emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'friends', name: 'Friends',  color: 'butter',   pattern: 'checks',  emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'korea',   name: 'In Korea', color: 'pink',     pattern: 'dots',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'monthly', name: 'Monthly',  color: 'lavender', pattern: 'none',    emoji: '', type: 'monthly', entryIds: [], children: [] }
+    { id: 'monthly', name: 'Monthly', color: 'sky', pattern: 'none', emoji: '', type: 'monthly', entryIds: [], children: [] }
   ];
+  // 예전 기본 폴더 다섯 개(Daily·Trip·Campus·Friends·In Korea). 사진을 담지도, 꾸미지도 않은 채 그대로면 지운다
+  const OLD_DEFAULTS = { daily: 'Daily', trip: 'Trip', campus: 'Campus', friends: 'Friends', korea: 'In Korea' };
+  function migrate(list) {
+    let changed = false;
+    const out = list.filter(f => {
+      const untouched = OLD_DEFAULTS[f.id] === f.name && !(f.entryIds || []).length && !(f.children || []).length && !f.emoji;
+      if (untouched) changed = true;
+      return !untouched;
+    });
+    const m = out.find(f => f.type === 'monthly');
+    if (m && m.id === 'monthly' && m.color === 'lavender' && m.pattern === 'none' && !m.emoji) { m.color = 'sky'; changed = true; }
+    if (!m) { out.push(defaults()[0]); changed = true; }
+    return { out, changed };
+  }
 
   /* ------------------------------------------------------------ 상태 / 저장 */
   let ctx = null, root = null;
@@ -49,7 +60,12 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(storeKey()) || 'null');
-      if (Array.isArray(saved) && saved.length) { FOLDERS = saved; return; }
+      if (Array.isArray(saved) && saved.length) {
+        const { out, changed } = migrate(saved);
+        FOLDERS = out;
+        if (changed) { try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ } }
+        return;
+      }
     } catch (e) { /* 저장소를 못 읽으면 기본값 */ }
     FOLDERS = defaults();
   }
@@ -408,8 +424,8 @@
     const st = s.querySelector('#arcStickerToggle');
     st.textContent = draft.emoji ? `${draft.emoji} 스티커` : '+ 스티커';
   }
-  // 시안(Figma 기록하기/저장소)의 여섯 색. 옛 폴더가 쓰던 peach·graphite도 그대로 그려진다
-  const SHEET_COLORS = ['beige', 'sky', 'mint', 'lavender', 'pink', 'butter'];
+  // 시안(Figma 기록하기/저장소)의 여섯 색 + 베이지 두 톤(피드백: 베이지 추가). 옛 폴더가 쓰던 peach·graphite도 그대로 그려진다
+  const SHEET_COLORS = ['beige', 'sand', 'sky', 'mint', 'lavender', 'pink', 'butter', 'peach'];
   const SHEET_PATS = ['none', 'stripes', 'checks', 'dots', 'grid'];
   function openSheet(node, list, fresh) {
     const s = ensureSheet();
@@ -711,11 +727,10 @@
     render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs),
     folders: ensureLoaded, folderIcon, itemsOf, entriesOfNode, kidsOf, findNode,
     editFolder, createFolder: () => { ensureLoaded(); createFolder(FOLDERS); }, openPicker, addEntries, save,
-    // 기록 쓰기 창에서 이름만으로 폴더를 바로 만든다 — 색은 돌아가며 고른다
+    // 기록 쓰기 창에서 이름만으로 폴더를 바로 만든다 — 색은 베이지(길게 눌러 바꿀 수 있다)
     addFolder(name) {
       ensureLoaded();
-      const keys = Object.keys(COLORS);
-      const f = { id: 'f' + Date.now(), name, color: keys[FOLDERS.length % keys.length], pattern: 'none', emoji: '', type: 'manual', entryIds: [], children: [] };
+      const f = { id: 'f' + Date.now(), name, color: 'beige', pattern: 'none', emoji: '', type: 'manual', entryIds: [], children: [] };
       const mi = FOLDERS.findIndex(x => x.type === 'monthly');
       if (mi >= 0) FOLDERS.splice(mi, 0, f); else FOLDERS.push(f);
       save();

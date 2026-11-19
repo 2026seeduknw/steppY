@@ -51,6 +51,7 @@ function storedSessionUid() {
 }
 
 /** 서버가 아직 모르는 기록(저장이 실패해 임시 id 'j…'로 남은 것) */
+const uploadingJournal = new WeakSet();   // 지금 서버에 올리는 중인 기록(AppState._uploadJournal)
 const isTempJournalId = (id) => /^j\d+$/.test(String(id || ''));
 
 function journalVisibilityMissing() {
@@ -876,6 +877,11 @@ const AppState = {
    */
   _uploadJournal(entry) {
     if (!this.isAuthed) return;
+    // 이미 올리는 중인 기록이면 또 올리지 않는다 — 저장 직후 hydrate()가 돌면 아직 임시 id인 이 기록을
+    // '못 올린 기록'으로 보고 한 번 더 넣어서, 같은 기록(우표)이 두 개 생겼다
+    // (표시는 이 페이지 메모리에만 — 저장 사본에 남으면 새로 열었을 때 영영 안 올라간다)
+    if (uploadingJournal.has(entry)) return;
+    uploadingJournal.add(entry);
     this._push(async () => {
       const row = {
         user_id: Auth.userId,
@@ -910,9 +916,11 @@ const AppState = {
         // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
         document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
         entry.createdAt = res.data.created_at;
+        uploadingJournal.delete(entry);
         this.save();
         document.dispatchEvent(new CustomEvent('MOCK:updated'));
       }
+      if (res.error) uploadingJournal.delete(entry);   // 실패하면 다음 접속 때 다시 올릴 수 있게
       return res;
     }, '기록 추가');
   },

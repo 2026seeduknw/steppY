@@ -539,8 +539,14 @@
   const CACHE_DB = 'steppy-catalog';
   const CACHE_STORE = 'groups';
 
+  /*
+   * 저장소가 대답하지 않으면 기다리지 않는다. IndexedDB 열기는 성공도 실패도 안 하고 멈춰 있을 때가 있다
+   * (iOS 웹뷰에서 알려진 문제, 지우는 중인 저장소 등). 예전에는 그 동안 서버에도 묻지 않아서 학교 목록·
+   * 매칭이 끝없이 '불러오는 중'이었다. 정해진 시간 안에 대답이 없으면 저장본 없이 서버에서 바로 받는다.
+   */
+  const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
   function cacheDb() {
-    return new Promise((resolve) => {
+    return withTimeout(new Promise((resolve) => {
       try {
         const req = indexedDB.open(CACHE_DB, 1);
         req.onupgradeneeded = () => req.result.createObjectStore(CACHE_STORE);
@@ -548,14 +554,14 @@
         req.onerror = () => resolve(null);
         req.onblocked = () => resolve(null);
       } catch (e) { resolve(null); }
-    });
+    }), 1500);
   }
   const cacheDbReady = cacheDb();
 
   async function cacheRead(name) {
     const db = await cacheDbReady;
     if (!db) return null;
-    return new Promise((resolve) => {
+    return withTimeout(new Promise((resolve) => {
       try {
         const req = db.transaction(CACHE_STORE).objectStore(CACHE_STORE).get(name);
         req.onsuccess = () => {
@@ -564,7 +570,7 @@
         };
         req.onerror = () => resolve(null);
       } catch (e) { resolve(null); }
-    });
+    }), 1500);
   }
 
   async function cacheWrite(name, data) {

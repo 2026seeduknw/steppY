@@ -100,8 +100,8 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-fsheet__input { flex: 1; min-width: 0; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: #F3F1EC; color: var(--v2-ink); font: inherit; font-size: 15px; font-weight: 700; }
 .rec-fsheet__input:focus { outline: 2px solid var(--v2-dark); outline-offset: 0; }
 .rec-fsheet__lab { margin: 18px 0 8px; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); }
-.rec-fsheet__colors { display: flex; gap: 12px; }
-.rec-fsheet__color { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.06); cursor: pointer; padding: 0; }
+.rec-fsheet__colors { display: flex; flex-wrap: wrap; gap: 8px; }
+.rec-fsheet__color { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.06); cursor: pointer; padding: 0; }
 .rec-fsheet__color.is-sel { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px var(--v2-dark); }
 .rec-fsheet__pats { display: flex; align-items: center; gap: 8px; }
 .rec-fsheet__patlist { display: flex; gap: 8px; }
@@ -673,3 +673,78 @@ body[data-page="journal"] {
               linear-gradient(to bottom, transparent 33.2%, rgba(255,255,255,.55) 33.3%, transparent 33.6%, transparent 66.5%, rgba(255,255,255,.55) 66.6%, transparent 66.9%); }
 .rec-crop__hint { margin-top: 8px; text-align: center; font-size: 12px; color: var(--v2-ink-soft, #6B7470); }
 .rec-crop .rec-ask__btns button[data-ask="yes"] { background: var(--v2-dark, #22302D); color: #fff; }
+
+/* ---------------------------------------------------------------- 하루 사진 더미(js/diary-view.js renderHomeHero · flipHeroStack)
+   같은 날 사진은 옆으로 늘어놓지 않고 겹쳐 쌓는다. --pos 0이 맨 위, 클수록 뒤 — 뒤 사진은 살짝 작고 기울어
+   위로 비친다. 오른쪽 아래 +를 누르면 맨 위 사진이 옆으로 빠졌다가 맨 뒤로 들어간다. */
+.rec-hero__stack { position: relative; display: grid; }
+.rec-hero__stack.is-stack { padding-top: 14px; }
+.rec-hero__stack > .rec-hero__card { grid-area: 1 / 1; }
+.rec-hero__stack.is-stack > .rec-hero__card {
+  z-index: calc(20 - var(--pos, 0));
+  transform-origin: 50% 100%;
+  transform: translateY(calc(min(var(--pos, 0), 2) * -7px)) rotate(calc(min(var(--pos, 0), 2) * 2.2deg)) scale(calc(1 - min(var(--pos, 0), 2) * 0.035));
+  filter: brightness(calc(1 - min(var(--pos, 0), 2) * 0.12));
+  opacity: clamp(0, calc(3 - var(--pos, 0)), 1);
+  transition: transform 260ms ease, opacity 260ms ease, filter 260ms ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.rec-hero__stack.is-stack > .rec-hero__card:not(.is-top) { pointer-events: none; }
+.rec-hero__stack.is-stack .rec-hero__img { aspect-ratio: var(--ratio, 4 / 5); object-fit: cover; }
+.rec-hero__stack.is-stack > .rec-hero__card.is-leaving { transform: translateX(70%) rotate(10deg); opacity: 0; transition: transform 240ms ease-in, opacity 240ms ease-in; }
+.rec-hero__next {
+  position: absolute; right: 12px; bottom: 12px; z-index: 30;
+  width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: rgba(255, 255, 255, 0.92); color: var(--v2-ink, #1E2A26);
+  font: inherit; font-size: 26px; font-weight: 500; line-height: 1; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+.rec-hero__next:active { transform: scale(0.94); }
+.rec-hero__count {
+  position: absolute; top: 26px; right: 12px; z-index: 30; pointer-events: none;
+  padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.5); color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 1.6; font-variant-numeric: tabular-nums;
+}
+/* 가장 최근 날의 날짜 글씨가 + 와 겹치지 않게 */
+.rec-hero__stack.is-stack .rec-hero__date, .rec-hero__stack.is-stack .rec-hero__label { right: 64px; }
+@media (prefers-reduced-motion: reduce) {
+  .rec-hero__stack.is-stack > .rec-hero__card { transition: none; }
+}
+
+/* ---------------------------------------------------------------- 폴더 = 사진 보관함(js/record-v2.js renderFolder) */
+.rec-pgrid__head { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; margin-top: 8px; }
+.rec-pgrid__month { margin: 0; text-align: center; font-size: 15px; font-weight: 600; color: var(--v2-ink-soft); }
+.rec-pgrid__month b { font-family: 'DM Serif Display', Georgia, serif; font-size: 24px; font-weight: 400; color: var(--v2-ink); }
+.rec-pgrid__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 0 8px; }
+.rec-pgrid__count { font-size: 13px; font-weight: 700; color: var(--v2-ink-soft); }
+.rec-pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.rec-pgrid__item { aspect-ratio: 1; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: var(--v2-plate, #EEE); cursor: zoom-in; }
+.rec-pgrid__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* 첫 화면 Recent 줄 끝의 새 폴더 칸 — 기본 폴더는 Monthly 하나뿐이라 여기서 바로 만든다 */
+.rec-folder--new .rec-folder__plus {
+  width: 100%; aspect-ratio: 1.25; margin-bottom: 8px; box-sizing: border-box; transform: scale(0.86); display: grid; place-items: center;
+  border: 1.5px dashed #CFC8BA; border-radius: 14px; font-size: 26px; font-weight: 400; color: #8E877A;
+}
+
+/* 첫 화면 Recap 카드 */
+.rec-recap-home { margin-top: 24px; }
+.rec-recapcard {
+  width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 12px;
+  padding: 16px 16px 16px 18px; border: 0; border-radius: 20px; background: #F3F1EC;
+  font: inherit; color: var(--v2-ink); text-align: left; cursor: pointer;
+}
+.rec-recapcard__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rec-recapcard__title { font-family: 'DM Serif Display', Georgia, serif; font-size: 24px; font-weight: 400; line-height: 1.1; color: #D9532F; }
+.rec-recapcard__text small { font-size: 12px; font-weight: 600; color: var(--v2-ink-soft); }
+.rec-recapcard__thumbs { flex: none; position: relative; width: 84px; height: 56px; }
+.rec-recapcard__thumbs img {
+  position: absolute; top: 4px; left: calc(var(--i) * 18px); width: 44px; height: 48px; object-fit: cover;
+  border: 2px solid #fff; border-radius: 4px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transform: rotate(calc((var(--i) - 1) * 5deg)); z-index: calc(3 - var(--i));
+}
+.rec-recapcard__arrow { flex: none; font-size: 18px; color: var(--v2-ink-faint); }
+
+/* 기록 쓰기 — 사진에서 읽은 찍은 곳·시각·그때 날씨(js/diary-view.js usePhotoPlace) */
+.entry-v2__place { margin: 8px 0 0; font-size: 12px; font-weight: 600; line-height: 1.5; color: var(--v2-ink-soft); }
+.entry-v2__place[hidden] { display: none; }

@@ -24,6 +24,7 @@
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
+  let photoPlaceSet = false;     // 사진 GPS로 위치·날씨를 정했으면 기기 위치가 나중에 와도 덮지 않는다
   let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
   let nowPlayingSearchTimer = null;
   let root = null;
@@ -131,6 +132,14 @@
         <button type="button" class="rec-sec-head__more" id="recOpenStorage" aria-label="저장소 전체 보기">→</button>
       </div>
       <div class="rec-recent__row" id="recRecent"></div>
+    </section>
+
+    <!-- Recap — 한 달 사진을 잡지 한 장처럼(예전에는 Monthly 폴더를 열면 나왔다. 폴더는 이제 사진 보관용). js/record-v2.js openRecap -->
+    <section class="rec-recap-home">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Recap</h2>
+      </div>
+      <div id="recRecapSlot"></div>
     </section>
 
     <!-- 하루 다이어리 — 하루를 한 장으로 꾸민다(사진·글·스티커·노래). 열면 넣은 노래가 재생된다. js/record-v2.js -->
@@ -1160,56 +1169,83 @@
   }
 
   /**
-   * 사진을 찍은 시각. 앨범에서 고른 사진은 올린 시각이 아니라 찍은 시각으로 줄을 세워야 해서
-   * JPEG EXIF(DateTimeOriginal)를 먼저 읽고, 없으면 파일 수정 시각(방금 찍은 것처럼 지금과 같으면 모르는 걸로 친다)을 쓴다.
-   * 리사이즈(canvas)를 거치면 EXIF가 사라지므로 원본 파일에서 읽는다.
+   * 사진 속 정보 — 찍은 시각과 찍은 곳(GPS). 앨범에서 고른 사진은 올린 시각·지금 있는 곳이 아니라
+   * 찍은 시각·찍은 곳으로 기록해야 해서(피드백) 원본 파일의 EXIF를 읽는다. 리사이즈(canvas)를 거치면
+   * EXIF가 사라지므로 올리기 전에 읽는다. JPEG뿐 아니라 아이폰 HEIC도 안에 같은 EXIF 블록이 있어
+   * 'Exif\0\0' 표시를 찾아 그 뒤의 TIFF 머리부터 읽는다.
+   * 시각이 없으면 파일 수정 시각(방금 찍은 것처럼 지금과 같으면 모르는 걸로 친다)을 쓴다.
    */
-  async function readTakenAt(file) {
-    try {
-      const t = parseExifDate(new DataView(await file.slice(0, 262144).arrayBuffer()));
-      if (t && !isNaN(t)) return t;
-    } catch (e) { /* EXIF가 없거나 깨졌으면 아래로 */ }
-    if (file.lastModified && Math.abs(Date.now() - file.lastModified) > 60000) return new Date(file.lastModified);
-    return null;
-  }
-  function parseExifDate(dv) {
-    if (dv.getUint16(0) !== 0xFFD8) return null;            // JPEG가 아니다
-    let off = 2;
-    while (off + 4 < dv.byteLength) {
-      const marker = dv.getUint16(off), len = dv.getUint16(off + 2);
-      if (marker === 0xFFE1 && dv.getUint32(off + 4) === 0x45786966) {   // 'Exif'
-        const tiff = off + 10, little = dv.getUint16(tiff) === 0x4949;
-        const u16 = (o) => dv.getUint16(o, little), u32 = (o) => dv.getUint32(o, little);
-        const find = (ifd, tags) => {
-          const n = u16(ifd);
-          for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (tags.includes(u16(e))) return { count: u32(e + 4), val: e + 8 }; }
-          return null;
-        };
-        const text = (e) => {
-          const o = e.count > 4 ? tiff + u32(e.val) : e.val;
-          let str = ''; for (let i = 0; i < e.count - 1; i++) str += String.fromCharCode(dv.getUint8(o + i));
-          return str;
-        };
-        const toDate = (str) => { const m = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(str); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null; };
-        const ifd0 = tiff + u32(tiff + 4);
-        const ptr = find(ifd0, [0x8769]);                                 // Exif IFD
-        if (ptr) { const e = find(tiff + u32(ptr.val), [0x9003, 0x9004]); if (e) { const d = toDate(text(e)); if (d) return d; } }
-        const e0 = find(ifd0, [0x0132]);                                  // DateTime
-        return e0 ? toDate(text(e0)) : null;
-      }
-      if ((marker & 0xFF00) !== 0xFF00) break;
-      off += 2 + len;
+  async function readPhotoMeta(file) {
+    let meta = { takenAt: null, gps: null };
+    try { meta = parseExif(new DataView(await file.slice(0, 524288).arrayBuffer())) || meta; }
+    catch (e) { /* EXIF가 없거나 깨졌으면 아래로 */ }
+    if (!(meta.takenAt && !isNaN(meta.takenAt)) && file.lastModified && Math.abs(Date.now() - file.lastModified) > 60000) {
+      meta.takenAt = new Date(file.lastModified);
     }
-    return null;
+    return meta;
+  }
+  function parseExif(dv) {
+    // 'Exif\0\0' 찾기
+    let tiff = -1;
+    for (let i = 0; i + 10 < dv.byteLength; i++) {
+      if (dv.getUint32(i) === 0x45786966 && dv.getUint16(i + 4) === 0) {
+        const o = dv.getUint16(i + 6);
+        if (o === 0x4949 || o === 0x4D4D) { tiff = i + 6; break; }
+      }
+    }
+    if (tiff < 0) return null;
+    const little = dv.getUint16(tiff) === 0x4949;
+    const u16 = (o) => dv.getUint16(o, little), u32 = (o) => dv.getUint32(o, little);
+    const inRange = (o) => o > 0 && o < dv.byteLength - 2;
+    const find = (ifd, tag) => {
+      if (!inRange(ifd)) return null;
+      const n = u16(ifd);
+      for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (!inRange(e + 12)) return null; if (u16(e) === tag) return { count: u32(e + 4), val: e + 8 }; }
+      return null;
+    };
+    const text = (e) => {
+      const o = e.count > 4 ? tiff + u32(e.val) : e.val;
+      let str = ''; for (let i = 0; i < e.count - 1 && inRange(o + i); i++) str += String.fromCharCode(dv.getUint8(o + i));
+      return str;
+    };
+    const rationals = (e) => {
+      const o = tiff + u32(e.val), out = [];
+      for (let i = 0; i < e.count; i++) { const d = u32(o + i * 8 + 4); out.push(d ? u32(o + i * 8) / d : 0); }
+      return out;
+    };
+    const toDate = (str) => { const m = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(str); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null; };
+    const ifd0 = tiff + u32(tiff + 4);
+    let takenAt = null, gps = null;
+    const exifPtr = find(ifd0, 0x8769);
+    if (exifPtr) { const e = find(tiff + u32(exifPtr.val), 0x9003) || find(tiff + u32(exifPtr.val), 0x9004); if (e) takenAt = toDate(text(e)); }
+    if (!takenAt) { const e0 = find(ifd0, 0x0132); if (e0) takenAt = toDate(text(e0)); }
+    const gpsPtr = find(ifd0, 0x8825);
+    if (gpsPtr) {
+      try {
+        const g = tiff + u32(gpsPtr.val);
+        const latRef = find(g, 1), lat = find(g, 2), lngRef = find(g, 3), lng = find(g, 4);
+        if (lat && lng) {
+          const dms = (r) => r[0] + (r[1] || 0) / 60 + (r[2] || 0) / 3600;
+          let la = dms(rationals(lat)), lo = dms(rationals(lng));
+          if (latRef && String.fromCharCode(dv.getUint8(latRef.val)) === 'S') la = -la;
+          if (lngRef && String.fromCharCode(dv.getUint8(lngRef.val)) === 'W') lo = -lo;
+          if (isFinite(la) && isFinite(lo) && (la || lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) gps = { lat: la, lng: lo };
+        }
+      } catch (e) { /* 위치 칸이 깨졌으면 위치 없이 */ }
+    }
+    return { takenAt, gps };
   }
 
-  async function addPendingPhoto(file, takenAt) {
-    if (takenAt === undefined) takenAt = await readTakenAt(file);
+  async function addPendingPhoto(file, meta) {
+    if (meta === undefined) meta = await readPhotoMeta(file);
+    const takenAt = meta ? meta.takenAt : null;
+    const gps = meta ? meta.gps : null;
     const blob = await resizeImage(window.HeicFix ? await HeicFix.prepare(file) : file);   // 아이폰 HEIC → JPEG(필요할 때만)
     const path = await AppState.uploadDiaryPhoto(blob);
     const url = URL.createObjectURL(blob);   // 방금 올린 건 서명 URL을 기다릴 것 없이 바로 보여준다
     photoUrls[path] = url;
-    pendingPhotos.push({ path, url, takenAt });
+    pendingPhotos.push({ path, url, takenAt, gps });
+    usePhotoPlace();
     return path;
   }
 
@@ -1272,6 +1308,7 @@
     pendingPhotos = edit ? (edit.photos || []).map(p => ({ path: p, url: photoUrl(p) })) : [];
     pendingLocation = null;
     pendingWeather = null;
+    photoPlaceSet = false; photoPlaceKey = '';
     pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
@@ -1295,6 +1332,7 @@
               <input type="file" accept="image/*" multiple id="photoInput" style="display:none;">
             </label>
           </div>
+          <p class="entry-v2__place" id="locationNote" hidden></p>
           <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진이에요.</p>
 
           <div class="entry-v2__field">
@@ -1362,46 +1400,89 @@
    * Last.fm 검색으로 고르게 해서 제목·아티스트를 정규화한다.
    * 고르기 전엔 검색창, 고른 뒤엔 칩 하나 — 사진 썸네일과 같은 패턴.
    */
+  /*
+   * 검색 결과를 고르지 않고 곡명만 적은 채 저장하면 그 글자가 버려지고 추천 노래만 붙었다(피드백).
+   * 이제는 ① 결과 목록 맨 아래에 "적은 그대로 쓰기"가 늘 있고 ② 엔터를 치면 첫 결과를 고르며
+   * ③ 아무것도 고르지 않고 저장해도 칸에 적힌 글자를 그대로 노래로 남긴다(typedNowPlaying).
+   * "곡 - 가수"처럼 적으면 곡과 가수로 나눈다.
+   */
+  /** 고른(또는 적은) 노래 → 기록에 넣을 모양. 노래 엔진이 없어도 곡명은 잃지 않는다 */
+  function songOf(np) {
+    if (!np || !np.name) return null;
+    const links = typeof SongEngine !== 'undefined' ? SongEngine.buildSongLinks(np.name, np.artist || '') : {};
+    return Object.assign({ name: np.name, artist: np.artist || '', art: null }, links);
+  }
+  function typedSong(text) {
+    const t = String(text || '').trim();
+    if (!t) return null;
+    const m = t.split(/\s+[-–·]\s+/);
+    return m.length >= 2 ? { name: m[0].trim(), artist: m.slice(1).join(' ').trim() } : { name: t, artist: '' };
+  }
+  function typedNowPlaying(scrim) {
+    const input = scrim && scrim.querySelector('#nowPlayingInput');
+    return input ? typedSong(input.value) : null;
+  }
   function renderNowPlayingPicker(scrim) {
     const mount = scrim.querySelector('#nowPlayingPicker');
     if (!mount) return;
-    if (typeof SongEngine === 'undefined') { mount.innerHTML = ''; return; }
 
     if (pendingNowPlaying) {
       mount.innerHTML = `
         <div class="diary-nowplaying-chip">
-          <span>🎧 ${esc(pendingNowPlaying.artist)} · ${esc(pendingNowPlaying.name)}</span>
+          <span>🎧 ${esc(pendingNowPlaying.name)}${pendingNowPlaying.artist ? ` · ${esc(pendingNowPlaying.artist)}` : ''}</span>
           <button type="button" id="nowPlayingClear" aria-label="지우기">✕</button>
         </div>`;
       mount.querySelector('#nowPlayingClear').addEventListener('click', () => {
         pendingNowPlaying = null;
         renderNowPlayingPicker(scrim);
+        const again = scrim.querySelector('#nowPlayingInput');
+        if (again) again.focus();
       });
       return;
     }
 
     mount.innerHTML = `
       <div class="diary-nowplaying-search">
-        <input type="text" id="nowPlayingInput" placeholder="곡 제목을 검색해보세요" autocomplete="off">
+        <input type="text" id="nowPlayingInput" placeholder="곡 제목이나 가수를 검색해보세요" autocomplete="off" enterkeyhint="search">
         <ul class="diary-nowplaying-results" id="nowPlayingResults" hidden></ul>
       </div>`;
     const input = mount.querySelector('#nowPlayingInput');
     const list = mount.querySelector('#nowPlayingResults');
+    let matches = [];
+    let seq = 0;   // 늦게 도착한 옛 검색 결과가 새 결과를 덮지 않게
+    const pick = (song) => { if (!song) return; pendingNowPlaying = song; renderNowPlayingPicker(scrim); };
+    const draw = (q, state) => {
+      const raw = typedSong(q);
+      const rows = matches.map((m, i) => `<li data-idx="${i}">${esc(m.name)} <span>· ${esc(m.artist)}</span></li>`).join('');
+      const note = state === 'loading' ? '<li class="is-note" aria-disabled="true">찾는 중…</li>'
+        : state === 'empty' ? '<li class="is-note" aria-disabled="true">검색 결과가 없어요</li>' : '';
+      list.innerHTML = rows + note + (raw ? `<li data-raw class="is-raw">“${esc(q.trim())}” 적은 그대로 쓰기</li>` : '');
+      list.hidden = !list.innerHTML;
+    };
+    list.addEventListener('click', (ev) => {
+      const li = ev.target.closest('li');
+      if (!li || li.classList.contains('is-note')) return;
+      if (li.hasAttribute('data-raw')) pick(typedSong(input.value));
+      else pick(matches[Number(li.dataset.idx)]);
+    });
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' || ev.isComposing) return;
+      ev.preventDefault();   // 엔터로 기록 전체가 저장되지 않게
+      pick(matches[0] || typedSong(input.value));
+    });
     input.addEventListener('input', () => {
       clearTimeout(nowPlayingSearchTimer);
       const q = input.value;
+      matches = [];
+      if (q.trim().length < 2 || typeof SongEngine === 'undefined') { draw(q, ''); return; }
+      draw(q, 'loading');
+      const my = ++seq;
       // 글자마다 쏘면 Last.fm rate limit에 걸린다 — 멈춘 뒤에 한 번만.
       nowPlayingSearchTimer = setTimeout(async () => {
-        const matches = await SongEngine.searchTracks(q);
-        if (!matches.length) { list.hidden = true; list.innerHTML = ''; return; }
-        list.innerHTML = matches.map((m, i) => `<li data-idx="${i}">${esc(m.name)} <span>· ${esc(m.artist)}</span></li>`).join('');
-        list.hidden = false;
-        list.querySelectorAll('li').forEach((li, i) => {
-          li.addEventListener('click', () => {
-            pendingNowPlaying = matches[i];
-            renderNowPlayingPicker(scrim);
-          });
-        });
+        const found = await SongEngine.searchTracks(q);
+        if (my !== seq || !input.isConnected) return;
+        matches = found;
+        draw(q, found.length ? '' : 'empty');
       }, 300);
     });
   }
@@ -1477,6 +1558,73 @@
    * 하나만 있으면 돌아가므로, 이걸로 "위치 거부 = 노래 안 뜸" 문제가 없어진다.
    * country-flags.js의 COUNTRY_ISO2(영문 국가명 → ISO 코드)를 그대로 재사용한다.
    */
+  /*
+   * 사진에 찍힌 곳(GPS)이 있으면 그 자리와 그 시각의 날씨로 기록한다 — 지금 있는 곳·지금 날씨가 아니라.
+   * 대표(맨 앞) 사진 기준이고, 위치정보 이용 동의를 받은 뒤에만 좌표를 밖(지명·날씨 서비스)으로 보낸다.
+   * 기록 날짜도 사진을 찍은 날로 맞춘다(새 기록일 때만).
+   */
+  let photoPlaceKey = '';   // 지금 위치·날씨를 가져온 사진(같은 사진으로 두 번 묻지 않게)
+  function setLocationNote(text) {
+    const note = document.getElementById('locationNote');
+    if (note) { note.textContent = text || ''; note.hidden = !text; }
+  }
+  function usePhotoPlace() {
+    if (editingEntry) return;
+    const first = pendingPhotos.find(p => p.takenAt) || null;
+    // 기록 날짜 = 사진 찍은 날
+    if (first && first.takenAt) {
+      const d = toIso(first.takenAt);
+      const form = document.getElementById('entryForm');
+      const dateInput = form && form.querySelector('[name=date]');
+      if (dateInput && dateInput.value !== d) {
+        dateInput.value = d;
+        const eb = document.querySelector('#entryModalScrim .entry-v2__eyebrow');
+        if (eb) eb.textContent = `${d} · 사진 찍은 날`;
+      }
+    }
+    const withGps = pendingPhotos.find(p => p.gps);
+    if (!withGps || photoPlaceKey === withGps.path) return;
+    const consent = AppState.locationConsent();
+    if (consent === 'no') return;
+    if (consent !== 'yes') {
+      askLocationConsent().then(ok => {
+        AppState.setLocationConsent(ok ? 'yes' : 'no');
+        if (ok) usePhotoPlace();
+      });
+      return;
+    }
+    photoPlaceKey = withGps.path;
+    photoPlaceSet = true;
+    const { lat, lng } = withGps.gps;
+    const when = withGps.takenAt || null;
+    AppState.logLocationUse('journal_photo_place_weather', ['BigDataCloud', 'Open-Meteo']);
+    setLocationNote('📍 사진 찍은 곳을 찾는 중…');
+    pendingWeather = null;
+    if (typeof SongEngine !== 'undefined' && SongEngine.fetchWeatherAt) {
+      SongEngine.fetchWeatherAt(lat, lng, when).then(w => { if (photoPlaceKey === withGps.path) { pendingWeather = w; showPlaceNote(); } }).catch(() => {});
+    }
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
+      .then(r => r.json())
+      .then(data => {
+        if (photoPlaceKey !== withGps.path) return;
+        // 도시·국가만 남긴다 — 정밀 좌표는 저장하지 않는다(stripCoords)
+        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null };
+        showPlaceNote();
+      })
+      .catch(() => { if (photoPlaceKey === withGps.path) setLocationNote('📍 사진 위치의 지명을 찾지 못했어요'); });
+  }
+  function showPlaceNote() {
+    const place = pendingLocation ? [pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') : '';
+    let w = '';
+    if (pendingWeather && typeof SongEngine !== 'undefined') {
+      const lb = SongEngine.weatherLabel(pendingWeather.code);
+      if (lb) w = ` · ${lb.emoji} ${lb.ko}${typeof pendingWeather.temp === 'number' ? ` ${Math.round(pendingWeather.temp)}°` : ''}`;
+    }
+    const first = pendingPhotos.find(p => p.takenAt);
+    const t = first ? ` · ${String(first.takenAt.getHours()).padStart(2, '0')}:${String(first.takenAt.getMinutes()).padStart(2, '0')}` : '';
+    if (place || w) setLocationNote(`📍 ${place || '사진 찍은 곳'}${t}${w} — 사진 기준`);
+  }
+
   function schoolFallbackLocation() {
     const school = typeof AppState !== 'undefined' ? AppState.getConfirmedSchool() : null;
     if (!school) return null;
@@ -1486,9 +1634,10 @@
   }
 
   function requestLocation() {
-    const note = document.getElementById('locationNote');
-    pendingWeather = null;
+    // 기기 위치 안내 글은 띄우지 않는다(사진 위치를 찾았을 때만 보여 준다). 사진 위치가 먼저 정해졌으면 덮지 않는다
+    const note = null;
     const fallback = (reason) => {
+      if (photoPlaceSet) return;
       const fb = schoolFallbackLocation();
       if (fb) {
         pendingLocation = fb;
@@ -1513,16 +1662,18 @@
       return;
     }
     navigator.geolocation.getCurrentPosition(async (pos) => {
+      if (photoPlaceSet) return;
       const { latitude, longitude } = pos.coords;
       // 이용사실 확인자료 — 좌표는 남기지 않고 목적과 보낸 곳만(위치정보법 제16조 제2항)
       AppState.logLocationUse('journal_place_weather', ['BigDataCloud', 'Open-Meteo']);
       // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
       if (typeof SongEngine !== 'undefined') {
-        SongEngine.fetchWeather(latitude, longitude).then(w => { pendingWeather = w; }).catch(() => {});
+        SongEngine.fetchWeather(latitude, longitude).then(w => { if (!photoPlaceSet) pendingWeather = w; }).catch(() => {});
       }
       try {
         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);   // 위치는 영어로(도시·나라)
         const data = await res.json();
+        if (photoPlaceSet) return;
         // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
         // (날씨는 위에서 GPS 값으로 이미 받아 두었고, 저장 직전에 stripCoords가 한 번 더 거른다)
         if (data.countryCode) {
@@ -1537,6 +1688,7 @@
             : '📍 지명을 확인하지 못했어요';
         }
       } catch (err) {
+        if (photoPlaceSet) return;
         const fb = schoolFallbackLocation();
         pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
         if (note) note.textContent = fb
@@ -1550,8 +1702,10 @@
    * 개인위치정보 이용 동의(선택) — 처음 위치를 쓰려 할 때 한 번 묻는다. 기록 쓰기 창 위에 한 장 더 뜬다.
    * 동의하지 않아도 기록은 그대로 저장되고, 위치는 확정한 학교 도시로 대신한다.
    */
+  let consentAsking = null;   // 기기 위치·사진 위치가 동시에 물으면 창을 하나만 띄운다
   function askLocationConsent() {
-    return new Promise((resolve) => {
+    if (consentAsking) return consentAsking;
+    consentAsking = new Promise((resolve) => {
       const box = document.createElement('div');
       box.className = 'loc-consent';
       box.setAttribute('role', 'dialog');
@@ -1560,9 +1714,9 @@
       box.innerHTML = `
         <div class="loc-consent__panel">
           <p class="loc-consent__title">위치정보 이용 동의 <span>(선택)</span></p>
-          <p class="loc-consent__lead">기록에 지금 있는 도시와 날씨를 붙이려고 기기 위치를 한 번 확인해요.</p>
+          <p class="loc-consent__lead">기록에 도시와 날씨를 붙이려고 사진에 담긴 위치(없으면 기기 위치)를 확인해요.</p>
           <ul class="loc-consent__list">
-            <li>위치(위도·경도)는 도시와 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
+            <li>위치(위도·경도)는 도시와 그때 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
             <li>기록에는 도시·국가만 저장돼요.</li>
             <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요.</li>
             <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요.</li>
@@ -1578,9 +1732,11 @@
         const b = e.target.closest('[data-loc]');
         if (!b) return;
         box.remove();
+        consentAsking = null;
         resolve(b.dataset.loc === 'yes');
       });
     });
+    return consentAsking;
   }
 
   /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
@@ -1654,11 +1810,11 @@
         input.value = '';
         let blocked = false;
         // 한 번에 여러 장을 고르면 고른 순서가 아니라 찍은 순서로 줄을 세운다(모르는 건 맨 뒤)
-        const stamped = await Promise.all(files.map(async (f) => ({ f, t: await readTakenAt(f) })));
-        stamped.sort((a, b) => (a.t ? +a.t : Infinity) - (b.t ? +b.t : Infinity));
-        for (const { f: file, t } of stamped) {
+        const stamped = await Promise.all(files.map(async (f) => ({ f, m: await readPhotoMeta(f) })));
+        stamped.sort((a, b) => (a.m.takenAt ? +a.m.takenAt : Infinity) - (b.m.takenAt ? +b.m.takenAt : Infinity));
+        for (const { f: file, m } of stamped) {
           if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
-          try { await addPendingPhoto(file, t); AppState.recordPhotoUpload(); }
+          try { await addPendingPhoto(file, m); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);
@@ -1668,6 +1824,9 @@
 
     scrim.querySelector('#entryForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      // 저장 버튼을 빠르게 두 번 누르면(휴대폰에서 키보드가 닫히며 한 번 더 눌리는 경우 포함) 기록이 두 번
+      // 저장되고 우표도 두 번 찍혔다 — 한 번 저장을 시작하면 이 창에서는 다시 받지 않는다
+      if (e.target._saving) return;
       const fd = new FormData(e.target);
       const date = fd.get('date');
       // 태그 고르기는 창에서 뺐다 — 수정이면 원래 값을 그대로 두고, 새 기록은 태그 없이
@@ -1692,17 +1851,19 @@
         if (removed) DiaryArchive.save();
       };
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
+      e.target._saving = true;
+      const submitBtn = e.target.querySelector('#entrySubmit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      // 검색 결과를 고르지 않고 곡명만 적어 둔 경우 — 적은 그대로 노래로 남긴다
+      if (!pendingNowPlaying) pendingNowPlaying = typedNowPlaying(scrim);
 
       // 수정 — 위치·날씨·오늘의 노래는 그대로 두고 글·태그·사진·그때 듣던 노래만 바꾼다
       if (editingEntry) {
         const target = editingEntry;
         const keepNP = pendingNowPlaying && target.nowPlaying
           && pendingNowPlaying.name === target.nowPlaying.name && pendingNowPlaying.artist === target.nowPlaying.artist;
-        const nextNP = keepNP ? target.nowPlaying
-          : (pendingNowPlaying && typeof SongEngine !== 'undefined')
-            ? Object.assign({ name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
-                SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
-            : null;
+        const nextNP = keepNP ? target.nowPlaying : songOf(pendingNowPlaying);
         AppState.updateJournalEntry(target.id, {
           title, body,
           photos: pendingPhotos.map(p => p.path),
@@ -1722,11 +1883,7 @@
         return;
       }
 
-      const nowPlaying = (pendingNowPlaying && typeof SongEngine !== 'undefined')
-        ? Object.assign(
-            { name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
-            SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
-        : null;
+      const nowPlaying = songOf(pendingNowPlaying);
 
       // 기록 시각은 가장 먼저 찍은 사진의 시각 — 그래야 같은 날 사진이 찍은 순서로 놓인다(모르면 지금)
       const taken = pendingPhotos.map(p => p.takenAt).filter(Boolean).map(Number);
@@ -2029,28 +2186,51 @@
         </div>`;
       return;
     }
-    // 지금까지 남긴 사진을 모두 시간순으로(왼쪽이 과거) — 옆으로 쓸어 넘겨 보고, 양옆 사진이 은은하게 비친다.
-    // 처음에는 가장 최근 사진이 가운데에 온다.
+    // 날짜마다 한 장(왼쪽이 과거) — 같은 날 사진은 옆으로 늘어놓지 않고 카드처럼 겹쳐 쌓는다.
+    // 오른쪽 아래 +를 누르면 맨 위 사진이 맨 뒤로 가고 다음 사진이 올라온다(예전 기록하기의 사진 더미).
+    // 처음에는 가장 최근 날이 가운데에 온다.
     heroShots = allShots();
+    const days = [];
+    heroShots.forEach((x, i) => {
+      const last = days[days.length - 1];
+      if (last && last.date === x.entry.date) last.items.push(i);
+      else days.push({ date: x.entry.date, items: [i] });
+    });
     slot.className = 'rec-hero rec-hero--reel';
     slot.innerHTML = `
       <div class="rec-hero__track" id="recHeroTrack">
-        ${heroShots.map((x, i) => {
-          const isToday = x.entry.date === todayIso;
-          const place = placeText(x.entry);
-          const latest = i === heroShots.length - 1;
-          // 가장 최근 사진만 큰 글씨(위치 칩 · Today's Memories · 날짜), 지난 사진은 아래에 날짜·위치만 작게
-          return `<div class="rec-hero__slide${latest ? ' is-latest' : ''}" data-i="${i}">
-            <button type="button" class="rec-hero__btn" data-hero-open="${i}" aria-label="${esc(shortDate(x.entry.date))} 사진 크게 보기">
-              <img class="rec-hero__img" src="${esc(x.url)}" alt="${esc(x.entry.title || '')}" draggable="false" loading="${i >= heroShots.length - 3 ? 'eager' : 'lazy'}">
-              ${latest ? `${place ? `<span class="rec-hero__place">📍 ${esc(place)}</span>` : ''}
-              <span class="rec-hero__label">${isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
-              <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
-            </button>
-            ${latest ? '' : `<p class="rec-hero__cap">${shortDate(x.entry.date)}${place ? ` · ${esc(place)}` : ''}</p>`}
+        ${days.map((d, di) => {
+          const latest = di === days.length - 1;
+          const isToday = d.date === todayIso;
+          const n = d.items.length;
+          const first = heroShots[d.items[0]].entry;
+          const place = placeText(first);
+          return `<div class="rec-hero__slide${latest ? ' is-latest' : ''}" data-day="${di}">
+            <div class="rec-hero__stack${n > 1 ? ' is-stack' : ''}" data-n="${n}">
+              ${d.items.map((i, k) => {
+                const x = heroShots[i];
+                const pl = placeText(x.entry);
+                // 가장 최근 날만 큰 글씨(위치 칩 · Today's Memories · 날짜). 사진마다 자기 위치를 단다
+                return `<button type="button" class="rec-hero__btn rec-hero__card${k ? '' : ' is-top'}" data-hero-open="${i}" style="--pos:${k}" aria-label="${esc(shortDate(x.entry.date))} 사진 크게 보기${n > 1 ? ` (${k + 1}/${n})` : ''}"${k ? ' tabindex="-1"' : ''}>
+                  <img class="rec-hero__img" src="${esc(x.url)}" alt="${esc(x.entry.title || '')}" draggable="false" loading="${di >= days.length - 3 ? 'eager' : 'lazy'}">
+                  ${latest ? `${pl ? `<span class="rec-hero__place">📍 ${esc(pl)}</span>` : ''}
+                  <span class="rec-hero__label">${isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
+                  <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
+                </button>`;
+              }).join('')}
+              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>
+              <button type="button" class="rec-hero__next" data-hero-next aria-label="뒷장 사진 보기">+</button>` : ''}
+            </div>
+            ${latest ? '' : `<p class="rec-hero__cap">${shortDate(d.date)}${place ? ` · ${esc(place)}` : ''}${n > 1 ? ` · ${n}장` : ''}</p>`}
           </div>`;
         }).join('')}
       </div>`;
+    // 더미는 맨 위 사진의 비율로 틀을 정한다 — 나머지 사진은 그 틀을 채운다(진짜 카드 더미처럼)
+    slot.querySelectorAll('.rec-hero__stack.is-stack').forEach(st => {
+      const img = st.querySelector('.rec-hero__card img');
+      const set = () => { if (img.naturalWidth) st.style.setProperty('--ratio', `${img.naturalWidth} / ${img.naturalHeight}`); };
+      if (img.complete) set(); else img.addEventListener('load', set, { once: true });
+    });
     const track = slot.querySelector('#recHeroTrack');
     const mark = () => {
       const mid = track.scrollLeft + track.clientWidth / 2;
@@ -2067,6 +2247,39 @@
     const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
     requestAnimationFrame(toLatest);
     setTimeout(toLatest, 120);
+  }
+
+  /** 하루 사진 더미 — 맨 위 사진을 맨 뒤로 보내고 다음 사진을 올린다(끝까지 넘기면 처음으로) */
+  function flipHeroStack(st) {
+    if (!st || st._busy) return;
+    const slide = st.closest('.rec-hero__slide');
+    // 옆에 비친 날의 +를 눌렀으면 먼저 그날을 가운데로
+    if (slide && !slide.classList.contains('is-active')) {
+      const track = slide.parentElement;
+      track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
+    }
+    const cards = [...st.querySelectorAll('.rec-hero__card')].sort((a, b) => a.style.getPropertyValue('--pos') - b.style.getPropertyValue('--pos'));
+    const n = cards.length;
+    if (n < 2) return;
+    st._busy = true;
+    const top = cards[0];
+    top.classList.add('is-leaving');
+    setTimeout(() => {
+      top.classList.remove('is-leaving');
+      cards.forEach((c, k) => {
+        const pos = k === 0 ? n - 1 : k - 1;
+        c.style.setProperty('--pos', pos);
+        c.tabIndex = pos ? -1 : 0;
+        c.classList.toggle('is-top', !pos);
+      });
+      const nowTop = cards[1];
+      const topIdx = ((Number(st.dataset.top) || 0) + 1) % n;   // 지금 맨 위가 원래 몇 번째 사진인지
+      st.dataset.top = String(topIdx);
+      const count = st.querySelector('.rec-hero__count');
+      if (count) count.textContent = `${topIdx + 1} / ${n}`;
+      if (nowTop) nowTop.focus({ preventScroll: true });
+      st._busy = false;
+    }, 260);
   }
 
   /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
@@ -2094,7 +2307,17 @@
         ${DiaryArchive.folderIcon(f, 'rh-' + f.id)}
         <span class="rec-folder__name">${esc(f.name)}</span>
         <span class="rec-folder__meta">${f.type === 'monthly' ? '자동' : DiaryArchive.itemsOf(f).length + '장'}</span>
-      </button>`).join('');
+      </button>`).join('') + (recentFolders().length < 4 ? `
+      <button type="button" class="rec-folder rec-folder--new" data-folder-new aria-label="새 폴더 만들기">
+        <span class="rec-folder__plus" aria-hidden="true">+</span>
+        <span class="rec-folder__name">새 폴더</span>
+        <span class="rec-folder__meta">이름·색 정하기</span>
+      </button>` : '');
+  }
+  function renderRecapCard() {
+    const slot = root && root.querySelector('#recRecapSlot');
+    if (!slot || typeof RecordV2 === 'undefined' || !RecordV2.recapCardHtml) return;
+    slot.innerHTML = RecordV2.recapCardHtml(recordCtx());
   }
 
   /** Diary 줄 — 꾸민 하루 다이어리를 최근 날짜부터 작은 페이지로 */
@@ -2133,7 +2356,12 @@
     root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) openCalPage(); });
     root.querySelector('#recCalClose').addEventListener('click', closeCalPage);
     root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
+    root.querySelector('#recRecapSlot').addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-recap]');
+      if (b) RecordV2.openRecap(recordCtx(), b.dataset.recap);
+    });
     root.querySelector('#recRecent').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-folder-new]')) { if (!needLogin()) DiaryArchive.createFolder(); return; }
       const b = ev.target.closest('[data-folder]');
       if (!b) return;
       const hit = DiaryArchive.findNode(b.dataset.folder);
@@ -2141,6 +2369,8 @@
     });
     root.querySelector('#recHero').addEventListener('click', (ev) => {
       if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
+      const next = ev.target.closest('[data-hero-next]');
+      if (next) { flipHeroStack(next.closest('.rec-hero__stack')); return; }
       const btn = ev.target.closest('[data-hero-open]');
       if (!btn) return;
       const start = Number(btn.dataset.heroOpen) || 0;
@@ -2166,6 +2396,7 @@
     renderDiaryRow();
     renderHomeHero();
     renderRecent();
+    renderRecapCard();
   }
 
   function renderArchive() {

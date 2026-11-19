@@ -303,44 +303,48 @@
     const w = info.weather ? ` · ${info.weather.label}${info.weather.temp != null ? ` ${info.weather.temp}°` : ''}` : '';
     return `${e.date.replace(/-/g, '.')}${w}`;
   }
+  /*
+   * 폴더 안 — 폴더는 '사진을 모아 두는 곳'이라 담긴 사진을 격자로 보여 준다(누르면 크게 + 위치·날씨·노래).
+   * Monthly는 한 달씩 넘겨 그 달 사진을 모두. 그 달을 잡지처럼 엮은 recap은 따로(첫 화면 Recap → openRecap).
+   */
+  let folderShots = [];
   function renderFolder() {
     if (!folderView) return;
     const list = folderEntries();
-    folderIndex = Math.min(folderIndex, Math.max(0, list.length - 1));
     folderView.querySelector('.rec-top__title b').textContent = folderNode.name;
     const body = folderView.querySelector('.rec-layer__body');
-    if (!list.length && !monthOfNode(folderNode)) {
+    const ym = monthOfNode(folderNode);
+    const canPick = !(folderNode.type === 'monthly' || folderNode.virtual);
+    if (!list.length && !ym) {
       body.innerHTML = `
         <div class="rec-fempty">
           ${DiaryArchive.folderIcon(folderNode, 'fe-' + folderNode.id)}
-          <p class="rec-fempty__title">아직 담긴 기록이 없어요</p>
-          <p class="rec-fempty__sub">${folderNode.type === 'monthly' ? '사진을 기록하면 날짜순으로 자동으로 모여요' : '사진 기록을 이 폴더에 담으면 한 장씩 다이어리 페이지가 돼요'}</p>
-          ${folderNode.type === 'monthly' || folderNode.virtual ? '' : '<button type="button" class="rec-pill rec-pill--dark" data-pick>+ 기록 담기</button>'}
+          <p class="rec-fempty__title">아직 담긴 사진이 없어요</p>
+          <p class="rec-fempty__sub">${folderNode.type === 'monthly' ? '사진을 기록하면 달마다 자동으로 모여요' : '사진 기록을 이 폴더에 담아 보세요'}</p>
+          ${canPick ? '<button type="button" class="rec-pill rec-pill--dark" data-pick>+ 사진 담기</button>' : ''}
         </div>`;
       return;
     }
-    const ym = monthOfNode(folderNode);
-    if (!list.length) { body.innerHTML = monthSheetHtml(ym, list) + '<p class="rec-mcal__empty">이 달에는 아직 기록이 없어요</p>'; return; }
-    body.innerHTML = (ym ? monthSheetHtml(ym, list) : '') + `
-      <div class="rec-ftitle">
-        <h2 class="rec-ftitle__h" id="recFTitle"></h2>
-        <p class="rec-ftitle__meta" id="recFMeta"></p>
+    folderShots = [];
+    list.forEach(e => (e.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) folderShots.push({ url: u, e }); }));
+    const monthHead = ym ? (() => {
+      const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
+      const nav = folderNode.type === 'monthly';
+      return `<div class="rec-pgrid__head">
+          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
+          <p class="rec-pgrid__month"><b>${MONTH_EN[m]}</b> ${y}</p>
+          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="1" aria-label="다음 달">›</button>' : '<span></span>'}
+        </div>`;
+    })() : '';
+    body.innerHTML = monthHead + `
+      <div class="rec-pgrid__bar">
+        <span class="rec-pgrid__count">사진 ${folderShots.length}장</span>
+        ${canPick ? '<button type="button" class="rec-pager__add" data-pick>+ 사진 담기</button>' : ''}
       </div>
-      <div class="rec-pages" id="recPages">
-        ${list.map((e, i) => `<div class="rec-pages__slot" data-i="${i}">${pageHtml(pageOf(e))}</div>`).join('')}
-      </div>
-      <div class="rec-pager">
-        <span class="rec-pager__num" id="recPagerNum"></span>
-        <span class="rec-pager__dots" id="recPagerDots">${list.length > 1 ? list.map((_, i) => `<i data-i="${i}"></i>`).join('') : ''}</span>
-        ${folderNode.type === 'monthly' || folderNode.virtual ? '' : '<button type="button" class="rec-pager__add" data-pick>+ 기록 담기</button>'}
-      </div>`;
-    const track = body.querySelector('#recPages');
-    track.addEventListener('scroll', () => {
-      const i = Math.round(track.scrollLeft / track.clientWidth);
-      if (i !== folderIndex) { folderIndex = i; syncPager(); }
-    }, { passive: true });
-    requestAnimationFrame(() => { track.scrollLeft = folderIndex * track.clientWidth; syncPager(); });
-    syncPager();
+      ${folderShots.length ? `<div class="rec-pgrid">${folderShots.map((x, i) => `
+        <button type="button" class="rec-pgrid__item" data-shot="${i}" aria-label="${esc(x.e.date)} 사진 크게 보기">
+          <img src="${esc(x.url)}" alt="" loading="lazy" draggable="false">
+        </button>`).join('')}</div>` : `<p class="rec-mcal__empty">${ym ? '이 달에는 아직 사진이 없어요' : '아직 담긴 사진이 없어요'}</p>`}`;
   }
   /* ---- Monthly: 그 달을 콜라주 달력 한 장으로 — 날마다 첫 사진을 오려 붙인 느낌 ---- */
   /** Monthly 아래 자동 폴더(이름 YYYY.MM)면 'YYYY-MM' */
@@ -361,13 +365,13 @@
    * 한 달 recap — 잡지 "이달의 favorites"처럼 그 달 사진을 오려 붙이고 번호(01.)·제목·위치·노래를 단다.
    * 하루에 한 장(그날 첫 사진), 최대 8일. 사진을 누르면 아래에서 그날 페이지로 간다.
    */
-  function monthSheetHtml(ym, list) {
+  function monthSheetHtml(ym, list, opts) {
     const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
     const days = {};
     list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)))
       .forEach(e => { if (!days[e.date] && (e.photos || []).some(p => ctx.photoUrl(p))) days[e.date] = e; });
     const picks = Object.values(days).slice(0, 8);
-    const nav = folderNode && folderNode.type === 'monthly';
+    const nav = !!(opts && opts.nav);
     const head = `
         <div class="rec-recap__head">
           ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
@@ -397,23 +401,11 @@
     }).join('');
     return `<section class="rec-recap" aria-label="${y}년 ${m + 1}월 recap">${head}<div class="rec-recap__list">${items}</div></section>`;
   }
-  function syncPager() {
-    const list = folderEntries();
-    const e = list[folderIndex];
-    if (!e || !folderView) return;
-    const t = folderView.querySelector('#recFTitle');
-    if (!t) return;
-    t.textContent = e.title || placeOf(e) || '그날의 기록';
-    folderView.querySelector('#recFMeta').textContent = metaLine(e);
-    folderView.querySelector('#recPagerNum').textContent = `${folderIndex + 1} / ${list.length}`;
-    folderView.querySelectorAll('#recPagerDots i').forEach((d, i) => d.classList.toggle('is-on', i === folderIndex));
-  }
   function openFolder(c, node) {
     ctx = c;
-    folderNode = node; folderIndex = 0; folderMonth = '';
+    folderNode = node; folderMonth = '';
     if (!folderView) {
       folderView = openLayer('rec-folderview', node.name);
-      // 꾸미기는 폴더가 아니라 '하루 기록하기'(다이어리)에서 한다 — 폴더는 사진을 모아 보는 곳
       folderView.innerHTML = headHtml(node.name, '') + '<div class="rec-layer__body"></div>';
       folderView.addEventListener('click', (ev) => {
         if (ev.target.closest('[data-close]')) { const f = folderView; folderView = null; closeLayer(f); return; }
@@ -423,34 +415,84 @@
           const [yy, mm] = folderMonth.split('-').map(Number);
           const d = new Date(yy, mm - 1 + Number(mn.dataset.mnav), 1);
           folderMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-          folderIndex = 0; renderFolder(); return;
+          renderFolder(); return;
         }
-        const go = ev.target.closest('[data-goto]');
-        if (go) {
-          const tr = folderView.querySelector('#recPages');
-          folderIndex = Number(go.dataset.goto);
-          if (tr) { tr.scrollTo({ left: folderIndex * tr.clientWidth, behavior: 'smooth' }); tr.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-          syncPager();
-          return;
-        }
-        if (ev.target.closest('[data-decorate]')) {
-          if (ctx.needLogin()) return;
-          const e = folderEntries()[folderIndex];
-          if (e) openEditor(e);
-          return;
-        }
-        const dot = ev.target.closest('#recPagerDots [data-i]');
-        if (dot) { const tr = folderView.querySelector('#recPages'); tr.scrollTo({ left: Number(dot.dataset.i) * tr.clientWidth, behavior: 'smooth' }); return; }
-        const img = ev.target.closest('.rec-it--photo img');
-        if (img) {
-          const e = folderEntries()[folderIndex];
-          const imgs = [...img.closest('.rec-page').querySelectorAll('.rec-it--photo img')];
-          const info = DiaryArchive.infoOf(e);
-          DiaryArchive.openPhotos(imgs.map(im => ({ url: im.src, info })), imgs.indexOf(img), imgs);
+        const shot = ev.target.closest('[data-shot]');
+        if (shot) {
+          const imgs = [...folderView.querySelectorAll('.rec-pgrid__item img')];
+          DiaryArchive.openPhotos(folderShots.map(x => ({ url: x.url, info: DiaryArchive.infoOf(x.e) })), Number(shot.dataset.shot), imgs);
         }
       });
     }
     renderFolder();
+  }
+
+  /* ------------------------------------------------------------ Recap — 한 달을 잡지 한 장처럼(예전 Monthly 폴더 화면) */
+  let recapView = null, recapMonth = '';
+  function recapEntries(ym) {
+    return ctx.entries().filter(e => e.date.startsWith(ym) && (e.photos || []).some(p => ctx.photoUrl(p)))
+      .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  }
+  function latestMonth(c) {
+    const dates = c.entries().filter(e => (e.photos || []).length).map(e => e.date).sort();
+    const t = new Date();
+    return dates.length ? dates[dates.length - 1].slice(0, 7) : `${t.getFullYear()}-${pad(t.getMonth() + 1)}`;
+  }
+  function renderRecap() {
+    if (!recapView) return;
+    const list = recapEntries(recapMonth);
+    recapView.querySelector('.rec-layer__body').innerHTML = monthSheetHtml(recapMonth, list, { nav: true })
+      + (list.length ? '' : '<p class="rec-mcal__empty">이 달에는 아직 사진 기록이 없어요</p>');
+    recapView._list = list;
+  }
+  function openRecap(c, ym) {
+    ctx = c;
+    recapMonth = ym || latestMonth(c);
+    if (!recapView) {
+      recapView = openLayer('rec-recapview', 'Recap');
+      recapView.innerHTML = headHtml('Recap', '') + '<div class="rec-layer__body"></div>';
+      recapView.addEventListener('click', (ev) => {
+        if (ev.target.closest('[data-close]')) { const r = recapView; recapView = null; closeLayer(r); return; }
+        const mn = ev.target.closest('[data-mnav]');
+        if (mn) {
+          const [yy, mm] = recapMonth.split('-').map(Number);
+          const d = new Date(yy, mm - 1 + Number(mn.dataset.mnav), 1);
+          recapMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+          renderRecap(); return;
+        }
+        // 사진을 누르면 그날 사진을 크게
+        const go = ev.target.closest('[data-goto]');
+        if (go) {
+          const e = (recapView._list || [])[Number(go.dataset.goto)];
+          if (!e) return;
+          const day = (recapView._list || []).filter(x => x.date === e.date).reverse();
+          const shots = [];
+          day.forEach(x => (x.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) shots.push({ url: u, info: DiaryArchive.infoOf(x) }); }));
+          const img = go.querySelector('img');
+          if (shots.length && img) DiaryArchive.openPhotos(shots, 0, [img]);
+        }
+      });
+    }
+    renderRecap();
+  }
+  /** 첫 화면 Recap 카드 — 기록이 있는 가장 최근 달의 사진 몇 장을 겹쳐 보여 준다 */
+  function recapCardHtml(c) {
+    ctx = c;
+    const ym = latestMonth(c);
+    const list = recapEntries(ym);
+    const m = Number(ym.slice(5, 7)) - 1;
+    const days = new Set(list.map(e => e.date)).size;
+    const thumbs = [];
+    list.slice().reverse().forEach(e => { const u = (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean); if (u && thumbs.length < 3) thumbs.push(u); });
+    return `
+      <button type="button" class="rec-recapcard" data-recap="${ym}" aria-label="${m + 1}월 recap 열기">
+        <span class="rec-recapcard__text">
+          <b class="rec-recapcard__title">${MONTH_EN[m]} Recap</b>
+          <small>${days ? `${days}일의 기록을 한 장으로` : '이 달의 사진을 한 장으로 엮어 드려요'}</small>
+        </span>
+        <span class="rec-recapcard__thumbs" aria-hidden="true">${thumbs.map((u, i) => `<img src="${esc(u)}" alt="" style="--i:${i}" draggable="false">`).join('')}</span>
+        <span class="rec-recapcard__arrow" aria-hidden="true">→</span>
+      </button>`;
   }
 
   /* ------------------------------------------------------------ 폴더 고르기(+ 폴더에 담기) */
@@ -1128,7 +1170,7 @@
 
   // 사진 주소가 늦게 도착하면 열려 있는 화면을 다시 그린다
   document.addEventListener('record:photos', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); if (ed) { drawEditor(); fitPhotos(); } });
-  document.addEventListener('archive:changed', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); });
+  document.addEventListener('archive:changed', () => { if (storage) renderStorage(); if (folderView && !ed) renderFolder(); if (recapView) renderRecap(); });
 
   /* ------------------------------------------------------------ 다이어리 (Recent 밑 'Diary')
    * 다이어리 한 장 = 인상 깊었던 하루 또는 기간(여행 등). 제목과 날짜(하루 / 시작~끝)를 받고,
@@ -1333,5 +1375,5 @@
     });
   }
 
-  global.RecordV2 = { openStorage, openFolder, chooseFolder, listDiaries, diaryThumbHtml, createDiary, openDiary, rangeLabel };
+  global.RecordV2 = { openStorage, openFolder, openRecap, recapCardHtml, chooseFolder, listDiaries, diaryThumbHtml, createDiary, openDiary, rangeLabel };
 })(window);

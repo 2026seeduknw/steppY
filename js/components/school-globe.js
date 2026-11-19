@@ -11,6 +11,15 @@
  *   QS 순위가 높은 학교부터 자리를 잡고, 이미 잡힌 로고와 겹치면 그 로고에 "+N"으로 묶는다.
  *   묶음을 누르면 그 자리로 확대한다. 끝까지 확대해도 겹치는(같은 도시) 학교들은 목록으로 보여준다.
  *
+ * 경계선
+ *   나라 사이 경계와 미국 주 경계를 지도 위에 선으로 긋는다(assets/globe/borders.json,
+ *   tools/build-globe-borders.py 로 Natural Earth 공개 자료에서 만든 것). 해안선은 지도 그림에 이미 있다.
+ *
+ * 이름표
+ *   지도만 보면 어느 나라인지 모르겠다는 의견이 있어 글자를 얹었다(로고 아래 층, 누를 수 없음).
+ *   기본 크기에서는 대륙 이름(유럽·북미…)과 학교가 많은 나라부터, 확대하면 나라 이름을 모두,
+ *   더 확대하면 도시 이름까지. 로고나 다른 이름표와 겹치면 그 이름표는 빼고 그린다.
+ *
  * 쓰는 법: SchoolGlobe.mount(el, { onOpen(id) }) → SchoolGlobe.update(schools)
  */
 const SchoolGlobe = (function () {
@@ -19,7 +28,7 @@ const SchoolGlobe = (function () {
   const MIN_GAP = 26;       // 로고 중심끼리 이보다 가까우면 묶는다
   const ZOOMS = [1, 1.8, 3.2, 5.5];
 
-  let host = null, canvas = null, ctx = null, layer = null, pop = null, opts = {};
+  let host = null, canvas = null, ctx = null, layer = null, labelLayer = null, pop = null, opts = {};
   let tex = null, texW = 0, texH = 0;          // 지도 픽셀(Uint32)
   let size = 0, res = 0;                        // css 크기, 그리는 해상도
   let lon0 = 10, lat0 = 30, zi = 0;             // 화면 가운데의 경도·위도, 확대 단계
@@ -33,6 +42,7 @@ const SchoolGlobe = (function () {
     host.innerHTML = `
       <div class="sglobe__stage">
         <canvas class="sglobe__earth" aria-hidden="true"></canvas>
+        <div class="sglobe__labels" aria-hidden="true"></div>
         <div class="sglobe__logos" role="list" aria-label="지구본 위 학교 로고"></div>
       </div>
       <div class="sglobe__pop" hidden></div>
@@ -46,12 +56,14 @@ const SchoolGlobe = (function () {
     canvas = host.querySelector('.sglobe__earth');
     ctx = canvas.getContext('2d');
     layer = host.querySelector('.sglobe__logos');
+    labelLayer = host.querySelector('.sglobe__labels');
     pop = host.querySelector('.sglobe__pop');
     host.querySelectorAll('[data-zoom]').forEach(b => b.addEventListener('click', () => setZoom(zi + Number(b.dataset.zoom))));
     wireDrag();
     layer.addEventListener('click', onLogoClick);
     pop.addEventListener('click', onPopClick);
     loadTexture();
+    loadBorders();
     new ResizeObserver(() => { measure(); request(); }).observe(host);
     measure();
   }
@@ -109,6 +121,45 @@ const SchoolGlobe = (function () {
     return (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
   }
   const OCEAN = [205, 227, 236], GRID = [221, 236, 242], LAND = [246, 240, 224], COAST = [150, 178, 170];
+
+  let borders = null;   // { countries: [[lon,lat,…]×100], usStates: [...] }
+  function loadBorders() {
+    fetch('assets/globe/borders.json').then(r => r.json()).then(d => {
+      const k = 1 / (d.scale || 100);
+      const conv = (lines) => lines.map(l => { const a = new Float32Array(l.length); for (let i = 0; i < l.length; i++) a[i] = l[i] * k; return a; });
+      borders = { countries: conv(d.countries || []), usStates: conv(d.usStates || []) };
+      request();
+    }).catch(() => { /* 경계선이 없어도 지구본은 그대로 쓸 수 있다 */ });
+  }
+
+  /** 선을 긋는다 — 앞면에 있는 점끼리만 잇는다(뒤로 넘어가는 자리에서 끊는다) */
+  function strokeLines(lines, scale, color, width) {
+    const R = radius() * scale, c = canvas.width / 2;
+    const φ0 = lat0 * D2R, sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
+    ctx.beginPath();
+    for (const l of lines) {
+      let pen = false;
+      for (let i = 0; i < l.length; i += 2) {
+        const φ = l[i + 1] * D2R, λ = (l[i] - lon0) * D2R;
+        const cφ = Math.cos(φ), sφ = Math.sin(φ), cλ = Math.cos(λ);
+        const cosc = sφ0 * sφ + cφ0 * cφ * cλ;
+        if (cosc < 0) { pen = false; continue; }
+        const x = c + R * cφ * Math.sin(λ), y = c - R * (cφ0 * sφ - sφ0 * cφ * cλ);
+        if (pen) ctx.lineTo(x, y); else { ctx.moveTo(x, y); pen = true; }
+      }
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * scale;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+  function drawBorders() {
+    if (!borders) return;
+    const scale = canvas.width / size;
+    // 미국 주 경계는 나라 경계보다 옅고 가늘게 — 나라 경계가 위에 오도록 먼저 긋는다
+    strokeLines(borders.usStates, scale, 'rgba(96, 108, 102, 0.38)', ZOOMS[zi] >= 1.8 ? 0.7 : 0.5);
+    strokeLines(borders.countries, scale, 'rgba(78, 90, 84, 0.62)', ZOOMS[zi] >= 1.8 ? 1 : 0.8);
+  }
 
   /* ------------------------------------------------------------ 투영 */
   const radius = () => (size / 2 - 6) * ZOOMS[zi];
@@ -170,6 +221,7 @@ const SchoolGlobe = (function () {
       }
     }
     ctx.putImageData(img, 0, 0);
+    drawBorders();
   }
 
   /* ------------------------------------------------------------ 로고 */
@@ -208,6 +260,86 @@ const SchoolGlobe = (function () {
     });
   }
 
+  /* ------------------------------------------------------------ 이름표(대륙 · 나라 · 도시) */
+  // 대륙 이름 자리 — 학교 좌표 평균은 '아시아/오세아니아'처럼 넓은 묶음에서 바다 한가운데로 가서 고정해 둔다
+  const CONTINENTS = [
+    { name: '유럽', lat: 50, lon: 30 },
+    { name: '북미', lat: 50, lon: -100 },
+    { name: '중남미', lat: -12, lon: -62 },
+    { name: '아시아', lat: 42, lon: 100 },
+    { name: '오세아니아', lat: -27, lon: 134 },
+    { name: '아프리카', lat: 4, lon: 20 }
+  ];
+  /** 학교 묶음 → [{ name, lat, lon, n }] (좌표는 학교 위치 평균, 경도는 단위 벡터 평균) */
+  function centroids(keyOf) {
+    const m = new Map();
+    schools.forEach(sc => {
+      if (typeof sc.lat !== 'number' || typeof sc.lng !== 'number') return;
+      const k = keyOf(sc);
+      if (!k) return;
+      const o = m.get(k) || { name: k, la: 0, x: 0, y: 0, n: 0 };
+      o.la += sc.lat; o.x += Math.cos(sc.lng * D2R); o.y += Math.sin(sc.lng * D2R); o.n++;
+      m.set(k, o);
+    });
+    // 평균 자리는 나라 밖일 수 있다(캐나다 학교들 평균 → 미국 중부). 평균에 가장 가까운 '그 나라 학교' 자리에 붙인다
+    return [...m.values()].map(o => {
+      const lat = o.la / o.n, lon = Math.atan2(o.y, o.x) / D2R;
+      let best = null, bd = Infinity;
+      schools.forEach(sc => {
+        if (keyOf(sc) !== o.name || typeof sc.lat !== 'number') return;
+        const d = (sc.lat - lat) ** 2 + ((((sc.lng - lon + 540) % 360) - 180) * Math.cos(lat * D2R)) ** 2;
+        if (d < bd) { bd = d; best = sc; }
+      });
+      return { name: o.name, lat: best ? best.lat : lat, lon: best ? best.lng : lon, n: o.n };
+    });
+  }
+  function nearestContinent(sc) {
+    let best = null, bd = Infinity;
+    CONTINENTS.forEach(c => {
+      const d = Math.acos(Math.min(1, Math.sin(sc.lat * D2R) * Math.sin(c.lat * D2R) + Math.cos(sc.lat * D2R) * Math.cos(c.lat * D2R) * Math.cos((sc.lng - c.lon) * D2R)));
+      if (d < bd) { bd = d; best = c; }
+    });
+    return best;
+  }
+  function placeLabels() {
+    if (!labelLayer) return;
+    // 이미 차지한 자리 — 로고(지름 LOGO)부터 넣어 두고, 이름표를 하나씩 넣으며 겹치면 건너뛴다
+    const taken = groups.map(g => ({ l: g.x - LOGO / 2, t: g.y - LOGO / 2, r: g.x + LOGO / 2, b: g.y + LOGO / 2 }));
+    const hit = (a) => taken.some(o => a.l < o.r && a.r > o.l && a.t < o.b && a.b > o.t);
+    const out = [];
+    const tryPlace = (text, lat, lon, kind, fs) => {
+      const p = project(lat, lon);
+      if (!p) return;
+      const w = [...text].reduce((a, ch) => a + (/[\u3131-\uD79D]/.test(ch) ? fs * 1.02 : fs * 0.6), 0) + 6;
+      const h = fs + 6;
+      // 로고 바로 아래 → 위 → 오른쪽 → 왼쪽 → 제자리 순서로 빈자리를 찾는다
+      const tries = [[0, LOGO / 2 + h / 2 + 1], [0, -(LOGO / 2 + h / 2 + 1)], [LOGO / 2 + w / 2 + 2, 0], [-(LOGO / 2 + w / 2 + 2), 0], [0, 0]];
+      for (const [dx, dy] of tries) {
+        const cx = p.x + dx, cy = p.y + dy;
+        const box = { l: cx - w / 2, t: cy - h / 2, r: cx + w / 2, b: cy + h / 2 };
+        if (box.l < 2 || box.t < 2 || box.r > size - 2 || box.b > size - 2) continue;
+        // 지구 가장자리 밖으로 삐져나가지 않게
+        const R = radius(), mx = size / 2, my = size / 2;
+        if (Math.hypot(Math.max(Math.abs(box.l - mx), Math.abs(box.r - mx)), Math.max(Math.abs(box.t - my), Math.abs(box.b - my))) > R * 1.02 && ZOOMS[zi] === 1) continue;
+        if (hit(box)) continue;
+        taken.push(box);
+        out.push(`<span class="sglobe__label sglobe__label--${kind}" style="transform:translate(${(cx - w / 2).toFixed(1)}px,${(cy - h / 2).toFixed(1)}px);font-size:${fs}px;opacity:${(0.55 + 0.45 * p.depth).toFixed(2)}">${text}</span>`);
+        return;
+      }
+    };
+    const z = ZOOMS[zi];
+    if (zi === 0) {
+      // 대륙 — 지금 목록에 학교가 있는 대륙만
+      const used = new Set(schools.filter(sc => typeof sc.lat === 'number').map(sc => nearestContinent(sc).name));
+      CONTINENTS.filter(c => used.has(c.name)).forEach(c => tryPlace(c.name, c.lat, c.lon, 'continent', 13));
+    }
+    // 나라 — 학교가 많은 나라부터 자리를 준다
+    centroids(sc => sc.country).sort((a, b) => b.n - a.n).forEach(c => tryPlace(c.name, c.lat, c.lon, 'country', z >= 3 ? 11.5 : 10.5));
+    // 도시 — 많이 확대했을 때만
+    if (z >= 3) centroids(sc => sc.city).sort((a, b) => b.n - a.n).forEach(c => tryPlace(c.name, c.lat, c.lon, 'city', 9.5));
+    labelLayer.innerHTML = out.join('');
+  }
+
   function render() {
     raf = 0;
     if (!dirty) return;
@@ -215,6 +347,7 @@ const SchoolGlobe = (function () {
     measure();
     drawEarth();
     placeLogos();
+    placeLabels();
   }
   function request() { dirty = true; if (!raf) raf = requestAnimationFrame(render); }
 
@@ -274,13 +407,23 @@ const SchoolGlobe = (function () {
     pop.innerHTML = `<p class="sglobe__pop-title">${g.list[0].city || g.list[0].countryEn || ''} · ${g.list.length}곳</p>
       <ul>${g.list.map(s => `<li><button type="button" data-open="${s.id}"><span class="sglobe__pop-logo">${logoInner(s)}</span>${s.name}</button></li>`).join('')}</ul>`;
     pop.hidden = false;
+    // 바깥(지구본 밖·다른 화면)을 누르거나 페이지를 굴리면 닫는다 — 예전에는 그대로 남아 시트 위에까지 떠 있었다
+    setTimeout(() => {
+      document.addEventListener('pointerdown', outsidePop, true);
+      window.addEventListener('scroll', closePop, { passive: true, once: true });
+    }, 0);
     const left = Math.max(8, Math.min(size - 228, g.x - 110));
     const top = g.y + LOGO / 2 + 6 + 200 > size ? Math.max(8, g.y - LOGO / 2 - 6 - Math.min(200, pop.offsetHeight)) : g.y + LOGO / 2 + 6;
     // 목록은 지구본(원 모양으로 잘림) 밖에 둔다 — 지구본 자리만큼 옮겨 놓는다
     const st = host.querySelector('.sglobe__stage');
     pop.style.left = (st.offsetLeft + left) + 'px'; pop.style.top = (st.offsetTop + top) + 'px';
   }
-  function closePop() { if (pop) pop.hidden = true; }
+  function closePop() {
+    if (pop) pop.hidden = true;
+    document.removeEventListener('pointerdown', outsidePop, true);
+    window.removeEventListener('scroll', closePop);
+  }
+  function outsidePop(e) { if (pop && !pop.contains(e.target)) closePop(); }
   function onPopClick(e) {
     const b = e.target.closest('[data-open]');
     if (b && opts.onOpen) { closePop(); opts.onOpen(b.dataset.open); }

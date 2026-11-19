@@ -178,24 +178,62 @@
     const counts = VERDICTS.map(v => assessed.filter(x => x.a.verdict.key === v.key).length);
     if (selectedVerdict && !counts[VERDICTS.findIndex(v => v.key === selectedVerdict)]) selectedVerdict = '';
     mount.innerHTML = assessed.length ? `
-      <div class="relevance-filter" role="group" aria-label="인정 가능성 필터">
-        <span class="relevance-filter__label">인정 가능성</span>
-        <button type="button" class="chip${selectedVerdict === '' ? ' is-selected' : ''}" data-verdict="">전체</button>
-        ${VERDICTS.map((v, i) => `
-          <button type="button" class="chip${selectedVerdict === v.key ? ' is-selected' : ''}"
-                  data-verdict="${v.key}" ${counts[i] ? '' : 'disabled'} title="${counts[i]}건">${v.short}</button>`).join('')}
-      </div>` : '';
-    mount.querySelectorAll('[data-verdict]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedVerdict = btn.dataset.verdict;
-        trackEvent('credits_relevance_filter', { band: selectedVerdict || 'all', mode });
-        renderMatches();
-      });
+      <select class="quick-filter credit-filter${selectedVerdict ? ' is-active' : ''}" data-verdict-select aria-label="인정 가능성">
+        <option value="">인정 가능성</option>
+        ${VERDICTS.map((v, i) => `<option value="${v.key}" ${selectedVerdict === v.key ? 'selected' : ''} ${counts[i] ? '' : 'disabled'}>${v.short} (${counts[i]})</option>`).join('')}
+      </select>` : '';
+    const sel = mount.querySelector('[data-verdict-select]');
+    if (sel) sel.addEventListener('change', () => {
+      selectedVerdict = sel.value;
+      trackEvent('credits_relevance_filter', { band: selectedVerdict || 'all', mode });
+      renderMatches();
     });
+    syncFilterRow();
   }
 
+  /* ------------------------------------------------ 필터 줄 · ? 기준
+     드롭다운이 하나도 없으면 줄을 감춘다. ?를 누르면 지금 탭의 기준(인정 가능성 / 관련도)이 줄 아래에 열린다. */
+  let criteriaOpen = false;
+  function criteriaHtml() {
+    if (mode === 'major') {
+      return `
+        <p class="credit-criteria__title">관련도 상 · 중 · 하는 이렇게 나눠요</p>
+        <ul class="credit-criteria__list">
+          <li><b class="match-card__relevance match-card__relevance--high">상</b><span>유사도 80점 이상 — 전공 이름과 배우는 내용이 거의 같아요</span></li>
+          <li><b class="match-card__relevance match-card__relevance--mid">중</b><span>유사도 75~79점 — 겹치는 분야가 많지만 초점이 조금 달라요</span></li>
+          <li><b class="match-card__relevance match-card__relevance--low">하</b><span>유사도 75점 미만 — 일부 과목만 겹쳐요</span></li>
+        </ul>
+        <p class="credit-criteria__note">유사도는 두 전공의 이름·소개글이 뜻으로 얼마나 가까운지와 같은 학문 분야인지를 합쳐 매긴 100점 만점 점수예요.</p>`;
+    }
+    return `
+      <p class="credit-criteria__title">인정 가능성은 이렇게 나눠요</p>
+      <ul class="credit-criteria__list">
+        <li><b class="verdict verdict--likely">높음</b><span>과목 번호로 본 수준이 학부 전공(200~400 Level)이고, 과목 이름에 내 전공 핵심 단어가 들어 있어요</span></li>
+        <li><b class="verdict verdict--check">확인 필요</b><span>과목 번호로 수준을 알 수 없거나, 과목 이름이 전공과 직접 겹치지 않아요 — 강의계획서로 확인하세요</span></li>
+        <li><b class="verdict verdict--risk">위험</b><span>100 Level(기초·교양) 과목이라 전공 학점으로 인정이 거절될 수 있어요</span></li>
+      </ul>
+      <p class="credit-criteria__note">과목 번호로 수준을 읽는 것은 미국·캐나다·홍콩·싱가포르·호주·뉴질랜드 학교만이에요.</p>`;
+  }
+  function syncFilterRow() {
+    const row = document.getElementById('creditFilters');
+    const box = document.getElementById('criteriaBox');
+    const btn = document.getElementById('criteriaToggle');
+    if (!row || !box || !btn) return;
+    const any = !!row.querySelector('select');
+    row.hidden = !any;
+    box.hidden = !(any && criteriaOpen);
+    btn.setAttribute('aria-expanded', String(!box.hidden));
+    btn.classList.toggle('is-on', !box.hidden);
+    if (!box.hidden) box.innerHTML = criteriaHtml();
+  }
+  document.getElementById('criteriaToggle').addEventListener('click', () => {
+    criteriaOpen = !criteriaOpen;
+    if (criteriaOpen) trackEvent('credits_criteria_open', { mode });
+    syncFilterRow();
+  });
+
   /* ------------------------------------------------ 자세히 보기 — 매칭 근거 요약 (기획서 3.3)
-     PDF 대신 앱 안에서 바로 읽고 복사한다. 문장은 위의 근거(위계·키워드)에서 그대로 만든다.
+     PDF 대신 앱 안에서 바로 읽는다(텍스트 복사 버튼은 뺐다). 문장은 위의 근거(위계·키워드)에서 그대로 만든다.
      면담 때 쓸 말(구두 스크립트)과 '교수님 면담용'이라는 이름은 뺐다 — 과목 정보와 분석만 준다. */
   function interviewSummary(m) {
     const a = assess(m);
@@ -213,18 +251,6 @@
     const kwText = a.info.keyword ? `과목명이 ${major} 전공 키워드와 일치합니다.` : `과목명 일치는 약하지만 ${dept ? `'${dept}'` : '관련'} 학과 개설 과목입니다.`;
     const line2 = `${dept ? `파견교 '${dept}' 학과 개설 과목으로, ` : ''}${levelText} ${kwText}`;
     return { a, lines: [['파견교 과목', line1], ['매칭 분석', line2]] };
-  }
-
-  async function copyText(text) {
-    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* 아래 방식으로 다시 시도 */ }
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta); ta.select();
-      const ok = document.execCommand('copy');
-      ta.remove();
-      return ok;
-    } catch (e) { return false; }
   }
 
   function openInterviewCard(matchId) {
@@ -247,16 +273,9 @@
         <ol class="interview-card__lines">
           ${lines.map(([label, text]) => `<li><span class="interview-card__label">${label}</span><p>${esc(text)}</p></li>`).join('')}
         </ol>
-        <button type="button" class="btn btn--accent interview-card__copy" id="interviewCopyBtn">텍스트 복사하기</button>
         <p class="interview-card__hint">최종 인정 여부는 학과에서 결정해요.</p>
       </div>`;
     wireModalCloseButtons(scrim);
-    scrim.querySelector('#interviewCopyBtn').addEventListener('click', async () => {
-      const text = lines.map(([label, t], i) => `${i + 1}. ${label}: ${t}`).join('\n');
-      const ok = await copyText(text);
-      showToast(ok ? '요약을 복사했어요.' : '복사하지 못했어요. 길게 눌러 직접 복사해 주세요.');
-      if (ok) trackEvent('credits_interview_copy', { school: m.school });
-    });
     trackEvent('credits_interview_open', { school: m.school, verdict: a.verdict.key });
     openModal(scrim);
   }
@@ -423,32 +442,24 @@
   function renderRelevanceFilter(matches) {
     const mount = document.getElementById('relevanceFilterMount');
     if (!mount) return;
-
-    // 상/중/하는 익숙한 고정 척도라 항상 같은 자리에 둔다. 결과가 없는 구간은
-    // 숨기지 않고 흐리게 잠근다 — 칩이 사라졌다 나타나면 어디 갔나 찾게 된다.
+    // 상/중/하는 익숙한 고정 척도라 항상 같은 자리에 둔다. 결과가 없는 구간은 고를 수 없게 잠근다.
     const counts = RELEVANCE_BANDS.map(b => matches.filter(m => b.test(m.similarity)).length);
     if (selectedRelevance) {
       const idx = RELEVANCE_BANDS.findIndex(b => b.key === selectedRelevance);
       if (idx >= 0 && counts[idx] === 0) selectedRelevance = '';
     }
-
-    mount.innerHTML = `
-      <div class="relevance-filter" role="group" aria-label="관련도 필터">
-        <span class="relevance-filter__label">관련도</span>
-        <button type="button" class="chip${selectedRelevance === '' ? ' is-selected' : ''}" data-relevance="">전체</button>
-        ${RELEVANCE_BANDS.map((b, i) => `
-          <button type="button" class="chip${selectedRelevance === b.key ? ' is-selected' : ''}"
-                  data-relevance="${b.key}" ${counts[i] ? '' : 'disabled'}
-                  title="${counts[i]}건">${b.label}</button>`).join('')}
-      </div>`;
-
-    mount.querySelectorAll('[data-relevance]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedRelevance = btn.dataset.relevance;
-        trackEvent('credits_relevance_filter', { band: selectedRelevance || 'all', mode });
-        renderMatches();
-      });
+    mount.innerHTML = matches.length ? `
+      <select class="quick-filter credit-filter${selectedRelevance ? ' is-active' : ''}" data-relevance-select aria-label="관련도">
+        <option value="">관련도</option>
+        ${RELEVANCE_BANDS.map((b, i) => `<option value="${b.key}" ${selectedRelevance === b.key ? 'selected' : ''} ${counts[i] ? '' : 'disabled'}>관련도 ${b.label} (${counts[i]})</option>`).join('')}
+      </select>` : '';
+    const sel = mount.querySelector('[data-relevance-select]');
+    if (sel) sel.addEventListener('change', () => {
+      selectedRelevance = sel.value;
+      trackEvent('credits_relevance_filter', { band: selectedRelevance || 'all', mode });
+      renderMatches();
     });
+    syncFilterRow();
   }
 
   function byRelevance(matches) {
@@ -503,55 +514,34 @@
     const options = countryOptions(matches);
 
     // 고를 수 있는 국가가 하나뿐이면 필터가 하는 일이 없다
-    if (options.length < 2) { mount.innerHTML = ''; return; }
+    if (options.length < 2) { mount.innerHTML = ''; syncFilterRow(); return; }
 
     const regions = regionOptions(options);
     // 전공을 바꿔서 지금 고른 국가/대륙에 결과가 없어지면 선택을 푼다
     if (selectedCountry && !options.some(o => o.country === selectedCountry)) selectedCountry = '';
     if (selectedRegion && !regions.some(r => r.region === selectedRegion)) { selectedRegion = ''; selectedCountry = ''; }
 
-    // 대륙이 하나뿐이면(예: 결과가 전부 유럽) 대륙 줄도 필터가 할 일이 없다 — 국가 줄만 보여준다
-    const showRegionRow = regions.length > 1;
-    const activeRegion = regions.find(r => r.region === selectedRegion);
-    const subOptions = activeRegion ? activeRegion.countries : (showRegionRow ? null : options);
-
+    // 칩 두 줄(대륙 줄 + 국가 줄) 대신 드롭다운 하나 — 대륙 묶음 안에 '대륙 전체'와 나라들(학교 찾기와 같은 꼴)
+    const current = selectedCountry ? `c:${selectedCountry}` : selectedRegion ? `r:${selectedRegion}` : '';
     mount.innerHTML = `
-      ${showRegionRow ? `
-      <div class="country-filter" role="group" aria-label="대륙 필터">
-        <button type="button" class="chip${selectedRegion === '' ? ' is-selected' : ''}" data-region="">All</button>
+      <select class="quick-filter credit-filter${current ? ' is-active' : ''}" data-place-select aria-label="대륙/국가">
+        <option value="">대륙/국가</option>
         ${regions.map(r => `
-          <button type="button" class="chip${selectedRegion === r.region ? ' is-selected' : ''}" data-region="${r.region}">
-            ${REGION_LABEL_EN[r.region] || r.region}
-          </button>`).join('')}
-      </div>` : ''}
-      ${subOptions ? `
-      <div class="country-filter country-filter--sub" role="group" aria-label="국가 필터">
-        <button type="button" class="chip chip--sm${selectedCountry === '' ? ' is-selected' : ''}" data-country="">${activeRegion ? `All ${REGION_LABEL_EN[activeRegion.region] || activeRegion.region}` : 'All'}</button>
-        ${subOptions.map(o => `
-          <button type="button" class="chip chip--sm${selectedCountry === o.country ? ' is-selected' : ''}" data-country="${o.country}">
-            ${o.flag ? o.flag + ' ' : ''}${o.countryEn}
-          </button>`).join('')}
-      </div>` : ''}`;
-
-    // 대륙 칩 — 누르면 그 대륙 전체로 거르는 동시에 밑에 국가 줄이 열린다. 이미 열려 있는
-    // 대륙을 다시 누르면 전체로 되돌아간다(Americas만 보고 싶은 사람도, 다시 접고 싶은
-    // 사람도 있을 수 있어서 한 번 더 누르면 닫히게 했다).
-    mount.querySelectorAll('[data-region]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const region = btn.dataset.region;
-        selectedRegion = (selectedRegion === region) ? '' : region;
-        selectedCountry = '';
-        trackEvent('credits_region_filter', { region: selectedRegion || 'all', mode });
-        renderMatches();
-      });
+          <optgroup label="${REGION_LABEL_EN[r.region] || r.region}">
+            ${regions.length > 1 ? `<option value="r:${r.region}">${REGION_LABEL_EN[r.region] || r.region} 전체</option>` : ''}
+            ${r.countries.map(o => `<option value="c:${o.country}">${o.flag ? o.flag + ' ' : ''}${o.countryEn}</option>`).join('')}
+          </optgroup>`).join('')}
+      </select>`;
+    const sel = mount.querySelector('[data-place-select]');
+    sel.value = current;
+    sel.addEventListener('change', () => {
+      const v = sel.value;
+      selectedCountry = v.startsWith('c:') ? v.slice(2) : '';
+      selectedRegion = v.startsWith('r:') ? v.slice(2) : (selectedCountry ? regionOf(selectedCountry) : '');
+      trackEvent(selectedCountry ? 'credits_country_filter' : 'credits_region_filter', { country: selectedCountry || 'all', region: selectedRegion || 'all', mode });
+      renderMatches();
     });
-    mount.querySelectorAll('[data-country]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedCountry = btn.dataset.country;
-        trackEvent('credits_country_filter', { country: selectedCountry || 'all', mode });
-        renderMatches();
-      });
-    });
+    syncFilterRow();
   }
 
   function byCountry(matches) {

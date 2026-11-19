@@ -276,8 +276,7 @@ body[data-page="search"] .app-sheet__head #resetFilters { margin: 0 auto 0 10px;
 .v2-book__elig--go { background: var(--v2-good-bg); color: var(--v2-good); }
 .v2-book__elig--warn { background: var(--v2-warn-bg); color: var(--v2-warn); }
 .v2-book__elig--unknown, .v2-book__elig--neutral, .v2-book__elig--no { background: #ECE9E3; color: #7A817D; }
-.v2-book__pct { background: #E3E8EF; color: #44546B; }
-.v2-book__pct.is-high { background: var(--v2-bad-bg); color: var(--v2-bad); }
+.v2-book__cost { flex: 0 0 auto; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; background: #E3E8EF; color: #44546B; }
 
 .v2-shelf__count {
   padding: 4px 0 4px 8px; border: 0; background: none; cursor: pointer;
@@ -603,6 +602,15 @@ body[data-page="search"] .v2-shelf__country { font-family: 'SB Aggro Light', var
 .sglobe__stage:active { cursor: grabbing; }
 .sglobe__earth { position: absolute; inset: 0; width: 100%; height: 100%; }
 .sglobe__logos { position: absolute; inset: 0; }
+/* 대륙·나라·도시 이름표 — 로고 아래 층, 누르지 않는다(js/components/school-globe.js placeLabels) */
+.sglobe__labels { position: absolute; inset: 0; pointer-events: none; }
+.sglobe__label {
+  position: absolute; left: 0; top: 0; padding: 0 3px; white-space: nowrap; line-height: 1;
+  font-weight: 700; color: #3E4A45; letter-spacing: -0.01em;
+  text-shadow: 0 0 3px rgba(255, 255, 255, .95), 0 0 6px rgba(255, 255, 255, .8);
+}
+.sglobe__label--continent { font-weight: 800; color: #1E2A26; letter-spacing: 0.06em; }
+.sglobe__label--city { font-weight: 600; color: #66716C; }
 .sglobe__logo {
   position: absolute; left: 0; top: 0; width: 30px; height: 30px; padding: 3px; border: 1.5px solid #fff; border-radius: 50%;
   background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28); display: grid; place-items: center; cursor: pointer; transform-origin: center;
@@ -615,7 +623,8 @@ body[data-page="search"] .v2-shelf__country { font-family: 'SB Aggro Light', var
   background: var(--v2-dark); color: #fff; font-size: 9.5px; font-weight: 800; line-height: 16px; text-align: center;
 }
 .sglobe__pop {
-  position: absolute; z-index: 300; width: 220px; max-height: 200px; overflow-y: auto; padding: 10px; border-radius: 14px;
+  /* 지구본 안에서만 위에 뜨면 된다 — 300이면 계정 시트·필터 시트보다 위로 올라왔다 */
+  position: absolute; z-index: 5; width: 220px; max-height: 200px; overflow-y: auto; padding: 10px; border-radius: 14px;
   background: #fff; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22); cursor: default;
 }
 .sglobe__pop[hidden] { display: none; }

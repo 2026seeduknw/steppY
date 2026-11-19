@@ -427,6 +427,10 @@
 }
 .diary-nowplaying-results li:hover { background: var(--cloud-50); }
 .diary-nowplaying-results li span { color: var(--ink-600); }
+/* 찾는 중·결과 없음 안내 줄은 누르지 않는다. 맨 아래 '적은 그대로 쓰기'는 늘 있다 */
+.diary-nowplaying-results li.is-note { color: var(--ink-400); cursor: default; }
+.diary-nowplaying-results li.is-note:hover { background: none; }
+.diary-nowplaying-results li.is-raw { font-weight: 700; color: var(--ink-900); border-top: 1px solid var(--line-100); }
 
 .diary-nowplaying-chip {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
@@ -887,7 +891,9 @@ body[data-page="journal"] .diary-featured__loc { color: #3A4763; }
 .stamp-fx__cap { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 2px 14px; }
 .stamp-fx__cap b { font-family: var(--diary-font-ticket); font-size: 0.95rem; color: #14213A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stamp-fx__cap small { font-size: var(--fs-micro); color: #6B7290; flex-shrink: 0; }
-.stamp-fx__mark { top: -14px; left: auto; right: -18px; animation: diary-postmark-in 620ms 420ms ease both; }
+/* 소인은 우표와 함께 한 번에 — 예전에는 우표가 내려앉은 뒤 소인이 커졌다 작아지며 한 번 더 '쾅' 찍혀
+   우표가 두 번 찍히는 것처럼 보였다. 이제 우표가 앉을 때 소인은 제자리에서 번지듯 나타나기만 한다. */
+.stamp-fx__mark { top: -14px; left: auto; right: -18px; animation: diary-imprint-in 420ms 360ms ease both; }
 @keyframes diary-fx-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes diary-stamp-drop {
   0% { opacity: 0; transform: translateY(-70px) scale(1.6) rotate(-8deg); }

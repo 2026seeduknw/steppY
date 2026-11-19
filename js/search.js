@@ -30,11 +30,14 @@
     qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default', page: 1,
     // 내 전형(언어권)으로 지원할 수 있는 학교만 — 국제처 규칙상 다른 언어권 학교는 희망대학표에 못 쓴다
     onlyMyTrack: true,
-    costBand: ''   // '' | low | mid | high — 한 달 생활비 추정치 구간
+    // 내 전공과 맞는 파견교 학과가 있는 학교만 — 빠른 필터 줄의 스위치
+    onlyMyMajor: false,
+    costBands: new Set()   // low | mid | high — 한 달 생활비 추정치 구간(상세 필터 시트)
   };
 
   // 한 달 물가 구간(원). 271곳의 사분위가 약 238만 · 306만 · 367만이라 250·350만에서 끊었다.
   const COST_BANDS = { low: [0, 2500000], mid: [2500000, 3500000], high: [3500000, Infinity] };
+  const COST_LABELS = { low: '250만 원 이하', mid: '250만~350만', high: '350만 원 이상' };
 
   // 271개를 한 화면에 다 그리면 스크롤이 지나치게 길어진다 — 한 페이지 5개로 끊는다.
   const PAGE_SIZE = 5;
@@ -70,6 +73,8 @@
     renderChipGroup('trackFilters', uniq('track'), state.tracks, LABELS.track);
     renderChipGroup('commerceFilters', uniq('commerceLevel'), state.commerce, LABELS.commerceLevel);
     renderChipGroup('securityFilters', uniq('securityLevel'), state.security, LABELS.securityLevel);
+    renderChipGroup('costFilters', Object.keys(COST_BANDS), state.costBands, COST_LABELS);
+    renderChipGroup('climateFilters', uniq('climateType'), state.climate, LABELS.climateType);
   }
 
   // 연세대 전공 마스터 리스트(76개) 기준 검색 가능한 다중 선택 드롭다운.
@@ -90,9 +95,9 @@
   }
 
   /**
-   * 검색창 아래 빠른 필터 세 개. 값은 기존 state(regions·country·climate)에 그대로 쓴다.
+   * 검색창 아래 빠른 필터 — 대륙/국가 · QS 순위 · 내 전공만(스위치).
    *   대륙/국가 — 'r:유럽'(대륙 전체) 또는 'c:덴마크'(한 나라). 둘은 서로를 지운다.
-   *   기후      — 하나만 고른다(시트에 있을 때는 여러 개였다).
+   * 한 달 물가·기후는 상세 필터 시트로 옮겼다.
    */
   function renderQuickFilters() {
     const regionSel = document.getElementById('quickRegion');
@@ -105,21 +110,33 @@
       </optgroup>`;
     }).join('');
     regionSel.value = current;
-
-    const climateSel = document.getElementById('quickClimate');
-    climateSel.innerHTML = `<option value="">기후/날씨</option>` +
-      uniq('climateType').map(v => `<option value="${v}">${LABELS.climateType[v] || v}</option>`).join('');
-    climateSel.value = state.climate.size ? [...state.climate][0] : '';
-
-    document.getElementById('quickCost').value = state.costBand;
+    document.getElementById('qsSelect').value = state.qsMax ? String(state.qsMax) : '';
     syncQuickFilterState();
   }
   // 고른 필터는 칩이 채워진다 — 지금 무엇이 걸려 있는지 시트를 열지 않고 보인다.
   function syncQuickFilterState() {
-    ['quickRegion', 'quickCost', 'quickClimate'].forEach(id => {
+    ['quickRegion', 'qsSelect'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.toggle('is-active', !!el.value);
     });
+    syncMajorSwitch();
+  }
+
+  /** 내 전공 — 기본 정보에 넣은 전공. 없으면 스위치를 눌렀을 때 안내만 한다. */
+  function myMajor() { return (AppState.profile && AppState.profile.major) || ''; }
+  function syncMajorSwitch() {
+    const sw = document.getElementById('onlyMyMajorToggle');
+    if (!sw) return;
+    const on = state.onlyMyMajor && !!myMajor();
+    sw.setAttribute('aria-checked', String(on));
+    sw.classList.toggle('is-on', on);
+    sw.querySelector('.toggle-switch').classList.toggle('is-on', on);
+  }
+  /** 이 학교에 내 전공과 맞는 학과(전공 매칭) 또는 인정 예상 과목이 있는지 */
+  function schoolHasMyMajor(school) {
+    const major = myMajor();
+    if (!major) return true;
+    return schoolHasMajorMatch(school, major) || (majorCreditMap.get(school.id) || 0) > 0;
   }
 
   function renderChipGroup(mountId, values, selectedSet, labelMap) {
@@ -152,12 +169,13 @@
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
     if (state.climate.size && !state.climate.has(school.climateType)) return false;
     if (state.security.size && !state.security.has(school.securityLevel)) return false;
-    if (state.costBand) {
-      const [min, max] = COST_BANDS[state.costBand];
+    if (state.costBands.size) {
       const cost = school.monthlyLivingCostKrw;
       // 물가 자료가 없는 학교는 구간을 고른 동안에는 뺀다 — 어느 칸인지 알 수 없다.
-      if (cost == null || cost < min || cost >= max) return false;
+      if (cost == null) return false;
+      if (![...state.costBands].some(k => cost >= COST_BANDS[k][0] && cost < COST_BANDS[k][1])) return false;
     }
+    if (state.onlyMyMajor && !schoolHasMyMajor(school)) return false;
     if (state.qsMax && school.qsRank > state.qsMax) return false;
     if (state.onlyFavorite && !AppState.isFavorite(school.id)) return false;
     if (state.onlyMyTrack && myTrack() && !OIA.schoolOffersTrack(school, myTrack())) return false;
@@ -322,15 +340,6 @@
     });
   }
 
-  /** 271곳 중 한 달 생활비가 비싼 순으로 몇 % 안에 드는지(상위 1% = 가장 비쌈). */
-  function costPercentile(school) {
-    const v = school.monthlyLivingCostKrw;
-    if (v == null || isNaN(v)) return null;
-    const all = MOCK.schools.map(s => s.monthlyLivingCostKrw).filter(x => x != null && !isNaN(x));
-    const rank = all.filter(x => x > v).length + 1;
-    return Math.max(1, Math.round(rank / all.length * 100));
-  }
-
   /** "Aalborg University (AAU)" — 이름에 이미 괄호 약어가 있으면 그대로 쓴다. */
   function nameWithAbbr(school) {
     if (/\([A-Za-z.&\s]+\)\s*$/.test(school.name)) return school.name;
@@ -357,8 +366,7 @@
     const elig = computeEligibility(AppState.profile, school);
     const isFav = AppState.isFavorite(school.id);
     const logo = typeof SCHOOL_LOGOS !== 'undefined' && SCHOOL_LOGOS[school.id];
-    const pct = costPercentile(school);
-    const cost = school.monthlyLivingCostKrw != null ? `월 ${Math.round(school.monthlyLivingCostKrw / 10000).toLocaleString('ko-KR')}만` : '생활비 정보 없음';
+    const cost = school.monthlyLivingCostKrw != null ? `월 ${Math.round(school.monthlyLivingCostKrw / 10000).toLocaleString('ko-KR')}만 원` : '';
     const gpa = formatGpa(school.gpaCut) || school.gpaCut || '-';
     const lang = school.langTest && school.langTest.cut != null ? `${school.langTest.type} ${school.langTest.cut}` : '어학 -';
     return `
@@ -373,7 +381,7 @@
         </div>
         <p class="v2-book__name"><span>${nameWithAbbr(school)}</span></p>
         <p class="v2-book__line">GPA ${gpa} · ${lang} <span class="v2-book__elig v2-book__elig--${elig.status}">${elig.status === 'go' ? '✓ ' : ''}${elig.label}</span></p>
-        <p class="v2-book__line">${slotText(school)}${cost}${pct ? ` <span class="v2-book__pct${pct <= 30 ? ' is-high' : ''}">상위 ${pct}%</span>` : ''}</p>
+        <p class="v2-book__line">${slotText(school).replace(/ · $/, '')}${cost ? ` <span class="v2-book__cost" aria-label="한 달 생활비 ${cost}">${cost}</span>` : ''}</p>
       </div>`;
   }
 
@@ -566,17 +574,21 @@
     state.regions = new Set(v.startsWith('r:') ? [v.slice(2)] : []);
     state.page = 1; syncQuickFilterState(); renderGrid();
   });
-  document.getElementById('quickCost').addEventListener('change', (e) => { state.costBand = e.target.value; state.page = 1; syncQuickFilterState(); renderGrid(); });
-  document.getElementById('quickClimate').addEventListener('change', (e) => {
-    state.climate = new Set(e.target.value ? [e.target.value] : []);
-    state.page = 1; syncQuickFilterState(); renderGrid();
+  document.getElementById('onlyMyMajorToggle').addEventListener('click', () => {
+    if (!myMajor()) {
+      showToast(AppState.isAuthed ? '기본 정보에서 전공을 먼저 입력해 주세요' : '로그인하고 전공을 입력하면 쓸 수 있어요');
+      return;
+    }
+    state.onlyMyMajor = !state.onlyMyMajor;
+    trackEvent('search_only_my_major', { on: state.onlyMyMajor });
+    state.page = 1; syncMajorSwitch(); renderGrid();
   });
   // '상세 필터'는 layout.js 가 만든 시트 여는 버튼을 대신 누른다(그 버튼은 화면에서 감췄다).
   document.getElementById('quickMore').addEventListener('click', () => {
     const trigger = document.querySelector('.filter-trigger');
     if (trigger) trigger.click();
   });
-  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; renderGrid(); });
+  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; syncQuickFilterState(); renderGrid(); });
 
   // 결과 수 옆의 두 칩(지원 가능만·즐겨찾기만). 켜짐은 다른 필터 칩과 같은 is-selected 로 보인다.
   function setQuickChip(btn, on) { btn.classList.toggle('is-selected', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
@@ -598,9 +610,8 @@
     state.programs.clear(); state.tracks.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
-    state.costBand = '';
+    state.costBands.clear(); state.onlyMyMajor = false;
     state.page = 1;
-    document.getElementById('qsSelect').value = '';
     setQuickChip(eligibleToggle, false); setQuickChip(favToggle, false);
     renderFilters(); renderGrid();
   });
