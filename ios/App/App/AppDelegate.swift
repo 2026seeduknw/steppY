@@ -11,6 +11,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    // MARK: - 푸시 알림
+    // iOS는 기기 토큰(알림을 보낼 "주소")을 웹뷰가 아니라 AppDelegate로 준다.
+    // @capacitor/push-notifications 플러그인이 받을 수 있게 그대로 넘긴다 —
+    // 이 두 함수가 없으면 JS의 register()가 끝나지 않고 'registration' 이벤트도 오지 않는다.
+    // 토큰 저장은 js/push.js 가 한다.
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.

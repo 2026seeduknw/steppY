@@ -20,5 +20,9 @@ tools/out/
 __pycache__/
 *.pyc
 
+# 로컬 비밀값 — tools/send-push.mjs 가 읽는 service_role 키. 절대 커밋하지 않는다
+.env
+.env.local
+
 # UI 비교용 스크래치 페이지 — 로컬에서만 쓴다(빌드에도 안 섞이게 밖에 둔다)
 _mock/

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 푸시 알림 사용. Xcode의 Signing & Capabilities → Push Notifications 와 같은 설정이다.
+	     값은 development로 두면 된다 — App Store/TestFlight용으로 Archive하면
+	     Xcode가 배포 프로필에 맞춰 production으로 바꿔 서명한다. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

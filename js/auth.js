@@ -144,6 +144,17 @@ const Auth = {
   },
 
   async signOut() {
+    // 이 폰의 푸시 토큰을 먼저 지운다 — 로그아웃한 뒤에도 그 사람 알림이 이 폰으로
+    // 오면 안 된다. 로그인 상태여야 지울 수 있어서 signOut 보다 앞에 둔다.
+    // 토큰은 js/push.js 가 저장할 때 남겨 둔 값이다. 실패해도 로그아웃은 막지 않는다.
+    try {
+      const saved = JSON.parse(localStorage.getItem('steppy:push-token') || 'null');
+      if (saved && saved.token) {
+        await supabaseClient.rpc('unregister_push_token', { p_token: saved.token });
+      }
+      localStorage.removeItem('steppy:push-token');
+    } catch (e) { /* 사생활 모드·네트워크 오류 */ }
+
     await supabaseClient.auth.signOut();
     this.session = null;
     // 사용자가 직접 누른 로그아웃이므로 여기서만 "로그인해 본 적" 표시를 지운다.
