@@ -24,12 +24,12 @@
  */
 const Ads = {
   /**
-   * 광고 단위 ID. 지금 값은 Google이 공개한 테스트용 ID다 — 개발 중에 실제 광고를
-   * 우리가 보거나 누르면 무효 트래픽으로 계정이 정지될 수 있다.
-   * AdMob에서 광고 단위를 만든 뒤 실제 ID로 바꾸고, ios/App/App/Info.plist의
-   * GADApplicationIdentifier(앱 ID)도 함께 바꾼다.
+   * 광고 단위 ID — 실제 AdMob 배너 단위(2026-11-19 교체). 앱 ID는
+   * ios/App/App/Info.plist의 GADApplicationIdentifier. 개발 중에 실제 광고를 우리가
+   * 보거나 누르면 무효 트래픽으로 계정이 정지될 수 있으니, 테스트하는 폰은 AdMob
+   * 설정 → 테스트 기기에 등록해 둔다. 테스트용 ID: ca-app-pub-3940256099942544/2435281174
    */
-  UNITS: { banner: 'ca-app-pub-3940256099942544/2435281174' },
+  UNITS: { banner: 'ca-app-pub-8842036587248586/1248980282' },
 
   /** 학교 확정 전 — 화면(body[data-page])마다 이 요소 바로 뒤에 광고 자리를 둔다 */
   SLOT_AFTER: {

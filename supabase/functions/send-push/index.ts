@@ -9,7 +9,7 @@
  * 누가 부를 수 있나
  *   service_role 키를 가진 사람만. 아무나 부르면 전체 사용자에게 스팸을 보낼 수 있다.
  *   그래서 verify_jwt 를 끄고(로그인한 일반 사용자 토큰도 통과돼 버리므로) 이 안에서
- *   Authorization 이 service_role 키와 같은지 직접 비교한다.
+ *   Authorization 이 service_role 키인지 직접 확인한다(아래 Deno.serve 첫머리).
  *   보통은 tools/send-push.mjs(npm run push)로 부른다.
  *
  * 요청
@@ -119,9 +119,20 @@ async function sendOne(token: string, payload: string, jwt: string, bundleId: st
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' });
 
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const bearer = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
-  if (!bearer || !sameSecret(bearer, serviceKey)) return json(401, { error: 'unauthorized' });
+  if (!bearer) return json(401, { error: 'unauthorized' });
+  // 함수 안에 들어오는 SUPABASE_SERVICE_ROLE_KEY 가 대시보드의 Legacy service_role 키와
+  // 글자가 다를 수 있다(키 형식 전환 중). 같으면 바로 통과, 다르면 Auth 관리자 API를
+  // 그 키로 불러 보아 진짜 관리자 키인지 Supabase에 확인한다 — 일반 사용자 토큰은 403.
+  const envKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  if (!sameSecret(bearer, envKey)) {
+    const check = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users?per_page=1`, {
+      headers: { apikey: bearer, Authorization: `Bearer ${bearer}` }
+    });
+    await check.body?.cancel();
+    if (check.status !== 200) return json(401, { error: 'unauthorized' });
+  }
+  const serviceKey = bearer;
 
   let input: Record<string, unknown>;
   try { input = await req.json(); } catch { return json(400, { error: 'invalid_json' }); }

@@ -555,7 +555,7 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
   font-family: var(--font-title); font-size: 2.5cqw; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase; color: #3B3A33;
 }
-.rec-page__head span:last-child { text-align: right; }
+.rec-page__head span:last-child { text-align: right; text-transform: none; }  /* @steppY는 대문자로 바꾸지 않는다 */
 .rec-page__head b { font-weight: 800; max-width: 40cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rec-page__items { z-index: 1; }
 

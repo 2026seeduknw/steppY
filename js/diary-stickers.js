@@ -18,7 +18,7 @@
       `<circle cx="70" cy="70" r="64" fill="${INK}"/><circle cx="70" cy="70" r="40" fill="${CREAM}"/>` +
       `<path d="M70 44l6 16 17-3-11 13 11 13-17-3-6 16-6-16-17 3 11-13-11-13 17 3z" fill="${INK}"/>` +
       `<defs><path id="c" d="M70 70m-52 0a52 52 0 1 1 104 0a52 52 0 1 1-104 0"/></defs>` +
-      `<text font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2.5" fill="#fff"><textPath href="#c">EXCHANGE · STUDENT · STEPPY ·</textPath></text>`) },
+      `<text font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2.5" fill="#fff"><textPath href="#c">EXCHANGE · STUDENT · steppY ·</textPath></text>`) },
     { key: 'heart', label: '하트', r: 1, svg: svg('0 0 120 110',
       `<path d="M60 100C20 72 8 52 10 34 12 16 30 6 44 10c8 2 13 8 16 14 3-6 8-12 16-14 14-4 32 6 34 24 2 18-10 38-50 66Z" fill="${RED}" ${ink.replace('fill="none" ', '')}/>` +
       `<path d="M28 30c2-6 8-10 14-10" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" opacity=".7"/>`) },
