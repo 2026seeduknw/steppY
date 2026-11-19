@@ -377,7 +377,7 @@
           ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
           <div class="rec-recap__title">
             <h3><b>${MONTH_EN[m]}</b> Recap</h3>
-            <p><span>CRAFTED BY STEPPY · ${y}</span></p>
+            <p><span>CRAFTED BY steppY · ${y}</span></p>
           </div>
           ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="1" aria-label="다음 달">›</button>' : '<span></span>'}
         </div>`;

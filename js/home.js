@@ -35,7 +35,7 @@
   // 로그인 상태에서는 AppState가 서버에서 채워지기 전에 이 IIFE가 먼저 돌아,
   // 최초 1회는 게스트 기본값으로 그려진다. 하이드레이션이 끝나면 'MOCK:updated'가
   // 오므로 그때 아래 네 가지를 통째로 다시 그린다(renderAll).
-  // 맨 위 STEPPY 워드마크 아래 한 줄 — 이름과 파견 시기를 한 문장으로
+  // 맨 위 steppY 워드마크 아래 한 줄 — 이름과 파견 시기를 한 문장으로
   function renderGreeting() {
     const greeting = document.getElementById('greeting');
 
