@@ -2,9 +2,9 @@
  * 기록하기 — 비로그인 온보딩.
  *
  * 로그인 전에는 사진·기록 화면을 보여주지 않고, 이 탭이 무엇을 해 주는지 위에서 아래로 이어지는 한 페이지로 알려 준다(스크롤).
- *   1. 사진 한 장을 올리면 함께 담기는 것(캡션·위치·날씨·노래·태그)
- *   2. 돌아볼 수 있게 정리해 주는 것(Wrap-up → 교환보고서를 쓸 때 그날을 생생하게)
- *   3. 교환 간 친구들과 함께 보는 타임라인
+ *   1. 사진 한 장을 올리면 함께 담기는 것(제목·캡션·위치·날씨·노래·폴더)
+ *   2. 돌아볼 수 있게 정리해 주는 것(Streak·캘린더 → Wrap-up → 교환보고서)
+ *   3. 교환 간 친구들이 오늘 올린 기록(Friends Today)
  * 모든 그림은 예시이고 어디에도 저장되지 않는다. 탭바 위에 고정된 버튼이 로그인으로 이어진다.
  *
  * journal.js가 로그인 여부에 따라 이 화면과 사진 다이어리(diary-view.js)를 번갈아 붙인다.
@@ -16,24 +16,24 @@
     {
       key: 'info',
       title: '기억하고 싶은 순간들을 남겨요',
-      desc: '사진을 넣으면 날씨와 위치가 함께 저장돼요.<br>듣고 있는 음악도 등록할 수 있고, 날씨·위치·사진 분위기에 맞는 노래도 추천해드려요.',
-      // 기록하기 탭의 최근 사진 카드(diary-view.js renderFeatured)와 같은 마크업·클래스 — 같은 모양으로 나온다
+      desc: '사진에 제목과 캡션을 붙이면 날씨와 위치가 함께 저장돼요.<br>그때 듣던 노래를 붙이고, 담을 폴더도 바로 골라요.',
+      // 기록하기 첫 화면의 큰 사진 카드(diary-view.js renderHomeHero)와 같은 클래스
       visual: () => {
         const d = new Date();
-        const film = `'${String(d.getFullYear()).slice(2)} ${d.getMonth() + 1} ${d.getDate()}`;
+        const date = `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}.`;
         return `
         <div class="dintro-polaroid" aria-hidden="true">
-          <div class="diary-slide is-active">
-            <div class="diary-featured__film">
-              <div class="diary-featured__card">
-                <img class="diary-featured__img" src="assets/mock/campus-sunset.webp" alt="" draggable="false">
-              </div>
-              <div class="film-bar film-bar--bottom"><span>▶ 1A</span><span>${film}</span></div>
+          <div class="rec-hero dintro-hero">
+            <div class="rec-hero__btn">
+              <img class="rec-hero__img" src="assets/mock/campus-sunset.webp" alt="" draggable="false">
+              <span class="rec-hero__place">📍 리옹 · 캠퍼스</span>
+              <span class="rec-hero__label">Today’s Memories</span>
+              <span class="rec-hero__date">${date}</span>
             </div>
           </div>
           <ul class="dintro-chips">
-            <li><b>✏️ 캡션</b>노을 지는 캠퍼스</li>
-            <li><b>📍 위치</b>리옹, 프랑스</li>
+            <li><b>✏️ 제목</b>노을 지는 캠퍼스</li>
+            <li><b>📁 폴더</b>Daily · Campus</li>
             <li><b>☀️ 날씨</b>맑음 19°</li>
             <li><b>🎵 노래</b>Kiss Me · Ariana Grande</li>
           </ul>
@@ -43,9 +43,26 @@
     {
       key: 'wrapup',
       title: '돌아볼 수 있게 정리해 드려요',
-      desc: '쌓인 기록을 Wrap-up으로 모아 드려요.<br>교환보고서를 쓸 때 그때를 생생하게 떠올리고, 교환 생활을 돌아보는 장치가 돼요.',
-      visual: `
+      desc: '며칠 기록했는지 쌓이는 걸 보고, 캘린더에서 날짜마다 첫 사진으로 돌아봐요.<br>쌓인 기록은 Wrap-up으로 모아 교환보고서를 쓸 때 꺼내 봐요.',
+      // D-day 밑 이번 주 줄(diary-view.js renderStreak)과 같은 클래스
+      visual: () => {
+        const d = new Date();
+        const base = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay());
+        const done = new Set([0, 1, 2].map(k => d.getDay() - k).filter(k => k >= 0));
+        const cells = ['일', '월', '화', '수', '목', '금', '토'].map((w, i) => {
+          const day = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i).getDate();
+          const cls = ['rec-streak__day', done.has(i) && 'is-done', i === d.getDay() && 'is-today', i > d.getDay() && 'is-future'].filter(Boolean).join(' ');
+          return `<span class="${cls}"><i>${w}</i><b>${day}</b></span>`;
+        }).join('');
+        return `
         <div class="dintro-wrap" aria-hidden="true">
+          <div class="rec-streak dintro-streak">
+            <div class="rec-streak__top">
+              <p class="rec-streak__count"><b>12</b>days recorded</p>
+              <span class="rec-streak__more">자세히 보기 →</span>
+            </div>
+            <div class="rec-streak__week">${cells}</div>
+          </div>
           <p class="dintro-wrap__eyebrow">WRAP-UP · 예시 &nbsp;<b>이번 달 정리</b></p>
           <div class="dintro-wrap__stats">
             <div><strong>12</strong><span>기록한 날</span></div>
@@ -57,41 +74,41 @@
             <img src="assets/mock/cafe-laptop.webp" alt="" draggable="false">
             <span>+29</span>
           </div>
-          <p class="dintro-wrap__note">“첫 바게트, 도서관 스터디룸…” 보고서에 쓸 이야기가 이미 모여 있어요</p>
-        </div>`
+        </div>`;
+      }
     },
     {
       key: 'friends',
       title: '교환 간 친구들과 함께해요',
-      desc: '교환학생을 간 친구들과 친구를 맺으면, 친구들이 어디서 뭘 하는지 타임라인에서 함께 볼 수 있어요.<br>댓글과 좋아요로 안부도 나눠요.',
-      // 친구 타임라인 카드(js/friends.js cardHtml)와 같은 클래스·구성 — 아바타 옆에 이름·학교, 사진, 그 아래 캡션과 촬영 지역
+      desc: '친구를 맺으면 친구들이 오늘 올린 사진과 글을 시간 순으로 볼 수 있어요.<br>초대 링크 하나로 바로 친구가 돼요.',
+      // 기록하기 첫 화면의 Friends Today(diary-archive.js drawFriends)와 같은 클래스
       visual: () => {
-        const card = (name, school, photo, caption, place) => `
-          <article class="ft-card">
-            <header class="ft-card__head">
-              <span class="ft-avatar">${name[0]}</span>
-              <div class="ft-card__who">
-                <strong>${name}</strong>
-                <span class="ft-card__school">🎓 ${school}</span>
+        const card = (name, school, time, photo, title) => `
+          <li class="ftl__item">
+            <article class="ftl__card">
+              <div class="ftl__who"><span class="ftl__av">${name[0]}</span><b>${name}</b><span class="ftl__school">${school}</span><span class="ftl__time">${time}</span></div>
+              <div class="ftl__photo">
+                <img class="ftl__img" src="${photo}" alt="" draggable="false">
+                <p class="ftl__title">${title}</p>
+                <span class="ftl__toggle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
               </div>
-            </header>
-            <div class="ft-photos"><img src="${photo}" alt="" draggable="false"></div>
-            <p class="ft-card__body">${caption}</p>
-            <p class="ft-card__meta">📍 ${place}</p>
-          </article>`;
+            </article>
+          </li>`;
         return `
         <div class="dintro-timeline" aria-hidden="true">
-          ${card('현서', 'UCLA · California', 'assets/mock/campus-sunset.webp', '수업 끝나고 계단 위에서 본 노을. 잔디밭이 다 금빛이었다.', 'Los Angeles, California')}
-          ${card('성욱', 'UNC · North Carolina', 'assets/mock/cafe-laptop.webp', '아이스 라떼 두 잔 놓고 과제하는 오후. 날씨가 너무 좋다.', 'Chapel Hill, North Carolina')}
+          <p class="arc-sec-home__label">Friends Today</p>
+          <ol class="ftl">
+            ${card('현서', 'UCLA · LA', '18:40', 'assets/mock/campus-sunset.webp', '수업 끝나고 본 노을')}
+            ${card('성욱', 'UNC · Chapel Hill', '14:05', 'assets/mock/cafe-laptop.webp', '라떼 두 잔 놓고 과제')}
+          </ol>
         </div>`;
       }
     }
   ];
-
   const MARKUP = `
     <section class="dintro" aria-label="기록하기 소개">
       <header class="dintro__hero">
-        <h1 class="dintro__headline"><span class="wm-text">Memories from Exchange</span></h1>
+        <h1 class="dintro__headline"><span class="wm-text">Archive your memories</span></h1>
         <p class="dintro__sub">교환 생활의 기억들을 모아요</p>
       </header>
       ${PAGES.map((p, i) => `

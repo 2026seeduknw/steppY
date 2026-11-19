@@ -9,6 +9,7 @@
   const errorEl = document.getElementById('authError');
   const noticeEl = document.getElementById('authNotice');
   const nameField = document.querySelector('.auth__field--name');
+  const agreeField = document.getElementById('authAgree');
   const titleEl = document.getElementById('authTitle');
   const subEl = document.getElementById('authSub');
   const passwordInput = form.elements.password;
@@ -31,13 +32,13 @@
       // 처음 여는 사람도 이 탭을 먼저 본다 — "다시 만나서"는 재방문을 전제해
       // 첫 사용자에게 어색했다. 무엇을 하는 화면인지만 말한다.
       title: '이어서 준비할까요',
-      sub: '연세대학교 메일로 로그인하면 지망 학교와 준비 상황을 어느 기기에서든 이어 볼 수 있어요',
+      sub: '연세대학교 메일로 로그인하면\n지망 학교와 준비 상황을 어느 기기에서든 이어 볼 수 있어요',
       submit: '로그인',
       autocomplete: 'current-password'
     },
     signup: {
       title: '첫 step 시작하기',
-      sub: '재학생 확인을 위해 연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요',
+      sub: '재학생 확인을 위해\n연세대학교 메일(@yonsei.ac.kr)로만 가입할 수 있어요',
       submit: '가입하고 시작하기',
       autocomplete: 'new-password'
     }
@@ -52,6 +53,9 @@
     submit.textContent = copy.submit;
     passwordInput.setAttribute('autocomplete', copy.autocomplete);
     nameField.hidden = next !== 'signup';
+    if (agreeField) agreeField.hidden = next !== 'signup';
+    const verify = document.getElementById('authVerify');
+    if (verify) verify.hidden = next !== 'signup';
     modes.querySelectorAll('.mode-toggle__btn').forEach(btn => {
       btn.classList.toggle('is-active', btn.dataset.mode === next);
     });
@@ -75,6 +79,14 @@
     errorEl.hidden = true;
   }
 
+  // 동의 목록 — '전체 동의'는 모든 항목을 한 번에, 항목을 하나라도 풀면 '전체 동의'도 풀린다
+  if (agreeField) {
+    const all = agreeField.querySelector('[data-consent-all]');
+    const items = [...agreeField.querySelectorAll('[data-consent]')];
+    all.addEventListener('change', () => items.forEach(i => { i.checked = all.checked; }));
+    items.forEach(i => i.addEventListener('change', () => { all.checked = items.every(x => x.checked); }));
+  }
+
   modes.addEventListener('click', e => {
     const btn = e.target.closest('.mode-toggle__btn');
     if (btn) setMode(btn.dataset.mode);
@@ -94,7 +106,13 @@
     if (!Auth.isAllowedEmail(email)) {
       return showError(`연세대학교 메일(${ALLOWED_EMAIL_DOMAIN})로만 이용할 수 있어요.`);
     }
+    if (mode === 'signup' && Auth.isTestEmail(email)) {
+      return showError('테스트 계정은 운영진이 만들어 드려요.\n받은 이메일·비밀번호로 로그인해 주세요.');
+    }
     if (mode === 'signup' && password.length < 6) return showError('비밀번호는 6자 이상이어야 해요.');
+    if (mode === 'signup' && agreeField && !['agree_age', 'agree_terms', 'agree_privacy'].every(k => fd.get(k))) {
+      return showError('[필수] 항목에 모두 동의해야 가입할 수 있어요.');
+    }
 
     submit.disabled = true;
     submit.textContent = mode === 'signin' ? '로그인 중…' : '가입 중…';
@@ -105,7 +123,9 @@
         location.replace('home.html');
         return;
       }
-      const { needsConfirmation } = await Auth.signUp(email, password, name);
+      const { needsConfirmation } = await Auth.signUp(email, password, name, {
+        location: !!fd.get('agree_location')
+      });
       // 세션이 바로 생기면(이메일 확인 꺼진 프로젝트) 온보딩부터 보여준다.
       // 확인 메일이 필요한 경우는 첫 로그인 때 layout.js의 가드가 잡는다.
       if (needsConfirmation) {

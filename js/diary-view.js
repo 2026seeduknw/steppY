@@ -24,6 +24,7 @@
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
+  let photoPlaceSet = false;     // 사진 GPS로 위치·날씨를 정했으면 기기 위치가 나중에 와도 덮지 않는다
   let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
   let nowPlayingSearchTimer = null;
   let root = null;
@@ -72,7 +73,7 @@
   }
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function entries() {
-    const list = AppState.isAuthed ? AppState.getJournal() : guestSample();
+    const list = AppState.isAuthed ? AppState.getJournal() : [];   // 로그인 전에는 예시 기록 없이 빈 화면
     // 같은 날은 기록 시각순 — 먼저 찍은 사진이 앞(왼쪽)에 온다. 시각은 찍은 시점(앨범에서 고른 사진은 EXIF)이다.
     return list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)));
   }
@@ -89,73 +90,6 @@
     return list.filter(e => (e.phase || departurePhaseFor(e.date)) === phaseFilter);
   }
 
-  /*
-   * 둘러보기(로그인 전)에는 저장할 계정이 없어서 기록이 비어 보인다. 화면이 어떤 모양인지
-   * 알 수 있도록 이번 달에 예시 기록을 깔아 보여준다. 읽기 전용이고 어디에도 저장되지 않는다.
-   */
-  let guestCache = null;
-  function guestSample() {
-    if (guestCache) return guestCache;
-    const P = {
-      campus: 'https://images.unsplash.com/photo-1751510397614-e289eb4ce57a?w=900&q=75&auto=format&fit=crop',
-      library: 'https://images.unsplash.com/photo-1741699427799-3fbb70fce948?w=900&q=75&auto=format&fit=crop',
-      cafe: 'https://images.unsplash.com/photo-1559925393-8be0ec4767c8?w=900&q=75&auto=format&fit=crop',
-      dorm: 'https://images.unsplash.com/photo-1632119289059-793dd347950f?w=900&q=75&auto=format&fit=crop',
-      eiffel: 'https://images.unsplash.com/photo-1757435755027-91a1a4beb6c5?w=900&q=75&auto=format&fit=crop'
-    };
-    P.sunset = 'assets/mock/campus-sunset.webp';   // 어제·오늘 예시 사진(앱에 들어 있는 파일)
-    P.laptop = 'assets/mock/cafe-laptop.webp';
-    Object.values(P).forEach(u => { photoUrls[u] = u; });
-    const y = now.getFullYear(), m = now.getMonth();
-    const at = (day, h, min) => new Date(y, m, day, h, min).toISOString();
-    const mk = (day, h, min, o) => Object.assign({
-      id: 'guest' + day, date: toIso(new Date(y, m, day)), phase: 'abroad', title: '', body: '',
-      photos: [], tags: [], location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null,
-      weather: null, createdAt: at(day, h, min)
-    }, o);
-    // 예시 기록에도 앨범 표지 있는 노래를 붙인다 — 둘러보기에서 LP가 돌아가는 모습을 보여주기 위해서다.
-    const ART = {
-      indila: 'https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/49/58/30/49583018-308b-431d-c691-4a28e78be8cd/14UMGIM01109.rgb.jpg/300x300bb.jpg',
-      air: 'https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/d1/f9/26/d1f926e7-e996-7166-3744-0710a82177ac/017046664455.jpg/300x300bb.jpg',
-      iu: 'https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/dc/12/fe/dc12fe03-172b-a843-0d96-12819fa05b6c/cover-.jpg/300x300bb.jpg',
-      stromae: 'https://is1-ssl.mzstatic.com/image/thumb/Video5/v4/49/ab/0f/49ab0f2e-9895-b63a-6438-0cf87201f875/13UAAIM09601_1_1.jpg/300x300bb.jpg',
-      ariana: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/300x300bb.jpg',
-      justice: 'https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/62/e4/01/62e40187-e672-17e5-f31f-9aee262703a3/mzi.bifzeufu.jpg/300x300bb.jpg'
-    };
-    const track = (name, artist, art) => Object.assign({ name, artist, art },
-      (typeof SongEngine !== 'undefined') ? SongEngine.buildSongLinks(name, artist) : { youtubeUrl: '#' });
-    guestCache = [
-      mk(1, 11, 20, { title: '리옹 도착', body: '학교가 트램으로 15분 거리라 생각보다 조용한 동네였다.', photos: [P.campus], tags: ['neighborhood'],
-        song: track('Sexy Boy', 'Air', ART.air) }),
-      mk(2, 19, 40, { title: '기숙사 첫 요리', body: '마트에서 산 바게트가 확실히 다르다.', photos: [P.dorm], tags: ['dorm'],
-        weather: { code: 3, temp: 18 },
-        song: track('Dernière danse', 'Indila', ART.indila) }),
-      mk(3, 13, 15, { title: '점심이 2시간', body: '다들 점심을 천천히 먹는 게 아직 적응 안 됨.', photos: [P.cafe], tags: ['friends'],
-        song: track('밤편지', 'IU', ART.iu) }),
-      mk(5, 15, 30, { title: '도서관 스터디룸', body: '국제학생 오피스에서 서류 도움 받고 스터디룸도 예약함.', photos: [P.library], tags: ['study', 'admin'],
-        song: track('Formidable', 'Stromae', ART.stromae),
-        nowPlaying: track('밤편지', 'IU', ART.iu) }),
-      mk(7, 17, 45, { title: '파리 당일치기', body: '주말에 에펠탑 보고 옴.', photos: [P.eiffel, P.cafe], tags: ['trip', 'food'], location: { country: '프랑스', city: '파리' },
-        weather: { code: 61, temp: 12 },
-        song: track('Formidable', 'Stromae', ART.stromae) })
-    ];
-    // 어제·오늘 기록 — 달이 바뀌어도 항상 "어제"와 "오늘"이 되도록 날짜를 지금 기준으로 잡는다.
-    const dayAt = (offset, h, min, o) => {
-      const d = new Date(y, m, now.getDate() + offset);
-      return Object.assign({
-        id: 'guestd' + offset, date: toIso(d), phase: 'abroad', title: '', body: '', photos: [], tags: [],
-        location: { country: '프랑스', city: '리옹' }, song: null, nowPlaying: null, weather: null,
-        createdAt: new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, min).toISOString()
-      }, o);
-    };
-    guestCache.push(
-      dayAt(-1, 18, 40, { title: '노을 지는 캠퍼스', body: '수업 끝나고 계단 위에서 본 노을. 잔디밭이 다 금빛이었다.', photos: [P.sunset], tags: ['campus', 'neighborhood'],
-        weather: { code: 0, temp: 19 }, song: track('Kiss Me', 'Ariana Grande', ART.ariana) }),
-      dayAt(0, 11, 45, { title: '잔디밭 앞 카페', body: '아이스 라떼 두 잔 놓고 과제하는 오후. 날씨가 너무 좋다.', photos: [P.laptop], tags: ['study', 'food'],
-        weather: { code: 1, temp: 22 }, song: track('D.A.N.C.E.', 'Justice', ART.justice) })
-    );
-    return guestCache;
-  }
   /** 필름 카메라 날짜 각인 — 2026-09-12 → '26 9 12 */
   function filmDate(iso) { return `'${iso.slice(2, 4)} ${Number(iso.slice(5, 7))} ${Number(iso.slice(8, 10))}`; }
   function photoUrl(path) { return photoUrls[path] || ''; }
@@ -180,64 +114,97 @@
   /* --------------------------------------------------------------- 뼈대 */
 
   const MARKUP = `
-    <div class="arc-title">
-      <h2 class="arc-title__h">Archive your<br>exchange memories!</h2>
-      <p class="arc-title__sub">교환 기간 동안 소중한 순간들을 모아보아요.</p>
-    </div>
+    <header class="v2-head rec-head">
+      <div class="rec-head__text">
+        <p class="v2-head__eyebrow">Archive your memories</p>
+        <h1 class="v2-head__title" id="recDayTitle">Today</h1>
+      </div>
+      <button type="button" class="rec-head__add" id="recHeadAdd"><span aria-hidden="true">+</span> 사진 추가</button>
+    </header>
 
-    <section class="diary-featured" id="diaryFeaturedSlot"></section>
+    <section class="rec-streak" id="recStreak"></section>
 
-    <div class="diary-write-bar">
-      <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="0" aria-label="바로 사진 찍어 기록하기">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
-        카메라
+    <section class="rec-hero" id="recHero"></section>
+
+    <section class="rec-recent">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Recent</h2>
+        <button type="button" class="rec-sec-head__more" id="recOpenStorage" aria-label="저장소 전체 보기">→</button>
+      </div>
+      <div class="rec-recent__row" id="recRecent"></div>
+    </section>
+
+    <!-- Recap — 한 달 사진을 잡지 한 장처럼(예전에는 Monthly 폴더를 열면 나왔다. 폴더는 이제 사진 보관용). js/record-v2.js openRecap -->
+    <section class="rec-recap-home">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Recap</h2>
+      </div>
+      <div id="recRecapSlot"></div>
+    </section>
+
+    <!-- 하루 다이어리 — 하루를 한 장으로 꾸민다(사진·글·스티커·노래). 열면 넣은 노래가 재생된다. js/record-v2.js -->
+    <section class="rec-diary">
+      <div class="rec-sec-head">
+        <h2 class="rec-sec-head__title">Diary</h2>
+        <button type="button" class="rec-diary__new" id="recDiaryNew">+ 다이어리 만들기</button>
+      </div>
+      <div class="rec-diary__row" id="recDiaryRow"></div>
+    </section>
+
+    <!-- 예전 첫 화면(최근 사진 카드·기록 버튼)은 시안에서 빠졌다. 기록 쓰기 창은 사진 자리에서 연다 -->
+    <section class="diary-featured" id="diaryFeaturedSlot" hidden></section>
+    <div class="diary-write-bar" hidden>
+      <label class="diary-write-bar__btn diary-write-bar__btn--camera" id="cameraBtn" role="button" tabindex="-1" aria-hidden="true">
         <input type="file" accept="image/*" capture="environment" id="cameraInputMain" tabindex="-1">
       </label>
-      <button type="button" class="diary-write-bar__btn" id="writeBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        기록하기
-      </button>
+      <button type="button" class="diary-write-bar__btn" id="writeBtn" tabindex="-1" aria-hidden="true"></button>
     </div>
 
-    <section class="arc-sec-home" id="archiveFoldersSec">
-      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Folders</span><button type="button" class="arc-edit" id="archiveEdit">꾸미기</button></div>
-      <div class="arc-grid" id="archiveFolders"></div>
-    </section>
-
     <section class="arc-sec-home" id="archiveFriendsSec">
-      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
+      <div class="arc-sec-home__head"><span class="arc-sec-home__label">Friends Today</span><button type="button" class="arc-edit" id="archiveFriendsManage">친구 관리<span class="arc-badge" data-friends-badge hidden>0</span></button></div>
       <div id="archiveFriends"></div>
     </section>
+
+    <!-- 달력은 첫 화면에서 빠졌다 — 이번 주 기록 줄의 '자세히 보기'로 여는 전체 화면 -->
+    <div class="rec-layer rec-calpage" id="recCalPage" hidden>
+      <header class="rec-top">
+        <button type="button" class="rec-top__back" id="recCalClose" aria-label="닫기">‹</button>
+        <div class="rec-top__title"><b>캘린더</b><small>Calendar</small></div>
+        <div class="rec-top__right"></div>
+      </header>
+      <div class="rec-layer__body">
+        <section class="diary-cal-section">
+          <div class="diary-cal-nav">
+            <h2 class="diary-cal-nav__title" id="calTitle"></h2>
+            <div class="diary-cal-nav__btns">
+              <div class="diary-menu">
+                <button type="button" class="diary-icon-btn" id="calMenuBtn" aria-label="더 보기" aria-haspopup="menu" aria-expanded="false">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
+                  <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
+                  <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
+                  <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
+                </div>
+              </div>
+              <span class="diary-cal-nav__divider"></span>
+              <button type="button" class="diary-icon-btn" id="calPrev" aria-label="이전 달">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button type="button" class="diary-icon-btn" id="calNext" aria-label="다음 달">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="diary-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+          <div class="diary-month" id="calMonth"></div>
+        </section>
+      </div>
+    </div>
 
     <div id="diaryHeroSlot"></div>
     <div id="diaryPhaseToggle" hidden></div>
 
-    <section class="diary-cal-section">
-      <div class="diary-cal-nav">
-        <h2 class="diary-cal-nav__title" id="calTitle"></h2>
-        <div class="diary-cal-nav__btns">
-          <div class="diary-menu">
-            <button type="button" class="diary-icon-btn" id="calMenuBtn" aria-label="더 보기" aria-haspopup="menu" aria-expanded="false">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-            </button>
-            <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
-              <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
-              <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
-              <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
-            </div>
-          </div>
-          <span class="diary-cal-nav__divider"></span>
-          <button type="button" class="diary-icon-btn" id="calPrev" aria-label="이전 달">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <button type="button" class="diary-icon-btn" id="calNext" aria-label="다음 달">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="diary-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-      <div class="diary-month" id="calMonth"></div>
-    </section>
 
   `;
 
@@ -314,6 +281,51 @@
   }
 
   /* --------------------------------------------------------------- 연속 기록 */
+
+  /** 기록이 있는 날 모음 — 국면 필터와 상관없이 전부 센다 */
+  function recordedDays() { return new Set(entries().map(e => e.date)); }
+  /** D-day 밑 이번 주 줄 — 일~토 칸에 기록한 날을 채우고, 자세히 보기로 달력을 연다 */
+  function renderStreak() {
+    const slot = root.querySelector('#recStreak');
+    if (!slot) return;
+    const days = recordedDays();
+    // 연속 일수 대신 지금까지 기록한 날 수(하루에 여러 번 써도 하루)
+    const n = days.size;
+    const base = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const WD = ['일', '월', '화', '수', '목', '금', '토'];
+    const cells = WD.map((w, i) => {
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+      const iso = toIso(d);
+      const done = days.has(iso);
+      const cls = ['rec-streak__day', done && 'is-done', iso === todayIso && 'is-today', iso > todayIso && 'is-future'].filter(Boolean).join(' ');
+      return `<span class="${cls}"><i>${w}</i><b>${d.getDate()}</b></span>`;
+    }).join('');
+    slot.innerHTML = `
+      <div class="rec-streak__top">
+        <p class="rec-streak__count" aria-label="${n} ${n === 1 ? 'day' : 'days'} recorded">
+          <b>${n}</b>${n === 1 ? 'day' : 'days'} recorded
+        </p>
+        <button type="button" class="rec-streak__more" id="recCalOpen">자세히 보기 →</button>
+      </div>
+      <div class="rec-streak__week">${cells}</div>`;
+  }
+  function openCalPage() {
+    const page = root.querySelector('#recCalPage');
+    if (!page) return;
+    view.year = now.getFullYear(); view.month = now.getMonth();
+    renderMonth();
+    page.hidden = false;
+    page.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => page.classList.add('is-open'));
+  }
+  function closeCalPage() {
+    const page = root && root.querySelector('#recCalPage');
+    if (!page) return;
+    page.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(() => { if (!page.classList.contains('is-open')) page.hidden = true; }, 330);
+  }
 
 
   /* --------------------------------------------------------------- 최근 사진 */
@@ -690,9 +702,9 @@
     const h = new Date().getHours();
     const tod = ['day', 'dusk', 'night'].includes(forced) ? forced : (h >= 6 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'dusk' : 'night');
     document.body.dataset.tod = tod;
-    // 화면 분위기 — 기본은 필름 카메라. ?theme=glass 로 이전의 유리 + 노을 테마를 볼 수 있다.
+    // 화면 분위기 — 기본은 v2(흰 바탕, Figma 기록하기 시안). ?theme=film 은 필름 카메라, ?theme=glass 는 유리 + 노을 테마.
     const th = new URLSearchParams(location.search).get('theme');
-    document.body.dataset.theme = th === 'glass' ? 'glass' : 'film';
+    document.body.dataset.theme = th === 'glass' ? 'glass' : th === 'film' ? 'film' : 'v2';
   }
 
   /* --------------------------------------------------------------- 우표첩 */
@@ -815,8 +827,8 @@
     const d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
   };
-  const locText = (loc) => (loc && (loc.city || loc.country))
-    ? [loc.city, loc.country].filter(Boolean).join(', ') : '';
+  const locText = (raw) => { const loc = typeof placeEn === 'function' ? placeEn(raw) : raw;
+    return (loc && (loc.city || loc.country)) ? [loc.city, loc.country].filter(Boolean).join(', ') : ''; };
 
   /* --------------------------------------------------------------- 미리듣기 */
 
@@ -889,7 +901,7 @@
     const alt = esc(heading || `${e.date} 기록 사진`);
     const city0 = (e.location && (e.location.city || e.location.country)) || '';
     // 오늘의 노래를 우선하되, 없으면 그때 듣던 노래. 표지가 없어도 LP는 보인다.
-    const lpTrack = e.song || e.nowPlaying || null;
+    const lpTrack = e.nowPlaying || e.song || null;   // 직접 고른 노래가 먼저
     let photo;
     if (!urls.length && photosLoading(e)) {
       photo = `<div class="diary-stamp__skeleton" aria-label="사진 불러오는 중"></div>`;
@@ -989,7 +1001,7 @@
           ${bodyText ? `<p class="diary-ticket-text">${esc(bodyText)}</p>` : ''}
           ${infoRows(e, tags)}
           ${(e.song || e.nowPlaying) ? '<div class="diary-ticket-perf"></div>' : ''}
-          ${songRow(e.song, '🎵 오늘의 노래', 'recommend')}
+          ${songRow(e.song, '🎵 추천 노래 · 날씨·위치 기반', 'recommend')}
           ${songRow(e.nowPlaying, '🎧 그때 듣던 노래', 'nowplaying')}
           ${AppState.isAuthed ? `<div class="diary-entry__actions">
             <button type="button" class="diary-entry__edit-link" data-edit="${esc(e.id)}">수정</button>
@@ -1131,16 +1143,17 @@
       reader.onerror = () => reject(new Error('파일을 읽지 못했어요'));
       reader.onload = () => {
         const img = new Image();
-        img.onerror = () => reject(new Error('이미지를 열지 못했어요'));
+        // 아이폰 사진(HEIC)은 Safari·iOS 앱은 열지만 크롬 계열 브라우저는 못 연다
+        const heic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
+        img.onerror = () => reject(new Error(heic
+          ? '아이폰 사진(HEIC)은 이 브라우저에서 열 수 없어요.\nJPG·PNG로 바꿔 올리거나 휴대폰 앱에서 올려 주세요.'
+          : '이미지를 열지 못했어요'));
         img.onload = () => {
           /*
-           * 사진 비율: 4:3(가로) ~ 3:4(세로) 사이면 그대로 둔다. 16:9처럼 더 납작하거나 9:16처럼 더 길쭉하면
-           * 가운데를 기준으로 4:3(또는 3:4)까지만 잘라 저장한다.
+           * 사진은 원본 비율 그대로 저장한다(예전에는 4:3~3:4 밖이면 가운데를 잘랐다).
+           * 다이어리에서 4:3·3:4·1:1로 보이고 싶으면 꾸미기의 "자르기"에서 사용자가 직접 정한다.
            */
-          let sx = 0, sy = 0, sw = img.width, sh = img.height;
-          const ratio = sw / sh;
-          if (ratio > 4 / 3) { sw = Math.round(sh * 4 / 3); sx = Math.round((img.width - sw) / 2); }
-          else if (ratio < 3 / 4) { sh = Math.round(sw * 4 / 3); sy = Math.round((img.height - sh) / 2); }
+          const sx = 0, sy = 0, sw = img.width, sh = img.height;
           const maxDim = 900;
           const scale = Math.min(1, maxDim / Math.max(sw, sh));
           const canvas = document.createElement('canvas');
@@ -1156,56 +1169,83 @@
   }
 
   /**
-   * 사진을 찍은 시각. 앨범에서 고른 사진은 올린 시각이 아니라 찍은 시각으로 줄을 세워야 해서
-   * JPEG EXIF(DateTimeOriginal)를 먼저 읽고, 없으면 파일 수정 시각(방금 찍은 것처럼 지금과 같으면 모르는 걸로 친다)을 쓴다.
-   * 리사이즈(canvas)를 거치면 EXIF가 사라지므로 원본 파일에서 읽는다.
+   * 사진 속 정보 — 찍은 시각과 찍은 곳(GPS). 앨범에서 고른 사진은 올린 시각·지금 있는 곳이 아니라
+   * 찍은 시각·찍은 곳으로 기록해야 해서(피드백) 원본 파일의 EXIF를 읽는다. 리사이즈(canvas)를 거치면
+   * EXIF가 사라지므로 올리기 전에 읽는다. JPEG뿐 아니라 아이폰 HEIC도 안에 같은 EXIF 블록이 있어
+   * 'Exif\0\0' 표시를 찾아 그 뒤의 TIFF 머리부터 읽는다.
+   * 시각이 없으면 파일 수정 시각(방금 찍은 것처럼 지금과 같으면 모르는 걸로 친다)을 쓴다.
    */
-  async function readTakenAt(file) {
-    try {
-      const t = parseExifDate(new DataView(await file.slice(0, 262144).arrayBuffer()));
-      if (t && !isNaN(t)) return t;
-    } catch (e) { /* EXIF가 없거나 깨졌으면 아래로 */ }
-    if (file.lastModified && Math.abs(Date.now() - file.lastModified) > 60000) return new Date(file.lastModified);
-    return null;
-  }
-  function parseExifDate(dv) {
-    if (dv.getUint16(0) !== 0xFFD8) return null;            // JPEG가 아니다
-    let off = 2;
-    while (off + 4 < dv.byteLength) {
-      const marker = dv.getUint16(off), len = dv.getUint16(off + 2);
-      if (marker === 0xFFE1 && dv.getUint32(off + 4) === 0x45786966) {   // 'Exif'
-        const tiff = off + 10, little = dv.getUint16(tiff) === 0x4949;
-        const u16 = (o) => dv.getUint16(o, little), u32 = (o) => dv.getUint32(o, little);
-        const find = (ifd, tags) => {
-          const n = u16(ifd);
-          for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (tags.includes(u16(e))) return { count: u32(e + 4), val: e + 8 }; }
-          return null;
-        };
-        const text = (e) => {
-          const o = e.count > 4 ? tiff + u32(e.val) : e.val;
-          let str = ''; for (let i = 0; i < e.count - 1; i++) str += String.fromCharCode(dv.getUint8(o + i));
-          return str;
-        };
-        const toDate = (str) => { const m = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(str); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null; };
-        const ifd0 = tiff + u32(tiff + 4);
-        const ptr = find(ifd0, [0x8769]);                                 // Exif IFD
-        if (ptr) { const e = find(tiff + u32(ptr.val), [0x9003, 0x9004]); if (e) { const d = toDate(text(e)); if (d) return d; } }
-        const e0 = find(ifd0, [0x0132]);                                  // DateTime
-        return e0 ? toDate(text(e0)) : null;
-      }
-      if ((marker & 0xFF00) !== 0xFF00) break;
-      off += 2 + len;
+  async function readPhotoMeta(file) {
+    let meta = { takenAt: null, gps: null };
+    try { meta = parseExif(new DataView(await file.slice(0, 524288).arrayBuffer())) || meta; }
+    catch (e) { /* EXIF가 없거나 깨졌으면 아래로 */ }
+    if (!(meta.takenAt && !isNaN(meta.takenAt)) && file.lastModified && Math.abs(Date.now() - file.lastModified) > 60000) {
+      meta.takenAt = new Date(file.lastModified);
     }
-    return null;
+    return meta;
+  }
+  function parseExif(dv) {
+    // 'Exif\0\0' 찾기
+    let tiff = -1;
+    for (let i = 0; i + 10 < dv.byteLength; i++) {
+      if (dv.getUint32(i) === 0x45786966 && dv.getUint16(i + 4) === 0) {
+        const o = dv.getUint16(i + 6);
+        if (o === 0x4949 || o === 0x4D4D) { tiff = i + 6; break; }
+      }
+    }
+    if (tiff < 0) return null;
+    const little = dv.getUint16(tiff) === 0x4949;
+    const u16 = (o) => dv.getUint16(o, little), u32 = (o) => dv.getUint32(o, little);
+    const inRange = (o) => o > 0 && o < dv.byteLength - 2;
+    const find = (ifd, tag) => {
+      if (!inRange(ifd)) return null;
+      const n = u16(ifd);
+      for (let i = 0; i < n; i++) { const e = ifd + 2 + i * 12; if (!inRange(e + 12)) return null; if (u16(e) === tag) return { count: u32(e + 4), val: e + 8 }; }
+      return null;
+    };
+    const text = (e) => {
+      const o = e.count > 4 ? tiff + u32(e.val) : e.val;
+      let str = ''; for (let i = 0; i < e.count - 1 && inRange(o + i); i++) str += String.fromCharCode(dv.getUint8(o + i));
+      return str;
+    };
+    const rationals = (e) => {
+      const o = tiff + u32(e.val), out = [];
+      for (let i = 0; i < e.count; i++) { const d = u32(o + i * 8 + 4); out.push(d ? u32(o + i * 8) / d : 0); }
+      return out;
+    };
+    const toDate = (str) => { const m = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(str); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null; };
+    const ifd0 = tiff + u32(tiff + 4);
+    let takenAt = null, gps = null;
+    const exifPtr = find(ifd0, 0x8769);
+    if (exifPtr) { const e = find(tiff + u32(exifPtr.val), 0x9003) || find(tiff + u32(exifPtr.val), 0x9004); if (e) takenAt = toDate(text(e)); }
+    if (!takenAt) { const e0 = find(ifd0, 0x0132); if (e0) takenAt = toDate(text(e0)); }
+    const gpsPtr = find(ifd0, 0x8825);
+    if (gpsPtr) {
+      try {
+        const g = tiff + u32(gpsPtr.val);
+        const latRef = find(g, 1), lat = find(g, 2), lngRef = find(g, 3), lng = find(g, 4);
+        if (lat && lng) {
+          const dms = (r) => r[0] + (r[1] || 0) / 60 + (r[2] || 0) / 3600;
+          let la = dms(rationals(lat)), lo = dms(rationals(lng));
+          if (latRef && String.fromCharCode(dv.getUint8(latRef.val)) === 'S') la = -la;
+          if (lngRef && String.fromCharCode(dv.getUint8(lngRef.val)) === 'W') lo = -lo;
+          if (isFinite(la) && isFinite(lo) && (la || lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) gps = { lat: la, lng: lo };
+        }
+      } catch (e) { /* 위치 칸이 깨졌으면 위치 없이 */ }
+    }
+    return { takenAt, gps };
   }
 
-  async function addPendingPhoto(file, takenAt) {
-    if (takenAt === undefined) takenAt = await readTakenAt(file);
-    const blob = await resizeImage(file);
+  async function addPendingPhoto(file, meta) {
+    if (meta === undefined) meta = await readPhotoMeta(file);
+    const takenAt = meta ? meta.takenAt : null;
+    const gps = meta ? meta.gps : null;
+    const blob = await resizeImage(window.HeicFix ? await HeicFix.prepare(file) : file);   // 아이폰 HEIC → JPEG(필요할 때만)
     const path = await AppState.uploadDiaryPhoto(blob);
     const url = URL.createObjectURL(blob);   // 방금 올린 건 서명 URL을 기다릴 것 없이 바로 보여준다
     photoUrls[path] = url;
-    pendingPhotos.push({ path, url, takenAt });
+    pendingPhotos.push({ path, url, takenAt, gps });
+    usePhotoPlace();
     return path;
   }
 
@@ -1215,7 +1255,7 @@
     // 경로가 아니라 주소(또는 앱에 들어 있는 assets/ 파일)로 저장된 사진(예시 기록)은 서명 없이 그대로 쓴다
     all.filter(p => /^(https?:\/\/|assets\/)/.test(p)).forEach(p => { photoUrls[p] = p; });
     const paths = all.filter(p => !photoUrls[p]);
-    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); renderArchive(); return; }
+    if (!paths.length) { renderFeatured(); renderMonth(); renderSide(); renderArchive(); renderHome(); return; }
     const map = await AppState.signPhotoPaths(paths);
     Object.assign(photoUrls, map);
     paths.forEach(p => { if (!map[p]) photoFailed.add(p); });
@@ -1223,6 +1263,8 @@
     renderMonth();
     renderSide();
     renderArchive();
+    renderHome();
+    document.dispatchEvent(new CustomEvent('record:photos'));
   }
 
   /* --------------------------------------------------------------- 기록 모달 */
@@ -1245,6 +1287,20 @@
     return scrim;
   }
 
+  /** 기록 쓰기 창의 폴더 칩 — 손으로 만든 폴더만(Monthly는 날짜로 자동이라 뺀다). 여러 개 고를 수 있다 */
+  let pendingFolders = new Set();
+  function entryFolders() {
+    try { return typeof DiaryArchive !== 'undefined' ? DiaryArchive.folders().filter(f => f.type !== 'monthly') : []; }
+    catch (e) { return []; }
+  }
+  function folderIdsOf(entryId) {
+    return entryFolders().filter(x => (x.entryIds || []).includes(entryId)).map(x => x.id);
+  }
+  function folderChipsHtml() {
+    const chips = entryFolders().map(f => `<button type="button" class="rec-chip${pendingFolders.has(f.id) ? ' is-on' : ''}" data-folder-pick="${esc(f.id)}" aria-pressed="${pendingFolders.has(f.id)}">${esc(f.name)}</button>`).join('');
+    return chips + '<button type="button" class="rec-chip entry-v2__chip-add" data-folder-new aria-label="새 폴더 만들기">+</button>';
+  }
+
   function openEntryModal(initialFile, prompt, edit) {
     // 원본은 파견 기간 밖을 막았지만, 여기서는 출국 전 기록이 핵심 용도라 막지 않는다.
     editingEntry = edit || null;
@@ -1252,54 +1308,64 @@
     pendingPhotos = edit ? (edit.photos || []).map(p => ({ path: p, url: photoUrl(p) })) : [];
     pendingLocation = null;
     pendingWeather = null;
+    photoPlaceSet = false; photoPlaceKey = '';
     pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
     const scrim = ensureScrim('entryModalScrim');
+    // 기록 쓰기 — 사진 · 제목/캡션 · 담을 폴더 · 그때 듣던 노래만(v2 컨셉: 흰 시트, 큰 제목, 칩)
+    pendingFolders = new Set(edit ? folderIdsOf(edit.id) : []);
     scrim.innerHTML = `
-      <div class="modal-panel modal-panel--sm diary-modal-pad diary-sheet">
+      <div class="modal-panel modal-panel--sm diary-modal-pad diary-sheet entry-v2">
         <div class="diary-sheet__handle"></div>
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
-        <div class="diary-modal-header">
-          <h2${edit ? '' : ' class="is-date"'}>${edit ? '기록 수정' : targetDate}</h2>
-          <p class="diary-modal-header__note">${edit ? targetDate : (departurePhaseFor(targetDate) === 'abroad' ? '파견 중 기록' : '출국 전 기록')}</p>
-        </div>
-        <form class="diary-form" id="entryForm">
+        <header class="entry-v2__head">
+          <p class="entry-v2__eyebrow">${esc(targetDate)}</p>
+          <h2 class="entry-v2__title">${edit ? 'Edit' : 'New'} <span>record</span></h2>
+        </header>
+        <form class="diary-form entry-v2__form" id="entryForm">
           <div class="diary-photo-picker" id="photoPicker">
-            <label class="diary-photo-picker__add">
+            <label class="diary-photo-picker__add" aria-label="사진 추가">
               <span class="diary-photo-picker__add-icon" aria-hidden="true">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </span>
               <input type="file" accept="image/*" multiple id="photoInput" style="display:none;">
             </label>
-            <label class="diary-photo-picker__add diary-photo-picker__camera" aria-label="바로 사진 찍기">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
-              <input type="file" accept="image/*" capture="environment" id="cameraInput" style="display:none;">
-            </label>
           </div>
-          <p class="diary-photo-picker__quota" id="photoQuota" hidden></p>
-          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요 — 맨 앞 사진이 대표 사진(우표에 크게 나오는 사진)이에요</p>
-          <input type="text" name="title" class="diary-form__title" placeholder="제목 (선택)" maxlength="80">
-          ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
-          <textarea name="caption" placeholder="${prompt ? '한 줄로 답해보세요 (선택)' : '오늘 하루는 어땠나요? (선택)'}"></textarea>
-          <div>
-            <span class="diary-form__label">오늘 뭘 했나요? (여러 개 골라도 돼요)</span>
-            <div class="diary-tag-grid" id="tagGrid">
-              ${tagGroupsTemplate(edit ? edit.tags : null)}
-            </div>
-            <p class="diary-form__hint">고른 태그는 나중에 교환보고서 항목에 자동으로 나뉘어 들어가요</p>
+          <p class="entry-v2__place" id="locationNote" hidden></p>
+          <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진이에요.</p>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">제목 · 캡션</span>
+            <input type="text" name="title" class="entry-v2__input entry-v2__input--title" placeholder="사진 제목" maxlength="80">
+            ${prompt ? `<p class="diary-prompt-note">💭 ${esc(prompt)}</p>` : ''}
+            <textarea name="caption" class="entry-v2__input entry-v2__caption" placeholder="${prompt ? '한 줄로 답해보세요' : '캡션을 남겨 보세요'}"></textarea>
           </div>
-          <div>
-            <span class="diary-form__label">그때 듣던 노래 (선택)</span>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">담을 폴더</span>
+            <div class="entry-v2__chips" id="folderChips">${folderChipsHtml()}</div>
+          </div>
+
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">그때 듣던 노래</span>
             <div id="nowPlayingPicker"></div>
           </div>
-          <label class="diary-share">
-            <input type="checkbox" name="share" ${!edit || edit.visibility === 'friends' ? 'checked' : ''}>
-            <span class="diary-share__text"><b>친구에게 공개</b><small>친구 목록에 있는 분들이 사진·글·위치·노래를 볼 수 있어요. 끄면 나만 봐요.</small></span>
-          </label>
-          ${edit ? '' : '<span class="diary-location-note" id="locationNote">📍 위치 확인 중…</span>'}
+
+          <!-- 공개 범위 — 글에 민감한 내용이 들어가면 친구에게 보일 수 있어 비공개로 고를 수 있게 한다(개인정보 보호법 제23조 제3항) -->
+          <div class="entry-v2__field">
+            <span class="entry-v2__label">공개 범위</span>
+            <div class="entry-v2__chips" id="visibilityChips" role="radiogroup" aria-label="공개 범위">
+              ${[['friends', '친구 공개'], ['private', '나만 보기']].map(([v, l]) => {
+                const on = (edit ? (edit.visibility || 'friends') : 'friends') === v;
+                return `<button type="button" class="rec-chip${on ? ' is-on' : ''}" data-visibility="${v}" role="radio" aria-checked="${on}">${l}</button>`;
+              }).join('')}
+            </div>
+            <p class="entry-v2__note">친구 공개 기록은 친구 목록에 있는 사람에게 보여요.<br>건강·종교·연애처럼 민감한 내용이 있으면 '나만 보기'로 남겨 주세요.</p>
+          </div>
+
           <input type="hidden" name="date" value="${targetDate}">
-          <button type="submit" class="btn btn--primary btn--block" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
+          <button type="submit" class="entry-v2__submit" id="entrySubmit">${edit ? '수정 저장' : '기록 저장'}</button>
         </form>
       </div>`;
 
@@ -1334,46 +1400,89 @@
    * Last.fm 검색으로 고르게 해서 제목·아티스트를 정규화한다.
    * 고르기 전엔 검색창, 고른 뒤엔 칩 하나 — 사진 썸네일과 같은 패턴.
    */
+  /*
+   * 검색 결과를 고르지 않고 곡명만 적은 채 저장하면 그 글자가 버려지고 추천 노래만 붙었다(피드백).
+   * 이제는 ① 결과 목록 맨 아래에 "적은 그대로 쓰기"가 늘 있고 ② 엔터를 치면 첫 결과를 고르며
+   * ③ 아무것도 고르지 않고 저장해도 칸에 적힌 글자를 그대로 노래로 남긴다(typedNowPlaying).
+   * "곡 - 가수"처럼 적으면 곡과 가수로 나눈다.
+   */
+  /** 고른(또는 적은) 노래 → 기록에 넣을 모양. 노래 엔진이 없어도 곡명은 잃지 않는다 */
+  function songOf(np) {
+    if (!np || !np.name) return null;
+    const links = typeof SongEngine !== 'undefined' ? SongEngine.buildSongLinks(np.name, np.artist || '') : {};
+    return Object.assign({ name: np.name, artist: np.artist || '', art: null }, links);
+  }
+  function typedSong(text) {
+    const t = String(text || '').trim();
+    if (!t) return null;
+    const m = t.split(/\s+[-–·]\s+/);
+    return m.length >= 2 ? { name: m[0].trim(), artist: m.slice(1).join(' ').trim() } : { name: t, artist: '' };
+  }
+  function typedNowPlaying(scrim) {
+    const input = scrim && scrim.querySelector('#nowPlayingInput');
+    return input ? typedSong(input.value) : null;
+  }
   function renderNowPlayingPicker(scrim) {
     const mount = scrim.querySelector('#nowPlayingPicker');
     if (!mount) return;
-    if (typeof SongEngine === 'undefined') { mount.innerHTML = ''; return; }
 
     if (pendingNowPlaying) {
       mount.innerHTML = `
         <div class="diary-nowplaying-chip">
-          <span>🎧 ${esc(pendingNowPlaying.artist)} · ${esc(pendingNowPlaying.name)}</span>
+          <span>🎧 ${esc(pendingNowPlaying.name)}${pendingNowPlaying.artist ? ` · ${esc(pendingNowPlaying.artist)}` : ''}</span>
           <button type="button" id="nowPlayingClear" aria-label="지우기">✕</button>
         </div>`;
       mount.querySelector('#nowPlayingClear').addEventListener('click', () => {
         pendingNowPlaying = null;
         renderNowPlayingPicker(scrim);
+        const again = scrim.querySelector('#nowPlayingInput');
+        if (again) again.focus();
       });
       return;
     }
 
     mount.innerHTML = `
       <div class="diary-nowplaying-search">
-        <input type="text" id="nowPlayingInput" placeholder="곡 제목을 검색해보세요" autocomplete="off">
+        <input type="text" id="nowPlayingInput" placeholder="곡 제목이나 가수를 검색해보세요" autocomplete="off" enterkeyhint="search">
         <ul class="diary-nowplaying-results" id="nowPlayingResults" hidden></ul>
       </div>`;
     const input = mount.querySelector('#nowPlayingInput');
     const list = mount.querySelector('#nowPlayingResults');
+    let matches = [];
+    let seq = 0;   // 늦게 도착한 옛 검색 결과가 새 결과를 덮지 않게
+    const pick = (song) => { if (!song) return; pendingNowPlaying = song; renderNowPlayingPicker(scrim); };
+    const draw = (q, state) => {
+      const raw = typedSong(q);
+      const rows = matches.map((m, i) => `<li data-idx="${i}">${esc(m.name)} <span>· ${esc(m.artist)}</span></li>`).join('');
+      const note = state === 'loading' ? '<li class="is-note" aria-disabled="true">찾는 중…</li>'
+        : state === 'empty' ? '<li class="is-note" aria-disabled="true">검색 결과가 없어요</li>' : '';
+      list.innerHTML = rows + note + (raw ? `<li data-raw class="is-raw">“${esc(q.trim())}” 적은 그대로 쓰기</li>` : '');
+      list.hidden = !list.innerHTML;
+    };
+    list.addEventListener('click', (ev) => {
+      const li = ev.target.closest('li');
+      if (!li || li.classList.contains('is-note')) return;
+      if (li.hasAttribute('data-raw')) pick(typedSong(input.value));
+      else pick(matches[Number(li.dataset.idx)]);
+    });
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Enter' || ev.isComposing) return;
+      ev.preventDefault();   // 엔터로 기록 전체가 저장되지 않게
+      pick(matches[0] || typedSong(input.value));
+    });
     input.addEventListener('input', () => {
       clearTimeout(nowPlayingSearchTimer);
       const q = input.value;
+      matches = [];
+      if (q.trim().length < 2 || typeof SongEngine === 'undefined') { draw(q, ''); return; }
+      draw(q, 'loading');
+      const my = ++seq;
       // 글자마다 쏘면 Last.fm rate limit에 걸린다 — 멈춘 뒤에 한 번만.
       nowPlayingSearchTimer = setTimeout(async () => {
-        const matches = await SongEngine.searchTracks(q);
-        if (!matches.length) { list.hidden = true; list.innerHTML = ''; return; }
-        list.innerHTML = matches.map((m, i) => `<li data-idx="${i}">${esc(m.name)} <span>· ${esc(m.artist)}</span></li>`).join('');
-        list.hidden = false;
-        list.querySelectorAll('li').forEach((li, i) => {
-          li.addEventListener('click', () => {
-            pendingNowPlaying = matches[i];
-            renderNowPlayingPicker(scrim);
-          });
-        });
+        const found = await SongEngine.searchTracks(q);
+        if (my !== seq || !input.isConnected) return;
+        matches = found;
+        draw(q, found.length ? '' : 'empty');
       }, 300);
     });
   }
@@ -1449,40 +1558,122 @@
    * 하나만 있으면 돌아가므로, 이걸로 "위치 거부 = 노래 안 뜸" 문제가 없어진다.
    * country-flags.js의 COUNTRY_ISO2(영문 국가명 → ISO 코드)를 그대로 재사용한다.
    */
+  /*
+   * 사진에 찍힌 곳(GPS)이 있으면 그 자리와 그 시각의 날씨로 기록한다 — 지금 있는 곳·지금 날씨가 아니라.
+   * 대표(맨 앞) 사진 기준이고, 위치정보 이용 동의를 받은 뒤에만 좌표를 밖(지명·날씨 서비스)으로 보낸다.
+   * 기록 날짜도 사진을 찍은 날로 맞춘다(새 기록일 때만).
+   */
+  let photoPlaceKey = '';   // 지금 위치·날씨를 가져온 사진(같은 사진으로 두 번 묻지 않게)
+  function setLocationNote(text) {
+    const note = document.getElementById('locationNote');
+    if (note) { note.textContent = text || ''; note.hidden = !text; }
+  }
+  function usePhotoPlace() {
+    if (editingEntry) return;
+    const first = pendingPhotos.find(p => p.takenAt) || null;
+    // 기록 날짜 = 사진 찍은 날
+    if (first && first.takenAt) {
+      const d = toIso(first.takenAt);
+      const form = document.getElementById('entryForm');
+      const dateInput = form && form.querySelector('[name=date]');
+      if (dateInput && dateInput.value !== d) {
+        dateInput.value = d;
+        const eb = document.querySelector('#entryModalScrim .entry-v2__eyebrow');
+        if (eb) eb.textContent = `${d} · 사진 찍은 날`;
+      }
+    }
+    const withGps = pendingPhotos.find(p => p.gps);
+    if (!withGps || photoPlaceKey === withGps.path) return;
+    const consent = AppState.locationConsent();
+    if (consent === 'no') return;
+    if (consent !== 'yes') {
+      askLocationConsent().then(ok => {
+        AppState.setLocationConsent(ok ? 'yes' : 'no');
+        if (ok) usePhotoPlace();
+      });
+      return;
+    }
+    photoPlaceKey = withGps.path;
+    photoPlaceSet = true;
+    const { lat, lng } = withGps.gps;
+    const when = withGps.takenAt || null;
+    AppState.logLocationUse('journal_photo_place_weather', ['BigDataCloud', 'Open-Meteo']);
+    setLocationNote('📍 사진 찍은 곳을 찾는 중…');
+    pendingWeather = null;
+    if (typeof SongEngine !== 'undefined' && SongEngine.fetchWeatherAt) {
+      SongEngine.fetchWeatherAt(lat, lng, when).then(w => { if (photoPlaceKey === withGps.path) { pendingWeather = w; showPlaceNote(); } }).catch(() => {});
+    }
+    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
+      .then(r => r.json())
+      .then(data => {
+        if (photoPlaceKey !== withGps.path) return;
+        // 도시·국가만 남긴다 — 정밀 좌표는 저장하지 않는다(stripCoords)
+        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null };
+        showPlaceNote();
+      })
+      .catch(() => { if (photoPlaceKey === withGps.path) setLocationNote('📍 사진 위치의 지명을 찾지 못했어요'); });
+  }
+  function showPlaceNote() {
+    const place = pendingLocation ? [pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') : '';
+    let w = '';
+    if (pendingWeather && typeof SongEngine !== 'undefined') {
+      const lb = SongEngine.weatherLabel(pendingWeather.code);
+      if (lb) w = ` · ${lb.emoji} ${lb.ko}${typeof pendingWeather.temp === 'number' ? ` ${Math.round(pendingWeather.temp)}°` : ''}`;
+    }
+    const first = pendingPhotos.find(p => p.takenAt);
+    const t = first ? ` · ${String(first.takenAt.getHours()).padStart(2, '0')}:${String(first.takenAt.getMinutes()).padStart(2, '0')}` : '';
+    if (place || w) setLocationNote(`📍 ${place || '사진 찍은 곳'}${t}${w} — 사진 기준`);
+  }
+
   function schoolFallbackLocation() {
     const school = typeof AppState !== 'undefined' ? AppState.getConfirmedSchool() : null;
     if (!school) return null;
     const iso2 = (typeof COUNTRY_ISO2 !== 'undefined' && school.countryEn) ? COUNTRY_ISO2[school.countryEn] : null;
     if (!iso2) return null;
-    return { country: school.country || school.countryEn, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
+    return { country: school.countryEn || school.country, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
   }
 
   function requestLocation() {
-    const note = document.getElementById('locationNote');
-    pendingWeather = null;
+    // 기기 위치 안내 글은 띄우지 않는다(사진 위치를 찾았을 때만 보여 준다). 사진 위치가 먼저 정해졌으면 덮지 않는다
+    const note = null;
     const fallback = (reason) => {
+      if (photoPlaceSet) return;
       const fb = schoolFallbackLocation();
       if (fb) {
         pendingLocation = fb;
         if (fb.lat && fb.lng && typeof SongEngine !== 'undefined') {
           SongEngine.fetchWeather(fb.lat, fb.lng).then(w => { pendingWeather = w; }).catch(() => {});
         }
-        if (note) note.textContent = `📍 ${reason} — 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
+        if (note) note.textContent = `📍 ${reason}. 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
       } else {
         pendingLocation = null;
         if (note) note.textContent = `📍 ${reason} (위치 없이 저장돼요)`;
       }
     };
     if (!navigator.geolocation) { fallback('위치 정보를 사용할 수 없어요'); return; }
+    // 개인위치정보는 따로 동의를 받은 뒤에만 읽는다(위치정보법 제18조·제19조). 동의하지 않으면 학교 도시로 대신한다
+    const consent = AppState.locationConsent();
+    if (consent === 'no') { fallback('위치 이용에 동의하지 않았어요'); return; }
+    if (consent !== 'yes') {
+      askLocationConsent().then(ok => {
+        AppState.setLocationConsent(ok ? 'yes' : 'no');
+        if (ok) requestLocation(); else fallback('위치 이용에 동의하지 않았어요');
+      });
+      return;
+    }
     navigator.geolocation.getCurrentPosition(async (pos) => {
+      if (photoPlaceSet) return;
       const { latitude, longitude } = pos.coords;
+      // 이용사실 확인자료 — 좌표는 남기지 않고 목적과 보낸 곳만(위치정보법 제16조 제2항)
+      AppState.logLocationUse('journal_place_weather', ['BigDataCloud', 'Open-Meteo']);
       // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
       if (typeof SongEngine !== 'undefined') {
-        SongEngine.fetchWeather(latitude, longitude).then(w => { pendingWeather = w; }).catch(() => {});
+        SongEngine.fetchWeather(latitude, longitude).then(w => { if (!photoPlaceSet) pendingWeather = w; }).catch(() => {});
       }
       try {
-        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ko`);
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);   // 위치는 영어로(도시·나라)
         const data = await res.json();
+        if (photoPlaceSet) return;
         // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
         // (날씨는 위에서 GPS 값으로 이미 받아 두었고, 저장 직전에 stripCoords가 한 번 더 거른다)
         if (data.countryCode) {
@@ -1497,6 +1688,7 @@
             : '📍 지명을 확인하지 못했어요';
         }
       } catch (err) {
+        if (photoPlaceSet) return;
         const fb = schoolFallbackLocation();
         pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
         if (note) note.textContent = fb
@@ -1506,34 +1698,106 @@
     }, () => fallback('위치 권한이 거부됐어요'), { timeout: 8000 });
   }
 
+  /**
+   * 개인위치정보 이용 동의(선택) — 처음 위치를 쓰려 할 때 한 번 묻는다. 기록 쓰기 창 위에 한 장 더 뜬다.
+   * 동의하지 않아도 기록은 그대로 저장되고, 위치는 확정한 학교 도시로 대신한다.
+   */
+  let consentAsking = null;   // 기기 위치·사진 위치가 동시에 물으면 창을 하나만 띄운다
+  function askLocationConsent() {
+    if (consentAsking) return consentAsking;
+    consentAsking = new Promise((resolve) => {
+      const box = document.createElement('div');
+      box.className = 'loc-consent';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.setAttribute('aria-label', '위치정보 이용 동의');
+      box.innerHTML = `
+        <div class="loc-consent__panel">
+          <p class="loc-consent__title">위치정보 이용 동의 <span>(선택)</span></p>
+          <p class="loc-consent__lead">기록에 도시와 날씨를 붙이려고 사진에 담긴 위치(없으면 기기 위치)를 확인해요.</p>
+          <ul class="loc-consent__list">
+            <li>위치(위도·경도)는 도시와 그때 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
+            <li>기록에는 도시·국가만 저장돼요.</li>
+            <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요.</li>
+            <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요.</li>
+          </ul>
+          <a class="loc-consent__link" href="terms.html#ch9" target="_blank" rel="noopener">이용약관 9장(위치기반서비스) 보기</a>
+          <div class="loc-consent__actions">
+            <button type="button" class="loc-consent__btn" data-loc="no">동의 안 함</button>
+            <button type="button" class="loc-consent__btn loc-consent__btn--yes" data-loc="yes">동의하고 계속</button>
+          </div>
+        </div>`;
+      document.body.appendChild(box);
+      box.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-loc]');
+        if (!b) return;
+        box.remove();
+        consentAsking = null;
+        resolve(b.dataset.loc === 'yes');
+      });
+    });
+    return consentAsking;
+  }
+
   /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
   function stripCoords(loc) {
     return loc ? { country: loc.country || null, city: loc.city || null, countryCode: loc.countryCode || null } : null;
   }
 
   function wireEntryForm(scrim) {
-    const grid = scrim.querySelector('#tagGrid');
-    // 위임 클릭 하나로 묶음 펼치기/접기와 태그 고르기를 같이 받는다 — 묶음을 펼칠 때마다
-    // 안의 칩이 새로 생기는 게 아니라(이미 DOM에 있고 hidden만 바뀐다) 위임이 아니어도
-    // 되지만, 두 종류 버튼을 한 리스너로 묶어 두는 편이 더 단순하다.
-    grid.addEventListener('click', (e) => {
-      const toggle = e.target.closest('[data-group-toggle]');
-      if (toggle) {
-        const group = toggle.closest('.tag-group');
-        const body = group.querySelector('.tag-group__body');
-        const open = group.classList.toggle('is-open');
-        body.hidden = !open;
-        toggle.setAttribute('aria-expanded', String(open));
-        return;
-      }
-      const chip = e.target.closest('.tag-chip');
-      if (chip) {
-        const on = chip.classList.toggle('is-selected');
-        chip.setAttribute('aria-pressed', String(on));
-      }
+    const visBox = scrim.querySelector('#visibilityChips');
+    if (visBox) visBox.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-visibility]');
+      if (!b) return;
+      visBox.querySelectorAll('[data-visibility]').forEach(x => {
+        const on = x === b;
+        x.classList.toggle('is-on', on);
+        x.setAttribute('aria-checked', String(on));
+      });
+    });
+    // 폴더는 여러 개 고를 수 있다 — 같은 칩을 다시 누르면 해제
+    const chipBox = scrim.querySelector('#folderChips');
+    // + → 그 자리에 이름 칸이 열리고, 엔터(또는 칸 밖을 누르면) 폴더를 만들어 바로 고른다
+    chipBox.addEventListener('click', (e) => {
+      const add = e.target.closest('[data-folder-new]');
+      if (!add || typeof DiaryArchive === 'undefined') return;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'rec-chip entry-v2__chip-input';
+      input.placeholder = '폴더 이름';
+      input.maxLength = 20;
+      add.replaceWith(input);
+      input.focus();
+      let done = false;
+      const finish = (keep) => {
+        if (done) return;
+        done = true;
+        const name = input.value.trim();
+        if (keep && name) {
+          const f = DiaryArchive.addFolder(name);
+          pendingFolders.add(f.id);
+        }
+        chipBox.innerHTML = folderChipsHtml();
+        const on = chipBox.querySelector('.is-on');
+        if (on) on.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      };
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', () => finish(true));
+    });
+    chipBox.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-folder-pick]');
+      if (!chip) return;
+      const id = chip.dataset.folderPick;
+      if (pendingFolders.has(id)) pendingFolders.delete(id); else pendingFolders.add(id);
+      const on = pendingFolders.has(id);
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', String(on));
     });
 
-    ['#photoInput', '#cameraInput'].forEach((sel) => {
+    ['#photoInput'].forEach((sel) => {
       const input = scrim.querySelector(sel);
       // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
       input.closest('label').addEventListener('click', (e) => {
@@ -1546,11 +1810,11 @@
         input.value = '';
         let blocked = false;
         // 한 번에 여러 장을 고르면 고른 순서가 아니라 찍은 순서로 줄을 세운다(모르는 건 맨 뒤)
-        const stamped = await Promise.all(files.map(async (f) => ({ f, t: await readTakenAt(f) })));
-        stamped.sort((a, b) => (a.t ? +a.t : Infinity) - (b.t ? +b.t : Infinity));
-        for (const { f: file, t } of stamped) {
+        const stamped = await Promise.all(files.map(async (f) => ({ f, m: await readPhotoMeta(f) })));
+        stamped.sort((a, b) => (a.m.takenAt ? +a.m.takenAt : Infinity) - (b.m.takenAt ? +b.m.takenAt : Infinity));
+        for (const { f: file, m } of stamped) {
           if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
-          try { await addPendingPhoto(file, t); AppState.recordPhotoUpload(); }
+          try { await addPendingPhoto(file, m); AppState.recordPhotoUpload(); }
           catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
         }
         renderPhotoPicker(scrim);
@@ -1560,24 +1824,46 @@
 
     scrim.querySelector('#entryForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      // 저장 버튼을 빠르게 두 번 누르면(휴대폰에서 키보드가 닫히며 한 번 더 눌리는 경우 포함) 기록이 두 번
+      // 저장되고 우표도 두 번 찍혔다 — 한 번 저장을 시작하면 이 창에서는 다시 받지 않는다
+      if (e.target._saving) return;
       const fd = new FormData(e.target);
       const date = fd.get('date');
-      const tags = Array.from(grid.querySelectorAll('.tag-chip.is-selected')).map(b => b.dataset.tag);
+      // 태그 고르기는 창에서 뺐다 — 수정이면 원래 값을 그대로 두고, 새 기록은 태그 없이
+      const tags = editingEntry ? (editingEntry.tags || []).filter(t => EVERYDAY_MAP[t]) : [];
       const title = (fd.get('title') || '').trim();
       const body = (fd.get('caption') || '').trim();
-      const visibility = fd.get('share') ? 'friends' : 'private';
+      const visBtn = scrim.querySelector('#visibilityChips .is-on');
+      const visibility = visBtn ? visBtn.dataset.visibility : (editingEntry ? (editingEntry.visibility || 'friends') : 'friends');
+      // 고른 폴더에 담고, 수정 중에 고르기를 푼 폴더에서는 뺀다
+      const putInFolder = (id) => {
+        if (typeof DiaryArchive === 'undefined') return;
+        let removed = false;
+        entryFolders().forEach(f => {
+          const list = f.entryIds || (f.entryIds = []);
+          const i = list.indexOf(id);
+          if (!pendingFolders.has(f.id) && i >= 0) { list.splice(i, 1); removed = true; }
+        });
+        pendingFolders.forEach(fid => {
+          const hit = DiaryArchive.findNode(fid);
+          if (hit) DiaryArchive.addEntries(hit.node, [id]);
+        });
+        if (removed) DiaryArchive.save();
+      };
       if (!pendingPhotos.length && !title && !body) { showToast('사진 또는 글 중 하나는 있어야 해요'); return; }
+      e.target._saving = true;
+      const submitBtn = e.target.querySelector('#entrySubmit');
+      if (submitBtn) submitBtn.disabled = true;
+
+      // 검색 결과를 고르지 않고 곡명만 적어 둔 경우 — 적은 그대로 노래로 남긴다
+      if (!pendingNowPlaying) pendingNowPlaying = typedNowPlaying(scrim);
 
       // 수정 — 위치·날씨·오늘의 노래는 그대로 두고 글·태그·사진·그때 듣던 노래만 바꾼다
       if (editingEntry) {
         const target = editingEntry;
         const keepNP = pendingNowPlaying && target.nowPlaying
           && pendingNowPlaying.name === target.nowPlaying.name && pendingNowPlaying.artist === target.nowPlaying.artist;
-        const nextNP = keepNP ? target.nowPlaying
-          : (pendingNowPlaying && typeof SongEngine !== 'undefined')
-            ? Object.assign({ name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
-                SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
-            : null;
+        const nextNP = keepNP ? target.nowPlaying : songOf(pendingNowPlaying);
         AppState.updateJournalEntry(target.id, {
           title, body,
           photos: pendingPhotos.map(p => p.path),
@@ -1585,6 +1871,7 @@
           nowPlaying: nextNP,
           visibility
         });
+        putInFolder(target.id);
         editingEntry = null;
         pendingPhotos = [];
         pendingNowPlaying = null;
@@ -1596,11 +1883,7 @@
         return;
       }
 
-      const nowPlaying = (pendingNowPlaying && typeof SongEngine !== 'undefined')
-        ? Object.assign(
-            { name: pendingNowPlaying.name, artist: pendingNowPlaying.artist, art: null },
-            SongEngine.buildSongLinks(pendingNowPlaying.name, pendingNowPlaying.artist))
-        : null;
+      const nowPlaying = songOf(pendingNowPlaying);
 
       // 기록 시각은 가장 먼저 찍은 사진의 시각 — 그래야 같은 날 사진이 찍은 순서로 놓인다(모르면 지금)
       const taken = pendingPhotos.map(p => p.takenAt).filter(Boolean).map(Number);
@@ -1611,6 +1894,7 @@
         tags, location: stripCoords(pendingLocation), takenAt,
         nowPlaying, weather: pendingWeather, visibility
       });
+      if (entry) putInFolder(entry.id);
       const fxPhoto = pendingPhotos[0] && pendingPhotos[0].url;
       const fxCity = pendingLocation && (pendingLocation.city || pendingLocation.country);
       pendingPhotos = [];
@@ -1636,6 +1920,7 @@
   async function recommendSongFor(entry, tags) {
     if (typeof SongEngine === 'undefined') return;
     if (!entry || !pendingLocation || !pendingLocation.countryCode) return;
+    if (entry.nowPlaying) return;   // 직접 고른 노래가 있으면 추천하지 않는다
     try {
       const { mood, moodKo, keywords } = SongEngine.computeMood({
         tags,
@@ -1669,7 +1954,8 @@
     popup.className = 'song-popup';
     popup.innerHTML = `
       <button type="button" class="song-popup__close" aria-label="닫기">✕</button>
-      <span class="song-popup__mood">🎵 이 순간의 노래</span>
+      <span class="song-popup__mood">🎵 steppY 추천 노래</span>
+      <span class="song-popup__why">지금 날씨와 위치에 어울리는 곡을 골랐어요</span>
       <span class="song-popup__title">${esc(song.name)}</span>
       <span class="song-popup__artist">${esc(song.artist)}</span>
       <div class="song-popup__links">
@@ -1756,7 +2042,7 @@
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <div class="diary-modal-header">
           <h2>지금까지 쌓인 기록으로 미리 보기</h2>
-          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요. 적어둔 글을 항목별·날짜순으로 모아 보여줄 뿐이에요.</p>
+          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요.<br>적어둔 글을 항목별·날짜순으로 모아 보여줄 뿐이에요.</p>
         </div>
         <nav class="report-nav">
           ${REPORT_CATEGORIES.map(c => {
@@ -1860,6 +2146,259 @@
     return true;
   }
 
+  /* --------------------------------------------------------------- 첫 화면(시안: 기록하기/첫 화면) */
+
+  /** 제목 — 파견 중이면 Day N, 출국 전이면 D-N, 귀국 후에는 지낸 날 수 */
+  function renderDayTitle() {
+    const el = root.querySelector('#recDayTitle');
+    if (!el) return;
+    const info = departureInfo();
+    if (!info.hasRange) el.textContent = 'Today';
+    else if (info.phase === DEPARTURE_PHASES.BEFORE) el.textContent = `D-${info.daysUntil}`;
+    else if (info.phase === DEPARTURE_PHASES.AFTER) el.textContent = `${info.totalDays} Days`;
+    else el.textContent = `Day ${info.dayNum}`;
+  }
+
+  /** 오늘 찍은 사진(없으면 가장 최근 사진)을 크게. 누르면 확대 화면 */
+  function heroEntry() {
+    const withPhoto = entries().filter(e => (e.photos || []).length);
+    const today = withPhoto.filter(e => e.date === todayIso);
+    const pick = (today.length ? today : withPhoto).slice(-1)[0] || null;
+    return pick ? { entry: pick, isToday: pick.date === todayIso } : null;
+  }
+  const shortDate = (iso) => `${iso.slice(2, 4)}.${iso.slice(5, 7)}.${iso.slice(8, 10)}.`;
+  function placeText(e) {
+    const loc = typeof placeEn === 'function' ? placeEn(e.location) : (e.location || {});
+    return [loc.city, loc.country].filter(Boolean).join(' · ');
+  }
+  function renderHomeHero() {
+    const slot = root.querySelector('#recHero');
+    if (!slot) return;
+    const hit = heroEntry();
+    const url = hit && (hit.entry.photos || []).map(photoUrl).find(Boolean);
+    if (!hit || !url) {
+      const loading = hit && photosLoading(hit.entry);
+      slot.className = 'rec-hero rec-hero--empty' + (loading ? ' is-loading' : '');
+      slot.innerHTML = loading ? '' : `
+        <div class="rec-hero__empty">
+          <p class="rec-hero__empty-title">오늘의 첫 사진을 남겨 보세요</p>
+          <button type="button" class="rec-hero__cta" data-hero-write><span aria-hidden="true">+</span>사진 추가</button>
+        </div>`;
+      return;
+    }
+    // 날짜마다 한 장(왼쪽이 과거) — 같은 날 사진은 옆으로 늘어놓지 않고 카드처럼 겹쳐 쌓는다.
+    // 오른쪽 아래 +를 누르면 맨 위 사진이 맨 뒤로 가고 다음 사진이 올라온다(예전 기록하기의 사진 더미).
+    // 처음에는 가장 최근 날이 가운데에 온다.
+    heroShots = allShots();
+    const days = [];
+    heroShots.forEach((x, i) => {
+      const last = days[days.length - 1];
+      if (last && last.date === x.entry.date) last.items.push(i);
+      else days.push({ date: x.entry.date, items: [i] });
+    });
+    slot.className = 'rec-hero rec-hero--reel';
+    slot.innerHTML = `
+      <div class="rec-hero__track" id="recHeroTrack">
+        ${days.map((d, di) => {
+          const latest = di === days.length - 1;
+          const isToday = d.date === todayIso;
+          const n = d.items.length;
+          const first = heroShots[d.items[0]].entry;
+          const place = placeText(first);
+          return `<div class="rec-hero__slide${latest ? ' is-latest' : ''}" data-day="${di}">
+            <div class="rec-hero__stack${n > 1 ? ' is-stack' : ''}" data-n="${n}">
+              ${d.items.map((i, k) => {
+                const x = heroShots[i];
+                const pl = placeText(x.entry);
+                // 가장 최근 날만 큰 글씨(위치 칩 · Today's Memories · 날짜). 사진마다 자기 위치를 단다
+                return `<button type="button" class="rec-hero__btn rec-hero__card${k ? '' : ' is-top'}" data-hero-open="${i}" style="--pos:${k}" aria-label="${esc(shortDate(x.entry.date))} 사진 크게 보기${n > 1 ? ` (${k + 1}/${n})` : ''}"${k ? ' tabindex="-1"' : ''}>
+                  <img class="rec-hero__img" src="${esc(x.url)}" alt="${esc(x.entry.title || '')}" draggable="false" loading="${di >= days.length - 3 ? 'eager' : 'lazy'}">
+                  ${latest ? `${pl ? `<span class="rec-hero__place">📍 ${esc(pl)}</span>` : ''}
+                  <span class="rec-hero__label">${isToday ? 'Today’s Memories' : 'Latest Memories'}</span>
+                  <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
+                </button>`;
+              }).join('')}
+              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>
+              <button type="button" class="rec-hero__next" data-hero-next aria-label="뒷장 사진 보기">+</button>` : ''}
+            </div>
+            ${latest ? '' : `<p class="rec-hero__cap">${shortDate(d.date)}${place ? ` · ${esc(place)}` : ''}${n > 1 ? ` · ${n}장` : ''}</p>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+    // 더미는 맨 위 사진의 비율로 틀을 정한다 — 나머지 사진은 그 틀을 채운다(진짜 카드 더미처럼)
+    slot.querySelectorAll('.rec-hero__stack.is-stack').forEach(st => {
+      const img = st.querySelector('.rec-hero__card img');
+      const set = () => { if (img.naturalWidth) st.style.setProperty('--ratio', `${img.naturalWidth} / ${img.naturalHeight}`); };
+      if (img.complete) set(); else img.addEventListener('load', set, { once: true });
+    });
+    const track = slot.querySelector('#recHeroTrack');
+    const mark = () => {
+      const mid = track.scrollLeft + track.clientWidth / 2;
+      let best = null, bd = Infinity;
+      track.querySelectorAll('.rec-hero__slide').forEach(sl => {
+        const d = Math.abs(sl.offsetLeft - track.offsetLeft + sl.offsetWidth / 2 - mid);
+        if (d < bd) { bd = d; best = sl; }
+      });
+      track.querySelectorAll('.rec-hero__slide').forEach(sl => sl.classList.toggle('is-active', sl === best));
+    };
+    let ticking = false;
+    track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(); }); } }, { passive: true });
+    // 가장 최근(맨 오른쪽)에서 시작 — 자리가 다 잡힌 뒤에(바로 하면 폭이 0이라 안 먹는다)
+    const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
+    requestAnimationFrame(toLatest);
+    setTimeout(toLatest, 120);
+  }
+
+  /** 하루 사진 더미 — 맨 위 사진을 맨 뒤로 보내고 다음 사진을 올린다(끝까지 넘기면 처음으로) */
+  function flipHeroStack(st) {
+    if (!st || st._busy) return;
+    const slide = st.closest('.rec-hero__slide');
+    // 옆에 비친 날의 +를 눌렀으면 먼저 그날을 가운데로
+    if (slide && !slide.classList.contains('is-active')) {
+      const track = slide.parentElement;
+      track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
+    }
+    const cards = [...st.querySelectorAll('.rec-hero__card')].sort((a, b) => a.style.getPropertyValue('--pos') - b.style.getPropertyValue('--pos'));
+    const n = cards.length;
+    if (n < 2) return;
+    st._busy = true;
+    const top = cards[0];
+    top.classList.add('is-leaving');
+    setTimeout(() => {
+      top.classList.remove('is-leaving');
+      cards.forEach((c, k) => {
+        const pos = k === 0 ? n - 1 : k - 1;
+        c.style.setProperty('--pos', pos);
+        c.tabIndex = pos ? -1 : 0;
+        c.classList.toggle('is-top', !pos);
+      });
+      const nowTop = cards[1];
+      const topIdx = ((Number(st.dataset.top) || 0) + 1) % n;   // 지금 맨 위가 원래 몇 번째 사진인지
+      st.dataset.top = String(topIdx);
+      const count = st.querySelector('.rec-hero__count');
+      if (count) count.textContent = `${topIdx + 1} / ${n}`;
+      if (nowTop) nowTop.focus({ preventScroll: true });
+      st._busy = false;
+    }, 260);
+  }
+
+  /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
+  let heroShots = [];
+  function allShots() {
+    const out = [];
+    entries().forEach(e => (e.photos || []).forEach(p => { const u = photoUrl(p); if (u) out.push({ url: u, entry: e }); }));
+    return out;
+  }
+
+  /** 최근에 사진이 담긴 순서로 폴더 넷 */
+  function recentFolders() {
+    if (typeof DiaryArchive === 'undefined' || !DiaryArchive.folders) return [];
+    const list = DiaryArchive.folders().slice();
+    const latest = (f) => DiaryArchive.entriesOfNode(f).reduce((m, e) => (e.date > m ? e.date : m), '');
+    return list.map((f, i) => ({ f, i, d: latest(f) }))
+      .sort((a, b) => b.d.localeCompare(a.d) || a.i - b.i)
+      .slice(0, 4).map(x => x.f);
+  }
+  function renderRecent() {
+    const row = root.querySelector('#recRecent');
+    if (!row) return;
+    row.innerHTML = recentFolders().map(f => `
+      <button type="button" class="rec-folder" data-folder="${esc(f.id)}" aria-label="${esc(f.name)} 폴더 열기">
+        ${DiaryArchive.folderIcon(f, 'rh-' + f.id)}
+        <span class="rec-folder__name">${esc(f.name)}</span>
+        <span class="rec-folder__meta">${f.type === 'monthly' ? '자동' : DiaryArchive.itemsOf(f).length + '장'}</span>
+      </button>`).join('') + (recentFolders().length < 4 ? `
+      <button type="button" class="rec-folder rec-folder--new" data-folder-new aria-label="새 폴더 만들기">
+        <span class="rec-folder__plus" aria-hidden="true">+</span>
+        <span class="rec-folder__name">새 폴더</span>
+        <span class="rec-folder__meta">이름·색 정하기</span>
+      </button>` : '');
+  }
+  function renderRecapCard() {
+    const slot = root && root.querySelector('#recRecapSlot');
+    if (!slot || typeof RecordV2 === 'undefined' || !RecordV2.recapCardHtml) return;
+    slot.innerHTML = RecordV2.recapCardHtml(recordCtx());
+  }
+
+  /** Diary 줄 — 꾸민 하루 다이어리를 최근 날짜부터 작은 페이지로 */
+  function renderDiaryRow() {
+    const row = root && root.querySelector('#recDiaryRow');
+    if (!row || typeof RecordV2 === 'undefined' || !RecordV2.listDiaries) return;
+    const list = RecordV2.listDiaries();
+    if (!list.length) {
+      row.innerHTML = `<button type="button" class="rec-diary__empty" data-diary-new>
+        <b>인상 깊었던 하루나 여행을 한 장의 다이어리로</b>
+        <span>사진·글·스티커를 붙이고 노래도 넣어요.<br>열면 그 노래가 흘러나와요.</span>
+      </button>`;
+      return;
+    }
+    row.innerHTML = list.map(d => `
+      <button type="button" class="rec-diary__item" data-diary="${esc(d.key)}" aria-label="${esc(d.meta.title || RecordV2.rangeLabel(d.meta))} 다이어리 열기">
+        <span class="rec-diary__thumb">${RecordV2.diaryThumbHtml(recordCtx(), d)}</span>
+        ${d.meta.title ? `<span class="rec-diary__title">${esc(d.meta.title)}</span>` : ''}
+        <span class="rec-diary__date">${RecordV2.rangeLabel(d.meta)}${d.page.song ? ' ♪' : ''}</span>
+      </button>`).join('');
+  }
+
+  function recordCtx() {
+    return { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin(), write: () => openEntryModal() };
+  }
+
+  function wireHome() {
+    root.querySelector('#recHeadAdd').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
+    const newDiary = () => { if (!needLogin()) RecordV2.createDiary(recordCtx(), todayIso, renderDiaryRow); };
+    root.querySelector('#recDiaryNew').addEventListener('click', newDiary);
+    root.querySelector('#recDiaryRow').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-diary-new]')) { newDiary(); return; }
+      const b = ev.target.closest('[data-diary]');
+      if (b) RecordV2.openDiary(recordCtx(), b.dataset.diary, renderDiaryRow);
+    });
+    root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) openCalPage(); });
+    root.querySelector('#recCalClose').addEventListener('click', closeCalPage);
+    root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
+    root.querySelector('#recRecapSlot').addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-recap]');
+      if (b) RecordV2.openRecap(recordCtx(), b.dataset.recap);
+    });
+    root.querySelector('#recRecent').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-folder-new]')) { if (!needLogin()) DiaryArchive.createFolder(); return; }
+      const b = ev.target.closest('[data-folder]');
+      if (!b) return;
+      const hit = DiaryArchive.findNode(b.dataset.folder);
+      if (hit) RecordV2.openFolder(recordCtx(), hit.node);
+    });
+    root.querySelector('#recHero').addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
+      const next = ev.target.closest('[data-hero-next]');
+      if (next) { flipHeroStack(next.closest('.rec-hero__stack')); return; }
+      const btn = ev.target.closest('[data-hero-open]');
+      if (!btn) return;
+      const start = Number(btn.dataset.heroOpen) || 0;
+      // 쓸어 넘긴 사진이 옆에 있을 때 누르면 먼저 그 사진을 가운데로
+      const slide = btn.closest('.rec-hero__slide');
+      if (slide && !slide.classList.contains('is-active')) {
+        const track = slide.parentElement;
+        track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
+        return;
+      }
+      // 확대 화면도 같은 줄(시간순 전체)로 — 양옆 사진이 비치고 넘겨 볼 수 있다
+      const imgs = [...root.querySelectorAll('#recHeroTrack .rec-hero__img')];
+      const shots = heroShots.map(x => ({ url: x.url, info: DiaryArchive.infoOf(x.entry) }));
+      if (!shots.length || !imgs[start]) return;
+      DiaryArchive.openPhotos(shots, start, imgs);
+    });
+    if (!wireHome._doc) { wireHome._doc = true; document.addEventListener('archive:changed', () => { if (root) renderRecent(); }); }
+  }
+
+  function renderHome() {
+    renderDayTitle();
+    renderStreak();
+    renderDiaryRow();
+    renderHomeHero();
+    renderRecent();
+    renderRecapCard();
+  }
+
   function renderArchive() {
     if (typeof DiaryArchive === 'undefined' || !root) return;
     DiaryArchive.render(root, { entries: () => entries(), photoUrl: (p) => photoUrl(p), needLogin: () => needLogin() });
@@ -1867,6 +2406,7 @@
 
   function renderAll() {
     renderArchive();
+    renderHome();
     renderHero();
     renderPhaseToggle();
     renderFeatured();
@@ -1881,6 +2421,7 @@
     root.innerHTML = MARKUP;
     applyTimeOfDay();
     wireChrome();
+    wireHome();
     renderAll();
     refreshPhotoUrls();
     // 퀘스트 완료 뒤 "사진 찍기"로 넘어오면(journal.html?add=1) 바로 기록 쓰기 창을 연다
@@ -1891,6 +2432,7 @@
   }
 
   function unmountDiaryView() {
+    closeCalPage();
     root = null;
   }
 

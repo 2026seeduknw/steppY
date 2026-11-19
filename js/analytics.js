@@ -10,6 +10,8 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
   // 앱 번들 안에 없다. 그대로 두면 화면을 열 때마다 404 요청이 하나씩 나간다.
   // va() 큐는 그대로 두므로 trackEvent()는 어디서든 Supabase 쪽에 계속 쌓인다.
   if (!/^https?:$/.test(location.protocol)) return;
+  // 로컬 개발 서버에도 /_vercel/... 이 없다 — 배포된 사이트에서만 붙인다
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
   const script = document.createElement('script');
   script.defer = true;
   script.src = '/_vercel/insights/script.js';

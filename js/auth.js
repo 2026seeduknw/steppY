@@ -15,6 +15,8 @@
 
 /** 가입 가능한 메일 도메인. 서버(auth.users의 enforce_yonsei_email 트리거)와 같은 규칙. */
 const ALLOWED_EMAIL_DOMAIN = '@yonsei.ac.kr';
+/** 베타 테스트 계정 도메인. 로그인만 된다 — 계정은 운영진이 Supabase 대시보드에서 만든다(supabase/test_accounts.sql). */
+const TEST_EMAIL_DOMAIN = '@steppy.test';
 
 /**
  * "로그인해 본 적이 있다"는 표시. 지금 세션이 살아 있는지(isAuthed)와는 다르다 —
@@ -34,7 +36,14 @@ const Auth = {
    * 그냥 건너뛰어진다.
    */
   isAllowedEmail(email) {
-    return typeof email === 'string' && email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
+    if (typeof email !== 'string') return false;
+    const e = email.trim().toLowerCase();
+    return e.endsWith(ALLOWED_EMAIL_DOMAIN) || e.endsWith(TEST_EMAIL_DOMAIN);
+  },
+
+  /** 테스트 계정 주소인지 — 화면에서 가입은 막고 로그인만 받는다 */
+  isTestEmail(email) {
+    return typeof email === 'string' && email.trim().toLowerCase().endsWith(TEST_EMAIL_DOMAIN);
   },
 
   /**
@@ -104,12 +113,24 @@ const Auth = {
    * 사용자만 만들어지고 확인 메일을 기다려야 한다 — 그 경우를 호출부가
    * 구분할 수 있도록 needsConfirmation을 함께 돌려준다.
    */
-  async signUp(email, password, name) {
+  async signUp(email, password, name, consents) {
+    const c = consents || {};
+    const at = new Date().toISOString();
+    // 인증 메일 링크가 돌아올 주소. 지정하지 않으면 Supabase 대시보드의 Site URL(지금은 localhost:3000)로 가서
+    // 휴대폰에서 "사이트에 연결할 수 없음"이 뜬다. 웹이면 지금 연 주소, 앱이면 배포된 웹 주소로 보낸다.
+    const isWeb = /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    const base = isWeb ? location.origin : ((typeof AppLinks !== 'undefined' && AppLinks.INVITE_BASE) || location.origin);
     const { data, error } = await supabaseClient.auth.signUp({
       email,
       password,
-      // handle_new_user() 트리거가 이 값을 읽어 profiles.name을 채운다
-      options: { data: { name: name || null } }
+      // handle_new_user() 트리거가 name을 읽어 profiles.name을 채운다.
+      // 가입 때 받은 동의도 계정에 함께 남긴다(필수 동의 시각, 선택 동의 여부) — 어느 기기에서 로그인해도 같다
+      options: { emailRedirectTo: `${base}/auth.html`, data: {
+        name: name || null,
+        consent_required_at: at,
+        consent_location: c.location ? 'yes' : 'no',
+        consent_optional_at: at
+      } }
     });
     if (error) throw error;
     return { user: data.user, needsConfirmation: !data.session };

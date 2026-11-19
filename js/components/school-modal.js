@@ -56,7 +56,7 @@ function openUCGroupModal(onChange) {
     <div class="uc-group-modal">
       <header class="uc-group-modal__header">
         <h2 class="school-modal__title">University of California</h2>
-        <p class="info-panel__text">UC는 캠퍼스마다 위치·지원 요건·모집 인원이 달라요. 캠퍼스를 선택하면 상세 정보를 볼 수 있어요.</p>
+        <p class="info-panel__text">UC는 캠퍼스마다 위치·지원 요건·모집 인원이 달라요.<br>캠퍼스를 선택하면 상세 정보를 볼 수 있어요.</p>
       </header>
       <div class="uc-campus-list">
         ${campuses.map(c => `
@@ -226,7 +226,7 @@ function climatePanelHtml(school) {
   // 계절마다 "서울은 며칠"을 붙이면 같은 말이 네 번 반복된다 — 아래 한 줄로 모은다.
   const hasRain = seasons.some(s => rain[s]);
   const seoulRain = hasRain
-    ? `<p class="climate-caption">☔ 는 한 달에 비 오는 날 수예요. 서울은 ${SEASON_ORDER
+    ? `<p class="climate-caption">☔ 는 한 달에 비 오는 날 수예요.<br>서울은 ${SEASON_ORDER
         .map(s => `${s.replace('학기', '')} ${SEOUL_SEASON_RAIN[s].days}일`)
         .join(' · ')}.</p>`
     : '';
@@ -288,7 +288,7 @@ function mentalRateTipHtml(local, currency) {
   if (!rate || local == null) return '';
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
   const approx = mentalToKrw(local, currency);
-  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁 — ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
+  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁: ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
 }
 
 function livingCostPanelHtml(school) {
@@ -299,10 +299,10 @@ function livingCostPanelHtml(school) {
   return `
     <section class="info-panel info-panel--wide">
       <h3 class="brand-head" data-wordmark="">Cost of living ?</h3>
-      ${dorm ? `<p class="info-panel__text">기숙사비(학기당) — <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
+      ${dorm ? `<p class="info-panel__text">기숙사비(학기당) <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
-      ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 — <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
-      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요. 여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
+      ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요.<br>여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
     </section>`;
 }
 
@@ -310,9 +310,6 @@ function schoolModalTemplate(school, opts = {}) {
   const profile = AppState.profile;
   const elig = computeEligibility(profile, school);
   const isFav = AppState.isFavorite(school.id);
-  const wishlist = AppState.getWishlist();
-  const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
-  const confirmed = AppState.getConfirmedSchool();
 
   return `
     <div class="modal-panel">
@@ -331,7 +328,7 @@ function schoolModalTemplate(school, opts = {}) {
           <div class="school-modal__badges">
             ${eligibilityBadgeHtml(elig)}
             <span class="badge badge--neutral">${quotaLabel(school)}</span>
-            <span class="badge badge--amber">GPA ${formatGpa(school.gpaCut) || school.gpaCut}↑</span>
+            <span class="badge badge--amber">GPA ${formatGpa(Math.max(OIA.MIN_GPA, Number(school.gpaCut) || 0))}↑</span>
             ${typeof school.langTest.cut === 'number' ? `<span class="badge badge--amber">${school.langTest.type} ${school.langTest.cut}↑</span>` : ''}
           </div>
           ${extraInfoBadgesHtml(school)}
@@ -357,41 +354,89 @@ function schoolModalTemplate(school, opts = {}) {
         ${livingCostPanelHtml(school)}
       </div>
 
+      <p class="verify-note">학교 정보는 국제처 자료를 정리한 참고용이에요.<br>지원 조건·마감일은 아래 국제처 링크에서 꼭 다시 확인하세요.</p>
+
       <!-- 카드로 감쌀 만한 내용이 아니다. 링크 한 줄이라 한 줄로 둔다. -->
       <p class="school-modal__official">
         국제처 링크
         <a href="${school.officialLink}" target="_blank" rel="noopener">${school.officialLink.replace(/^https?:\/\//, '')} ↗</a>
       </p>
+      <!-- 선배 경험보고서 원문과 학교별 조건·마감일은 국제처 공식 서비스에 있다. 우리가 베끼지 않고 그쪽으로 보낸다. -->
+      <p class="school-modal__official school-modal__official--oia">
+        <a href="${OIA.LINKS.reviews}" target="_blank" rel="noopener">다녀온 길 · 선배 경험보고서 ↗</a>
+        <a href="${OIA.LINKS.univFinder}" target="_blank" rel="noopener">UnivFinder · 조건·마감일 ↗</a>
+      </p>
 
-      ${AppState.isAuthed ? `
-      <footer class="school-modal__footer" id="modalFooter">
-        <div class="school-modal__rank">
-          <span class="school-modal__rank-label">지망 순위</span>
-          <div class="chip-group" role="group" aria-label="지망 순위 선택">
-            ${[1, 2, 3].map(r => `<button type="button" class="chip rank-chip ${String(myRank) === String(r) ? 'is-selected' : ''}" data-rank="${r}">${r}지망</button>`).join('')}
-          </div>
-        </div>
-        <button class="btn btn--primary" id="confirmSchoolBtn">
-          ${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}
-        </button>
-      </footer>` : `
-      ${GUEST_MODAL_FOOTER}`}
+      ${schoolModalFooterOnly(school)}
     </div>
     </div>
   `;
 }
 
+/**
+ * 배정 결과 등록 확인.
+ *
+ * 학교는 학생이 고르는 게 아니라 국제처가 배정한다(발표 후 변경 불가). 그래서 발표 전에는
+ * "이 학교로 미리 준비해보기"로만 받고, 발표 뒤에는 "배정 결과에 나온 학교인지" 묻는다.
+ */
+/*
+ * 지원 학과 — 국제처 지원서에서 학교마다 같이 적는 학과(책자 6장). 학점 인정 탭이 이 학과 과목만 보여준다.
+ * 예전엔 교환 준비하기에 따로 '신청 전공' 카드가 있었는데, 학교를 정할 때 같이 고르게 옮겼다.
+ * 후보는 그 학교 과목 매칭의 현지 학과명이고, 희망대학표(PICKS)에 적어 둔 학과와 같으면 미리 골라 둔다.
+ */
+function schoolMajorOptions(schoolId) {
+  return [...new Set((MOCK.courseMatches || []).filter(m => m.school === schoolId).flatMap(m => m.matchedTopics || []))]
+    .sort((a, b) => a.localeCompare(b));
+}
+function wishMajorGuess(schoolId, options) {
+  const e = AppState.getWishlistList().find(x => x.schoolId === schoolId);
+  const want = e && e.major ? e.major.trim().toLowerCase() : '';
+  if (!want) return '';
+  return options.find(o => o.toLowerCase() === want) || options.find(o => o.toLowerCase().includes(want)) || '';
+}
+/** 학과 고르는 칸을 mount 에 그린다. 과목 자료가 없으면 받아 온 뒤 다시 그린다. onPick(value) */
+function mountMajorPicker(mount, schoolId, { selected = '', onPick } = {}) {
+  if (!mount) return;
+  if (typeof ensureCourseMatches === 'function' && typeof isCourseMatchesLoaded === 'function' && !isCourseMatchesLoaded({ school: schoolId })) {
+    mount.innerHTML = '<p class="major-pick__note">학과 목록을 불러오는 중이에요…</p>';
+    ensureCourseMatches({ school: schoolId });
+    const again = () => { document.removeEventListener('courseMatches:updated', again); if (mount.isConnected) mountMajorPicker(mount, schoolId, { selected, onPick }); };
+    document.addEventListener('courseMatches:updated', again);
+    return;
+  }
+  const options = schoolMajorOptions(schoolId);
+  if (!options.length) { mount.innerHTML = '<p class="major-pick__note">이 학교는 과목 자료가 아직 없어 학과를 고를 수 없어요.</p>'; return; }
+  const pre = selected && options.includes(selected) ? selected : wishMajorGuess(schoolId, options);
+  if (pre && onPick) onPick(pre);
+  mount.innerHTML = '';
+  const select = createSearchableSelect({
+    items: options.map(t => ({ value: t, label: t })), selected: pre, multiple: false, placeholder: '지원 학과 검색',
+    onChange: (value) => { if (onPick) onPick(value || ''); }
+  });
+  mount.appendChild(select.el);
+}
+
 function confirmWarningTemplate(school, overwriting) {
+  const pre = OIA.beforePlacement(AppState.profile);
+  const { data: termData } = OIA.termOf(AppState.profile);
+  const when = termData ? OIA.fmtDate(termData.placementAt) : '';
   return `
     <div class="confirm-warning">
-      <p class="confirm-warning__title">🎓 합격 발표를 받으셨나요?</p>
+      <p class="confirm-warning__title">${pre ? '배정 발표 전이에요' : '🎓 배정 결과에 나온 학교인가요?'}</p>
       <ul>
-        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 기존 확정이 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
-        <li><strong>${school.name}</strong>(으)로 교환학생 합격이 확정된 뒤에 눌러주세요.</li>
+        ${overwriting ? `<li><strong>${overwriting.name}</strong>로 되어 있던 학교가 <strong>${school.name}</strong>(으)로 바뀌어요.</li>` : ''}
+        ${pre
+          ? `<li>배정 결과는 ${when ? `<strong>${when}</strong>에 ` : ''}연세포탈에서 발표돼요.</li>
+             <li>지금 등록하면 이 학교 기준으로 서류·비자·생활 준비를 미리 볼 수 있어요.<br>발표 뒤 실제 배정 학교로 바꿔 주세요.</li>`
+          : `<li>배정된 학교는 어떤 이유로도 바꿀 수 없어요.<br>취소하면 패널티와 봉사 의무가 생기고, 이후 국제처 해외파견에 다시 지원할 수 없어요.</li>`}
       </ul>
+      <div class="major-pick">
+        <p class="major-pick__label">지원 학과 <small>지원서에 학교와 함께 적은 학과 · 학점 인정 탭이 이 학과 과목을 보여줘요</small></p>
+        <div id="confirmMajorMount"></div>
+      </div>
       <div class="confirm-warning__actions">
-        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">아직이에요</button>
-        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">합격했어요, 확정할게요</button>
+        <button class="btn btn--ghost btn--sm" id="cancelConfirmBtn">${pre ? '그만둘게요' : '아직이에요'}</button>
+        <button class="btn btn--accent btn--sm" id="finalConfirmBtn">${pre ? '미리 준비해볼게요' : '네, 배정됐어요'}</button>
       </div>
     </div>
   `;
@@ -416,33 +461,65 @@ function wireSchoolModalActions(scrim, school, opts) {
     if (opts.onChange) opts.onChange();
   });
 
-  // 게스트 푸터에는 지망 칩도 확정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
+  // 게스트 푸터에는 희망대학표 버튼도 배정 버튼도 없다 — 배선할 게 없으므로 건너뛴다
   if (!AppState.isAuthed) return;
 
-  scrim.querySelectorAll('.rank-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const rank = btn.dataset.rank;
-      const already = btn.classList.contains('is-selected');
-      scrim.querySelectorAll('.rank-chip').forEach(b => b.classList.remove('is-selected'));
-      AppState.setWishlistRank(rank, already ? null : school.id);
-      if (!already) { btn.classList.add('is-selected'); showToast(`${rank}지망으로 등록했어요`); trackEvent('wishlist_rank_select', { schoolId: school.id, rank }); }
-      else { showToast('지망 등록을 취소했어요'); }
-      if (opts.onChange) opts.onChange();
+  const rerenderFooter = () => {
+    scrim.querySelector('#modalFooter').outerHTML = schoolModalFooterOnly(school);
+    wireSchoolModalActions(scrim, school, opts);
+  };
+
+  const wishBtn = scrim.querySelector('#wishToggleBtn');
+  if (wishBtn) wishBtn.addEventListener('click', () => {
+    const rank = AppState.wishlistRankOf(school.id);
+    if (rank) {
+      AppState.removeFromWishlist(school.id);
+      showToast('희망대학표에서 뺐어요');
+    } else {
+      const res = AppState.addToWishlist(school.id);
+      if (!res.ok) {
+        const track = (AppState.profile.exchangeTerm || {}).track;
+        showToast(res.reason === 'full' ? `희망대학표는 ${OIA.WISHLIST_MAX}개까지 쓸 수 있어요`
+          : res.reason === 'track' ? `${OIA.trackLabel(track)} 전형이라 이 학교는 담을 수 없어요` : '이미 담은 학교예요');
+        return;
+      }
+      showToast(`희망대학표에 담았어요 ${res.rank}/${OIA.WISHLIST_MAX}\n순서는 Picks에서 정해요`);
+      trackEvent('wishlist_rank_select', { schoolId: school.id, rank: res.rank });
+    }
+    rerenderFooter();
+    if (opts.onChange) opts.onChange();
+  });
+
+  const editMajor = scrim.querySelector('#editMajorBtn');
+  if (editMajor) editMajor.addEventListener('click', () => {
+    const mount = scrim.querySelector('#myMajorMount');
+    mount.hidden = false; editMajor.hidden = true;
+    mountMajorPicker(mount, school.id, {
+      selected: AppState.profile.targetMajor || '',
+      onPick: (v) => {
+        if (!v || v === AppState.profile.targetMajor) return;
+        AppState.updateProfile({ targetMajor: v });
+        trackEvent('target_major_set', { major: v, school: school.id });
+        showToast('지원 학과를 저장했어요');
+        rerenderFooter();
+        if (opts.onChange) opts.onChange();
+      }
     });
   });
 
   const confirmBtn = scrim.querySelector('#confirmSchoolBtn');
   confirmBtn.addEventListener('click', () => {
     const confirmed = AppState.getConfirmedSchool();
-    if (confirmed && confirmed.id === school.id) { showToast('이미 확정된 학교예요'); return; }
+    if (confirmed && confirmed.id === school.id) { showToast('이미 등록한 학교예요'); return; }
     const footer = scrim.querySelector('#modalFooter');
     footer.outerHTML = `<footer class="school-modal__footer school-modal__footer--warning" id="modalFooter">${confirmWarningTemplate(school, confirmed)}</footer>`;
-    scrim.querySelector('#cancelConfirmBtn').addEventListener('click', () => {
-      scrim.querySelector('#modalFooter').outerHTML = schoolModalFooterOnly(school);
-      wireSchoolModalActions(scrim, school, opts);
-    });
+    scrim.querySelector('#cancelConfirmBtn').addEventListener('click', rerenderFooter);
+    let pickedMajor = '';
+    mountMajorPicker(scrim.querySelector('#confirmMajorMount'), school.id, { onPick: (v) => { pickedMajor = v; } });
     scrim.querySelector('#finalConfirmBtn').addEventListener('click', () => {
       AppState.confirmSchool(school.id);
+      // 학교가 바뀌면 예전 학교의 학과는 지운다(안 골랐으면 비워 두고, 학교 정보에서 나중에 고른다)
+      AppState.updateProfile({ targetMajor: pickedMajor || null });
       trackEvent('school_confirm', { schoolId: school.id });
       closeModal(scrim);
       if (opts.onChange) opts.onChange();
@@ -451,26 +528,51 @@ function wireSchoolModalActions(scrim, school, opts) {
   });
 }
 
-/** 로그인 전에는 저장할 계정이 없다. 지망·확정 대신 로그인 안내를 둔다. */
+/** 로그인 전에는 저장할 계정이 없다. 희망대학표·배정 대신 로그인 안내를 둔다. */
 const GUEST_MODAL_FOOTER = `<footer class="school-modal__footer school-modal__footer--guest" id="modalFooter">
     <div class="guest-cta">
-      <p class="guest-cta__text">로그인하면 이 학교를 <strong>1~3지망으로 담고 확정</strong>할 수 있어요</p>
+      <p class="guest-cta__text">로그인하면 이 학교를 <strong>희망대학표에 담고</strong> 준비를 시작할 수 있어요</p>
       <a class="btn btn--primary btn--block" href="auth.html">로그인하고 담기</a>
     </div>
   </footer>`;
 
+/**
+ * 학교 상세 아래 — 희망대학표 담기/빼기와 배정 결과 등록.
+ * 희망대학표는 국제처 지원서의 그것과 같다: 최대 25개, 순서대로, 한 언어권만.
+ * 순서·지원 학과·기간은 내 저장 화면에서 고친다.
+ */
 function schoolModalFooterOnly(school) {
   if (!AppState.isAuthed) return GUEST_MODAL_FOOTER;
-  const wishlist = AppState.getWishlist();
-  const myRank = Object.keys(wishlist).find(r => wishlist[r] === school.id);
+  const rank = AppState.wishlistRankOf(school.id);
+  const count = AppState.getWishlistList().length;
   const confirmed = AppState.getConfirmedSchool();
-  return `<footer class="school-modal__footer" id="modalFooter">
-    <div class="school-modal__rank">
-      <span class="school-modal__rank-label">지망 순위</span>
-      <div class="chip-group" role="group" aria-label="지망 순위 선택">
-        ${[1, 2, 3].map(r => `<button type="button" class="chip rank-chip ${String(myRank) === String(r) ? 'is-selected' : ''}" data-rank="${r}">${r}지망</button>`).join('')}
-      </div>
+  const isMine = confirmed && confirmed.id === school.id;
+  const pre = OIA.beforePlacement(AppState.profile);
+  const track = (AppState.profile.exchangeTerm || {}).track;
+  const blocked = !rank && track && !OIA.schoolOffersTrack(school, track);
+  // 한 줄에 [희망대학표 칩][배정 등록 버튼] — 확정한 학교면 그 위에 지원 학과 한 줄
+  return `<footer class="school-modal__footer school-modal__footer--compact" id="modalFooter">
+    ${isMine ? `
+    <div class="major-pick major-pick--row" id="myMajorRow">
+      <span class="major-pick__label">지원 학과</span>
+      <b class="major-pick__value">${AppState.profile.targetMajor || '미정'}</b>
+      <button type="button" class="major-pick__edit" id="editMajorBtn">${AppState.profile.targetMajor ? '수정' : '고르기'}</button>
+      <div class="major-pick__mount" id="myMajorMount" hidden></div>
+    </div>` : ''}
+    <div class="school-modal__actions">
+      <!-- 희망대학표 담기 — 장바구니 아이콘 하나. 순위(1·2·3지망…)는 Picks에서 정한다 -->
+      <button type="button" class="wish-cart ${rank ? 'is-on' : ''}${blocked ? ' is-blocked' : ''}" id="wishToggleBtn" ${blocked ? 'aria-disabled="true"' : ''}
+              aria-pressed="${!!rank}"
+              aria-label="${rank ? '희망대학표에서 빼기' : blocked ? `${OIA.trackLabel(track)} 전형이라 담을 수 없어요` : `희망대학표에 담기 (${count}/${OIA.WISHLIST_MAX})`}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20.5 8H6.3"/>
+          <circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>
+          ${rank ? '<path d="M10.5 10.8l2 2 3.6-3.8"/>' : '<path d="M13.3 9.3v4.4M11.1 11.5h4.4"/>'}
+        </svg>
+      </button>
+      <button class="btn btn--primary" id="confirmSchoolBtn">${isMine
+        ? (pre ? '미리 준비 중 ✓' : '배정된 학교 ✓')
+        : (pre ? '미리 준비해보기' : '배정 결과로 등록')}</button>
     </div>
-    <button class="btn btn--primary" id="confirmSchoolBtn">${confirmed && confirmed.id === school.id ? '확정된 학교예요 ✓' : '이 학교로 확정하기'}</button>
   </footer>`;
 }

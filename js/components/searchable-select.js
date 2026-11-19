@@ -146,11 +146,28 @@ function createSearchableSelect(opts) {
     raisedHost = null;
   }
 
+  /**
+   * 펼칠 방향과 높이. 학교 창 맨 아래(붙박이 바)처럼 아래 공간이 없는 곳에서는 목록이
+   * 화면 밖으로 내려가 끝까지 스크롤할 수 없었다 — 아래가 좁으면 위로 펼치고,
+   * 어느 쪽이든 남은 공간만큼만 높이를 잡아 목록 안에서 스크롤되게 한다.
+   */
+  function placePanel() {
+    const r = trigger.getBoundingClientRect();
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const GAP = 6, EDGE = 12, MAX = 320;
+    const below = vh - r.bottom - GAP - EDGE;
+    const above = r.top - GAP - EDGE;
+    const up = below < Math.min(MAX, 200) && above > below;
+    panel.classList.toggle('ss__panel--up', up);
+    panel.style.maxHeight = Math.max(140, Math.min(MAX, up ? above : below)) + 'px';
+  }
+
   function openPanel() {
     if (open) return;
     open = true;
     raiseHost();
     panel.hidden = false;
+    placePanel();
     query = '';
     searchInput.value = '';
     renderList();

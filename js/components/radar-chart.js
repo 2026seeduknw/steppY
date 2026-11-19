@@ -46,9 +46,9 @@ const AXIS_HELP = {
   security: {
     what: '이 지역이 얼마나 안전한지 보는 0~100 점수예요.',
     factors: [
-      '외교부 여행경보 — 경보 단계가 낮을수록 높은 점수',
-      'Numbeo 범죄 지수 — 체감 범죄가 적을수록 높은 점수',
-      '세계평화지수(GPI) — 국가가 평화로울수록 높은 점수'
+      '외교부 여행경보: 경보 단계가 낮을수록 높은 점수',
+      'Numbeo 범죄 지수: 체감 범죄가 적을수록 높은 점수',
+      '세계평화지수(GPI): 국가가 평화로울수록 높은 점수'
     ],
     source: '외교부 · Numbeo · GPI',
     caveat: '세 자료를 어떤 비중으로 합쳤는지는 원본 데이터에 기록돼 있지 않아요.'
@@ -56,14 +56,14 @@ const AXIS_HELP = {
   costOfLiving: {
     what: '이 도시가 전 세계 도시 중 저렴한 편인지 보는 점수예요.',
     factors: [
-      'LivingCost의 도시 생활비 글로벌 랭킹 — 생활비가 저렴한 도시일수록 높은 점수'
+      'LivingCost의 도시 생활비 글로벌 랭킹: 생활비가 저렴한 도시일수록 높은 점수'
     ],
     source: 'LivingCost.org'
   },
   commerce: {
     what: '학교 주변에서 먹고 사고 노는 게 얼마나 편한지 보는 점수예요.',
     factors: [
-      '학교에서 가까운 생활권일수록 크게 반영 — 1km 안이 3km 안보다 중요',
+      '학교에서 가까운 생활권일수록 크게 반영: 1km 안이 3km 안보다 중요',
       '장소가 많을수록, 종류가 다양할수록 높은 점수',
       '종류별 중요도는 생활필수 > 음식·카페 > 쇼핑·서비스 > 여가시설 순',
       '점수는 전체 학교와 견줘 매겨요'
@@ -74,16 +74,16 @@ const AXIS_HELP = {
   transitMobility: {
     what: '학교에서 일상적으로 이동하기 얼마나 편한지 보는 점수예요.',
     factors: [
-      '도심 접근성 — 대중교통으로 시내까지 걸리는 시간이 짧을수록 높은 점수',
-      '대중교통 거점 — 학교 1km 안에 정류장이 많을수록 높은 점수'
+      '도심 접근성: 대중교통으로 시내까지 걸리는 시간이 짧을수록 높은 점수',
+      '대중교통 거점: 학교 1km 안에 정류장이 많을수록 높은 점수'
     ],
     source: 'TravelTime · Transitland'
   },
   travelMobility: {
     what: '교환학생 기간에 다른 나라로 여행 가기 얼마나 쉬운지 보는 점수예요.',
     factors: [
-      '공항 접근성 — 가까운 공항까지 거리가 짧을수록 높은 점수',
-      '인접국 접근성 — 가장 가까운 다른 나라가 가까울수록 높은 점수'
+      '공항 접근성: 가까운 공항까지 거리가 짧을수록 높은 점수',
+      '인접국 접근성: 가장 가까운 다른 나라가 가까울수록 높은 점수'
     ],
     source: 'LivingCost · Natural Earth'
   }
@@ -227,7 +227,7 @@ function scoreCardHtml(school, opts) {
           ? `<h2 class="brand-head" data-wordmark="">All about ${schoolPlaceEn(school)}</h2>`
           : '<h2>살기 어떤 곳인가</h2>'}</div>
       </div>
-      <p class="score-card__note">생활 점수를 steppY가 수치화해서 알려드려요. 막대 아래 한 줄은 그 점수가 나온 실제 숫자예요.</p>
+      <p class="score-card__note">생활 점수를 steppY가 수치화해서 알려드려요.<br>막대 아래 한 줄은 그 점수가 나온 실제 숫자예요.</p>
       <div class="score-card__body">
         ${radarChartSvg(scores)}
         <div class="score-rows">${scoreRowsHtml(scores, school)}</div>

@@ -427,6 +427,10 @@
 }
 .diary-nowplaying-results li:hover { background: var(--cloud-50); }
 .diary-nowplaying-results li span { color: var(--ink-600); }
+/* 찾는 중·결과 없음 안내 줄은 누르지 않는다. 맨 아래 '적은 그대로 쓰기'는 늘 있다 */
+.diary-nowplaying-results li.is-note { color: var(--ink-400); cursor: default; }
+.diary-nowplaying-results li.is-note:hover { background: none; }
+.diary-nowplaying-results li.is-raw { font-weight: 700; color: var(--ink-900); border-top: 1px solid var(--line-100); }
 
 .diary-nowplaying-chip {
   display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
@@ -887,7 +891,9 @@ body[data-page="journal"] .diary-featured__loc { color: #3A4763; }
 .stamp-fx__cap { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 10px 2px 14px; }
 .stamp-fx__cap b { font-family: var(--diary-font-ticket); font-size: 0.95rem; color: #14213A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stamp-fx__cap small { font-size: var(--fs-micro); color: #6B7290; flex-shrink: 0; }
-.stamp-fx__mark { top: -14px; left: auto; right: -18px; animation: diary-postmark-in 620ms 420ms ease both; }
+/* 소인은 우표와 함께 한 번에 — 예전에는 우표가 내려앉은 뒤 소인이 커졌다 작아지며 한 번 더 '쾅' 찍혀
+   우표가 두 번 찍히는 것처럼 보였다. 이제 우표가 앉을 때 소인은 제자리에서 번지듯 나타나기만 한다. */
+.stamp-fx__mark { top: -14px; left: auto; right: -18px; animation: diary-imprint-in 420ms 360ms ease both; }
 @keyframes diary-fx-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes diary-stamp-drop {
   0% { opacity: 0; transform: translateY(-70px) scale(1.6) rotate(-8deg); }
@@ -1712,7 +1718,7 @@ body[data-page="journal"][data-theme="film"] .diary-featured__title,
 body[data-page="journal"][data-theme="film"] .diary-stamp__title,
 body[data-page="journal"][data-theme="film"] .stamp-fx__cap b,
 body[data-page="journal"][data-theme="film"] .diary-stamp__blank p {
-  font-family: 'SUIT Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-family: var(--font-body);
   font-weight: 700; letter-spacing: -0.02em;
 }
 body[data-page="journal"][data-theme="film"] .diary-featured__title { font-size: 1.05rem; }
@@ -2101,3 +2107,4 @@ body.journal-intro[data-page="journal"][data-theme="film"] .tabbar__item.is-acti
 .dintro__cta .btn.btn--block { display: flex; width: min(278px, 100%); height: 40px; min-height: 40px; padding: 0 20px; font-size: 14px; margin: 0 auto; }
 /* 상단 제목 묶음과 01 사이는 섹션 간격(42px)의 절반으로 */
 .dintro__hero { margin-bottom: calc(var(--space-4) - var(--space-6)); }
+.song-popup__why { font-size: var(--fs-micro); opacity: 0.7; margin-top: -2px; }

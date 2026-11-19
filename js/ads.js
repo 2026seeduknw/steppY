@@ -2,10 +2,10 @@
  * 광고(Google AdMob) — 본문 안 한 자리에 붙어 스크롤하면 보이는 배너 하나.
  *
  * 어디에 붙나
- *   학교 확정 전  학교 찾기(페이지 넘기기 아래) · 학점 인정/전공 매칭(목록 아래) ·
+ *   학교 확정 전  홈(맨 아래) · 학교 찾기(페이지 넘기기 아래) · 학점 인정/전공 매칭(목록 아래) ·
  *                 Mentor's Step(질문 목록 아래)
  *   학교 확정 후  준비하기에서 보험·항공권 항목을 펼치면 그 설명 맨 아래
- *   프리미엄 구독 중이면 어디에도 붙지 않는다("광고 없이" 혜택).
+ *   (프리미엄·크레딧은 2026-11-08에 없앴다 — 이제 모두에게 같은 자리에 붙는다)
  *
  * 어떻게 본문에 붙나
  *   배너는 웹 요소가 아니라 웹뷰 위에 얹히는 네이티브 뷰다. 그래서 본문에는 빈
@@ -16,6 +16,8 @@
  * 화면을 옮겨도 네이티브 배너는 남는다
  *   탭 이동은 페이지를 새로 여는 것이라 이 스크립트의 상태는 사라지지만 배너 뷰는
  *   그대로다. 그래서 화면을 떠날 때 숨기고, 열릴 때마다 자리를 다시 맞춘다.
+ *
+ * 로그인한 회원에게만 띄운다(sync 맨 앞). 따로 동의는 받지 않고 개인정보처리방침에 국외 이전을 공개한다.
  *
  * 웹(브라우저)에서는 플러그인이 없어 아무 일도 하지 않는다.
  * 이 파일은 state.js·layout.js 뒤에 실려야 한다.
@@ -40,8 +42,7 @@ const Ads = {
   /** 학교 확정 후 준비하기 — 펼쳐진 항목의 설명 맨 아래에 둔다. 체크리스트의 보험·항공권, 생활 준비의 보험 */
   PREPARE_SLOT_IN: [
     '.step-item[data-id="insurance"].is-expanded .step-item__detail',
-    '.step-item[data-id="flight"].is-expanded .step-item__detail',
-    '.living-card[data-living="insurance"].is-expanded .living-card__detail'
+    '.step-item[data-id="flight"].is-expanded .step-item__detail'
   ].join(', '),
   /** 시트·모달은 화면을 덮는데 네이티브 배너는 그 위에 뜬다 — 열려 있는 동안은 숨긴다 */
   OVERLAYS: '.modal-scrim.is-open, .app-sheet.is-open, body.is-sheet-open',
@@ -59,8 +60,13 @@ const Ads = {
 
   /** 광고 자리가 들어갈 곳 — { parent, before } 또는 없으면 null. 서버 상태가 오기 전에는 정하지 않는다 */
   _place() {
-    if (!AppState._hydrated || AppState.isPremium()) return null;
+    if (!AppState._hydrated) return null;
     const page = document.body.dataset.page;
+    // 홈 — 화면 맨 아래(지망 학교·제휴 배너 다음)
+    if (page === 'home') {
+      const home = document.querySelector('.v2-home');
+      return home ? { parent: home, before: null } : null;
+    }
     if (page === 'prepare') {
       const detail = document.querySelector(this.PREPARE_SLOT_IN);
       return detail ? { parent: detail, before: null } : null;
@@ -99,6 +105,12 @@ const Ads = {
   sync() {
     const plugin = this.plugin;
     if (!plugin) return;
+    // 로그인한 회원에게만 — 그 전에는 SDK도 켜지 않는다(_init이 show 직전에만 불린다).
+    // 로그인한 회원에게만 띄운다(따로 동의는 받지 않고 개인정보처리방침에 국외 이전을 공개). 둘러보기에는 광고가 없다
+    if (typeof AppState === 'undefined' || AppState.adConsent() !== 'yes') {
+      if (this._slot || this._sent !== 'hidden') this._hide(plugin);
+      return;
+    }
     const place = this._place();
     if (!place) { this._hide(plugin); return; }
 
@@ -145,6 +157,7 @@ const Ads = {
     if (!plugin) return;
     this.sync();
     document.addEventListener('MOCK:updated', () => this.sync());
+    document.addEventListener('consent:changed', () => this.sync());
     window.addEventListener('pagehide', () => plugin.hide());
     // 항목을 펼치고 접는 것, 목록이 다시 그려지는 것, 시트가 열리는 것 모두 자리의 위치를 바꾼다
     let scheduled = false;

@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>학점 인정 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>학점 인정 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -11,24 +14,26 @@
 <link rel="stylesheet" href="css/pages/credits.css">
 <link rel="stylesheet" href="css/pages/major-matching.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="credits">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell home-hero">
-  <h1 id="creditsPageTitle">학점 인정 사전 확인</h1>
+<div class="page-shell">
+  <header class="v2-head">
+    <p class="v2-head__eyebrow">Check your</p>
+    <h1 class="v2-head__title">Credits</h1>
+  </header>
 </div>
 
 <div class="page-shell credits-grid">
   <main>
+    <!-- 출국 뒤: 파견 중·귀국 후 국제처 할 일 — js/components/credit-limit.js -->
+    <section class="card card-pad credits-top" id="creditsTimeline" hidden></section>
     <div class="mode-toggle" id="modeToggle">
-      <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭 찾기</button>
-      <button type="button" class="mode-toggle__btn is-active" data-mode="course">학점 인정 과목 찾기</button>
-    </div>
-    <div class="credits-lede" id="creditsLede">
-      <strong>과목 위계·키워드로 보는 학점 인정 가능성</strong>
-      <p>파견교 과목의 수준(Level)과 전공 키워드를 분석해 인정 가능성을 예측하고, 그 판단 근거를 함께 보여드려요.</p>
+      <button type="button" class="mode-toggle__btn" data-mode="major">전공 매칭</button>
+      <button type="button" class="mode-toggle__btn is-active" data-mode="course">과목 찾기</button>
     </div>
     <div class="match-query" id="matchQuery">
       <div class="match-query__row">
@@ -38,12 +43,20 @@
       <div class="match-query__row" id="schoolFilterRow">
         <span class="match-query__label">파견 희망교</span>
         <div id="schoolFilterMount" class="major-filter-mount"></div>
+        <!-- 조회 버튼은 파견교 드롭다운 오른쪽에 짧게(학교 찾기의 검색칸 + 필터 버튼과 같은 꼴) -->
+        <button type="button" class="btn btn--accent match-query__cta" id="runMatchBtn">조회하기</button>
       </div>
-      <button type="button" class="btn btn--accent match-query__cta" id="runMatchBtn">전공 과목 매칭 조회하기</button>
     </div>
-    <div id="relevanceFilterMount"></div>
-    <div id="countryFilterMount"></div>
+    <!-- 결과 필터 — 관련도(또는 인정 가능성) · 대륙/국가를 드롭다운 두 칸으로 한 줄에. ?를 누르면 아래에 기준이 열린다(js/credits.js) -->
+    <div class="credit-filters" id="creditFilters" hidden>
+      <div id="relevanceFilterMount" class="credit-filters__cell"></div>
+      <div id="countryFilterMount" class="credit-filters__cell"></div>
+      <button type="button" class="credit-filters__help" id="criteriaToggle" aria-expanded="false" aria-controls="criteriaBox" aria-label="기준 보기">?</button>
+    </div>
+    <div class="credit-criteria" id="criteriaBox" hidden></div>
     <p id="confirmedSchoolNote" class="major-match-confirmed-note" hidden></p>
+    <!-- 매칭은 참고용 — 실제 인정은 학과·국제처가 정한다 -->
+    <p class="verify-note"><b>꼭 직접 확인하세요</b>매칭 결과는 선배 기록과 강의계획서를 바탕으로 한 참고용이에요.<br>실제 학점 인정 여부는 소속 학과와 국제처에 꼭 다시 확인하세요.</p>
     <div id="matchList"></div>
   </main>
 </div>
@@ -63,9 +76,12 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/date-picker.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -77,8 +93,11 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/components/target-major.js"></script>
+<script src="js/components/logo-fit.js"></script>
+<script src="js/components/credit-limit.js"></script>
 <script src="js/credits.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

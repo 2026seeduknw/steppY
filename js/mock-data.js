@@ -30,13 +30,8 @@ MOCK.defaultProfile = {
  * 오늘의 할 일 (§4.2) — F2/F4 공통, 최대 4개 노출.
  * 사용자별 로컬 상태 초기값(js/state.js)이라 Supabase 대상이 아님.
  * ------------------------------------------------------------------- */
-MOCK.todos = [
-  { id: 't1', title: '여행자보험 가입증명서 제출', date: '2027-01-05', done: false, tag: '서류' },
-  { id: 't2', title: '온라인 지원서 최종 제출', date: '2026-09-20', done: false, tag: '지원' },
-  { id: 't3', title: 'TOEFL 성적표 유효기간 확인', date: '2026-09-01', done: true, tag: '어학' },
-  { id: 't4', title: '초과학기 등록 서약서 작성', date: '2027-01-10', done: false, tag: '서류' },
-  { id: 't5', title: '출국신고서 제출', date: '2027-01-12', done: false, tag: '서류' }
-];
+// 기본 할 일은 국제처 책자 일정에서 만든다(AppState.baseTodos, js/oia-rules.js). 예전 예시 5개는 지웠다.
+MOCK.todos = [];
 
 /* ---------------------------------------------------------------------
  * 학교 데이터 (F3 검색/비교, F2/F4 지망·확정 카드) — Supabase schools 테이블
@@ -83,7 +78,7 @@ MOCK.checklist = [
     ],
     checkedAt: '2026-10' },
   { id: 'insurance', title: '해외여행자보험 가입', done: false,
-    detail: '파견 국가와 파견교가 요구하는 보험 조건을 확인하고 가입해요. 국가별 보험 정보는 아래 "생활 준비 — 준비물"의 보험 카드에 있어요.',
+    detail: '파견 국가와 파견교가 요구하는 보험 조건을 확인하고 가입해요.',
     dynamicSource: 'insurance' },
   { id: 'flight', title: '항공권 예약', done: false,
     detail: '파견교 오리엔테이션과 기숙사 입주 일정을 확인한 뒤 출국편을 예약해요.' },

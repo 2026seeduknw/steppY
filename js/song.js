@@ -183,6 +183,32 @@ const SongEngine = (function () {
     }
   }
 
+  /**
+   * 그 자리·그 시각의 날씨(사진을 찍은 때). when은 찍은 곳의 벽시계 시각(EXIF 그대로)이라
+   * timezone=auto로 받은 그 지역 시각표에서 같은 '날짜T시'를 찾는다.
+   * 최근 석 달은 예보 API(지난 날 포함), 그보다 오래면 기록 API(archive)를 쓴다.
+   */
+  async function fetchWeatherAt(lat, lng, when) {
+    if (!(when instanceof Date) || isNaN(when)) return fetchWeather(lat, lng);
+    const p2 = (n) => String(n).padStart(2, '0');
+    const day = `${when.getFullYear()}-${p2(when.getMonth() + 1)}-${p2(when.getDate())}`;
+    const key = `${day}T${p2(when.getHours())}:00`;
+    const old = Date.now() - when.getTime() > 80 * 864e5;
+    const base = old ? 'https://archive-api.open-meteo.com/v1/archive' : 'https://api.open-meteo.com/v1/forecast';
+    try {
+      const res = await fetch(`${base}?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,weather_code&timezone=auto&start_date=${day}&end_date=${day}`);
+      if (!res.ok) return null;
+      const h = (await res.json()).hourly;
+      if (!h || !h.time) return null;
+      const i = Math.max(0, h.time.indexOf(key));
+      const code = h.weather_code && h.weather_code[i], temp = h.temperature_2m && h.temperature_2m[i];
+      if (typeof code !== 'number') return null;
+      return { code, temp: typeof temp === 'number' ? temp : null, at: h.time[i] };
+    } catch (e) {
+      return null;
+    }
+  }
+
   function shuffle(arr) {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -419,7 +445,7 @@ const SongEngine = (function () {
   }
 
   return {
-    computeMood, fetchWeather, fetchSongRecommendation, searchTracks, buildSongLinks,
+    computeMood, fetchWeather, fetchWeatherAt, fetchSongRecommendation, searchTracks, buildSongLinks,
     fetchAlbumArt, fetchPreviewUrl, weatherLabel, timeLabel
   };
 })();

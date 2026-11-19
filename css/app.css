@@ -694,7 +694,7 @@ body[data-page="intro"] { padding-bottom: 0; }
    가장 큰 크기를 실제로 재서 골랐다(340px 폭 기준, 24px→2줄 / 25px→3줄).
    문구를 바꾸면 줄 수가 달라지니 다시 재야 한다. */
 .intro__section-title { font-size: 1.5rem; line-height: 1.4; }
-.intro__final-title { font-size: 1.75rem; }
+.intro__final-title { font-size: 1.5rem; }   /* 28px → 24px, 사용자 요청으로 한 단계 작게 */
 
 
 /* ==========================================================================
@@ -721,6 +721,10 @@ button.appbar__avatar { border: none; cursor: pointer; }
 }
 
 .account-sheet { padding: var(--space-4) var(--space-5) var(--space-6); }
+.account-sheet__loc { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: var(--space-3); font-size: var(--fs-small); color: var(--ink-700); }
+.account-sheet__loc b { margin-left: 4px; font-weight: 700; color: var(--ink-900); }
+.account-sheet__loc small { font-size: var(--fs-micro); color: var(--ink-400); }
+.account-sheet__loc + .account-sheet__loc { margin-top: 2px; }
 .account-sheet__label {
   font-size: var(--fs-micro);
   font-family: var(--font-mono);
@@ -837,6 +841,7 @@ body[data-page="auth"] {
 .auth__error { background: var(--coral-100); color: var(--coral-600); }
 .auth__notice { background: var(--mint-100); color: var(--mint-600); }
 .auth__error[hidden], .auth__notice[hidden] { display: none; }
+.auth__error { white-space: pre-line; }
 
 .auth__form .btn--primary {
   height: 52px;
@@ -1043,7 +1048,7 @@ body[data-page="onboarding"] {
 }
 
 .ob__form { display: flex; flex-direction: column; gap: var(--space-4); }
-.ob__group { display: flex; flex-direction: column; gap: 7px; }
+.ob__group { display: flex; flex-direction: column; gap: 8px; }
 /* 입력칸 위 라벨은 .field > span, .filter-group__title 과 같은 위계다.
    800 은 카드 제목(.section-title h2)의 무게라 이 자리에서는 과하다. */
 .ob__label {
@@ -1056,7 +1061,7 @@ body[data-page="onboarding"] {
   color: var(--amber-700); background: var(--amber-100);
   padding: 2px 7px; border-radius: var(--radius-pill);
 }
-.ob__row { display: flex; gap: 10px; }
+.ob__row { display: flex; gap: 8px; }
 .ob__row > input { flex: 1; min-width: 0; }
 .ob__row > select { flex: 0 0 116px; }
 .ob__suffix { flex: none; align-self: center; font-size: var(--fs-body); font-weight: 700; color: var(--ink-400); padding: 0 4px; }
@@ -1076,6 +1081,15 @@ body[data-page="onboarding"] {
 .ob__chips .chip { min-height: 32px; padding: 6px var(--space-3); font-size: var(--fs-small); }
 .ob__loading { font-size: var(--fs-small); color: var(--ink-400); padding: var(--space-4) 0; }
 .ob__hint { font-size: var(--fs-micro); color: var(--ink-400); line-height: 1.5; word-break: keep-all; }
+/* 같은 층위의 두 칸(학점·백분위, 점수·응시 연월)은 한 줄에 반씩 — app_ui.md 1장 */
+.ob__row--pair > * { flex: 1 1 0; min-width: 0; }
+.ob__row--pair > .ob__row > input { width: 100%; }
+.ob__row--pair > select { flex: 1 1 0; }
+.ob__sub { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); margin-top: 2px; }
+.ob__sub span, .ob__check span { font-weight: 500; color: var(--ink-400); }
+.ob__check { display: flex; align-items: center; gap: 8px; font-size: var(--fs-small); color: var(--ink-700); }
+.ob__form .ob__check input { width: 18px; height: 18px; padding: 0; flex: none; }
+.ob [hidden] { display: none !important; }
 
 /* 로그인 화면의 기본 버튼과 같은 네이비 — 두 화면이 이어서 나온다.
    버튼은 <main class="ob"> 밖의 .ob__footer 안에 있다. */
@@ -1324,10 +1338,10 @@ a.todo-pill__add { text-decoration: none; }
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 2px;
-  gap: 6px;
+  gap: 4px;
 }
-/* 네 개를 한 줄에 담으려면 좌우 여백이 16px씩은 과하다 */
-.school-modal__badges .badge { padding: 0 9px; }
+/* 네 개를 한 줄에 담으려면 좌우 여백이 16px씩은 과하다(고딕은 글자가 넓어 폭 331px에서 TOEFL이 잘렸다) */
+.school-modal__badges .badge { padding: 0 7px; letter-spacing: -0.02em; }
 .school-modal__badges::-webkit-scrollbar { display: none; }
 .school-modal__badges .badge { flex: 0 0 auto; }
 .school-modal__badges--extra { flex-wrap: wrap; overflow: visible; }
@@ -1835,6 +1849,26 @@ body[data-page="prepare"] .leg-card {
 
 .auth__legal { margin-top: var(--space-4); text-align: center; font-size: var(--fs-micro); color: var(--ink-400); }
 .auth__legal a { color: var(--ink-600); text-decoration: underline; }
+/* 회원가입 — 참고 정보라 본인이 꼭 확인해야 한다는 안내. 폼에서 가장 먼저 눈에 띄게 경고색 상자로 */
+.auth__verify { margin: 4px 0 6px; padding: 12px 14px; border-radius: 14px; background: #FFFAEB; border: 1px solid #F2DDA4; color: #5A4512; font-size: 12px; line-height: 1.55; word-break: keep-all; }
+.auth__verify[hidden] { display: none; }
+.auth__verify-title { margin: 0 0 5px; font-size: 14px; font-weight: 800; color: #3E2E05; }
+.auth__verify p + p { margin-top: 4px; }
+.auth__verify strong { color: #3E2E05; }
+/* 회원가입 동의 목록 — 전체 동의 / [필수] / [선택]. 항목마다 따로 체크하고, 보기는 오른쪽 끝 */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.auth__consents { margin: 2px 0 4px; padding: 4px 14px 12px; border: 1px solid var(--line-200); border-radius: 14px; background: var(--cloud-0); }
+.auth__consents[hidden] { display: none; }
+.auth__consent { display: flex; align-items: flex-start; gap: 8px; padding: 9px 0; }
+.auth__consent + .auth__consent { border-top: 1px solid var(--line-100); }
+.auth__consent--all { padding: 12px 0; }
+.auth__consent--all .auth__consent-label { font-weight: 800; color: var(--ink-900); }
+.auth__consent--all small { font-weight: 500; color: var(--ink-400); }
+.auth__consent-label { flex: 1; display: flex; align-items: flex-start; gap: 8px; font-size: var(--fs-small); line-height: 1.45; color: var(--ink-700); cursor: pointer; word-break: keep-all; }
+.auth__consent-label input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--ink-900); }
+.auth__consent-label b { color: var(--ink-900); }
+.auth__consent-view { flex: none; padding: 1px 2px; border: 0; background: none; font: inherit; font-size: var(--fs-micro); color: var(--ink-500); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.auth__consent-note { margin: 8px 0 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 
 /* ---- 랜딩 푸터 ---- */
 /* 마지막 CTA 와 이어지는 자리라 위 여백은 절반으로. 아래는 고정 버튼이 가리지
@@ -1842,7 +1876,7 @@ body[data-page="prepare"] .leg-card {
 /* 고정된 '밀어서 시작하기'가 화면 아래 90px 가량을 덮는다. 페이지 맨 끝
    요소가 그만큼 비워 줘야 마지막 링크가 버튼 뒤로 들어가지 않는다 —
    앞 섹션에 여백을 주면 소용없다(그 뒤에 이 푸터가 또 오니까). */
-.intro__footer { padding: 0 var(--space-5) calc(var(--space-5) + 92px); text-align: center; }
+.intro__footer { padding: 0 var(--space-5) calc(var(--space-5) + 92px); text-align: center; display: flex; justify-content: center; gap: 16px; }
 /* 개인정보처리방침은 App Store 가 찾아보는 링크라 묻히면 안 된다.
    남색 배경 시절에는 크림색이었는데, 배경을 밝은 하늘색으로 뒤집으면서
    그 크림색이 다시 안 보이게 됐다 — 진한 잉크로 되돌린다. */
@@ -1935,15 +1969,21 @@ textarea {
    선 하나만 그어도 다시 "위아래가 나뉜 판"으로 보인다. */
 .confirmed-card__trip { margin-top: var(--space-2); }
 
-/* D-day는 출발·도착 이름과 한 줄에 낀다 — 따로 줄을 두면 카드가 길어진다.
-   두 도시명의 폭이 서로 달라서 flex 가운데(space-between의 빈 칸)에 맡기면
-   카드 중앙을 벗어난다 — 흐름에서 빼서 카드 폭 기준 정중앙에 겹쳐 올린다. */
-.confirmed-card__trip .leg-card__ends { position: relative; }
+/* D-day는 비행 막대 바로 아래 가운데. "출국일 수정"과 같은 줄에 두어 카드가 길어지지 않게 한다.
+   수정 버튼이 오른쪽에 있어 flex 가운데에 맡기면 중앙을 벗어나므로, 줄 기준 정중앙에 겹쳐 올린다. */
+.confirmed-card__trip-foot {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 28px;
+  margin-top: var(--space-2);
+}
 .confirmed-card__dday {
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   font-family: var(--font-mono);
   font-weight: 800;
   font-size: 1.05rem;
@@ -1952,6 +1992,7 @@ textarea {
   white-space: nowrap;
   pointer-events: none;
 }
+.confirmed-card__trip-foot .confirmed-card__trip-edit { margin-top: 0; }
 
 .confirmed-card__trip .leg-card__place { font-size: 0.95rem; }
 .confirmed-card__trip .leg-card__end { gap: 0; }
@@ -2126,7 +2167,7 @@ textarea {
 .wishlist-slot__meta,
 .confirmed-card__name,
 .confirmed-card__meta {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  font-family: var(--font-body);
 }
 
 
@@ -2153,3 +2194,67 @@ select:not([multiple]) {
    아래: 제목의 margin 16px 위에 .section-title 의 margin 16px 이 겹쳐 32px 이었다. */
 .score-card { padding-top: var(--space-4); }
 .score-card .section-title h2.brand-head { margin-bottom: 0; }
+
+/* ---- 예상 출국일 입력 창 (js/components/layout.js openDepartureGate) ----
+   확정 직후에는 닫을 수 없는 창이라 탭바·앱바 위를 통째로 덮는다. */
+.departure-gate {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-4);
+  background: rgba(20, 28, 26, 0.55);
+}
+.departure-gate__panel {
+  position: relative;
+  width: min(360px, 100%);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--cloud-0);
+  box-shadow: var(--shadow-modal);
+}
+.departure-gate__title { font-size: var(--fs-h3); font-weight: 800; color: var(--ink-900); }
+.departure-gate__desc { margin: var(--space-2) 0 var(--space-3); font-size: var(--fs-small); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.departure-gate__field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.departure-gate__field input {
+  height: 44px; padding: 0 var(--space-3);
+  border: 1.5px solid var(--line-200); border-radius: var(--radius-md);
+  background: var(--cloud-0); font: inherit; font-weight: 500; color: var(--ink-900);
+}
+.account-sheet__departure { margin-bottom: var(--space-2); }
+
+/* ---- To-Do: 확정 후 출국 전엔 '이번 주' 할 일만(todo-card.js todoWeekView) ---- */
+.todo-pill__scope { align-self: center; font-size: var(--fs-small); color: var(--ink-400); white-space: nowrap; }
+/* 고딕은 글자가 넓어 폭 331px에서 "이번 주"가 ⌄ 밑으로 겹쳤다 — 간격을 줄이고, 더 좁은 화면에서는 "이번 주"를 뺀다 */
+.todo-pill__summary { gap: 8px; }
+.todo-pill__text { gap: 6px; }
+.todo-pill__caret { padding-right: 4px; }
+@media (max-width: 330px) { .todo-pill__scope { display: none; } }
+.todo-pill__empty { align-self: center; font-size: var(--fs-body); font-weight: 600; color: var(--ink-600); white-space: nowrap; }
+.todo-item__dday { font-weight: 800; color: var(--key-500); }
+.todo-item__dday.is-past { color: #c2453b; }
+.todo-panel__foot { margin-top: var(--space-3); font-size: var(--fs-small); line-height: 1.7; color: var(--ink-600); word-break: keep-all; }
+.todo-panel__foot b { color: var(--key-500); }
+.todo-panel__foot a { color: var(--sky-700); font-weight: 700; }
+.todo-list[hidden] { display: none; }
+.todo-panel__foot:first-child { margin-top: 0; }
+
+
+/* 로그인 화면 — "로그인 없이 둘러보기"는 가입 버튼 바로 밑 작은 글씨 링크 */
+.auth__skip { margin-top: var(--space-3); }
+.auth__sub { white-space: pre-line; }
+/* 어학 면제 체크 — 위 안내 글과 띄우고, 설명은 한 덩어리로 아래 줄에 */
+/* 어학 성적 안의 요소도 그룹·칩·나란한 칸과 같은 간격(8px)으로 */
+#obLangMount { display: flex; flex-direction: column; gap: 8px; }
+#obLangMount .ob__check { align-items: flex-start; }
+#obLangMount .ob__check input { margin-top: 1px; }
+.ob__check-text { display: block; line-height: 1.5; font-weight: 600; color: var(--ink-700) !important; }
+.ob__check-text small { font-size: var(--fs-micro); font-weight: 500; color: var(--ink-400); }
+/* 계열·편입 — 작은 라벨과 칩 사이도 다른 요소들과 같은 8px */
+#obFieldRow, #obTransferRow { display: flex; flex-direction: column; gap: 8px; }
+#obFieldRow .ob__sub, #obTransferRow .ob__sub { margin: 0; }
+
+/* 여백 규칙(app_ui.md 8/16/24) — 준비하기.
+   위쪽 작은 카드(확정 학교·일정·To-Do)는 같은 종류라 8px, 그 아래 성격이 다른 덩어리(서류|생활 전환·체크리스트·생활 카드)는 16px */
+body[data-page="prepare"] #prepareSchedule { margin: 8px 0 0; }
+body[data-page="prepare"] .page-shell:has(#prepareSchedule:not([hidden])) + .prepare-grid { padding-top: 8px; }
+body[data-page="prepare"] .prepare-grid { gap: 16px; }
+body[data-page="prepare"] .prepare-main, body[data-page="prepare"] .prepare-aside { gap: 16px; }

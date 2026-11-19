@@ -21,9 +21,21 @@ const Friends = (function () {
 
   /* ------------------------------------------------------------ 서버 호출 */
 
+  /*
+   * supabase/friends.sql을 아직 안 돌린 서버에는 친구 RPC가 없다(404, PGRST202).
+   * 그러면 기록하기 화면을 열 때마다 같은 실패 요청이 여러 번 나갔다 — 한 번 확인하면
+   * 하루 동안은 묻지 않고 바로 '없음'으로 돌려준다(SQL을 돌리면 다음 날부터 다시 붙는다).
+   */
+  const MISSING_KEY = 'steppy_friends_rpc_missing';
+  const rpcMissing = () => { try { return Date.now() - Number(localStorage.getItem(MISSING_KEY) || 0) < 864e5; } catch (e) { return false; } };
   async function rpc(name, args) {
+    if (rpcMissing()) return { ok: false, error: { code: 'PGRST202', message: 'friends.sql not applied' } };
     const res = await supabaseClient.rpc(name, args);
-    if (res.error) { console.warn('[friends]', name, res.error.message); return { ok: false, error: res.error }; }
+    if (res.error) {
+      if (res.error.code === 'PGRST202') { try { localStorage.setItem(MISSING_KEY, String(Date.now())); } catch (e) { /* 무시 */ } }
+      console.warn('[friends]', name, res.error.message);
+      return { ok: false, error: res.error };
+    }
     return { ok: true, data: res.data };
   }
 
@@ -56,11 +68,11 @@ const Friends = (function () {
       scrim.innerHTML = `
         <div class="modal-panel modal-panel--sm ft-panel">
           <h2 class="ft-title">친구 기능 이용 안내</h2>
-          <p class="ft-lead">친구에게 공개한 기록은 친구 목록에 있는 분들만 볼 수 있어요. 기록마다 공개 여부를 고를 수 있어요.</p>
+          <p class="ft-lead">친구에게 공개한 기록은 친구 목록에 있는 분들만 볼 수 있어요.<br>기록마다 공개 여부를 고를 수 있어요.</p>
           <ul class="ft-rules">
             <li>친구에게는 내 <b>이름과 파견 학교(국가·도시)</b>가 보여요.</li>
             <li>욕설·혐오·성적인 내용, 타인을 괴롭히거나 사칭하는 글은 올릴 수 없어요.</li>
-            <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요. 차단하면 서로의 기록이 보이지 않아요.</li>
+            <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요.<br>차단하면 서로의 기록이 보이지 않아요.</li>
             <li>신고된 내용은 운영자가 확인해 위반이 맞으면 삭제하고 이용을 제한해요.</li>
             <li>문의 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></li>
           </ul>
@@ -137,7 +149,7 @@ const Friends = (function () {
     const [codeRes, listRes, blockedRes] = await Promise.all([api.inviteCode(), api.list(), api.blocked()]);
     if (!managerScrim || !managerScrim.isConnected) return;
     if (!listRes.ok || !codeRes.ok) {
-      body.innerHTML = `<p class="ft-muted">친구 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`;
+      body.innerHTML = `<p class="ft-muted">친구 정보를 불러오지 못했어요.<br>잠시 후 다시 시도해 주세요.</p>`;
       return;
     }
     const rows = listRes.data || [];
@@ -155,7 +167,7 @@ const Friends = (function () {
           <button type="button" class="btn btn--ghost btn--sm" data-copy>복사</button>
           <button type="button" class="btn btn--primary btn--sm" data-share>공유</button>
         </div>
-        <p class="ft-muted">‘공유’로 보낸 링크를 친구가 누르면 앱이 있는 사람은 바로 친구가 되고, 없는 사람은 App Store로 가요. 코드를 직접 입력하면 요청이 와요. 코드는 친구에게만 알려 주세요.</p>
+        <p class="ft-muted">‘공유’로 보낸 링크를 친구가 누르면 앱이 있는 사람은 바로 친구가 되고, 없는 사람은 App Store로 가요.<br>코드를 직접 입력하면 요청이 와요.<br>코드는 친구에게만 알려 주세요.</p>
       </section>
 
       <section class="ft-sec">
@@ -186,7 +198,7 @@ const Friends = (function () {
             <span class="ft-row__name">${esc(r.name)}${schoolLine(r) ? `<small>${esc(schoolLine(r))}</small>` : ''}</span>
             <button type="button" class="ft-link" data-remove="${esc(r.friendship_id)}" data-name="${esc(r.name)}">삭제</button>
             <button type="button" class="ft-link ft-link--danger" data-block="${esc(r.user_id)}" data-name="${esc(r.name)}">차단</button>
-          </div>`).join('') : `<p class="ft-muted">아직 친구가 없어요. 위 코드를 공유해 보세요.</p>`}
+          </div>`).join('') : `<p class="ft-muted">아직 친구가 없어요.<br>위 코드를 공유해 보세요.</p>`}
         ${outgoing.map(r => `
           <div class="ft-row ft-row--pending">
             <span class="ft-avatar" aria-hidden="true">${esc(initial(r.name))}</span>
@@ -385,7 +397,7 @@ const Friends = (function () {
     const res = await q;
     tl.loading = false;
     if (res.error) {
-      tl.mount.innerHTML = `<p class="ft-muted ft-center">타임라인을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>`;
+      tl.mount.innerHTML = `<p class="ft-muted ft-center">타임라인을 불러오지 못했어요.<br>잠시 후 다시 시도해 주세요.</p>`;
       return;
     }
     const rows = res.data || [];
@@ -443,7 +455,7 @@ const Friends = (function () {
     const loadingPhotos = (e.photos || []).length > 0 && !urls.length;
     const loc = e.location && (e.location.city || e.location.country);
     const meta = [loc ? `📍 ${esc(loc)}` : '', esc(weatherText(e.weather)), ...(e.tags || []).map(tagText).filter(Boolean).slice(0, 3).map(esc)].filter(Boolean);
-    const track = e.song || e.now_playing;
+    const track = e.now_playing || e.song;   // 직접 고른 노래가 먼저
     const likes = tl.likes[e.id] || [];
     const liked = likes.includes(me());
     const cc = tl.commentCounts[e.id] || 0;
@@ -469,7 +481,7 @@ const Friends = (function () {
         ${e.title ? `<h3 class="ft-card__title">${esc(e.title)}</h3>` : ''}
         ${e.body ? `<p class="ft-card__body">${esc(e.body)}</p>` : ''}
         ${meta.length ? `<p class="ft-card__meta">${meta.join(' · ')}</p>` : ''}
-        ${track ? `<p class="ft-card__song">🎵 ${esc(track.name)} — ${esc(track.artist)}</p>` : ''}
+        ${track ? `<p class="ft-card__song">🎵 ${esc(track.name)} · ${esc(track.artist)}</p>` : ''}
         <footer class="ft-card__actions">
           <button type="button" class="ft-act${liked ? ' is-on' : ''}" data-like="${esc(e.id)}" aria-pressed="${liked}">${liked ? '♥' : '♡'} <span>${likes.length || ''}</span></button>
           <button type="button" class="ft-act" data-comments="${esc(e.id)}" aria-expanded="${open}">💬 <span>${cc || ''}</span></button>
@@ -658,5 +670,39 @@ const Friends = (function () {
     return { posts };
   }
 
-  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts, shareInvite, ensureTerms };
+  /**
+   * 기록하기 첫 화면의 "Friends Today" — 친구들이 오늘 올린 기록(사진·글) 전부, 최근 것부터.
+   * 결과: { hasFriends, posts: [{ who, school, city, time, title, body, url, info }] }
+   */
+  async function todayFeed(limit = 30) {
+    if (!AppState.isAuthed || !me()) return { hasFriends: false, posts: [] };
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const [listRes, res] = await Promise.all([
+      api.list(),
+      supabaseClient.from('user_journal')
+        .select('id, user_id, entry_date, title, body, photos, location, song, now_playing, weather, created_at')
+        // 기록 날짜(entry_date)가 오늘인 글 — created_at 은 사진을 찍은 시각이라(옛 사진이면 몇 년 전) 오늘 올린 글도 빠졌다
+        .neq('user_id', me()).eq('entry_date', `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`)
+        .order('created_at', { ascending: false }).limit(limit)
+    ]);
+    const friends = {};
+    if (listRes.ok) (listRes.data || []).filter(r => r.direction === 'friend').forEach(r => { friends[r.user_id] = r; });
+    const hasFriends = Object.keys(friends).length > 0;
+    if (res.error || !hasFriends) return { hasFriends, posts: [] };
+    const rows = (res.data || []).filter(r => friends[r.user_id]);
+    const urls = await AppState.signPhotoPaths(rows.filter(r => (r.photos || []).length).map(r => r.photos[0]));
+    const posts = rows.map(r => {
+      const f = friends[r.user_id];
+      const entry = { date: r.entry_date, createdAt: r.created_at, title: r.title || '', body: r.body || '', location: r.location, weather: r.weather, song: r.song, nowPlaying: r.now_playing };
+      const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(entry) : { cap: entry.title, date: entry.date };
+      const school = f.school_name ? [f.school_name, f.school_city || f.school_country].filter(Boolean).join(' · ') : '';
+      info.who = f.name; info.school = school;
+      const loc = typeof placeEn === 'function' ? placeEn(r.location) : (r.location || {});
+      return { who: f.name, school, city: loc.city || loc.country || '', time: r.created_at, title: entry.title, body: entry.body,
+        url: (r.photos || []).length ? (urls[r.photos[0]] || '') : '', info };
+    });
+    return { hasFriends, posts };
+  }
+
+  return { openManager, mountTimeline, reloadTimeline, refreshBadges, recentPosts, todayFeed, shareInvite, ensureTerms };
 })();

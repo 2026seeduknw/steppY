@@ -88,9 +88,9 @@
   }
 
   const SECURITY_TEXT = {
-    high: '치안 양호 — Numbeo·GPI·외교부 여행경보 종합 기준',
-    medium: '치안 보통 — Numbeo·GPI·외교부 여행경보 종합 기준',
-    low: '치안 주의 — Numbeo·GPI·외교부 여행경보 종합 기준'
+    high: '치안 양호 (Numbeo·GPI·외교부 여행경보 종합 기준)',
+    medium: '치안 보통 (Numbeo·GPI·외교부 여행경보 종합 기준)',
+    low: '치안 주의 (Numbeo·GPI·외교부 여행경보 종합 기준)'
   };
 
   function coerce(v) {
@@ -237,6 +237,12 @@
         // nonEnglish 가 된다 — GE3(다국가 컨소시엄)가 그랬다. 모르는 건
         // 모른다고 둔다. 수업 언어 필터도, 어학 성적 요구도 걸리지 않는다.
         track: s.language ? s.track : null,
+        // 수업 언어권 목록 — 'English, French' 면 영어권·프랑스어권 둘 다로 지원할 수 있다(js/oia-rules.js)
+        languages: typeof OIA !== 'undefined' ? OIA.parseLanguages(s.language) : [],
+        academicSystem: s.academic_system || '',
+        openGrad: s.open_grad !== false,
+        // 이 학교 정보가 어느 학기 명단에서 왔는지. term 컬럼(supabase/oia_2027.sql)이 없으면 지금 명단 기준
+        term: s.term || (typeof OIA !== 'undefined' ? OIA.SCHOOLS_TERM : ''),
         langTest: {
           type: isEnglish ? 'TOEFL' : (s.language_level || '현지 어학시험'),
           cut: isEnglish && typeof toeflScore === 'number' ? toeflScore : null,
@@ -255,6 +261,9 @@
           ...(s.spring_available ? ['봄학기'] : []),
           ...(s.fall_available ? ['가을학기'] : [])
         ],
+        // 봄(-1) 명단인데 봄에 갈 수 없는 학교 — OIA 명단에서 봄 한 학기·봄 1년이 둘 다 불가이거나 이번 학기 정원 0.
+        // 학교 찾기(search.js)에서 숨긴다. OIA 명단이 봄을 열면 이 값이 바뀌어 다시 보인다.
+        springClosed: (s.spring_available === false && s.spring_calendar_year !== true) || coerce(s.quota) === 0,
         climate, climateTemps, climatePrecip, climateNotes: c ? (c.climate_notes || '') : '',
         scoreBasis: basisBySchool[s.id] || null,
         koreaComparison: c ? (c.korea_comparison || '') : '',
@@ -444,13 +453,14 @@
    */
   async function loadMentorQuestions() {
     const [questions, answers] = await Promise.all([
+      // strict — 받기에 실패하면 던져서 저장본을 지키고, 정말 0개면 0개로 받아들인다(아래 allowEmpty)
       fetchAll('mentor_questions', {
         columns: 'id, author_id, country, school_id, title, body, created_at',
-        order: [['created_at', { ascending: false }], ['id']]
+        order: [['created_at', { ascending: false }], ['id']], strict: true
       }),
       fetchAll('mentor_answers', {
         columns: 'id, question_id, author_id, body, created_at',
-        order: [['created_at', { ascending: true }], ['id']]
+        order: [['created_at', { ascending: true }], ['id']], strict: true
       })
     ]);
     const answersByQuestion = {};
@@ -464,22 +474,6 @@
       title: q.title, body: q.body, createdAt: q.created_at,
       answers: answersByQuestion[q.id] || []
     }));
-  }
-
-  /**
-   * BM 가격표(supabase/premium.sql). 누구나 읽을 수 있는 참고 데이터라
-   * 다른 로더와 똑같이 다룬다 — 마이그레이션 전이면 조용히 빈 배열이 오고
-   * mock-data.js의 자리표시자 가격이 그대로 남는다.
-   */
-  async function loadCreditCatalog() {
-    const [packages, plans] = await Promise.all([
-      fetchAll('credit_packages', { order: [['sort_order'], ['id']] }),
-      fetchAll('premium_plans', { order: [['sort_order'], ['id']] })
-    ]);
-    return {
-      creditPackages: (packages || []).map(p => ({ id: p.id, credits: p.credits, bonus: p.bonus || 0, priceKrw: p.price_krw, label: p.label })),
-      premiumPlans: (plans || []).map(p => ({ id: p.id, days: p.days, priceKrw: p.price_krw, label: p.label }))
-    };
   }
 
   async function loadYonseiMajors() {
@@ -545,8 +539,14 @@
   const CACHE_DB = 'steppy-catalog';
   const CACHE_STORE = 'groups';
 
+  /*
+   * 저장소가 대답하지 않으면 기다리지 않는다. IndexedDB 열기는 성공도 실패도 안 하고 멈춰 있을 때가 있다
+   * (iOS 웹뷰에서 알려진 문제, 지우는 중인 저장소 등). 예전에는 그 동안 서버에도 묻지 않아서 학교 목록·
+   * 매칭이 끝없이 '불러오는 중'이었다. 정해진 시간 안에 대답이 없으면 저장본 없이 서버에서 바로 받는다.
+   */
+  const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
   function cacheDb() {
-    return new Promise((resolve) => {
+    return withTimeout(new Promise((resolve) => {
       try {
         const req = indexedDB.open(CACHE_DB, 1);
         req.onupgradeneeded = () => req.result.createObjectStore(CACHE_STORE);
@@ -554,14 +554,14 @@
         req.onerror = () => resolve(null);
         req.onblocked = () => resolve(null);
       } catch (e) { resolve(null); }
-    });
+    }), 1500);
   }
   const cacheDbReady = cacheDb();
 
   async function cacheRead(name) {
     const db = await cacheDbReady;
     if (!db) return null;
-    return new Promise((resolve) => {
+    return withTimeout(new Promise((resolve) => {
       try {
         const req = db.transaction(CACHE_STORE).objectStore(CACHE_STORE).get(name);
         req.onsuccess = () => {
@@ -570,7 +570,7 @@
         };
         req.onerror = () => resolve(null);
       } catch (e) { resolve(null); }
-    });
+    }), 1500);
   }
 
   async function cacheWrite(name, data) {
@@ -605,20 +605,20 @@
     core: {
       load: async () => {
         const [schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
-          countryPrep, schoolReviews, schoolDocuments, creditCatalog] = await Promise.all([
+          countryPrep, schoolReviews, schoolDocuments] = await Promise.all([
           loadSchools(), loadChecklist(), loadScholarships(), loadLivingPrep(), loadTips(), loadNearbySpots(),
           loadYonseiMajors(), loadVisaRequirements(), loadCountryPrep(), loadSchoolExchangeReports(),
-          loadSchoolDocuments(), loadCreditCatalog()
+          loadSchoolDocuments()
         ]);
         return {
           schools, checklist, scholarships, livingPrep, tips, nearbySpots, yonseiMajors, visaRequirements,
-          countryPrep, schoolReviews, schoolDocuments,
-          creditPackages: creditCatalog.creditPackages, premiumPlans: creditCatalog.premiumPlans
+          countryPrep, schoolReviews, schoolDocuments
         };
       }
     },
     majorMatches: { load: async () => ({ majorMatches: await loadMajorMatches() }) },
-    mentor: { load: async () => ({ mentorQuestions: await loadMentorQuestions() }), alwaysRefresh: true }
+    // 사용자 글이라 "0개"도 올바른 답이다 — 비어 와도 저장본으로 덮지 않는다(allowEmpty). 실패는 strict로 따로 던진다
+    mentor: { load: async () => ({ mentorQuestions: await loadMentorQuestions() }), alwaysRefresh: true, allowEmpty: true }
   };
 
   // course_matches는 여기서 받지 않는다 — 위 ensureCourseMatches가 필요한 조각만 받는다
@@ -635,9 +635,10 @@
     }
     // 이번에 비어 온 컬렉션은 저장본의 값을 그대로 둔다(위 applyToMock과 같은 이유)
     const merged = Object.assign({}, cached ? cached.data : null);
-    Object.keys(fresh).forEach(k => { if (!isEmpty(fresh[k])) merged[k] = fresh[k]; });
+    Object.keys(fresh).forEach(k => { if (group.allowEmpty || !isEmpty(fresh[k])) merged[k] = fresh[k]; });
     const changed = !cached || JSON.stringify(merged) !== JSON.stringify(cached.data);
     cacheWrite(name, merged);
+    if (group.allowEmpty) { if (changed) { Object.assign(MOCK, fresh); announce(); } return; }
     if (changed && applyToMock(fresh)) announce();
   }
 

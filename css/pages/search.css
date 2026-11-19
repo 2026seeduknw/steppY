@@ -107,7 +107,7 @@
 .result-meta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
 .result-meta__quick { display: flex; gap: 6px; flex: none; }
 .result-meta__quick .chip { min-height: 30px; padding: 5px var(--space-3); font-size: var(--fs-micro); white-space: nowrap; }
-.result-meta__count { font-size: var(--fs-small); color: var(--ink-600); }
+.result-meta__count { font-size: var(--fs-small); color: var(--ink-600); white-space: nowrap; }
 .result-meta__count strong { color: var(--ink-900); font-family: var(--font-mono); }
 
 .school-grid {
@@ -184,6 +184,22 @@ select.quick-filter.is-active {
   color: #fff;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
 }
+/* 내 전공만 — 셀렉트 두 칸과 같은 높이의 알약 안에 스위치. 칸 어디를 눌러도 켜고 끈다 */
+.quick-switch {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 8px 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line-200);
+  background: var(--cloud-0);
+  color: var(--ink-900);
+  font: inherit; font-size: var(--fs-small); font-weight: 600; white-space: nowrap;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.quick-switch.is-on { border-color: var(--sky-500); }
+.quick-switch .toggle-switch { width: 34px; height: 20px; }
+.quick-switch .toggle-switch::after { width: 16px; height: 16px; }
+.quick-switch .toggle-switch.is-on::after { transform: translateX(14px); }
 .quick-filter--more { height: 44px; border-style: dashed; background-color: transparent; }
 /* 시트 여는 원래 버튼은 '상세 필터' 칩이 대신한다 */
 .search-toolbar .filter-trigger { display: none; }

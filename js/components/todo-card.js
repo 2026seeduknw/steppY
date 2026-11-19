@@ -51,13 +51,46 @@ function renderTodoCard(mount, options) {
   });
 }
 
+/**
+ * 학교 확정 후 출국 전에는 기본 할 일이 '비자 및 서류 체크리스트'와 같은 항목이다.
+ * 같은 목록을 두 번 보여 주지 않도록, 이때 To-Do는 '이번 주' 것만 남긴다:
+ * 마감이 7일 안이거나 이미 지났는데 못 끝낸 것 + 직접 추가한 할 일.
+ * 날짜 없는 항목은 체크리스트에서만 관리한다.
+ */
+function todoWeekView(all) {
+  const weekly = all.some(t => String(t.id).startsWith('chk-'));
+  if (!weekly) return { weekly: false, todos: all, next: null };
+  const pad = (n) => String(n).padStart(2, '0');
+  const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const now = new Date();
+  const today = ymd(now);
+  const limit = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  const todos = all.filter(t => {
+    if (!t.date) return false;
+    if (t.date < today) return !t.done;             // 지난 건 못 끝낸 것만
+    if (t.date <= limit) return true;               // 이번 주 마감
+    return !String(t.id).startsWith('chk-') && !t.done; // 직접 추가한 할 일은 남긴다
+  });
+  const next = all.find(t => t.date && t.date > limit && !t.done && !todos.includes(t)) || null;
+  return { weekly: true, todos, next, today };
+}
+
+function todoDday(date) {
+  const [y, m, d] = date.split('-').map(Number);
+  const now = new Date();
+  const diff = Math.round((new Date(y, m - 1, d) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  return diff === 0 ? '오늘' : diff < 0 ? '지남' : `D-${diff}`;
+}
+
 function todoCardTemplate(adding, expanded) {
   // 예전엔 앞의 4개만 보여서, 새로 추가한(특히 기한이 늦거나 없는) 할 일이 목록에 안 나타났다
-  const todos = AppState.getTodos();
+  const view = todoWeekView(AppState.getTodos());
+  const todos = view.todos;
   const total = todos.length;
   const remaining = todos.filter(t => !t.done).length;
   const done = total - remaining;
-  const percent = total ? Math.round((done / total) * 100) : 0;
+  // 이번 주 마감이 없으면 이번 주 몫은 다 한 셈이라 100%
+  const percent = total ? Math.round((done / total) * 100) : view.weekly ? 100 : 0;
 
   return `
     <div class="todo-pill${expanded ? ' is-expanded' : ''}">
@@ -68,7 +101,10 @@ function todoCardTemplate(adding, expanded) {
         </span>
         <span class="todo-pill__text">
           <span class="todo-pill__label brand-head" data-wordmark="">To-Do</span>
-          <span class="todo-pill__count"><strong>${done}</strong><span>/${total}</span></span>
+          ${view.weekly && !total
+            ? `<span class="todo-pill__empty">이번 주 마감 없음</span>`
+            : `<span class="todo-pill__count"><strong>${done}</strong><span>/${total}</span></span>`}
+          ${view.weekly && total ? `<span class="todo-pill__scope">이번 주</span>` : ''}
         </span>
         <span class="todo-pill__caret" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
       </button>
@@ -84,16 +120,20 @@ function todoCardTemplate(adding, expanded) {
       <p class="todo-panel__guest">로그인하면 준비 일정을 저장하고 어느 기기에서든 이어서 볼 수 있어요.
         <a href="auth.html">로그인하기 →</a></p>`}
       ${adding ? todoAddFormHtml() : ''}
-      <ul class="todo-list">
+      <ul class="todo-list"${total ? "" : " hidden"}>
         ${todos.map(t => `
           <li class="todo-item ${t.done ? 'is-done' : ''}">
             <button class="todo-item__check" data-todo-check="${t.id}" aria-label="완료 처리">${t.done ? '✓' : ''}</button>
             <div class="todo-item__body">
               <span class="todo-item__title">${t.title}</span>
-              <span class="todo-item__meta">${t.date || '기한 없음'} · ${t.tag}</span>
+              <span class="todo-item__meta">${view.weekly && t.date ? `<b class="todo-item__dday${t.date < view.today ? ' is-past' : ''}">${todoDday(t.date)}</b> ` : ''}${t.date || '기한 없음'} · ${t.tag}</span>
             </div>
           </li>`).join('')}
       </ul>
+      ${view.weekly ? `
+      <p class="todo-panel__foot">
+        ${total ? '' : '이번 주에 마감되는 일은 없어요.<br>'}${view.next ? `다음: ${view.next.title} <b>${todoDday(view.next.date)}</b><br>` : ''}<a href="prepare.html#checklistSection">전체 목록은 비자 및 서류 체크리스트에서 →</a>
+      </p>` : ''}
     </div>` : ''}
   `;
 }

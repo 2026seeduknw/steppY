@@ -674,3 +674,274 @@ body[data-page="intro"] {
 @media (prefers-reduced-motion: reduce) {
   .splash { display: none; }
 }
+
+/* 소개 화면 본문 속 영어 키워드(Step, Four Steps!, step)는 본문 고딕으로 — 로고 글씨체(SB 어그로)는 히어로의 steppY 에만 */
+.intro__section-title .wm-text,
+.intro__final-title .wm-text {
+  font-family: var(--font-display);
+  font-weight: 500;            /* 볼드 빼고 보통 굵기 */
+  letter-spacing: -0.02em;
+  -webkit-text-stroke: 0;      /* 테두리도 굵어 보여서 뺀다 */
+}
+
+/* 소개 화면도 앱과 같은 고딕(히어로 steppY 로고만 SB 어그로) */
+body[data-page="intro"] { font-family: var(--font-body); }
+
+
+/* ==========================================================================
+   온보딩 넘기기 (js/onboarding-pager.js)
+   첫 장 = 지구·숫자, 다음 네 장 = Four Steps 하나씩.
+   화면은 위아래로 움직이지 않는다. 넘기는 칸만 옆으로 스냅되고,
+   글이 긴 장(01)만 그 장 안에서 위아래로 읽힌다.
+   ========================================================================== */
+
+body[data-page="intro"]:has(.intro--pager) { height: 100dvh; overflow: hidden; }
+/* iOS Safari는 body의 overflow:hidden을 무시하고 문서 전체를 밀어 올린다(머리줄이 사라지고 그림이 상태표시줄 밑으로).
+   문서는 고정하고, 스크롤은 각 장(.ob-slide) 안에서만 일어나게 한다 */
+html:has(.intro--pager) { overflow: hidden; height: 100%; overscroll-behavior: none; }
+body[data-page="intro"]:has(.intro--pager) { position: fixed; inset: 0; width: 100%; }
+.intro--pager {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.intro--pager .intro__nav { justify-content: space-between; flex: 0 0 auto; }
+
+.ob-skip {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-600);
+  padding: 8px 4px;
+}
+.ob-skip[hidden] { display: none; }
+
+.ob-track {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ob-track::-webkit-scrollbar { display: none; }
+
+.ob-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 휴대폰에서 세로로 미는 손가락을 가로 넘기기(바깥 트랙)가 가져가지 않게 — 두 방향 다 허용하고, 끝에 닿아도 바깥으로 안 넘긴다 */
+  touch-action: pan-x pan-y;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  /* 아래 막대는 장 밖(아래 칸)에 있으니 끝 여백만 */
+  padding-bottom: var(--space-6);
+  scrollbar-width: none;
+}
+.ob-slide::-webkit-scrollbar { display: none; }
+
+/* 첫 장 — 지구·숫자는 원래 랜딩 그대로. 섹션 사이 여백만 정리 */
+.intro--pager .intro__stats { padding-top: var(--space-3); padding-bottom: 0; }
+
+/* 단계 장 — 위에 그림(아치 창), 아래에 글 */
+.ob-slide--step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+.ob-art {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(68%, 260px);
+  aspect-ratio: 5 / 6;
+  margin-top: var(--space-3);
+  border-radius: 999px 999px 28px 28px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.95) 0 22%, transparent 56%),
+    linear-gradient(180deg, var(--sky-50) 0%, var(--sky-100) 100%);
+  border: 1.5px solid var(--line-200);
+  display: grid;
+  place-items: center;
+  color: var(--key-ink);
+  overflow: hidden;
+}
+.ob-art__icon { width: 46%; height: auto; }
+.ob-art__num {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 3.4rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(34, 48, 45, 0.08);
+}
+
+.ob-step {
+  width: 100%;
+  max-width: 34ch;
+  margin-top: var(--space-4);
+  text-align: center;
+  word-break: keep-all;
+}
+.ob-step__eyebrow {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--sky-700);
+  letter-spacing: 0.01em;
+}
+.ob-step__eyebrow .wm-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  -webkit-text-stroke: 0;
+  color: inherit;
+}
+.ob-step__title {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+.ob-step__desc {
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  line-height: 1.7;
+  color: var(--ink-700);
+}
+.ob-step__note {
+  display: inline-block;
+  margin-top: 8px; padding: 6px 12px;
+  border-radius: 10px; background: #F4EFE3;
+  font-size: var(--fs-micro); font-weight: 700; line-height: 1.5; color: var(--ink-900);
+}
+.ob-step__sub {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-200);
+}
+.ob-step__sub h4 { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); margin-bottom: 2px; }
+.ob-step__sub p { font-size: var(--fs-small); line-height: 1.7; color: var(--ink-600); }
+
+/* ---- 아래 고정 막대: 점 → 버튼 → (마지막 장) 둘러보기·약관 ---- */
+/* 화면 위에 떠서(fixed) 글을 덮지 않고, 세로 줄(.intro--pager)의 맨 아래 칸을 차지한다.
+   예전에는 떠 있는 막대 밑에 3·4단계 마지막 글줄이 깔렸고, 장 안에 넘치는 게 없어 밀어도 안 움직였다(iOS Safari). */
+.ob-bar {
+  position: relative;
+  flex: 0 0 auto;
+  z-index: 20;
+  padding: var(--space-3) var(--space-4) calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+  background: #fff;
+}
+/* 위로 살짝 흐린 띠 — 장 글이 막대 쪽으로 사라지는 느낌만(터치는 통과) */
+.ob-bar::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0), #fff); pointer-events: none;
+}
+.ob-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-3); }
+.ob-dots span {
+  width: 6px; height: 6px;
+  border-radius: 999px;
+  background: var(--ink-300, #c5ccc9);
+  transition: width .25s ease, background-color .25s ease;
+}
+.ob-dots span.is-on { width: 22px; background: var(--key-500); }
+
+.ob-actions { display: flex; gap: 8px; max-width: 440px; margin: 0 auto; }
+.ob-back {
+  flex: 0 0 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-200);
+  color: var(--ink-900);
+  display: grid;
+  place-items: center;
+  background: #fff;
+}
+.ob-bar.is-first .ob-back { display: none; }
+.ob-next {
+  flex: 1 1 auto;
+  height: 52px;
+  border-radius: var(--radius-pill);
+  background: var(--key-500);
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-body);
+}
+
+.ob-final { display: none; text-align: center; margin-top: var(--space-3); }
+.ob-bar.is-last .ob-final { display: block; }
+.ob-final__skip {
+  font-size: var(--fs-small);
+  color: var(--ink-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ob-final__legal { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
+.ob-final__legal a { font-size: var(--fs-micro); color: var(--ink-400, #8a9592); }
+
+/* 실제 화면 캡처 — 폰 화면 두 장을 살짝 겹쳐 세운다(뒤: 학교 찾기, 앞: 학교 카드) */
+.ob-shots {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(84%, 320px);
+  aspect-ratio: 1 / 1.3;
+  margin-top: var(--space-3);
+}
+/* 아이폰 모양 — 검은 테두리 + 둥근 화면 + 위쪽 상태 표시줄(시간·다이내믹 아일랜드) */
+.ob-phone {
+  position: absolute;
+  top: 0;
+  width: 54%;
+  padding: 2.6%;
+  border-radius: 17% / 8%;
+  background: #15191a;
+  box-shadow: 0 0 0 1.5px #3a4043 inset, 0 16px 36px rgba(34, 48, 45, 0.22);
+}
+.ob-phone__screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14% / 6.6%;
+  background: #fff;
+}
+.ob-phone__status {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 14%;
+  font-family: var(--font-display);
+  font-size: 6px;
+  font-weight: 700;
+  color: #111;
+}
+/* 다이내믹 아일랜드 */
+.ob-phone__status i {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 9px;
+  border-radius: 999px;
+  background: #15191a;
+}
+.ob-phone__screen img { display: block; width: 100%; height: auto; }
+.ob-phone--back { left: 0; transform: rotate(-5deg); transform-origin: 100% 100%; }
+.ob-phone--front { right: 0; top: 6%; transform: rotate(4deg); transform-origin: 0 100%; }
+
+/* 온보딩 마지막 장 — Four Steps를 다 본 뒤에 밀어서 시작하기(로그인·회원가입으로). 앞 장들은 "다음" 버튼.
+   아래 바 안에 놓으므로 고정 위치를 푼다 */
+.ob-bar .swipe-start { position: static; transform: none; width: auto; max-width: 440px; margin: 0 auto; }
+.ob-bar .swipe-start__track { box-shadow: none; }
+.ob-bar:not(.is-last) .swipe-start { display: none; }
+.ob-bar.is-last .ob-actions { display: none; }

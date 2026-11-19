@@ -29,10 +29,46 @@
 const STORAGE_KEY = 'steppy_guest_state_v2';
 const LEGACY_STORAGE_KEYS = ['xchg_demo_state_v1'];
 
+/**
+ * 로그인한 사람의 마지막 상태(서버에서 받은 값 + 아직 못 올린 기록). 서버가 정본이지만
+ * 페이지를 열 때마다 hydrate()가 끝나기 전까지 게스트 상태가 잠깐 보였다가 바뀌어서
+ * ("예전 데이터가 떴다 사라진다"), 그 사이에는 이 사본을 먼저 보여준다.
+ * uid를 같이 적어 두고, 지금 세션의 uid와 같을 때만 쓴다.
+ */
+const USER_SNAPSHOT_KEY = 'steppy_user_snapshot_v1';
+/** 서버 user_journal에 visibility 칸이 없다는 표시(friends.sql 미적용). 하루 지나면 다시 확인한다. */
+const NO_VISIBILITY_KEY = 'steppy_no_journal_visibility';
+
+/** Supabase가 이 기기에 저장해 둔 세션의 uid — Auth.init()을 기다리지 않고 바로 읽는다. */
+function storedSessionUid() {
+  try {
+    if (typeof SUPABASE_URL === 'undefined' || !SUPABASE_URL) return null;
+    const ref = new URL(SUPABASE_URL).hostname.split('.')[0];
+    const raw = localStorage.getItem(`sb-${ref}-auth-token`);
+    const parsed = raw && JSON.parse(raw);
+    return (parsed && parsed.user && parsed.user.id) || null;
+  } catch (e) { return null; }
+}
+
+/** 서버가 아직 모르는 기록(저장이 실패해 임시 id 'j…'로 남은 것) */
+const uploadingJournal = new WeakSet();   // 지금 서버에 올리는 중인 기록(AppState._uploadJournal)
+const isTempJournalId = (id) => /^j\d+$/.test(String(id || ''));
+
+function journalVisibilityMissing() {
+  try { return Date.now() - Number(localStorage.getItem(NO_VISIBILITY_KEY) || 0) < 864e5; } catch (e) { return false; }
+}
+function markJournalVisibilityMissing(err) {
+  if (!err || !/visibility/.test(err.message || '')) return false;
+  try { localStorage.setItem(NO_VISIBILITY_KEY, String(Date.now())); } catch (e) { /* 무시 */ }
+  return true;
+}
+
 /** 비프리미엄 사용자가 하루에 무료로 올릴 수 있는 사진 수(BM: 나머지는 프리미엄). */
 const FREE_PHOTO_DAILY_LIMIT = 3;
 
 /**
+ * (2026-11-08 크레딧·결제·해금을 모두 없앴다. 아래 값은 더 이상 화면에 쓰이지 않고, 서버 쪽은
+ * supabase/remove_credits.sql 이 질문 차감·답변 적립을 끈다.)
  * 크레딧 배분(BM 1단계). 서버 RPC(supabase/mentor_step.sql, bm_unlocks.sql)에도 같은
  * 값이 박혀 있다 — 화면에 보여주는 숫자일 뿐이고 실제 차감은 서버 값이 기준이다.
  * 여기를 바꾸면 SQL 쪽 상수도 같이 바꿔야 한다.
@@ -67,6 +103,7 @@ function guestState() {
     profile: emptyState(null).profile,
     favorites: [],
     wishlist: {},
+    wishlistMeta: {},
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
@@ -116,15 +153,20 @@ function emptyState(displayName) {
       targetMajor: null,
       gpa: null,
       gpaScale: 4.3,
+      // [{ type, score | level, lang(FLEX만), date('YYYY-MM') }] — 시험 종류는 js/oia-rules.js TESTS
       languageTests: [],
-      // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다
-      exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1 },
+      // 컨트롤러들이 exchangeTerm.year / .season을 바로 읽으므로 null로 두지 않는다.
+      // track — 지원 전형(영어권 'english' 또는 비영어권 언어 'fr' 등, 하나만). length — 1학기(1) / 1년(2).
+      exchangeTerm: { unit: 'semester', season: '가을학기', year: new Date().getFullYear() + 1, track: null, length: 1 },
+      // 국제처 공통 자격을 판정하는 학적 정보(supabase/oia_2027.sql의 profiles.academic)
+      academic: {},
       targetScoreSimUsed: false,
       // null(또는 지난 시각)이면 비프리미엄. supabase/premium.sql의 profiles.premium_until.
       premiumUntil: null
     },
     favorites: [],
     wishlist: {},
+    wishlistMeta: {},
     confirmedSchoolId: null,
     todos: [],
     customTodos: [],
@@ -141,12 +183,30 @@ function emptyState(displayName) {
   };
 }
 
+/** 아직 돌리지 않은 SQL 의 컬럼을 쓰려다 난 오류인가(PostgREST PGRST204 / Postgres 42703). */
+function isMissingColumn(err) {
+  return !!err && (err.code === 'PGRST204' || err.code === '42703');
+}
+
 const AppState = {
   _cache: null,
   _hydrated: false,
 
   load() {
     if (this._cache) return this._cache;
+    // 로그인 세션이 남아 있으면 게스트 상태 대신 그 사람의 마지막 상태로 시작한다(USER_SNAPSHOT_KEY)
+    const uid = this._hydrated ? null : storedSessionUid();
+    if (uid) {
+      this._snapshotUid = uid;
+      this._cacheUid = uid;
+      try {
+        const snap = JSON.parse(localStorage.getItem(USER_SNAPSHOT_KEY) || 'null');
+        this._cache = (snap && snap.uid === uid && snap.state) ? Object.assign(emptyState(null), snap.state) : emptyState(null);
+      } catch (e) {
+        this._cache = emptyState(null);
+      }
+      return this._cache;
+    }
     // hydrate() 이전에 동기로 불리면 일단 게스트 상태로 시작한다.
     // 로그인 상태라면 hydrate()가 곧 서버 값으로 통째로 갈아끼운다.
     try {
@@ -176,8 +236,13 @@ const AppState = {
   },
 
   save() {
-    // 로그인 상태에서는 서버가 정본이라 로컬에 남기지 않는다.
-    if (this.isAuthed) return;
+    // 로그인 상태에서는 서버가 정본이다 — 다음에 열 때 먼저 보여줄 사본만 남긴다
+    if (this.isAuthed) {
+      try { localStorage.setItem(USER_SNAPSHOT_KEY, JSON.stringify({ uid: Auth.userId, state: this._cache })); } catch (e) { /* 용량 초과 등 */ }
+      return;
+    }
+    // 세션 확인 전에 로그인한 사람의 사본을 들고 있으면 게스트 저장 칸에 섞지 않는다
+    if (this._snapshotUid && !this._hydrated) return;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._cache)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
   },
 
@@ -186,6 +251,23 @@ const AppState = {
   get profile() { return this.load().profile; },
   isFavorite(schoolId) { return this.load().favorites.includes(schoolId); },
   getWishlist() { return this.load().wishlist; },
+
+  /**
+   * 희망대학표 — 순위 순서대로 [{ rank, schoolId, major, length }].
+   * 국제처 지원서의 '희망교환대학표'와 같은 것이다: 최대 25개, 순서가 있고, 최종 1곳에 배정된다.
+   */
+  getWishlistList() {
+    const s = this.load();
+    const meta = s.wishlistMeta || {};
+    return Object.keys(s.wishlist).map(Number).sort((a, b) => a - b).map(rank => {
+      const id = s.wishlist[rank];
+      return { rank, schoolId: id, major: (meta[id] || {}).major || '', length: (meta[id] || {}).length || null };
+    });
+  },
+  wishlistRankOf(schoolId) {
+    const e = this.getWishlistList().find(x => x.schoolId === schoolId);
+    return e ? e.rank : null;
+  },
 
   /* -------------------------------------------------------- Mentor's Step */
 
@@ -224,10 +306,15 @@ const AppState = {
    * localStorage 카운터로 가볍게 막는다. 프리미엄이면 무제한.
    */
   freePhotoUploadsLeft() {
+    // 크레딧·프리미엄을 없앴다(2026-11-08) — 사진은 하루 장수 제한 없이 올린다
+    return Infinity;
+    // eslint-disable-next-line no-unreachable
     if (this.isPremium()) return Infinity;
     return Math.max(0, FREE_PHOTO_DAILY_LIMIT + this._todayExtraPhotos() - this._todayPhotoCount());
   },
   recordPhotoUpload() {
+    return;   // 한도가 없어 셀 필요가 없다
+    // eslint-disable-next-line no-unreachable
     if (this.isPremium()) return;
     try { localStorage.setItem(this._photoCountKey(), String(this._todayPhotoCount() + 1)); } catch (e) { /* 사파리 프라이빗 모드 등 */ }
   },
@@ -261,8 +348,8 @@ const AppState = {
 
   /** 이 목록에서 지금 보여줄 수 있는 개수. 게스트는 늘 무료 개수만. */
   visibleMatchCount(listKey) {
-    const steps = this.isAuthed ? (this.load().matchUnlocks[listKey] || 0) : 0;
-    return BM.MATCH_FREE + steps * BM.MATCH_UNLOCK_STEP;
+    // 크레딧 잠금을 없앴다 — 매칭 목록은 모두 보인다
+    return Infinity;
   },
 
   /** 크레딧을 써서 이 목록을 3개 더 연다. 잔액 확인·차감·기록은 서버가 한 번에 한다. */
@@ -310,7 +397,6 @@ const AppState = {
       title: row.title, body: row.body, createdAt: row.created_at, answers: []
     };
     MOCK.mentorQuestions.unshift(question);
-    this.load().credits -= BM.ASK_COST;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, question };
@@ -326,15 +412,125 @@ const AppState = {
     const answer = { id: row.id, authorId: row.author_id, body: row.body, createdAt: row.created_at };
     const question = MOCK.mentorQuestions.find(q => q.id === questionId);
     if (question) question.answers.push(answer);
-    this.load().credits += BM.ANSWER_REWARD;
     this.save();
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
     return { ok: true, answer };
   },
 
+  /**
+   * 내 Talky 글 삭제 — 탈퇴해도 글은 남으므로(supabase/mentor_keep_posts.sql) 본인이 지울 수 있어야 한다.
+   * 지워진 행을 돌려받아 확인한다: 정책이 없으면 에러 없이 0행이 지워져서, 그대로 두면 지운 줄 안다.
+   * 질문을 지우면 달린 답변도 서버에서 함께 지워진다.
+   */
+  async deleteQuestion(id) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.from('mentor_questions')
+      .delete().eq('id', id).eq('author_id', Auth.userId).select('id');
+    if (error || !data || !data.length) return { ok: false, error: error || 'not_deleted' };
+    MOCK.mentorQuestions = MOCK.mentorQuestions.filter(q => q.id !== id);
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true };
+  },
+
+  async deleteAnswer(questionId, answerId) {
+    if (!this.isAuthed) return { ok: false, error: 'auth_required' };
+    const { data, error } = await supabaseClient.from('mentor_answers')
+      .delete().eq('id', answerId).eq('author_id', Auth.userId).select('id');
+    if (error || !data || !data.length) return { ok: false, error: error || 'not_deleted' };
+    const q = MOCK.mentorQuestions.find(x => x.id === questionId);
+    if (q) q.answers = q.answers.filter(a => a.id !== answerId);
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+    return { ok: true };
+  },
+
+  /* ------------------------------------------------ 선택 동의(위치·광고)와 위치 이용 기록
+   * 가입 화면에서 [선택] 항목으로 한 번에 받고(auth.html), 계정 메타데이터(user_metadata.consent_*)에 남긴다.
+   * 다른 기기에서도 같아야 하므로 계정 값이 정본이고, 이 기기의 localStorage는 빠른 사본이다.
+   *   'yes' | 'no' | null(아직 안 물음 — 이 동의 목록이 생기기 전에 가입한 계정, 또는 둘러보기)
+   * 위치: 위치를 쓸 때마다 이용사실 확인자료를 남기고(위치정보법 제16조 제2항), 철회하면 지운다(제24조 제4항).
+   * 광고: 따로 동의받지 않는다 — 로그인한 iOS 앱 회원에게 띄우고, 국외 이전은 개인정보처리방침에 공개한다
+   *   (개인정보 보호법 제28조의8 제1항 제3호). 둘러보기·웹에는 광고가 없다.
+   */
+  _consentKey(kind) {
+    const uid = (this.isAuthed && typeof Auth !== 'undefined') ? Auth.userId : 'guest';
+    return `steppy_${kind}_consent_${uid}`;
+  },
+  _consent(kind) {
+    try { const v = JSON.parse(localStorage.getItem(this._consentKey(kind)) || 'null'); if (v && v.state) return v.state; } catch (e) { /* 무시 */ }
+    const meta = (this.isAuthed && typeof Auth !== 'undefined' && Auth.user && Auth.user.user_metadata) || {};
+    const v = meta[`consent_${kind}`];
+    return v === 'yes' || v === 'no' ? v : null;
+  },
+  _setConsent(kind, state) {
+    try { localStorage.setItem(this._consentKey(kind), JSON.stringify({ state, at: new Date().toISOString() })); } catch (e) { /* 무시 */ }
+    if (this.isAuthed && typeof supabaseClient !== 'undefined' && supabaseClient) {
+      supabaseClient.auth.updateUser({ data: { [`consent_${kind}`]: state, consent_optional_at: new Date().toISOString() } })
+        .then(({ error }) => { if (error) console.warn('[consent]', error.message); });
+    }
+    document.dispatchEvent(new CustomEvent('consent:changed', { detail: { kind, state } }));
+  },
+  locationConsent() { return this._consent('location'); },
+  setLocationConsent(state) {
+    const was = this.locationConsent();
+    this._setConsent('location', state);
+    if (state === 'yes') { this.logLocationUse('consent'); return; }
+    // 철회하면 그동안의 이용사실 확인자료를 지체 없이 지운다(위치정보법 제24조 제4항)
+    if (was === 'yes' && this.isAuthed && typeof supabaseClient !== 'undefined' && supabaseClient) {
+      supabaseClient.from('location_logs').delete().eq('user_id', Auth.userId)
+        .then(({ error }) => { if (error) console.warn('[location_logs]', error.message); });
+    }
+  },
+  /** 광고를 띄워도 되는지 — 로그인한 회원이면 'yes'(동의 대신 처리방침 공개), 둘러보기는 'no' */
+  adConsent() { return this.isAuthed ? 'yes' : 'no'; },
+  /** 위치정보 수집·이용·제공사실 확인자료 — 무엇을 위해, 어디로 보냈는지. 좌표는 남기지 않는다 */
+  logLocationUse(purpose, providedTo) {
+    if (!this.isAuthed || typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    supabaseClient.from('location_logs')
+      .insert({ user_id: Auth.userId, purpose, provided_to: providedTo || [] })
+      .then(({ error }) => { if (error) console.warn('[location_logs]', error.message); });
+  },
+
   getConfirmedSchool() {
     const id = this.load().confirmedSchoolId;
     return id ? MOCK.schools.find(sc => sc.id === id) : null;
+  },
+
+  /**
+   * 기본 할 일 — 국제처 책자 일정(js/oia-rules.js TERMS)에서 "할 일"인 것만 지금 단계에 맞게 뽑는다.
+   *   학교 확정 전: 지원 / 확정 후 출국 전: 배정 후 / 파견 중·귀국 후: 귀국 후
+   * 알아둘 일(info)·해당자만(only) 걸러내기와 날짜 계산은 OIA.scheduleFor 가 한다.
+   * 국제처 일정 카드(oia-timeline.js)에서 체크한 것도 완료로 친다.
+   */
+  baseTodos() {
+    if (typeof OIA === 'undefined') return [];
+    // 학교 확정 후 출국 전 — 교환 준비하기의 '비자 및 서류 체크리스트'(국제처 일정을 녹인 것)를 그대로 쓴다.
+    // 같은 항목·같은 체크 기록이라 To-Do 숫자와 체크리스트 % 가 어긋나지 않는다.
+    if (this.getConfirmedSchool() && !(typeof hasDeparted === 'function' && hasDeparted())
+        && typeof prepMergedChecklist === 'function' && typeof prepRead === 'function') {
+      const doneSet = new Set(prepRead('checklist_done', []));
+      const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+      return prepMergedChecklist().map(it => ({
+        id: 'chk-' + it.id, checklistId: it.id, title: it.title,
+        date: it.oia && it.oia.due ? it.oia.due.slice(0, 10) : null,
+        tag: it.oia ? '국제처' : '준비',
+        done: doneSet.has(it.id) || !!(it.oia && oiaDone.has(it.oia.id))
+      }));
+    }
+    const range = this.getProgramRange ? this.getProgramRange() : null;
+    let phases = ['apply'];
+    if (this.getConfirmedSchool()) {
+      const departed = typeof hasDeparted === 'function' && hasDeparted();
+      phases = departed ? ['return'] : ['placed'];
+    }
+    const TAG = { apply: '지원', placed: '서류', abroad: '파견', return: '귀국' };
+    const checked = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+    return OIA.scheduleFor(this.profile, range)
+      .filter(ev => !ev.info && phases.includes(ev.phase))
+      .map(ev => ({
+        id: 'oia-' + ev.id, oiaId: ev.id, title: ev.title,
+        date: ev.due ? ev.due.slice(0, 10) : null,
+        tag: TAG[ev.phase] || '기타', done: checked.has(ev.id)
+      }));
   },
 
   getTodos() {
@@ -343,7 +539,7 @@ const AppState = {
     if (!this.isAuthed) return [];
     const s = this.load();
     const map = s.todos.reduce((acc, t) => { acc[t.id] = t.done; return acc; }, {});
-    const base = MOCK.todos.map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
+    const base = this.baseTodos().map(t => Object.assign({}, t, { done: map[t.id] !== undefined ? map[t.id] : t.done }));
     // 기한 없는 할 일(체크리스트에서 옮겨 온 것 등)은 맨 뒤로
     return base.concat(s.customTodos).sort((a, b) => {
       if (!a.date || !b.date) return a.date ? -1 : b.date ? 1 : 0;
@@ -379,6 +575,14 @@ const AppState = {
       language_tests: p.languageTests || [],
       exchange_term: p.exchangeTerm
     }), '프로필');
+    // 학적 정보는 따로 쓴다 — oia_2027.sql 전이면 컬럼이 없어 이 쓰기만 실패하고,
+    // 위의 다른 프로필 값까지 함께 실패하지 않게 하려는 것이다.
+    if ('academic' in patch) {
+      this._push(async () => {
+        const res = await supabaseClient.from('profiles').upsert({ id: Auth.userId, academic: p.academic || {} });
+        return isMissingColumn(res.error) ? null : res;
+      }, '학적 정보');
+    }
   },
 
   toggleFavorite(schoolId) {
@@ -394,24 +598,82 @@ const AppState = {
     return added;
   },
 
-  setWishlistRank(rank, schoolId) {
-    const s = this.load();
-    // 지망을 다시 손봤으면 탐색을 마친 것으로 본다 → 홈의 단계가 다시 '학교 확정'으로 간다
-    this._setConfirmCancelled(false);
-    // 같은 학교가 다른 순위에 있으면 먼저 뺀다 (DB의 user_wishlist_school_once 제약과 동일)
-    Object.keys(s.wishlist).forEach(r => { if (s.wishlist[r] === schoolId) delete s.wishlist[r]; });
-    if (schoolId) s.wishlist[rank] = schoolId; else delete s.wishlist[rank];
-    this.save();
+  /**
+   * 희망대학표 끝에 담는다. 반환 { ok, reason } — reason: 'full'(25개) | 'track'(다른 언어권) | 'exists'.
+   * 국제처 규칙상 한 전형(언어권)의 학교만 적을 수 있어서, 전형을 정했으면 다른 언어권 학교는 막는다.
+   */
+  addToWishlist(schoolId) {
+    const list = this.getWishlistList();
+    if (list.some(e => e.schoolId === schoolId)) return { ok: false, reason: 'exists' };
+    if (list.length >= OIA.WISHLIST_MAX) return { ok: false, reason: 'full' };
+    const track = (this.profile.exchangeTerm || {}).track;
+    const school = MOCK.schools.find(sc => sc.id === schoolId);
+    if (track && school && !OIA.schoolOffersTrack(school, track)) return { ok: false, reason: 'track' };
+    this._setWishlistOrder(list.map(e => e.schoolId).concat(schoolId));
+    return { ok: true, rank: list.length + 1 };
+  },
 
-    const rows = Object.keys(s.wishlist).map(r => ({
-      user_id: Auth.userId, rank: Number(r), school_id: s.wishlist[r]
+  removeFromWishlist(schoolId) {
+    this._setWishlistOrder(this.getWishlistList().map(e => e.schoolId).filter(id => id !== schoolId));
+    const meta = this.load().wishlistMeta || {};
+    delete meta[schoolId];
+  },
+
+  /** 순위를 한 칸 올리거나(-1) 내린다(+1). */
+  moveWishlist(schoolId, delta) {
+    const ids = this.getWishlistList().map(e => e.schoolId);
+    const i = ids.indexOf(schoolId);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    this._setWishlistOrder(ids);
+  },
+
+  /** 학교마다 적는 지원 학과·파견 기간. */
+  setWishlistMeta(schoolId, patch) {
+    const s = this.load();
+    s.wishlistMeta = s.wishlistMeta || {};
+    s.wishlistMeta[schoolId] = Object.assign({}, s.wishlistMeta[schoolId], patch);
+    this._writeWishlist();
+  },
+
+  /** 예전 1~3지망 칩용. rank 자리에 넣고 나머지는 순서를 유지한다(schoolId 가 없으면 그 자리를 비운다). */
+  setWishlistRank(rank, schoolId) {
+    const ids = this.getWishlistList().map(e => e.schoolId).filter(id => id !== schoolId);
+    if (schoolId) ids.splice(Math.max(0, Math.min(ids.length, Number(rank) - 1)), 0, schoolId);
+    else ids.splice(Number(rank) - 1, 1);
+    this._setWishlistOrder(ids);
+  },
+
+  _setWishlistOrder(ids) {
+    const s = this.load();
+    // 희망대학표를 다시 손봤으면 탐색을 마친 것으로 본다 → 홈의 단계가 다시 앞으로 간다
+    this._setConfirmCancelled(false);
+    s.wishlist = {};
+    ids.slice(0, OIA.WISHLIST_MAX).forEach((id, i) => { s.wishlist[i + 1] = id; });
+    this._writeWishlist();
+  },
+
+  _writeWishlist() {
+    this.save();
+    const rows = this.getWishlistList().map(e => ({
+      user_id: Auth.userId, rank: e.rank, school_id: e.schoolId,
+      apply_major: e.major || null, apply_length: e.length || null
     }));
     // 순위 재배치는 부분 갱신보다 "이 사용자 지망 전체를 다시 쓰기"가 안전하다.
     this._push(async () => {
       const del = await supabaseClient.from('user_wishlist').delete().eq('user_id', Auth.userId);
       if (del.error) return del;
-      return rows.length ? supabaseClient.from('user_wishlist').insert(rows) : del;
-    }, '지망 학교');
+      if (!rows.length) return del;
+      const res = await supabaseClient.from('user_wishlist').insert(rows);
+      if (!res.error) return res;
+      // oia_2027.sql 전에는 4순위부터(rank 1~3 제약)와 새 컬럼에서 막힌다.
+      // 이미 지웠으니 1~3순위만이라도 다시 넣어 둔다 — 아니면 지망이 통째로 사라진다.
+      const basic = rows.filter(r => r.rank <= 3).map(({ user_id, rank, school_id }) => ({ user_id, rank, school_id }));
+      const retry = basic.length ? await supabaseClient.from('user_wishlist').insert(basic) : del;
+      if (retry.error) return retry;
+      return rows.length > 3 ? { error: res.error } : retry;
+    }, '희망대학표');
   },
 
   /**
@@ -442,23 +704,47 @@ const AppState = {
       .upsert({ id: Auth.userId, confirmed_school_id: schoolId }), '확정 학교');
   },
 
+  /** 국제처 일정 카드(oia-timeline.js)의 체크와 To-Do 체크를 같게 맞춘다 */
+  _syncOiaDone(id, done) {
+    if (!String(id).startsWith('oia-') || typeof oiaReadDone !== 'function') return;
+    const set = oiaReadDone();
+    const key = String(id).slice(4);
+    if (done) set.add(key); else set.delete(key);
+    oiaWriteDone(set);
+  },
+
   toggleTodo(id) {
+    // 체크리스트 항목 — 체크 기록은 체크리스트 쪽(이 기기)에 두고, 국제처 일정 체크도 같이 맞춘다
+    if (String(id).startsWith('chk-') && typeof prepRead === 'function') {
+      const cid = String(id).slice(4);
+      const set = new Set(prepRead('checklist_done', []));
+      const it = (typeof prepMergedChecklist === 'function' ? prepMergedChecklist() : []).find(x => x.id === cid);
+      const oiaDone = typeof oiaReadDone === 'function' ? oiaReadDone() : new Set();
+      const was = set.has(cid) || !!(it && it.oia && oiaDone.has(it.oia.id));
+      if (was) set.delete(cid); else set.add(cid);
+      prepWrite('checklist_done', [...set]);
+      if (it && it.oia && typeof oiaWriteDone === 'function') { if (was) oiaDone.delete(it.oia.id); else oiaDone.add(it.oia.id); oiaWriteDone(oiaDone); }
+      document.dispatchEvent(new CustomEvent('checklist:changed'));
+      return;
+    }
     const s = this.load();
     const base = s.todos.find(t => t.id === id);
     if (base) {
       base.done = !base.done;
       this.save();
+      this._syncOiaDone(id, base.done);
       this._push(() => supabaseClient.from('user_todos')
         .upsert({ user_id: Auth.userId, base_id: id, done: base.done },
                 { onConflict: 'user_id,base_id' }), '할 일');
       return;
     }
-    // MOCK.todos에는 있지만 아직 오버라이드 행이 없는 기본 항목
-    const seed = MOCK.todos.find(t => t.id === id);
+    // 기본 할 일(국제처 일정)인데 아직 오버라이드 행이 없는 항목
+    const seed = this.baseTodos().find(t => t.id === id);
     if (seed) {
       const row = { id, done: !seed.done };
       s.todos.push(row);
       this.save();
+      this._syncOiaDone(id, row.done);
       this._push(() => supabaseClient.from('user_todos')
         .upsert({ user_id: Auth.userId, base_id: id, done: row.done },
                 { onConflict: 'user_id,base_id' }), '할 일');
@@ -581,43 +867,62 @@ const AppState = {
     s.journal.push(entry);
     this.save();
 
-    if (this.isAuthed) {
-      this._push(async () => {
-        const res = await supabaseClient.from('user_journal')
-          .insert({
-            user_id: Auth.userId,
-            entry_date: entry.date,
-            phase: entry.phase,
-            title: entry.title || null,
-            body: entry.body,
-            photos: entry.photos,
-            tags: entry.tags,
-            location: entry.location,
-            now_playing: entry.nowPlaying,
-            weather: entry.weather,
-            visibility: entry.visibility,
-            created_at: entry.createdAt
-          })
-          .select('id, created_at')
-          .single();
-        // 수정·삭제가 서버 행을 찾을 수 있도록 실제 id로 교체.
-        // 바꾼 뒤 반드시 다시 그려야 한다 — 목록 DOM에는 임시 id가 박혀 있어서,
-        // 그대로 두면 방금 쓴 기록의 수정/삭제 버튼이 없는 id를 가리킨다.
-        if (!res.error && res.data) {
-          // 화면이 임시 id로 잡아둔 것(예: 방금 만든 기록을 곧바로 수정 중)이
-          // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
-          entry.tempId = entry.id;
-          entry.id = res.data.id;
-          // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
-          document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
-          entry.createdAt = res.data.created_at;
-          this.save();
-          document.dispatchEvent(new CustomEvent('MOCK:updated'));
-        }
-        return res;
-      }, '기록 추가');
-    }
+    this._uploadJournal(entry);
     return entry;
+  },
+
+  /**
+   * 기록 한 건을 서버에 넣고 임시 id를 진짜 uuid로 바꾼다. 새로 쓸 때와, 저장이 실패해
+   * 이 기기에만 남은 기록을 다음 접속 때 다시 올릴 때(hydrate) 함께 쓴다.
+   */
+  _uploadJournal(entry) {
+    if (!this.isAuthed) return;
+    // 이미 올리는 중인 기록이면 또 올리지 않는다 — 저장 직후 hydrate()가 돌면 아직 임시 id인 이 기록을
+    // '못 올린 기록'으로 보고 한 번 더 넣어서, 같은 기록(우표)이 두 개 생겼다
+    // (표시는 이 페이지 메모리에만 — 저장 사본에 남으면 새로 열었을 때 영영 안 올라간다)
+    if (uploadingJournal.has(entry)) return;
+    uploadingJournal.add(entry);
+    this._push(async () => {
+      const row = {
+        user_id: Auth.userId,
+        entry_date: entry.date,
+        phase: entry.phase,
+        title: entry.title || null,
+        body: entry.body,
+        photos: entry.photos,
+        tags: entry.tags,
+        location: entry.location,
+        now_playing: entry.nowPlaying,
+        weather: entry.weather,
+        visibility: entry.visibility,
+        created_at: entry.createdAt
+      };
+      const insert = (r) => supabaseClient.from('user_journal').insert(r).select('id, created_at').single();
+      if (journalVisibilityMissing()) delete row.visibility;
+      let res = await insert(row);
+      // friends.sql을 안 돌린 서버는 visibility 칸이 없어 통째로 거절한다 — 그 칸만 빼고 다시
+      if (res.error && 'visibility' in row && markJournalVisibilityMissing(res.error)) {
+        delete row.visibility;
+        res = await insert(row);
+      }
+      // 수정·삭제가 서버 행을 찾을 수 있도록 실제 id로 교체.
+      // 바꾼 뒤 반드시 다시 그려야 한다 — 목록 DOM에는 임시 id가 박혀 있어서,
+      // 그대로 두면 방금 쓴 기록의 수정/삭제 버튼이 없는 id를 가리킨다.
+      if (!res.error && res.data) {
+        // 화면이 임시 id로 잡아둔 것(예: 방금 만든 기록을 곧바로 수정 중)이
+        // 바뀐 id를 따라올 수 있도록 옛 id를 남겨둔다.
+        entry.tempId = entry.id;
+        entry.id = res.data.id;
+        // 임시 id로 폴더 등에 담아 둔 곳이 있으면 따라 바꿀 수 있게 알린다(js/diary-archive.js)
+        document.dispatchEvent(new CustomEvent('journal:idchanged', { detail: { from: entry.tempId, to: entry.id } }));
+        entry.createdAt = res.data.created_at;
+        uploadingJournal.delete(entry);
+        this.save();
+        document.dispatchEvent(new CustomEvent('MOCK:updated'));
+      }
+      if (res.error) uploadingJournal.delete(entry);   // 실패하면 다음 접속 때 다시 올릴 수 있게
+      return res;
+    }, '기록 추가');
   },
 
   /*
@@ -652,8 +957,8 @@ const AppState = {
     Object.assign(entry, patch);
     this.save();
     if (!this.isAuthed) return;
-    this._push(() => supabaseClient.from('user_journal')
-      .update({
+    this._push(async () => {
+      const row = {
         entry_date: entry.date,
         phase: entry.phase,
         title: entry.title || null,
@@ -663,8 +968,16 @@ const AppState = {
         now_playing: entry.nowPlaying || null,
         visibility: entry.visibility === 'friends' ? 'friends' : 'private',
         updated_at: new Date().toISOString()
-      })
-      .eq('id', entry.id).eq('user_id', Auth.userId), '기록 수정');
+      };
+      const update = (r) => supabaseClient.from('user_journal').update(r).eq('id', entry.id).eq('user_id', Auth.userId);
+      if (journalVisibilityMissing()) delete row.visibility;
+      let res = await update(row);
+      if (res.error && 'visibility' in row && markJournalVisibilityMissing(res.error)) {
+        delete row.visibility;
+        res = await update(row);
+      }
+      return res;
+    }, '기록 수정');
   },
 
   deleteJournalEntry(id) {
@@ -711,33 +1024,40 @@ const AppState = {
     await Auth.init();
 
     if (!Auth.isAuthed) {
+      // 세션이 끝났으면 그 사람의 사본을 이 기기에 남기지 않는다
+      try { localStorage.removeItem(USER_SNAPSHOT_KEY); } catch (e) { /* 무시 */ }
+      this._snapshotUid = null;
+      this._hydrated = true;   // load()가 다시 사본을 집지 않게 먼저 표시
       this._cache = null;
       this.load();
-      this._hydrated = true;
       document.dispatchEvent(new CustomEvent('MOCK:updated'));
       return;
     }
 
     const uid = Auth.userId;
     // RLS가 이미 자기 행만 보이게 하지만, 필터를 명시해 인덱스를 타게 한다.
-    const [prof, favs, wish, todos, journal, credits, qFavs, unlocks, creditTotal] = await Promise.all([
+    const JOURNAL_COLS = 'id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at';
+    // 아직 서버에 못 올린 기록 — 아래에서 서버 목록으로 갈아끼운 뒤 다시 올린다
+    // 같은 계정의 상태일 때만(다른 계정·게스트 기록을 이 계정에 올리면 안 된다)
+    const mine = this.load() && this._cacheUid === uid;
+    const unsynced = mine ? (this._cache.journal || []).filter(e => isTempJournalId(e.id)) : [];
+    // 크레딧 조회(user_credits·match_unlocks·my_credit_total)는 뺐다 — 크레딧을 없앴고(2026-11-08) 서버에도 없다
+    const [prof, favs, wish, todos, journal, qFavs] = await Promise.all([
       supabaseClient.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabaseClient.from('user_favorites').select('school_id').eq('user_id', uid),
-      supabaseClient.from('user_wishlist').select('rank, school_id').eq('user_id', uid),
+      // '*' — oia_2027.sql 전에는 apply_major/apply_length 컬럼이 없어, 이름을 적으면 조회가 통째로 실패한다
+      supabaseClient.from('user_wishlist').select('*').eq('user_id', uid),
       supabaseClient.from('user_todos').select('id, base_id, title, due_date, tag, done').eq('user_id', uid),
-      supabaseClient.from('user_journal').select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, visibility, created_at').eq('user_id', uid),
-      supabaseClient.from('user_credits').select('balance').eq('user_id', uid).maybeSingle(),
-      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid),
-      supabaseClient.from('match_unlocks').select('list_key, steps').eq('user_id', uid),
-      // 기한 있는 크레딧(가입 보너스·프리미엄 증정)까지 더한 잔액 — bm_unlocks.sql
-      supabaseClient.rpc('my_credit_total')
+      supabaseClient.from('user_journal').select(journalVisibilityMissing() ? JOURNAL_COLS : JOURNAL_COLS + ', visibility').eq('user_id', uid),
+      supabaseClient.from('mentor_favorites').select('question_id').eq('user_id', uid)
     ]);
 
     // friends.sql(visibility 컬럼)을 아직 안 돌린 서버면 위 조회가 통째로 실패한다 —
     // 기록이 사라진 것처럼 보이지 않게 컬럼 없이 한 번 더 읽는다.
     if (journal.error) {
+      markJournalVisibilityMissing(journal.error);
       const fallback = await supabaseClient.from('user_journal')
-        .select('id, entry_date, phase, title, body, photos, tags, location, song, now_playing, weather, created_at')
+        .select(JOURNAL_COLS)
         .eq('user_id', uid);
       journal.data = fallback.data;
     }
@@ -752,7 +1072,9 @@ const AppState = {
         gpa: p.gpa === null ? null : Number(p.gpa),
         gpaScale: p.gpa_scale === null ? 4.3 : Number(p.gpa_scale),
         languageTests: p.language_tests || [],
-        exchangeTerm: p.exchange_term || next.profile.exchangeTerm,
+        exchangeTerm: Object.assign({}, next.profile.exchangeTerm, p.exchange_term || {}),
+        // oia_2027.sql 전이면 컬럼이 없어 undefined → 빈 객체
+        academic: (p.academic && typeof p.academic === 'object') ? p.academic : {},
         targetScoreSimUsed: false,
         // premium.sql이 아직 적용되지 않았으면 이 컬럼이 없어 p.premium_until은 그냥 undefined다.
         premiumUntil: p.premium_until || null
@@ -768,15 +1090,11 @@ const AppState = {
         : null;
     }
     if (favs.data) next.favorites = favs.data.map(r => r.school_id);
-    // mentor_step.sql이 아직 적용되지 않았으면 이 두 조회는 조용히 에러만 나고
-    // data는 null이다 — 그대로 기본값(0, [])으로 남아 화면이 깨지지 않는다.
-    if (credits.data) next.credits = credits.data.balance;
-    // bm_unlocks.sql 전에는 이 RPC가 없어 에러 → 위의 기한 없는 잔액 그대로 쓴다
-    if (!creditTotal.error && typeof creditTotal.data === 'number') next.credits = creditTotal.data;
     if (qFavs.data) next.questionFavorites = qFavs.data.map(r => r.question_id);
-    // bm_unlocks.sql 전이면 에러만 나고 빈 객체로 남는다 — 목록은 무료 3개만 보인다.
-    if (unlocks.data) unlocks.data.forEach(r => { next.matchUnlocks[r.list_key] = r.steps; });
-    if (wish.data) wish.data.forEach(r => { next.wishlist[r.rank] = r.school_id; });
+    if (wish.data) wish.data.forEach(r => {
+      next.wishlist[r.rank] = r.school_id;
+      if (r.apply_major || r.apply_length) next.wishlistMeta[r.school_id] = { major: r.apply_major || '', length: r.apply_length || null };
+    });
     if (todos.data) {
       next.todos = todos.data.filter(r => r.base_id).map(r => ({ id: r.base_id, done: r.done }));
       next.customTodos = todos.data.filter(r => !r.base_id).map(r => ({
@@ -803,8 +1121,17 @@ const AppState = {
       }));
     }
 
+    // 이 기기에만 남은 기록을 되살려 다시 올린다. 저장 응답을 받기 전에 화면을 옮겨 서버에는
+    // 이미 들어간 것일 수 있어, 같은 시각(created_at)의 서버 기록이 있으면 건너뛴다.
+    const serverTimes = new Set(next.journal.map(e => +new Date(e.createdAt)));
+    const retry = unsynced.filter(e => !serverTimes.has(+new Date(e.createdAt)));
+    next.journal.push(...retry);
+
     this._cache = next;
+    this._cacheUid = uid;
     this._hydrated = true;
+    this.save();
+    retry.forEach(e => this._uploadJournal(e));
     document.dispatchEvent(new CustomEvent('MOCK:updated'));
   },
 
@@ -848,6 +1175,7 @@ const AppState = {
 // 로그아웃/로그인 전환 시 이전 사용자의 상태가 남지 않도록 통째로 다시 읽는다.
 document.addEventListener('auth:changed', () => {
   AppState._cache = null;
+  AppState._cacheUid = null;
   AppState.hydrate();
 });
 

@@ -2,48 +2,56 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>학교 찾기 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>학교 찾기 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/search.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="search">
 
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell">
+  <header class="v2-head">
+    <p class="v2-head__eyebrow">Find your</p>
+    <h1 class="v2-head__title">Schools</h1>
+  </header>
   <div class="search-toolbar">
     <input type="search" class="search-input" id="searchInput" placeholder="학교명 · 국가명으로 검색">
-    <button type="button" class="quick-filter quick-filter--more" id="quickMore">➕ 상세 필터</button>
-    <!-- 가장 자주 거르는 세 가지(어디·얼마·날씨)는 시트를 열지 않고 여기서 바로 고른다.
-         나머지(학과·자격·언어·상권·치안·QS·정렬)는 '상세 필터' 시트에 있다. -->
+    <button type="button" class="quick-filter quick-filter--more" id="quickMore" aria-label="필터">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+    </button>
+    <!-- 가장 자주 거르는 세 가지(어디·QS·내 전공)는 시트를 열지 않고 여기서 바로 고른다.
+         나머지(한 달 물가·기후·학과·자격·언어·상권·치안·정렬)는 '상세 필터' 시트에 있다. -->
     <div class="quick-filters" role="group" aria-label="빠른 필터">
       <select class="quick-filter" id="quickRegion" aria-label="대륙/국가"></select>
-      <select class="quick-filter" id="quickCost" aria-label="한 달 물가">
-        <option value="">💰 한 달 물가</option>
-        <option value="low">250만 원 이하</option>
-        <option value="mid">250만~350만 원</option>
-        <option value="high">350만 원 이상</option>
+      <select class="quick-filter" id="qsSelect" aria-label="QS 순위">
+        <option value="">QS 순위</option>
+        <option value="50">QS Top 50</option>
+        <option value="100">QS Top 100</option>
+        <option value="200">QS Top 200</option>
       </select>
-      <select class="quick-filter" id="quickClimate" aria-label="기후/날씨"></select>
+      <!-- 내 전공과 맞는 파견교 학과가 있는 학교만(major_matches · 인정 예상 과목) — js/search.js -->
+      <button type="button" class="quick-switch" id="onlyMyMajorToggle" role="switch" aria-checked="false">
+        <span class="quick-switch__label">내 전공만</span>
+        <span class="toggle-switch" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
 
-  <!-- 로그인 상태에서는 학점 인정으로 보내고, 게스트에게는 js/search.js가
-       이 자리를 점수 입력 패널로 바꾼다(renderGuestScorePanel). -->
-  <div class="sim-banner sim-banner--cta">
-    <a class="credits-cta" href="credits.html">
-      <div class="credits-cta__body">
-        <h2>고민 중인 학교, 학점은 인정될까요?</h2>
-        <p>내 전공과 파견교 과목을 비교해 인정 가능성을 미리 확인해요</p>
-      </div>
-      <span class="credits-cta__arrow" aria-hidden="true">→</span>
-    </a>
-  </div>
+  <!-- 게스트에게만 점수 입력 패널(js/search.js renderGuestScorePanel). 로그인하면 숨긴다 — 학점 인정 안내 카드는 없앴다 -->
+  <div class="sim-banner" hidden></div>
+
+  <!-- 지금 명단의 학기 안내(내 학기 명단이 아닐 때만) — js/search.js renderMyElig -->
+  <div id="myEligibility"></div>
 
   <div class="search-layout">
     <aside class="card filter-panel">
@@ -52,7 +60,7 @@
         <button class="btn--text filter-reset" id="resetFilters">초기화</button>
       </div>
 
-      <div class="filter-group filter-group--half">
+      <div class="filter-group">
         <span class="filter-group__title">정렬</span>
         <select class="sort-select" id="sortSelect" style="height:36px;">
           <option value="default">기본순</option>
@@ -60,14 +68,13 @@
           <option value="slot">정원 많은 순</option>
         </select>
       </div>
-      <div class="filter-group filter-group--half">
-        <span class="filter-group__title">QS 순위</span>
-        <select class="sort-select" id="qsSelect" style="height:36px;">
-          <option value="">전체</option>
-          <option value="50">Top 50</option>
-          <option value="100">Top 100</option>
-          <option value="200">Top 200</option>
-        </select>
+      <div class="filter-group">
+        <span class="filter-group__title">한 달 물가</span>
+        <div class="filter-chip-list" id="costFilters"></div>
+      </div>
+      <div class="filter-group">
+        <span class="filter-group__title">기후 · 날씨</span>
+        <div class="filter-chip-list" id="climateFilters"></div>
       </div>
       <div class="filter-group">
         <span class="filter-group__title">학과</span>
@@ -94,13 +101,19 @@
     <main>
       <div class="result-meta">
         <span class="result-meta__count" id="resultCount"></span>
+        <!-- 목록 ↔ 지구본(학교 로고를 실제 위치에) — js/components/school-globe.js -->
+        <button type="button" class="view-globe-toggle" id="globeToggle" aria-pressed="false" aria-label="지구본으로 보기">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        </button>
         <!-- 지원 가능만·즐겨찾기만은 필터 시트 안에 있었다. 가장 자주 켜는 두 개라
              시트를 열지 않고 결과 수 옆에서 바로 켜고 끄게 꺼냈다. -->
         <div class="result-meta__quick">
+          <button type="button" class="chip" id="onlyMyTrackToggle" aria-pressed="false" hidden>내 전형만</button>
           <button type="button" class="chip" id="onlyEligibleToggle" aria-pressed="false">지원 가능만</button>
           <button type="button" class="chip" id="onlyFavoriteToggle" aria-pressed="false">즐겨찾기만</button>
         </div>
       </div>
+      <div class="school-globe" id="schoolGlobe" hidden></div>
       <div class="school-grid" id="schoolGrid"></div>
       <div class="school-pager" id="schoolPager"></div>
     </main>
@@ -122,9 +135,12 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/date-picker.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -136,8 +152,11 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/components/major-credit.js"></script>
+<script src="js/components/logo-fit.js"></script>
+<script src="js/components/school-globe.js"></script>
 <script src="js/search.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

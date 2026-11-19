@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>기록하기 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>기록하기 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -12,14 +15,19 @@
 <link rel="stylesheet" href="css/pages/diary.css">
 <link rel="stylesheet" href="css/pages/archive.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
+<link rel="stylesheet" href="css/pages/record-v2.css">
+<!-- 다이어리 손글씨(Gaegu)·월간 recap 제목(DM Serif Display) — 둘 다 OFL 무료 글꼴 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=DM+Serif+Display&display=swap">
 </head>
 <body data-page="journal">
 
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell home-hero" id="journalLede">
-  <p class="page-lede">출국 준비하며 남기고 싶은 순간을 적어보세요. 교환 가서도 이어 쓸 수 있어요</p>
-  <p class="page-lede page-lede--quiet">🔒 나만 볼 수 있어요. 다른 사람에게 공개되지 않아요</p>
+  <p class="page-lede">출국 준비하며 남기고 싶은 순간을 적어보세요.<br>교환 가서도 이어 쓸 수 있어요</p>
+  <p class="page-lede page-lede--quiet">🔒 나만 볼 수 있어요.<br>다른 사람에게 공개되지 않아요</p>
 </div>
 
 <div class="page-shell journal-layout" id="journalRoot">
@@ -42,9 +50,12 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/date-picker.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -54,6 +65,9 @@
 <script src="js/friends.js"></script>
 <script src="js/diary-archive.js"></script>
 <script src="js/diary-intro.js"></script>
+<script src="js/heic.js"></script>
+<script src="js/diary-stickers.js"></script>
+<script src="js/record-v2.js"></script>
 <script src="js/diary-view.js"></script>
 <script src="js/diary-en.js"></script>
 <script src="js/journal.js"></script>

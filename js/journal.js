@@ -149,7 +149,7 @@
       listMount.innerHTML = AppState.isAuthed
         ? `<section class="card card-pad journal-empty">
              <p class="journal-empty__title">아직 남긴 기록이 없어요</p>
-             <p class="journal-empty__desc">서류를 준비한 날, 비자가 나온 날, 도착한 첫날 —<br>나중에 다시 읽고 싶을 순간을 적어두면 돼요</p>
+             <p class="journal-empty__desc">서류를 준비한 날, 비자가 나온 날, 도착한 첫날,<br>나중에 다시 읽고 싶을 순간을 적어두면 돼요</p>
            </section>`
         : '';
       return;

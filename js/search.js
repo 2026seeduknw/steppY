@@ -28,11 +28,16 @@
     programs: new Set(), tracks: new Set(),
     commerce: new Set(), climate: new Set(), security: new Set(),
     qsMax: null, onlyEligible: false, onlyFavorite: false, sort: 'default', page: 1,
-    costBand: ''   // '' | low | mid | high — 한 달 생활비 추정치 구간
+    // 내 전형(언어권)으로 지원할 수 있는 학교만 — 국제처 규칙상 다른 언어권 학교는 희망대학표에 못 쓴다
+    onlyMyTrack: true,
+    // 내 전공과 맞는 파견교 학과가 있는 학교만 — 빠른 필터 줄의 스위치
+    onlyMyMajor: false,
+    costBands: new Set()   // low | mid | high — 한 달 생활비 추정치 구간(상세 필터 시트)
   };
 
   // 한 달 물가 구간(원). 271곳의 사분위가 약 238만 · 306만 · 367만이라 250·350만에서 끊었다.
   const COST_BANDS = { low: [0, 2500000], mid: [2500000, 3500000], high: [3500000, Infinity] };
+  const COST_LABELS = { low: '250만 원 이하', mid: '250만~350만', high: '350만 원 이상' };
 
   // 271개를 한 화면에 다 그리면 스크롤이 지나치게 길어진다 — 한 페이지 5개로 끊는다.
   const PAGE_SIZE = 5;
@@ -68,6 +73,8 @@
     renderChipGroup('trackFilters', uniq('track'), state.tracks, LABELS.track);
     renderChipGroup('commerceFilters', uniq('commerceLevel'), state.commerce, LABELS.commerceLevel);
     renderChipGroup('securityFilters', uniq('securityLevel'), state.security, LABELS.securityLevel);
+    renderChipGroup('costFilters', Object.keys(COST_BANDS), state.costBands, COST_LABELS);
+    renderChipGroup('climateFilters', uniq('climateType'), state.climate, LABELS.climateType);
   }
 
   // 연세대 전공 마스터 리스트(76개) 기준 검색 가능한 다중 선택 드롭다운.
@@ -88,14 +95,14 @@
   }
 
   /**
-   * 검색창 아래 빠른 필터 세 개. 값은 기존 state(regions·country·climate)에 그대로 쓴다.
+   * 검색창 아래 빠른 필터 — 대륙/국가 · QS 순위 · 내 전공만(스위치).
    *   대륙/국가 — 'r:유럽'(대륙 전체) 또는 'c:덴마크'(한 나라). 둘은 서로를 지운다.
-   *   기후      — 하나만 고른다(시트에 있을 때는 여러 개였다).
+   * 한 달 물가·기후는 상세 필터 시트로 옮겼다.
    */
   function renderQuickFilters() {
     const regionSel = document.getElementById('quickRegion');
     const current = state.country ? `c:${state.country}` : (state.regions.size ? `r:${[...state.regions][0]}` : '');
-    regionSel.innerHTML = `<option value="">🌍 대륙/국가</option>` + uniq('region').map(r => {
+    regionSel.innerHTML = `<option value="">대륙/국가</option>` + uniq('region').map(r => {
       const countries = [...new Set(MOCK.schools.filter(s => s.region === r).map(s => s.country))].sort((a, b) => a.localeCompare(b, 'ko'));
       return `<optgroup label="${r}">
         <option value="r:${r}">${r} 전체</option>
@@ -103,21 +110,33 @@
       </optgroup>`;
     }).join('');
     regionSel.value = current;
-
-    const climateSel = document.getElementById('quickClimate');
-    climateSel.innerHTML = `<option value="">☀️ 기후/날씨</option>` +
-      uniq('climateType').map(v => `<option value="${v}">${LABELS.climateType[v] || v}</option>`).join('');
-    climateSel.value = state.climate.size ? [...state.climate][0] : '';
-
-    document.getElementById('quickCost').value = state.costBand;
+    document.getElementById('qsSelect').value = state.qsMax ? String(state.qsMax) : '';
     syncQuickFilterState();
   }
   // 고른 필터는 칩이 채워진다 — 지금 무엇이 걸려 있는지 시트를 열지 않고 보인다.
   function syncQuickFilterState() {
-    ['quickRegion', 'quickCost', 'quickClimate'].forEach(id => {
+    ['quickRegion', 'qsSelect'].forEach(id => {
       const el = document.getElementById(id);
       el.classList.toggle('is-active', !!el.value);
     });
+    syncMajorSwitch();
+  }
+
+  /** 내 전공 — 기본 정보에 넣은 전공. 없으면 스위치를 눌렀을 때 안내만 한다. */
+  function myMajor() { return (AppState.profile && AppState.profile.major) || ''; }
+  function syncMajorSwitch() {
+    const sw = document.getElementById('onlyMyMajorToggle');
+    if (!sw) return;
+    const on = state.onlyMyMajor && !!myMajor();
+    sw.setAttribute('aria-checked', String(on));
+    sw.classList.toggle('is-on', on);
+    sw.querySelector('.toggle-switch').classList.toggle('is-on', on);
+  }
+  /** 이 학교에 내 전공과 맞는 학과(전공 매칭) 또는 인정 예상 과목이 있는지 */
+  function schoolHasMyMajor(school) {
+    const major = myMajor();
+    if (!major) return true;
+    return schoolHasMajorMatch(school, major) || (majorCreditMap.get(school.id) || 0) > 0;
   }
 
   function renderChipGroup(mountId, values, selectedSet, labelMap) {
@@ -135,6 +154,8 @@
   }
 
   function matchesFilters(school) {
+    // 봄(-1) 학기 명단: 봄에 갈 수 없는 학교(봄 불가·정원 0)는 학교 찾기에 띄우지 않는다
+    if (school.springClosed && /-1$/.test(school.term || '')) return false;
     if (state.query) {
       const q = state.query.toLowerCase();
       const hay = `${school.name} ${school.nameKo} ${school.country} ${school.majors.join(' ')}`.toLowerCase();
@@ -148,14 +169,16 @@
     if (state.commerce.size && !state.commerce.has(school.commerceLevel)) return false;
     if (state.climate.size && !state.climate.has(school.climateType)) return false;
     if (state.security.size && !state.security.has(school.securityLevel)) return false;
-    if (state.costBand) {
-      const [min, max] = COST_BANDS[state.costBand];
+    if (state.costBands.size) {
       const cost = school.monthlyLivingCostKrw;
       // 물가 자료가 없는 학교는 구간을 고른 동안에는 뺀다 — 어느 칸인지 알 수 없다.
-      if (cost == null || cost < min || cost >= max) return false;
+      if (cost == null) return false;
+      if (![...state.costBands].some(k => cost >= COST_BANDS[k][0] && cost < COST_BANDS[k][1])) return false;
     }
+    if (state.onlyMyMajor && !schoolHasMyMajor(school)) return false;
     if (state.qsMax && school.qsRank > state.qsMax) return false;
     if (state.onlyFavorite && !AppState.isFavorite(school.id)) return false;
+    if (state.onlyMyTrack && myTrack() && !OIA.schoolOffersTrack(school, myTrack())) return false;
     if (state.onlyEligible && computeEligibility(AppState.profile, school).status !== 'go') return false;
     return true;
   }
@@ -171,27 +194,132 @@
     return list;
   }
 
+  /**
+   * 나라 화면 — 책장 머리의 "N schools →"를 누르면 같은 화면 위에 그 나라 학교만 모아
+   * 예전 큰 카드(생활비·GPA·어학 컷·학점 인정 띠)로 연다. 주소에 #country=… 를 남겨
+   * 휴대폰 뒤로가기로도 닫힌다. 지금 걸린 필터는 그대로 적용된다.
+   */
+  let openCountry = null;
+  function openCountryView(country) {
+    openCountry = country;
+    history.pushState({ country }, '', '#country=' + encodeURIComponent(country));
+    renderCountryView();
+  }
+  function closeCountryView(fromHistory) {
+    if (!openCountry) return;
+    openCountry = null;
+    const view = document.getElementById('countryView');
+    if (view) { view.classList.remove('is-open'); setTimeout(() => view.remove(), 280); }
+    document.body.classList.remove('has-country-view');
+    if (!fromHistory) history.back();
+  }
+  window.addEventListener('popstate', () => {
+    const m = location.hash.match(/^#country=(.+)$/);
+    if (m) { openCountry = decodeURIComponent(m[1]); renderCountryView(); }
+    else closeCountryView(true);
+  });
+  function renderCountryView() {
+    const list = sortSchools(MOCK.schools.filter(matchesFilters)).filter(sc => sc.country === openCountry);
+    let view = document.getElementById('countryView');
+    const fresh = !view;
+    if (fresh) {
+      view = document.createElement('div');
+      view.id = 'countryView';
+      view.className = 'v2-country';
+      view.setAttribute('role', 'dialog');
+      document.body.appendChild(view);
+    }
+    const first = list[0] || MOCK.schools.find(sc => sc.country === openCountry) || {};
+    view.innerHTML = `
+      <header class="v2-country__bar">
+        <button type="button" class="v2-country__back" data-country-close aria-label="뒤로">‹</button>
+        <h1 class="v2-country__title">${first.countryEn || openCountry} ${countryFlag(first.countryEn)}</h1>
+        <span class="v2-country__count">${list.length}곳</span>
+      </header>
+      <div class="v2-country__body school-grid">
+        ${list.length ? list.map(schoolCardTemplate).join('') : '<div class="empty-state">지금 필터에 맞는 학교가 없어요.</div>'}
+      </div>`;
+    view.querySelector('[data-country-close]').addEventListener('click', () => closeCountryView(false));
+    view.setAttribute('aria-label', `${openCountry} 학교 목록`);
+    bindSchoolCards(view);
+    document.body.classList.add('has-country-view');
+    if (fresh) requestAnimationFrame(() => view.classList.add('is-open'));
+    else view.classList.add('is-open');
+  }
+
+  /* 지구본 — 목록 위에 기본으로 펼쳐 두고, 🌐 버튼으로 접는다(접은 상태는 이 기기에 기억).
+     같은 필터 결과를 학교 로고로 지구 위에 올린다(js/components/school-globe.js) */
+  const GLOBE_HIDDEN_KEY = 'steppy_globe_hidden';
+  let globeOn = (() => { try { return localStorage.getItem(GLOBE_HIDDEN_KEY) !== '1'; } catch (e) { return true; } })();
+  let globeMounted = false, globeKey = '';
+  function updateGlobe(list) {
+    if (!globeOn || typeof SchoolGlobe === 'undefined') return;
+    const el = document.getElementById('schoolGlobe');
+    if (!globeMounted) {
+      globeMounted = true;
+      SchoolGlobe.mount(el, { onOpen: (id) => openSchoolModal(id, { onChange: renderGrid }) });
+    }
+    // 필터가 바뀌어 학교 묶음이 달라지면 그쪽으로 돌려 준다(하트만 바뀐 경우는 그대로)
+    const key = list.map(s => s.id).join(',');
+    SchoolGlobe.update(list, { recenter: key !== globeKey });
+    globeKey = key;
+  }
+  function setGlobe(on, rerender = true) {
+    globeOn = on;
+    try { localStorage.setItem(GLOBE_HIDDEN_KEY, on ? '0' : '1'); } catch (e) { /* 저장 못 해도 동작은 한다 */ }
+    const btn = document.getElementById('globeToggle');
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-label', on ? '지구본 접기' : '지구본 펼치기');
+    btn.classList.toggle('is-on', on);
+    document.getElementById('schoolGlobe').hidden = !on;
+    if (rerender) renderGrid();
+  }
+  document.getElementById('globeToggle').addEventListener('click', () => setGlobe(!globeOn));
+  setGlobe(globeOn, false);
+
   function renderGrid() {
     const filtered = sortSchools(MOCK.schools.filter(matchesFilters));
     document.getElementById('resultCount').innerHTML = `<strong>${filtered.length}</strong>개 학교`;
+    updateGlobe(filtered);
     const grid = document.getElementById('schoolGrid');
     const pager = document.getElementById('schoolPager');
     if (!filtered.length) {
-      grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요. 필터를 조정해보세요.</div>`;
+      grid.innerHTML = `<div class="empty-state">조건에 맞는 학교가 없어요.<br>필터를 조정해보세요.</div>`;
       if (pager) pager.innerHTML = '';
       return;
     }
-    // 필터가 바뀌어 결과가 줄어들면 이미 지나가버린 페이지에 남아있을 수 있다 —
-    // 범위를 벗어나면 마지막 페이지로 당겨온다.
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    state.page = Math.min(Math.max(state.page, 1), totalPages);
-    const start = (state.page - 1) * PAGE_SIZE;
-    const pageItems = filtered.slice(start, start + PAGE_SIZE);
-    grid.innerHTML = pageItems.map(schoolCardTemplate).join('');
-    grid.querySelectorAll('[data-open-school]').forEach(el => {
+    // 한 줄 = 한 나라. 나라 안의 학교는 책장처럼 옆으로 넘겨 본다 —
+    // 271곳을 세로 카드로 쌓으면 나라를 비교하기 전에 스크롤부터 하게 된다.
+    // 나라 순서는 정렬 결과에서 처음 나오는 순서를 따른다(정렬을 바꾸면 줄 순서도 바뀐다).
+    if (pager) pager.innerHTML = '';
+    const byCountry = new Map();
+    filtered.forEach(sc => {
+      if (!byCountry.has(sc.country)) byCountry.set(sc.country, []);
+      byCountry.get(sc.country).push(sc);
+    });
+    grid.innerHTML = [...byCountry].map(([country, list], i) => `
+      <section class="v2-shelf">
+        <header class="v2-shelf__head">
+          <h2 class="v2-shelf__country">${list[0].countryEn || country} ${countryFlag(list[0].countryEn)}</h2>
+          <button type="button" class="v2-shelf__count" data-shelf-open="${country}">${list.length} school${list.length > 1 ? 's' : ''} →</button>
+        </header>
+        <div class="v2-shelf__track"><div class="v2-shelf__row">${list.map(shelfCardTemplate).join('')}</div></div>
+      </section>`).join('');
+    grid.querySelectorAll('[data-shelf-open]').forEach(btn => {
+      btn.addEventListener('click', () => openCountryView(btn.dataset.shelfOpen));
+    });
+    bindSchoolCards(grid);
+    // 로고는 비율이 제각각이라 칸이 아니라 면적을 맞춘다(logo-fit.js)
+    fitLogosIn(grid, '.v2-book__logo img', { maxW: 64, maxH: 42, area: 38 * 38 });
+    // 나라 화면이 열려 있으면(필터를 바꿨거나 하이드레이션으로 다시 그릴 때) 그 화면도 새로 그린다
+    if (openCountry) renderCountryView();
+  }
+
+  function bindSchoolCards(root) {
+    root.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav-toggle-card]')) return;
-        // 카드 아래 띠(인정 예상 과목)는 학점 인정 탭으로 보낸다
+        // 큰 카드 아래 띠(인정 예상 과목)는 학점 인정 탭으로 보낸다
         if (e.target.closest('[data-credit-link]')) { location.href = 'credits.html'; return; }
         const schoolId = el.dataset.openSchool;
         // 학과 필터로 찾아 들어온 거면, 모달의 "유사 전공"도 그 필터 기준으로 보여준다
@@ -200,13 +328,61 @@
         openSchoolModal(schoolId, { onChange: renderGrid, contextMajor });
       });
     });
-    grid.querySelectorAll('[data-fav-toggle-card]').forEach(btn => {
-      btn.addEventListener('click', () => {
+    root.querySelectorAll('[data-fav-toggle-card]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const active = AppState.toggleFavorite(btn.dataset.favToggleCard);
         btn.classList.toggle('is-active', active);
+        // 책장 카드의 하트는 글자(♡/♥), 큰 카드의 하트는 SVG라 글자만 바꾼다
+        if (btn.classList.contains('v2-book__fav')) btn.textContent = active ? '♥' : '♡';
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     });
-    renderPager(pager, totalPages);
+  }
+
+  /** "Aalborg University (AAU)" — 이름에 이미 괄호 약어가 있으면 그대로 쓴다. */
+  function nameWithAbbr(school) {
+    if (/\([A-Za-z.&\s]+\)\s*$/.test(school.name)) return school.name;
+    return `${school.name} (${abbrOf(school.name)})`;
+  }
+
+  // 약어는 학교 이름 본체(" - 단과대" 앞)의 대문자 단어 머리글자로 만든다. 자료에 공식 약어가 없어
+  // 실제 약어와 다를 수 있다(코펜하겐 UCPH → UC).
+  function abbrOf(name) {
+    const stop = new Set(['of', 'the', 'and', 'at', 'in', 'de', 'du', 'des', 'la', 'le', 'für', 'for']);
+    const base = name.split(/\s[-–]\s|\(/)[0];
+    const letters = base.split(/\s+/).filter(w => w && !stop.has(w.toLowerCase()) && /^[A-Za-zÀ-ÿ]/.test(w)).map(w => w[0].toUpperCase());
+    return letters.join('').slice(0, 5) || schoolInitials(name);
+  }
+
+  // "모집 4명 · " — 여러 캠퍼스가 정원을 나눠 쓰는 학교(UC 계열 등)는 '공동'으로 적는다(school-modal.js quotaLabel 과 같은 기준)
+  function slotText(school) {
+    if (typeof school.slot !== 'number') return '';
+    const shared = typeof SHARED_QUOTA_GROUPS !== 'undefined' && SHARED_QUOTA_GROUPS.some(g => g.test(school.id));
+    return `${shared ? '공동' : '모집'} ${school.slot}명 · `;
+  }
+
+  function shelfCardTemplate(school) {
+    const elig = computeEligibility(AppState.profile, school);
+    const isFav = AppState.isFavorite(school.id);
+    const logo = typeof SCHOOL_LOGOS !== 'undefined' && SCHOOL_LOGOS[school.id];
+    const cost = school.monthlyLivingCostKrw != null ? `월 ${Math.round(school.monthlyLivingCostKrw / 10000).toLocaleString('ko-KR')}만 원` : '';
+    const gpa = formatGpa(school.gpaCut) || school.gpaCut || '-';
+    const lang = school.langTest && school.langTest.cut != null ? `${school.langTest.type} ${school.langTest.cut}` : '어학 -';
+    return `
+      <div class="v2-book" role="button" tabindex="0" data-open-school="${school.id}">
+        <div class="v2-book__cover">
+          <span class="v2-book__logo">${logo
+            ? `<img src="assets/school-logos/${logo}" alt="" loading="lazy" data-abbr="${abbrOf(school.name)}">`
+            : `<span class="v2-book__abbr">${schoolInitials(school.name)}</span>`}</span>
+          ${school.qsRank ? `<span class="v2-book__qs" aria-label="QS 세계 순위 ${school.qsRank}위">QS ${school.qsRank}</span>` : ''}
+          <button type="button" class="v2-book__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}"
+                  aria-label="찜하기" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
+        </div>
+        <p class="v2-book__name"><span>${nameWithAbbr(school)}</span></p>
+        <p class="v2-book__line">GPA ${gpa} · ${lang} <span class="v2-book__elig v2-book__elig--${elig.status}">${elig.status === 'go' ? '✓ ' : ''}${elig.label}</span></p>
+        <p class="v2-book__line">${slotText(school).replace(/ · $/, '')}${cost ? ` <span class="v2-book__cost" aria-label="한 달 생활비 ${cost}">${cost}</span>` : ''}</p>
+      </div>`;
   }
 
   function renderPager(pager, totalPages) {
@@ -286,16 +462,12 @@
    * 이제 하이드레이션 후 MOCK:updated에서 다시 판단한다.
    */
   const simBanner = document.querySelector('.sim-banner');
-  const SIM_BANNER_CTA_HTML = simBanner ? simBanner.innerHTML : '';
 
   function renderBanner() {
     if (!simBanner) return;
-    if (AppState.isAuthed) {
-      if (simBanner.querySelector('.credits-cta')) return;
-      simBanner.className = 'sim-banner sim-banner--cta';
-      simBanner.innerHTML = SIM_BANNER_CTA_HTML;
-      return;
-    }
+    // 로그인하면 이 자리는 비운다(학점 인정 안내 카드는 없앴다)
+    if (AppState.isAuthed) { simBanner.hidden = true; simBanner.innerHTML = ''; return; }
+    simBanner.hidden = false;
     if (simBanner.querySelector('#guestScoreForm')) return;
     renderGuestScorePanel();
   }
@@ -303,21 +475,24 @@
   function renderGuestScorePanel() {
     const banner = simBanner;
     const p = AppState.profile;
-    const lang = (p.languageTests || [])[0] || { type: 'TOEFL', score: '' };
-    const LANGS = ['TOEFL', 'IELTS', 'HSK', 'JLPT', 'DELF'];
+    const lang = (p.languageTests || []).find(t => !OIA.TESTS[t.type]?.notAccepted) || { type: 'TOEFL', score: '' };
+    // 게스트는 시험 하나로 전형까지 정한다 — 시험이 곧 언어다(FLEX 는 언어를 따로 골라야 해서 뺐다).
+    // IELTS 는 연세대 1차 지원에 낼 수 없어 목록에 없다(js/oia-rules.js).
+    const LANGS = ['TOEFL', 'JLPT', 'HSK', 'DELF', 'DELE', 'Goethe', 'TORFL'];
     const filled = p.gpa !== null && p.gpa !== undefined;
+    const value = lang.level || (lang.score != null ? lang.score : '');
 
     banner.classList.remove('sim-banner--cta');
     banner.classList.add('sim-banner--guest');
     banner.innerHTML = `
       <div class="score-prompt__head">
         <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
-        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요. 로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
+        <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요.<br>로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
       </div>
       <form class="score-prompt__form" id="guestScoreForm">
         <label class="score-prompt__field">
           <span>학점</span>
-          <input type="number" step="0.01" min="0" max="4.5" data-decimals="2" name="gpa"
+          <input type="number" step="0.01" min="0" max="4.3" data-decimals="2" name="gpa"
                  value="${filled ? p.gpa : ''}" placeholder="3.2">
         </label>
         <label class="score-prompt__field">
@@ -325,8 +500,8 @@
           <select name="langType">${LANGS.map(t => `<option ${t === lang.type ? 'selected' : ''}>${t}</option>`).join('')}</select>
         </label>
         <label class="score-prompt__field">
-          <span>점수</span>
-          <input type="number" name="langScore" value="${lang.score}" placeholder="96">
+          <span>점수·등급</span>
+          <input type="text" name="langScore" value="${value}" placeholder="96 · N2 · B2">
         </label>
         <button type="submit" class="btn btn--accent btn--sm">적용</button>
       </form>`;
@@ -335,18 +510,60 @@
       e.preventDefault();
       const fd = new FormData(e.target);
       const gpa = fd.get('gpa') === '' ? null : roundDecimals(fd.get('gpa'), 2);
-      const score = fd.get('langScore') === '' ? null : parseFloat(fd.get('langScore'));
+      const type = fd.get('langType');
+      const def = OIA.TESTS[type];
+      const raw = String(fd.get('langScore') || '').trim();
+      let test = null;
+      if (raw) {
+        if (def.kind === 'score') {
+          const n = parseFloat(raw);
+          if (!Number.isNaN(n)) test = { type, score: n };
+        } else {
+          // 'n2' · '6' · 'b2' 처럼 적어도 등급표의 표기로 맞춘다
+          const up = raw.toUpperCase().replace(/\s/g, '');
+          const level = def.levels.find(l => l.toUpperCase() === up || l === `${up}급`);
+          if (level) test = { type, level };
+          else { showToast(`${type} 등급은 ${def.levels.slice(0, 3).join(' · ')}처럼 적어 주세요`); return; }
+        }
+      }
       AppState.updateProfile({
         gpa,
         gpaScale: 4.3,
-        languageTests: score === null ? [] : [{ type: fd.get('langType'), score }]
+        languageTests: test ? [test] : [],
+        exchangeTerm: Object.assign({}, p.exchangeTerm, { track: test ? def.lang : null })
       });
-      trackEvent('guest_score_entered', { hasGpa: gpa !== null, hasLang: score !== null });
+      trackEvent('guest_score_entered', { hasGpa: gpa !== null, hasLang: !!test });
       renderGuestScorePanel();
+      renderMyElig();
       renderGrid();
       if (typeof showToast === 'function') showToast('입력한 점수로 지원 가능 여부를 다시 계산했어요');
     });
   }
+
+  /**
+   * 내 지원 자격 — 학교와 상관없는 연세대 공통 기준. 여기서 걸리면 학교별 배지는 의미가 없어
+   * 학교 목록보다 위에 둔다. 지금 명단이 내 학기의 명단이 아니면 그것도 여기서 알린다.
+   */
+  function renderMyElig() {
+    const mount = document.getElementById('myEligibility');
+    if (!mount) return;
+    const p = AppState.profile;
+    const myTerm = OIA.termKeyOf(p.exchangeTerm);
+    const listTerm = (MOCK.schools[0] && MOCK.schools[0].term) || OIA.SCHOOLS_TERM;
+    const termData = myTerm && OIA.TERMS[myTerm];
+    // 짧게 두 줄 — 지금 명단의 학기 / 내 학기 명단 공개일
+    const listDay = termData && termData.schoolListAt ? new Date(`${termData.schoolListAt}T00:00:00`) : null;
+    const listNote = myTerm && listTerm && myTerm !== listTerm
+      ? `<p class="list-term-note"><strong>${OIA.termLabel(listTerm)}</strong> 파견 명단<br>
+          ${listDay && !isNaN(listDay) ? `${OIA.termLabel(myTerm)} 명단은 ${listDay.getMonth() + 1}월 ${listDay.getDate()}일에 공개` : `${OIA.termLabel(myTerm)} 명단은 아직 공개 전`}</p>`
+      : '';
+    // 내 지원 자격(학점·이수 학기·전형·백분위)은 첫 로그인 때 기본 정보 화면에서 받는다.
+    // 학교 찾기에는 카드를 두지 않고, 지금 명단이 내 학기 명단이 아닐 때의 안내만 남긴다.
+    mount.innerHTML = listNote;
+  }
+
+  /** 내 전형으로 지원할 수 없는 학교를 숨기는 칩. 전형을 정했으면 처음부터 켜 둔다. */
+  function myTrack() { return (AppState.profile.exchangeTerm || {}).track || null; }
 
   document.getElementById('searchInput').addEventListener('input', (e) => { state.query = e.target.value; state.page = 1; renderGrid(); });
   document.getElementById('sortSelect').addEventListener('change', (e) => { state.sort = e.target.value; state.page = 1; renderGrid(); });
@@ -357,22 +574,34 @@
     state.regions = new Set(v.startsWith('r:') ? [v.slice(2)] : []);
     state.page = 1; syncQuickFilterState(); renderGrid();
   });
-  document.getElementById('quickCost').addEventListener('change', (e) => { state.costBand = e.target.value; state.page = 1; syncQuickFilterState(); renderGrid(); });
-  document.getElementById('quickClimate').addEventListener('change', (e) => {
-    state.climate = new Set(e.target.value ? [e.target.value] : []);
-    state.page = 1; syncQuickFilterState(); renderGrid();
+  document.getElementById('onlyMyMajorToggle').addEventListener('click', () => {
+    if (!myMajor()) {
+      showToast(AppState.isAuthed ? '기본 정보에서 전공을 먼저 입력해 주세요' : '로그인하고 전공을 입력하면 쓸 수 있어요');
+      return;
+    }
+    state.onlyMyMajor = !state.onlyMyMajor;
+    trackEvent('search_only_my_major', { on: state.onlyMyMajor });
+    state.page = 1; syncMajorSwitch(); renderGrid();
   });
   // '상세 필터'는 layout.js 가 만든 시트 여는 버튼을 대신 누른다(그 버튼은 화면에서 감췄다).
   document.getElementById('quickMore').addEventListener('click', () => {
     const trigger = document.querySelector('.filter-trigger');
     if (trigger) trigger.click();
   });
-  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; renderGrid(); });
+  document.getElementById('qsSelect').addEventListener('change', (e) => { state.qsMax = e.target.value ? parseInt(e.target.value, 10) : null; state.page = 1; syncQuickFilterState(); renderGrid(); });
 
   // 결과 수 옆의 두 칩(지원 가능만·즐겨찾기만). 켜짐은 다른 필터 칩과 같은 is-selected 로 보인다.
   function setQuickChip(btn, on) { btn.classList.toggle('is-selected', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); }
   const eligibleToggle = document.getElementById('onlyEligibleToggle');
   eligibleToggle.addEventListener('click', () => { state.onlyEligible = !state.onlyEligible; setQuickChip(eligibleToggle, state.onlyEligible); state.page = 1; renderGrid(); });
+  const trackToggle = document.getElementById('onlyMyTrackToggle');
+  function syncTrackToggle() {
+    const t = myTrack();
+    trackToggle.hidden = !t;
+    if (t) trackToggle.textContent = `${OIA.trackLabel(t)}만`;
+    setQuickChip(trackToggle, !!t && state.onlyMyTrack);
+  }
+  trackToggle.addEventListener('click', () => { state.onlyMyTrack = !state.onlyMyTrack; syncTrackToggle(); state.page = 1; renderGrid(); });
   const favToggle = document.getElementById('onlyFavoriteToggle');
   favToggle.addEventListener('click', () => { state.onlyFavorite = !state.onlyFavorite; setQuickChip(favToggle, state.onlyFavorite); state.page = 1; renderGrid(); });
 
@@ -381,9 +610,8 @@
     state.programs.clear(); state.tracks.clear();
     state.commerce.clear(); state.climate.clear(); state.security.clear();
     state.qsMax = null; state.onlyEligible = false; state.onlyFavorite = false;
-    state.costBand = '';
+    state.costBands.clear(); state.onlyMyMajor = false;
     state.page = 1;
-    document.getElementById('qsSelect').value = '';
     setQuickChip(eligibleToggle, false); setQuickChip(favToggle, false);
     renderFilters(); renderGrid();
   });
@@ -391,14 +619,18 @@
   rebuildMajorMatchMap();
   rebuildCreditMap();
   renderFilters();
+  syncTrackToggle();
+  renderMyElig();
   renderGrid();
   renderBanner();
 
-  document.addEventListener('MOCK:updated', () => {
+  ['MOCK:updated', 'profile:updated'].forEach(ev => document.addEventListener(ev, () => {
     rebuildMajorMatchMap();
     rebuildCreditMap();
     renderFilters();
+    syncTrackToggle();
+    renderMyElig();
     renderGrid();
     renderBanner();
-  });
+  }));
 })();

@@ -153,6 +153,7 @@
 .mentor-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .mentor-form__field { display: flex; flex-direction: column; gap: 6px; }
 .mentor-form__label { font-size: var(--fs-small); font-weight: 700; color: var(--ink-700); }
+.mentor-form__note { margin: 0; font-size: var(--fs-micro); line-height: 1.5; color: var(--ink-500); word-break: keep-all; }
 .mentor-form input[type="text"],
 .mentor-form select,
 .mentor-form textarea {
@@ -282,5 +283,5 @@
 .chat-message__quote-meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--sky-700); margin-bottom: 4px; }
 .chat-message__quote-text { font-size: var(--fs-small); color: var(--ink-900); line-height: 1.6; overflow-wrap: break-word; word-break: keep-all; }
 
-/* 상단 구분선과 제목 사이 — 기록하기 탭의 제목(Memories from Exchange)과 같은 간격(21px)으로 */
+/* 상단 구분선과 제목 사이 — 기록하기 탭의 제목(Archive your memories)과 같은 간격(21px)으로 */
 body[data-page="consult"] .home-hero { padding-top: 11px; }

@@ -39,7 +39,7 @@
 
     if (confirmed && matches.some(m => m.school === confirmed.id)) {
       note.hidden = false;
-      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}이(가) 포함된 결과예요 — 카드에 표시했어요.`;
+      note.textContent = `확정하신 ${confirmed.nameKo || confirmed.name}이(가) 포함된 결과예요. 카드에 표시했어요.`;
     } else {
       note.hidden = true;
     }
@@ -56,7 +56,7 @@
           <span class="match-card__school-name">${school.name}${school.country ? ` · ${school.country}` : ''}</span>
           ${isConfirmed ? '<span class="chip is-selected">확정 학교</span>' : ''}
         </div>
-        <div class="match-card__note">${m.note || ''}</div>
+        <div class="match-card__note">${typeof readableText === 'function' ? readableText(m.note) : (m.note || '')}</div>
       </div>
     `;
     }).join('') : `<p class="info-panel__text">이 전공은 아직 뚜렷한 매칭 결과가 없어요.</p>`;

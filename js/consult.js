@@ -1,5 +1,5 @@
 /**
- * Mentor's Step — 공개 질문·답변 게시판.
+ * Talky(옛 이름 Mentor's Step) — 공개 질문·답변 게시판.
  *
  * 질문·답변은 누구나(비로그인 포함) 읽을 수 있고, 올리려면 로그인이 필요하다.
  * 이름·이메일은 어디에도 표시하지 않는다 — 소수 인원만 가는 학교의 질문이면
@@ -17,8 +17,6 @@
 (function () {
   AppState.load();
 
-  const ASK_COST = BM.ASK_COST;
-  const ANSWER_REWARD = BM.ANSWER_REWARD;
 
   const state = { region: null, country: '', onlyFavorite: false };
 
@@ -41,31 +39,23 @@
   function showGuestLock() {
     ledeEl.textContent = '교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요.';
     // 블러 뒤에 깔리는 건 진짜 글이 아니라 모양만 같은 예시다 — 서버를 잠가도 같은 화면이 나온다.
-    const pin = (kind, label, title) => `
-      <div class="mentor-row mentor-row--pin"><div class="mentor-row__line">
-        <span class="mentor-pin__badge mentor-pin__badge--${kind}">${label}</span>
-        <span class="mentor-row__title mentor-pin__title">${title}</span></div>
-        <div class="mentor-row__foot"><span class="mentor-row__meta">운영진 · 3일 전</span></div></div>`;
-    const row = (tag, title, count, meta) => `
-      <div class="mentor-row"><div class="mentor-row__line">
-        <span class="mentor-row__tag">[${tag}]</span><span class="mentor-row__title">${title}</span>
-        ${count ? `<span class="mentor-row__count">[${count}]</span>` : ''}</div>
-        <div class="mentor-row__foot"><span class="mentor-row__meta">${meta}</span></div></div>`;
+    const pin = (kind, title) => pinCardHtml({ kind, title, meta: '운영진' });
+    const row = (flag, country, title, count, meta) => questionCardHtml({ flag, country, title, count, meta });
     panelEl.innerHTML = `
       <div class="mentor-preview">
         <div class="mentor-preview__blur" aria-hidden="true" inert>
-          <div class="mentor-toolbar"><span></span><span class="btn btn--accent">질문하기</span></div>
-          <div class="mentor-pins">
-            ${pin('notice', '공지', '[필수] 멘토스텝 이용 규칙 및 운영 안내')}
-            ${pin('report', '교환보고서', '2026-1 교환보고서 모음 · 수강신청부터 기숙사까지')}
-            ${pin('column', '칼럼', '교환 가기 전에 꼭 챙길 서류 TOP 5')}
+          <div class="m2-ask"><span class="m2-ask__in">선배에게 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
+          <div class="m2-sec"><h2>선배의 기록</h2></div>
+          <div class="m2-cols">
+            ${pin('report', '2026-1 교환보고서 모음')}
+            ${pin('column', '교환 가기 전 챙길 서류 TOP 5')}
+            ${pin('notice', 'Talky 이용 규칙')}
           </div>
+          <div class="m2-sec"><h2>질문 · 답변</h2><span>최신순</span></div>
           <div class="mentor-list">
-            ${row('프랑스', '리옹 기숙사 신청은 언제까지 해야 하나요?', 4, '2시간 전')}
-            ${row('미국', '비자 인터뷰 때 가져가야 할 서류 알려주세요', 7, '5시간 전')}
-            ${row('일본', '학점 인정 과목은 출국 전에 확정되나요?', 2, '1일 전')}
-            ${row('독일', '현지 은행 계좌는 도착하고 바로 열어도 되나요', 3, '1일 전')}
-            ${row('영국', '보험은 학교 지정이 아니면 안 되나요?', '', '2일 전')}
+            ${row('🇫🇷', '프랑스', '리옹 기숙사 신청은 언제까지 해야 하나요?', 4, '2시간 전')}
+            ${row('🇺🇸', '미국', '비자 인터뷰 때 가져가야 할 서류 알려주세요', 7, '5시간 전')}
+            ${row('🇯🇵', '일본', '학점 인정 과목은 출국 전에 확정되나요?', 0, '1일 전')}
           </div>
         </div>
         <section class="mentor-preview__lock card card-pad">
@@ -76,6 +66,10 @@
         </section>
       </div>`;
   }
+
+  // 예시 글(목업)은 없앴다 — 서버에 글이 없으면 빈 화면 안내가 보인다
+  const isSampleMode = () => false;
+  const allQuestions = () => MOCK.mentorQuestions;
 
   // 상단 고정 글 — 운영자가 mentor_pins 테이블(supabase/mentor_pins.sql)에 직접 넣는다.
   // 테이블이 없거나 읽지 못하면 조용히 비워 둔다(게시판은 그대로 보인다).
@@ -133,8 +127,10 @@
   /* ---------------------------------------------------------------- 목록 */
 
   function renderCreditBadge() {
-    if (!AppState.isAuthed) { creditWrap.hidden = true; return; }
-    creditWrap.hidden = false;
+    // 크레딧을 없앴다 — 배지는 늘 숨긴다
+    if (creditWrap) creditWrap.hidden = true;
+    return;
+    // eslint-disable-next-line no-unreachable
     creditNum.textContent = AppState.getCredits();
   }
 
@@ -143,7 +139,7 @@
    * 같은 순서로 고른다: 먼저 대륙 칩, 그중 하나를 누르면 그 대륙의 국가 칩으로
    * 바뀐다("← 대륙" 칩으로 되돌아갈 수 있다) — 32개국을 한 줄에 다 늘어놓지
    * 않고 먼저 좁힌 뒤 고르게 한다. 실제로 목록을 거르는 건 국가를 골랐을 때뿐이고,
-   * 대륙은 그 목록을 좁히는 중간 단계일 뿐이다(눌러도 아래 글은 안 걸러짐).
+   * 대륙을 누르면 거르지 않고 그 대륙 글을 맨 앞으로 올린다(filteredQuestions).
    */
   function renderCountryFilter() {
     if (!countryFilterMount) return;
@@ -163,7 +159,7 @@
             <span class="chip__star" aria-hidden="true">★</span>${countryFlag(c.countryEn) || '🌍'} ${escapeHtml(c.country)}
           </button>`).join('')}
         ${regions.map(r => `
-          <button type="button" class="chip" data-region="${r.region}">${REGION_ICON[r.region] || '🌐'} ${REGION_LABEL_EN[r.region] || r.region}</button>
+          <button type="button" class="chip" data-region="${r.region}">${REGION_LABEL_EN[r.region] || r.region}</button>
         `).join('')}`;
     } else {
       const region = regions.find(r => r.region === state.region);
@@ -219,12 +215,25 @@
     });
   }
 
+  /** 질문의 나라(한글) → 대륙. 학교 데이터의 country·region 으로 만든다 */
+  function regionOfCountry(country) {
+    const sc = (MOCK.schools || []).find(x => x.country === country);
+    return (sc && sc.region) || '기타';
+  }
+
   function filteredQuestions() {
-    return MOCK.mentorQuestions.filter(q => {
+    const list = allQuestions().filter(q => {
       if (state.country && q.country !== state.country) return false;
-      if (state.onlyFavorite && !AppState.isQuestionFavorite(q.id)) return false;
+      if (state.onlyFavorite && (q.sample || !AppState.isQuestionFavorite(q.id))) return false;
       return true;
     });
+    // 대륙만 골랐으면(나라는 아직) 거르지 않고 그 대륙 글을 앞으로 — 안에서는 원래 순서(최신순) 그대로
+    if (state.region && !state.country) {
+      const inRegion = list.filter(q => regionOfCountry(q.country) === state.region);
+      const rest = list.filter(q => regionOfCountry(q.country) !== state.region);
+      return inRegion.concat(rest);
+    }
+    return list;
   }
 
   /**
@@ -232,23 +241,31 @@
    * 줄에 국가/학교·시간·즐겨찾기만 작게. 게시글이 많아질수록(271개교 x 여러
    * 질문) 카드보다 이 밀도가 스크롤 없이 더 많이 훑어볼 수 있다.
    */
-  function questionRowTemplate(q) {
-    const isFav = AppState.isQuestionFavorite(q.id);
-    const sName = q.schoolId ? schoolName(q.schoolId) : null;
+  /** 질문 카드 — 나라 · 제목 · 고정 보조 줄(학교 · 시간) + 답변 수 배지. 답변이 없으면 노란 '답변 기다리는 중' */
+  function questionCardHtml({ flag, country, title, meta, count, fav, id }) {
     return `
-      <button type="button" class="mentor-row" data-open-question="${q.id}">
-        <div class="mentor-row__line">
-          <span class="mentor-row__tag">[${escapeHtml(q.country)}]</span>
-          <span class="mentor-row__title">${escapeHtml(q.title)}</span>
-          ${q.answers.length ? `<span class="mentor-row__count">[${q.answers.length}]</span>` : ''}
-        </div>
-        <div class="mentor-row__foot">
-          <span class="mentor-row__meta">${sName ? `${escapeHtml(sName)} · ` : ''}${timeAgo(q.createdAt)}</span>
-          <span class="mentor-row__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-q="${q.id}" role="button" aria-label="즐겨찾기">
-            <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10-9.2C.5 7.8 2.4 4.5 6 4c2-.3 3.7.7 6 3 2.3-2.3 4-3.3 6-3 3.6.5 5.5 3.8 4 7.3-2.5 4.6-10 9.2-10 9.2z"/></svg>
-          </span>
-        </div>
-      </button>`;
+      <${id ? 'button type="button"' : 'div'} class="m2-q"${id ? ` data-open-question="${id}"` : ''}>
+        <span class="m2-q__top">
+          <span>${flag ? flag + ' ' : ''}${escapeHtml(country)}</span>
+          <span class="m2-q__star${fav ? ' is-on' : ''}"${id ? ` data-fav-toggle-q="${id}" role="button" aria-label="즐겨찾기" aria-pressed="${fav}"` : ''}>★</span>
+        </span>
+        <span class="m2-q__t">${escapeHtml(title)}</span>
+        <span class="m2-q__foot">
+          <span>${meta}</span>
+          <span class="m2-ans${count ? '' : ' is-wait'}">${count ? `답변 ${count}` : '답변 기다리는 중'}</span>
+        </span>
+      </${id ? 'button' : 'div'}>`;
+  }
+  function questionRowTemplate(q) {
+    const sName = q.schoolName || (q.schoolId ? schoolName(q.schoolId) : null);
+    // 질문에는 한글 나라 이름만 있어서, 같은 나라 학교의 영문 이름으로 국기를 찾는다
+    const en = ((MOCK.schools || []).find(sc => sc.country === q.country) || {}).countryEn;
+    const flag = en && typeof countryFlag === 'function' ? countryFlag(en) : '';
+    return questionCardHtml({
+      id: q.id, flag, country: q.country, title: q.title, count: q.answers.length,
+      fav: !q.sample && AppState.isQuestionFavorite(q.id),
+      meta: `${sName ? `${escapeHtml(sName)} · ` : ''}${timeAgo(q.createdAt)}`
+    });
   }
 
   function openAskSheet() {
@@ -256,38 +273,53 @@
     openAskSheetImpl();
   }
 
-  /** 고정 글 한 줄 — 일반 글과 같은 두 줄 틀이되, 종류 배지와 옅은 배경으로 구분한다. */
-  function pinRowTemplate(p) {
+  /** 선배의 기록 — 고정 글을 홈 바로가기처럼 색 상자로 옆으로 넘긴다(교환보고서 · 칼럼 · 공지) */
+  const PIN_TONE = { report: 'sand', column: 'sky', notice: 'plum' };
+  function pinCardHtml({ kind, title, meta, id, image }) {
+    const tag = id ? 'button type="button"' : 'div';
+    const photo = image ? ` style="background-image:url('${escapeHtml(image)}')"` : '';
     return `
-      <button type="button" class="mentor-row mentor-row--pin" data-open-pin="${escapeHtml(p.id)}">
-        <div class="mentor-row__line">
-          <span class="mentor-pin__badge mentor-pin__badge--${escapeHtml(p.kind)}">${PIN_KIND[p.kind] || '공지'}</span>
-          <span class="mentor-row__title mentor-pin__title">${escapeHtml(p.title)}</span>
-        </div>
-        <div class="mentor-row__foot">
-          <span class="mentor-row__meta">${escapeHtml(p.author_label || '운영진')} · ${timeAgo(p.created_at)}</span>
-        </div>
-      </button>`;
+      <${tag} class="m2-col m2-col--${PIN_TONE[kind] || 'plum'}${image ? ' has-photo' : ''}"${id ? ` data-open-pin="${escapeHtml(id)}"` : ''}${photo}>
+        <span class="m2-col__top">
+          <span class="m2-col__k">${PIN_KIND[kind] || '공지'}</span>
+          <small class="m2-col__meta">${meta}</small>
+        </span>
+        <span class="m2-col__t">${escapeHtml(title).replace(/\n/g, '<br>')}</span>
+      </${id ? 'button' : 'div'}>`;
+  }
+  function pinRowTemplate(p) {
+    // 사진(image_url)이 있는 글은 카드 바탕을 사진으로 — 칼럼에 사진을 붙일 수 있게
+    return pinCardHtml({ id: p.id, kind: p.kind, title: p.title, image: p.image_url || p.image || '', meta: escapeHtml(p.author_label || '운영진') });
   }
 
   function renderPins() {
     // 즐겨찾기만 모아 볼 때는 고정 글을 접어 둔다 — 내가 찜한 글만 보이는 화면이라서
     if (!pins.length || state.onlyFavorite) { pinsEl.hidden = true; pinsEl.innerHTML = ''; return; }
     pinsEl.hidden = false;
-    pinsEl.innerHTML = pins.map(pinRowTemplate).join('');
+    // 예시 글이면 실제 선배 글로 오해하지 않게 질문·답변과 같은 자리에 '예시 글'을 붙인다
+    const sampleNote = pins.every(p => p.sample) ? '<span>예시 글</span>' : '';
+    pinsEl.innerHTML = `<div class="m2-sec"><h2>선배의 기록</h2>${sampleNote}</div><div class="m2-cols">${pins.map(pinRowTemplate).join('')}</div>`;
     pinsEl.querySelectorAll('[data-open-pin]').forEach(el => {
       el.addEventListener('click', () => openPinPage(el.dataset.openPin));
     });
   }
 
   async function loadPins() {
-    try {
-      const res = await supabaseClient.from('mentor_pins')
-        .select('id, kind, title, body, author_label, created_at')
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false });
-      pins = res.error ? [] : (res.data || []);
-    } catch (e) { pins = []; }
+    // mentor_pins.sql을 안 돌린 서버면 테이블이 없다(PGRST205) — 하루 동안은 다시 묻지 않는다
+    const MISSING_KEY = 'steppy_mentor_pins_missing';
+    let missing = false;
+    try { missing = Date.now() - Number(localStorage.getItem(MISSING_KEY) || 0) < 864e5; } catch (e) { /* 무시 */ }
+    pins = [];
+    if (!missing) {
+      try {
+        const res = await supabaseClient.from('mentor_pins')
+          .select('*')   // image_url 열이 생기면 그대로 받는다
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false });
+        if (res.error && res.error.code === 'PGRST205') { try { localStorage.setItem(MISSING_KEY, String(Date.now())); } catch (e) { /* 무시 */ } }
+        pins = res.error ? [] : (res.data || []);
+      } catch (e) { pins = []; }
+    }
     renderPins();
   }
 
@@ -295,11 +327,14 @@
     renderCreditBadge();
     renderPins();
     const items = filteredQuestions();
+    const secNote = document.getElementById('mentorListNote');
+    if (secNote) secNote.textContent = isSampleMode() ? '예시 글'
+      : (state.region && !state.country) ? `${REGION_LABEL_EN[state.region] || state.region} 먼저 · 최신순` : '최신순';
     if (!items.length) {
       listEl.innerHTML = `
-        <div class="empty-state mentor-empty">
-          <p>아직 질문이 없어요. 첫 질문을 남겨보세요.</p>
-          <button type="button" class="btn btn--accent" id="mentorEmptyAsk">질문하기</button>
+        <div class="m2-empty">
+          <p>아직 질문이 없어요.<br>첫 질문을 남겨보세요.</p>
+          <button type="button" class="m2-ask__btn" id="mentorEmptyAsk">✎ 질문하기</button>
         </div>`;
       const btn = document.getElementById('mentorEmptyAsk');
       if (btn) btn.addEventListener('click', openAskSheet);
@@ -316,8 +351,10 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
+        if (String(btn.dataset.favToggleQ).startsWith('sample-')) { if (typeof showToast === 'function') showToast('예시 질문은 즐겨찾기할 수 없어요'); return; }
         const active = AppState.toggleQuestionFavorite(btn.dataset.favToggleQ);
-        btn.classList.toggle('is-active', active);
+        btn.classList.toggle('is-on', active);
+        btn.setAttribute('aria-pressed', String(active));
       });
     });
   }
@@ -325,12 +362,12 @@
   favToggle.addEventListener('click', () => {
     if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
     state.onlyFavorite = !state.onlyFavorite;
-    favToggle.classList.toggle('is-on');
+    favToggle.classList.toggle('is-selected', state.onlyFavorite);
+    favToggle.setAttribute('aria-pressed', String(state.onlyFavorite));
     renderList();
   });
   askOpenBtn.addEventListener('click', openAskSheet);
-  creditWrap.addEventListener('click', () => openPaywall({ reason: 'menu' }));
-  document.addEventListener('credits:changed', renderCreditBadge);
+  document.getElementById('askOpenField').addEventListener('click', openAskSheet);
 
   /* ---------------------------------------------------------- 바텀시트 공통 */
 
@@ -381,7 +418,8 @@
               <span class="mentor-form__label">내용</span>
               <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
             </label>
-            <div class="mentor-form__cost">질문 등록에 <strong>🪙 ${ASK_COST}</strong> 크레딧이 필요해요 · 내 크레딧 <strong id="askBalance">${AppState.getCredits()}</strong></div>
+            <!-- 민감정보 공개 가능성 안내(개인정보 보호법 제23조 제3항) — Talky 글은 비공개로 할 수 없다 -->
+            <p class="mentor-form__note">질문은 이름 없이 모든 회원에게 보여요.<br>연락처, 건강·종교처럼 민감한 내용은 쓰지 말아 주세요.</p>
             <button type="submit" class="btn btn--accent btn--block" id="askSubmitBtn">질문 등록</button>
           </form>
         </div>
@@ -421,11 +459,6 @@
             return;
           }
           if (!title || !body) return;
-          if (AppState.getCredits() < ASK_COST) {
-            // 쓴 글은 그대로 두고 결제창을 위에 겹쳐 연다 — 충전하고 돌아와 바로 등록할 수 있게
-            openPaywall({ reason: 'credits', need: ASK_COST });
-            return;
-          }
           submitBtn.disabled = true;
           submitBtn.textContent = '등록 중…';
           const res = await AppState.askQuestion({ country: selectedCountry, schoolId: selectedSchool, title, body });
@@ -533,11 +566,15 @@
       </div>`;
   }
 
-  function answerItemTemplate(a) {
+  /** 답변 카드 — 이름 없이 순서대로 A, B, C… 로만 구분한다(작성자를 드러내지 않는다). 내 답변이면 지울 수 있다 */
+  function answerItemTemplate(a, i) {
+    const letter = String.fromCharCode(65 + (i % 26));
+    const mine = AppState.isAuthed && typeof Auth !== 'undefined' && a.authorId && a.authorId === Auth.userId;
     return `
-      <div class="mentor-answer">
-        <div class="mentor-answer__meta">${timeAgo(a.createdAt)}</div>
-        <div class="mentor-answer__body">${escapeHtml(a.body)}</div>
+      <div class="m2d-a">
+        <div class="m2d-a__who"><span class="m2d-a__av${i ? ' is-alt' : ''}">${letter}</span>답변 ${letter}${mine ? ' · 내 답변' : ''}</div>
+        <p class="m2d-a__body">${escapeHtml(a.body).replace(/\n/g, '<br>')}</p>
+        <div class="m2d-a__foot">${timeAgo(a.createdAt)}${mine ? `<button type="button" class="m2d-del" data-del-answer="${escapeHtml(a.id)}">삭제</button>` : ''}</div>
       </div>`;
   }
 
@@ -555,9 +592,9 @@
    * 바꿨다. 뒤로가기는 아이콘 하나가 아니라 "← 뒤로" 글자로 분명하게 뒀다.
    */
   function openQuestionSheet(id) {
-    const q = MOCK.mentorQuestions.find(x => x.id === id);
+    const q = allQuestions().find(x => x.id === id);
     if (!q) return;
-    const sName = q.schoolId ? schoolName(q.schoolId) : null;
+    const sName = q.schoolName || (q.schoolId ? schoolName(q.schoolId) : null);
     const flag = countryFlagFor(q.country) || '🌍';
     const isOwn = AppState.isAuthed && typeof Auth !== 'undefined' && q.authorId === Auth.userId;
 
@@ -566,32 +603,28 @@
     page.setAttribute('role', 'dialog');
     page.setAttribute('aria-modal', 'true');
     page.setAttribute('aria-label', '질문 상세');
+    page.classList.add('m2d-page');
     page.innerHTML = `
-      <div class="mentor-page__head">
-        <button type="button" class="mentor-page__back" data-page-close>← 뒤로</button>
+      <div class="m2d-top">
+        <button type="button" class="m2d-back" data-page-close aria-label="뒤로">‹</button>
+        <span class="m2d-top__t"><b>질문</b><small>Talky</small></span>
+        ${isOwn && !q.sample ? '<button type="button" class="m2d-del m2d-del--top" data-del-question>삭제</button>' : '<span></span>'}
       </div>
-      <div class="mentor-page__body">
-        <div class="mentor-detail">
-          <div class="mentor-detail__tags">
-            <span class="mentor-detail__flag" title="${escapeHtml(q.country)}" aria-label="${escapeHtml(q.country)}">${flag}</span>
-            ${sName ? `<span class="chip chip--sm mentor-detail__school">${escapeHtml(sName)}</span>` : ''}
-          </div>
-          <h3 class="mentor-detail__title">${escapeHtml(q.title)}</h3>
-          <p class="mentor-detail__body">${escapeHtml(q.body)}</p>
-          <div class="mentor-detail__meta">${timeAgo(q.createdAt)}</div>
-        </div>
+      <div class="mentor-page__body m2d">
+        <p class="m2d-country">${flag} ${escapeHtml(q.country)}${sName ? ` · ${escapeHtml(sName)}` : ''}</p>
+        <h1 class="m2d-title">${escapeHtml(q.title)}</h1>
+        <p class="m2d-body">${escapeHtml(q.body).replace(/\n/g, '<br>')}</p>
+        <div class="m2d-meta">${timeAgo(q.createdAt)}</div>
         ${relatedReviewsHtml(q)}
-        <div class="mentor-answers">
-          <h3 class="mentor-section-title">답변 ${q.answers.length}개</h3>
-          <div id="mentorAnswerList">${q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="mentor-answers__empty">아직 답변이 없어요.</p>'}</div>
-        </div>
-        ${isOwn ? '' : `
-        <form class="mentor-form mentor-answer-form" id="answerForm">
-          <textarea name="body" required placeholder="아는 만큼 도와주세요"></textarea>
-          <div class="mentor-form__cost">답변을 등록하면 <strong>🪙 +${ANSWER_REWARD}</strong> 크레딧을 받아요</div>
-          <button type="submit" class="btn btn--accent btn--block" id="answerSubmitBtn">답변 등록</button>
-        </form>`}
-      </div>`;
+        <div class="m2-sec"><h2>답변 ${q.answers.length}</h2></div>
+        <div id="mentorAnswerList">${q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="m2d-empty">아직 답변이 없어요.</p>'}</div>
+      </div>
+      ${q.sample ? `
+      <div class="m2d-bar"><span class="m2d-bar__in">예시 질문에는 답변할 수 없어요</span></div>` : isOwn ? '' : `
+      <form class="m2d-bar" id="answerForm">
+        <textarea class="m2d-bar__in" name="body" rows="1" required placeholder="아는 만큼 답해 주세요"></textarea>
+        <button type="submit" class="m2d-bar__btn" id="answerSubmitBtn">등록</button>
+      </form>`}`;
     document.body.appendChild(page);
     document.body.classList.add('is-sheet-open');
     requestAnimationFrame(() => page.classList.add('is-open'));
@@ -601,10 +634,40 @@
       document.body.classList.remove('is-sheet-open');
       setTimeout(() => page.remove(), 300);
     };
-    page.addEventListener('click', (e) => { if (e.target.closest('[data-page-close]')) close(); });
+    page.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-page-close]')) { close(); return; }
+      // 내 글 삭제 — 탈퇴해도 Talky 글은 남으므로(이용약관 제18조) 지우려면 여기서 지운다
+      if (e.target.closest('[data-del-question]')) {
+        const msg = q.answers.length
+          ? `이 질문을 삭제할까요?\n달린 답변 ${q.answers.length}개도 함께 지워지고 되돌릴 수 없어요.`
+          : '이 질문을 삭제할까요?\n되돌릴 수 없어요.';
+        if (!window.confirm(msg)) return;
+        const res = await AppState.deleteQuestion(q.id);
+        if (!res.ok) { if (typeof showToast === 'function') showToast('삭제하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+        close();
+        renderList();
+        if (typeof showToast === 'function') showToast('질문을 삭제했어요');
+        return;
+      }
+      const delA = e.target.closest('[data-del-answer]');
+      if (delA) {
+        if (!window.confirm('이 답변을 삭제할까요?\n되돌릴 수 없어요.')) return;
+        const res = await AppState.deleteAnswer(q.id, delA.dataset.delAnswer);
+        if (!res.ok) { if (typeof showToast === 'function') showToast('삭제하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+        const list = page.querySelector('#mentorAnswerList');
+        list.innerHTML = q.answers.length ? q.answers.map(answerItemTemplate).join('') : '<p class="m2d-empty">아직 답변이 없어요.</p>';
+        const head = list.previousElementSibling && list.previousElementSibling.querySelector('h2');
+        if (head) head.textContent = `답변 ${q.answers.length}`;
+        renderList();
+        if (typeof showToast === 'function') showToast('답변을 삭제했어요');
+      }
+    });
 
     const form = page.querySelector('#answerForm');
     if (form) {
+      // 입력창은 한 줄로 시작해서 쓰는 만큼 늘어난다(최대 5줄쯤)
+      const ta = form.querySelector('textarea');
+      ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!AppState.isAuthed) { location.href = 'auth.html'; return; }
@@ -617,14 +680,14 @@
         const res = await AppState.submitAnswer({ questionId: q.id, body });
         if (!res.ok) {
           submitBtn.disabled = false;
-          submitBtn.textContent = '답변 등록';
+          submitBtn.textContent = '등록';
           if (typeof showToast === 'function') showToast('답변을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.');
           return;
         }
         if (typeof trackEvent === 'function') trackEvent('mentor_answer_submitted', { questionId: q.id });
         close();
         renderList();
-        if (typeof showToast === 'function') showToast('답변을 등록했어요. 크레딧을 받았어요');
+        if (typeof showToast === 'function') showToast('답변을 등록했어요');
       });
     }
   }

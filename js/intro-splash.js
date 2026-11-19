@@ -44,11 +44,9 @@
   /* 로그인해 본 적 있는 사람에게는 마케팅 랜딩(글자가 제목 자리로 낙하하는
      전체 연출)을 다시 보여줄 필요가 없다. 글자가 흩어져 등장하는 부분만
      짧게 보여주고, 제자리로 떨어져 앉는 모션 없이 곧장 홈으로 보낸다. */
-  if (hasLoggedInBefore) {
-    if (reduced) { location.replace('home.html'); return; }
-    runShortSplash();
-    return;
-  }
+  // 지금은 로그인해 본 사람에게도 앱을 열 때마다 전체 온보딩(스플래시 + 랜딩)을 보여준다.
+  // 시작 버튼은 누구든 로그인 화면(auth.html)으로 간다 — 로그인이 남아 있으면 그 화면이 곧장 홈으로 보낸다.
+  // 예전처럼 짧은 스플래시 뒤 홈으로 보내려면 여기에 if (hasLoggedInBefore) { runShortSplash(); return; } 를 되살린다.
 
   /* ---- 아래는 처음 방문자(또는 아직 로그인해 본 적 없는 사람)용 전체 스플래시 ---- */
   let recent = false;
@@ -112,7 +110,8 @@
   /* ---- 흩어진 배치 만들기 ----
      폭을 꽉 채우면 기울어진 글자(±13°)의 모서리가 화면 밖으로 잘린다.
      양옆에 숨 쉴 자리를 남긴다. */
-  const LW = Math.min(innerWidth * 0.80, 560);
+  // 0.80 이면 좁은 휴대폰(폭 375 이하)에서 기울어진 s·! 가 화면 끝에 붙어 잘려 보였다 — 양옆을 더 비운다
+  const LW = Math.min(innerWidth * 0.68, 520);
   const LH = LW / SPLASH_LAYOUT_RATIO;
   stage.style.width = LW + 'px';
   stage.style.height = LH + 'px';
@@ -291,7 +290,7 @@
   addEventListener('keydown', finish, { once: true });
 
   /**
-   * 짧은 버전 — 로그인해 본 적 있는 사람용.
+   * 짧은 버전 — 로그인해 본 적 있는 사람용(지금은 쓰지 않음, 위 주석 참고).
    *
    * 위 전체 스플래시의 "등장" 단계(글자가 흩어진 자리에 하나씩 나타나는 것)만
    * 그대로 재생한다. 목표(제목 자리)를 재는 hero/bang 요소도, 거기로 떨어져

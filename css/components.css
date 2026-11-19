@@ -352,8 +352,11 @@ body[data-page="credits"]::before {
 .profile-stat__value { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-900); }
 .profile-stat__value em { font-style: normal; font-size: var(--fs-small); font-weight: 400; color: var(--ink-400); }
 
-.profile-stats--compact { grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
-.profile-stats--compact .profile-stat { padding: var(--space-3); gap: 2px; }
+.profile-stats--compact { grid-template-columns: repeat(6, 1fr); gap: var(--space-2); }
+/* 칸은 기본 반반. 교환 시기('2027 가을학기 · 한 학기')는 넓게, 학적('학부')은 좁게 — 긴 값이 두 줄로 접히지 않게 */
+.profile-stats--compact .profile-stat { grid-column: span 3; min-width: 0; padding: 10px 14px; gap: 2px; }
+.profile-stats--compact .profile-stat--wide { grid-column: span 4; }
+.profile-stats--compact .profile-stat--narrow { grid-column: span 2; }
 .profile-stats--compact .profile-stat__value { font-size: var(--fs-body); }
 
 .profile-form {
@@ -641,7 +644,7 @@ body[data-page="credits"]::before {
 .confirm-warning__title { font-weight: 700; margin-bottom: var(--space-3); }
 .confirm-warning ul { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-4); }
 .confirm-warning li { font-size: var(--fs-small); color: var(--ink-700); padding-left: var(--space-4); position: relative; }
-.confirm-warning li::before { content: '—'; position: absolute; left: 0; color: var(--coral-500); }
+.confirm-warning li::before { content: '·'; position: absolute; left: 0; color: var(--coral-500); }
 .confirm-warning__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 
 /* ---- UC 캠퍼스 목록 모달(지도/날씨/점수 카드 대신 캠퍼스 선택 화면) ---- */
@@ -707,7 +710,10 @@ body[data-page="credits"]::before {
   flex-shrink: 0;
 }
 .ss__search:focus { outline: none; background: var(--sky-50); }
-.ss__list { overflow-y: auto; padding: var(--space-2); }
+.ss__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: var(--space-2); }
+/* 아래 공간이 좁으면 위로 펼친다(searchable-select.js placePanel) — 검색칸은 목록 아래, 트리거 쪽에 */
+.ss__panel--up { top: auto; bottom: calc(100% + 6px); flex-direction: column-reverse; }
+.ss__panel--up .ss__search { border-bottom: none; border-top: 1px solid var(--line-100); }
 .ss__group {
   padding: var(--space-2) var(--space-2) 4px;
   font-size: var(--fs-micro);
@@ -857,3 +863,165 @@ body[data-page="credits"]::before {
   text-align: left;
 }
 .uc-siblings-link:hover { background: var(--sky-100); border-style: solid; }
+
+/* ---- 페이지 안 드롭다운 (js/components/dropdown.js) ----
+   <select> 는 각 화면 모양 그대로 두고, 누르면 기본 선택창 대신 아래 목록이 열린다. */
+select.dd--open { border-color: var(--ink-900); }
+
+.dd__panel {
+  position: fixed; z-index: 300;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 6px 0; border-radius: 12px;
+  background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .14), 0 0 0 1px rgba(0, 0, 0, .04);
+  opacity: 0; transform: translateY(-4px); transition: opacity .15s ease, transform .15s ease;
+}
+.dd__panel.is-open { opacity: 1; transform: none; }
+.dd__group { padding: 10px 18px 4px; font-size: 12px; font-weight: 700; color: var(--ink-400); }
+.dd__option {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 48px; padding: 0 18px;
+  border: 0; background: none; text-align: left; cursor: pointer;
+  font: inherit; font-size: 15px; color: var(--ink-900); white-space: nowrap;
+}
+.dd__option:hover, .dd__option:focus-visible { background: var(--cloud-50); outline: none; }
+.dd__option[aria-selected="true"] { background: var(--cloud-50); font-weight: 800; }
+.dd__check { flex: none; width: 14px; height: 8px; margin-top: -4px; }
+.dd__option[aria-selected="true"] .dd__check { border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
+.dd__option:disabled { color: var(--ink-400); cursor: default; }
+.dd__option-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------------------------------------------------------------- 내 지원 자격
+   학교와 상관없는 연세대 공통 기준(js/components/eligibility.js myEligibilityHtml).
+   항목마다 한 줄 — 라벨 왼쪽, 근거 오른쪽. 카드 안에 카드를 두지 않는다(app_ui.md 1장). */
+.my-elig {
+  border: 1px solid var(--line-200); border-radius: var(--radius-lg);
+  background: #fff; padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+}
+.my-elig.is-fail { border-color: var(--coral-100); }
+.my-elig__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.my-elig__title { font-size: var(--fs-small); font-weight: 800; color: var(--ink-900); }
+.my-elig__track { font-weight: 600; color: var(--ink-400); font-size: var(--fs-micro); margin-left: 4px; }
+.my-elig__edit { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); text-decoration: none; }
+.my-elig__summary { font-size: var(--fs-micro); color: var(--ink-600); margin: 2px 0 6px; }
+.my-elig__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.my-elig__row { display: flex; align-items: center; gap: 6px; font-size: var(--fs-micro); min-width: 0; }
+.my-elig__icon {
+  flex: none; width: 16px; height: 16px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;
+  background: var(--sky-100); color: var(--sky-700);
+}
+.my-elig__row.is-ok .my-elig__icon { background: var(--mint-100); color: var(--mint-600); }
+.my-elig__row.is-fail .my-elig__icon { background: var(--coral-100); color: var(--coral-600); }
+.my-elig__label { flex: none; font-weight: 700; color: var(--ink-900); }
+.my-elig__detail { flex: 1; min-width: 0; text-align: right; color: var(--ink-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-elig__score { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-200); font-size: var(--fs-small); color: var(--ink-700); }
+.my-elig__score strong { font-size: var(--fs-body); color: var(--ink-900); }
+.my-elig__score span { display: block; font-size: var(--fs-micro); color: var(--ink-400); }
+.my-elig__score--empty { font-size: var(--fs-micro); color: var(--ink-400); }
+.my-elig__note, .list-term-note { font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.5; word-break: keep-all; }
+.list-term-note {
+  background: var(--amber-100); color: var(--amber-700); border-radius: 10px;
+  padding: 8px 12px; margin-bottom: var(--space-3);
+}
+.result-meta__quick .chip[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- 국제처 일정
+   js/components/oia-timeline.js. 시기 제목 아래 한 줄씩 — 체크 · 이름 · 마감.
+   설명은 줄을 눌렀을 때만 연다(세로가 가장 비싸다, app_ui.md 1장). */
+.oia-tl__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.oia-tl__title { font-size: 1.0625rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-900); }
+.oia-tl__count { font-size: var(--fs-small); font-weight: 700; color: var(--sky-500); }
+.oia-tl__empty { font-size: var(--fs-small); color: var(--ink-600); line-height: 1.5; margin-top: 6px; word-break: keep-all; }
+.oia-tl__phase { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-400); margin: 12px 0 4px; letter-spacing: .02em; }
+.oia-tl__list { list-style: none; margin: 0; padding: 0; }
+.oia-tl__item { display: grid; grid-template-columns: 26px 1fr; align-items: start; column-gap: 6px; padding: 6px 0; border-top: 1px solid var(--line-100); }
+.oia-tl__list .oia-tl__item:first-child { border-top: 0; }
+.oia-tl__check {
+  width: 22px; height: 22px; margin-top: 1px; border-radius: 50%;
+  border: 1.5px solid var(--line-200); background: #fff; color: transparent;
+  font-size: 12px; font-weight: 800; cursor: pointer; padding: 0;
+}
+.oia-tl__item.is-done .oia-tl__check { background: var(--mint-500); border-color: var(--mint-500); color: #fff; }
+.oia-tl__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sky-300); margin: 9px 0 0 8px; }
+.oia-tl__row { display: flex; flex-direction: column; gap: 1px; background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; min-width: 0; }
+.oia-tl__name { font-size: var(--fs-small); font-weight: 700; color: var(--ink-900); line-height: 1.4; word-break: keep-all; }
+.oia-tl__item.is-info .oia-tl__name { font-weight: 600; color: var(--ink-700); }
+.oia-tl__item.is-done .oia-tl__name { color: var(--ink-400); text-decoration: line-through; }
+.oia-tl__due { font-size: var(--fs-micro); color: var(--ink-400); }
+.oia-tl__dday { font-weight: 800; color: var(--ink-600); margin-right: 2px; }
+.oia-tl__dday.is-soon { color: var(--coral-600); }
+.oia-tl__dday.is-past { color: var(--ink-400); font-weight: 600; }
+.oia-tl__detail { display: none; grid-column: 2; font-size: var(--fs-micro); color: var(--ink-600); line-height: 1.55; margin-top: 4px; word-break: keep-all; }
+.oia-tl__item.is-open .oia-tl__detail { display: block; }
+.oia-tl__source { font-size: var(--fs-micro); color: var(--ink-400); margin-top: 10px; }
+
+/* 홈 — 다가오는 국제처 일정 두 줄 */
+.upcoming__title { font-size: var(--fs-micro); font-weight: 800; color: var(--ink-600); margin-bottom: 4px; }
+.upcoming__title span { font-weight: 600; color: var(--ink-400); margin-left: 4px; }
+.upcoming__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.upcoming__row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-micro); min-width: 0; }
+.upcoming__name { font-weight: 700; color: var(--ink-900); min-width: 0; word-break: keep-all; line-height: 1.4; }   /* 긴 일정 이름도 다 보이게 줄바꿈 */
+.upcoming__due { flex: none; color: var(--ink-400); }
+
+/* ---------------------------------------------------------------- 학점 인정 탭 위 카드(파견 중·귀국 후 할 일)
+   js/components/credit-limit.js */
+.credits-top { margin-bottom: var(--space-3); }
+.credits-top[hidden] { display: none; }
+/* 국제처 공식 서비스 두 개 — 한 줄에 나란히 */
+.school-modal__official--oia { margin-top: var(--space-2); display: flex; flex-wrap: wrap; gap: 4px 14px; word-break: keep-all; }
+
+/* 지원 학과 고르기 — 배정 등록 창 · 확정 학교의 학교 정보 아래 */
+.major-pick { margin: 10px 0 4px; }
+.major-pick__label { margin: 0 0 6px; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-700); }
+.major-pick__label small { display: block; margin-top: 2px; font-weight: 500; color: var(--ink-400); }
+.major-pick__note { margin: 0; font-size: var(--fs-micro); color: var(--ink-400); }
+.major-pick--row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; width: 100%; margin: 0 0 10px; }
+.major-pick--row .major-pick__label { margin: 0; }
+.major-pick__value { font-size: var(--fs-small); color: var(--ink-900); }
+.major-pick__edit { margin-left: auto; border: 0; background: none; font: inherit; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-600); text-decoration: underline; cursor: pointer; }
+.major-pick__mount { flex: 1 1 100%; }
+/* 학교 상세 아래 — 칩과 등록 버튼을 한 줄에 */
+.school-modal__footer--compact { gap: 10px; }
+.school-modal__actions { display: flex; align-items: center; gap: 8px; width: 100%; }
+.school-modal__actions .wish-chip { flex: none; height: 44px; padding: 0 14px; white-space: nowrap; }
+.school-modal__actions .btn { flex: 1; min-width: 0; height: 44px; white-space: nowrap; }
+.school-modal__footer--compact .major-pick--row { margin: 0; }
+
+/* 참고용 안내 — "꼭 직접 확인하세요" 한마디(학점 인정·매칭·학교 정보 등) */
+.verify-note { margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #FFF6E5; border: 1px solid #F1DDB2; font-size: var(--fs-micro); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.verify-note b { display: block; margin-bottom: 2px; font-size: var(--fs-small); color: #8A5A00; }
+
+/* 학교 상세 아래 — 희망대학표 담기(장바구니). 담으면 진하게 채우고 + 대신 ✓ */
+.school-modal__actions .wish-cart {
+  flex: none; width: 44px; height: 44px; padding: 0; display: grid; place-items: center;
+  border-radius: 50%; border: 1.5px solid var(--line-200); background: #fff; color: var(--ink-800, #22302D); cursor: pointer;
+}
+.school-modal__actions .wish-cart.is-on { background: var(--v2-dark, #2F3B37); border-color: var(--v2-dark, #2F3B37); color: #fff; }
+.school-modal__actions .wish-cart.is-blocked { opacity: .35; }
+.toast { white-space: pre-line; }
+
+/* ---------------------------------------------------------------- 페이지 안 달력(date-picker.js) — 드롭다운(.dd__panel)과 같은 모양 */
+.dp__panel {
+  position: fixed; z-index: 1000; padding: 12px; border-radius: 16px; background: #fff;
+  border: 1px solid var(--line-200); box-shadow: 0 12px 32px rgba(21, 34, 56, 0.16);
+  opacity: 0; transform: translateY(-4px); transition: opacity 140ms ease, transform 140ms ease;
+}
+.dp__panel.is-open { opacity: 1; transform: none; }
+.dp__head { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; margin-bottom: 8px; }
+.dp__nav { width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; font-size: 22px; line-height: 1; color: var(--ink-700); cursor: pointer; }
+.dp__nav:active { background: var(--cloud-50); }
+.dp__title { justify-self: center; border: 0; background: none; font: inherit; font-size: 15px; font-weight: 800; color: var(--ink-900); cursor: pointer; padding: 6px 10px; border-radius: 10px; }
+.dp__title span { font-size: 10px; color: var(--ink-400); margin-left: 2px; }
+.dp__title:disabled { cursor: default; }
+.dp__week, .dp__days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp__week span { text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-400); padding: 4px 0; }
+.dp__months { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dp__cell { height: 38px; border: 0; border-radius: 50%; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink-900); cursor: pointer; display: grid; place-items: center; }
+.dp__cell--month { border-radius: 12px; height: 44px; background: var(--cloud-50); }
+.dp__cell.is-blank { cursor: default; }
+.dp__cell.is-today { box-shadow: inset 0 0 0 1.5px var(--ink-400); }
+.dp__cell.is-on { background: var(--v2-dark, #2F3B37); color: #fff; box-shadow: none; }
+.dp__cell:disabled { color: var(--ink-300, #C9CCCA); cursor: default; }
+.dp__foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-100); }
+.dp__link { border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-600); cursor: pointer; padding: 6px 4px; }
+input.dp--open { border-color: var(--ink-700) !important; }

@@ -18,6 +18,7 @@
   /* ------------------------------------------------------------ 꾸밈 팔레트 */
   const COLORS = {
     beige:    { back: '#cdc2b3', f1: '#e8e0d4', f2: '#ddd3c5', dot: '#8a7a68', sw: '#e3d9cb' },
+    sand:     { back: '#d8c29a', f1: '#f3e7cf', f2: '#e9d7b6', dot: '#7d6538', sw: '#ead9b8' },
     pink:     { back: '#ecc0c8', f1: '#fde7eb', f2: '#f7d4db', dot: '#5a1f1f', sw: '#f7d4db' },
     lavender: { back: '#c7c1df', f1: '#e9e5f6', f2: '#dad4ee', dot: '#5b4f86', sw: '#dad4ee' },
     mint:     { back: '#b6d6c6', f1: '#e2f3ea', f2: '#d0e9dd', dot: '#2f6b55', sw: '#d0e9dd' },
@@ -29,14 +30,24 @@
   const PATTERNS = { none: '없음', dots: '물방울', stripes: '줄무늬', grid: '격자', checks: '체크' };
   const EMOJIS = ['', '📸', '☕', '🍽️', '✈️', '🏫', '👭', '📄', '🎵', '🌿', '⭐', '🛍️', '🌆', '💌', '🎞️'];
 
+  // 처음에는 Monthly(파란색) 하나만 — 나머지 폴더는 사용자가 이름·색을 정해 직접 만든다(피드백 2026-11).
   const defaults = () => [
-    { id: 'daily',   name: 'Daily',    color: 'beige',    pattern: 'none',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'trip',    name: 'Trip',     color: 'sky',      pattern: 'none',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'campus',  name: 'Campus',   color: 'mint',     pattern: 'stripes', emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'friends', name: 'Friends',  color: 'butter',   pattern: 'checks',  emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'korea',   name: 'In Korea', color: 'pink',     pattern: 'dots',    emoji: '', type: 'manual',  entryIds: [], children: [] },
-    { id: 'monthly', name: 'Monthly',  color: 'lavender', pattern: 'none',    emoji: '', type: 'monthly', entryIds: [], children: [] }
+    { id: 'monthly', name: 'Monthly', color: 'sky', pattern: 'none', emoji: '', type: 'monthly', entryIds: [], children: [] }
   ];
+  // 예전 기본 폴더 다섯 개(Daily·Trip·Campus·Friends·In Korea). 사진을 담지도, 꾸미지도 않은 채 그대로면 지운다
+  const OLD_DEFAULTS = { daily: 'Daily', trip: 'Trip', campus: 'Campus', friends: 'Friends', korea: 'In Korea' };
+  function migrate(list) {
+    let changed = false;
+    const out = list.filter(f => {
+      const untouched = OLD_DEFAULTS[f.id] === f.name && !(f.entryIds || []).length && !(f.children || []).length && !f.emoji;
+      if (untouched) changed = true;
+      return !untouched;
+    });
+    const m = out.find(f => f.type === 'monthly');
+    if (m && m.id === 'monthly' && m.color === 'lavender' && m.pattern === 'none' && !m.emoji) { m.color = 'sky'; changed = true; }
+    if (!m) { out.push(defaults()[0]); changed = true; }
+    return { out, changed };
+  }
 
   /* ------------------------------------------------------------ 상태 / 저장 */
   let ctx = null, root = null;
@@ -49,11 +60,19 @@
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(storeKey()) || 'null');
-      if (Array.isArray(saved) && saved.length) { FOLDERS = saved; return; }
+      if (Array.isArray(saved) && saved.length) {
+        const { out, changed } = migrate(saved);
+        FOLDERS = out;
+        if (changed) { try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ } }
+        return;
+      }
     } catch (e) { /* 저장소를 못 읽으면 기본값 */ }
     FOLDERS = defaults();
   }
-  function save() { try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ } }
+  function save() {
+    try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ }
+    document.dispatchEvent(new CustomEvent('archive:changed'));
+  }
 
   // 방금 만든 기록의 id는 서버 uuid가 도착하면 바뀐다(state.js) — 폴더에 담아 둔 id도 같이 바꾼다
   document.addEventListener('journal:idchanged', (ev) => {
@@ -187,16 +206,17 @@
     const slot = root && root.querySelector('#archiveFriends');
     if (!slot) return;
     const uid = (typeof Auth !== 'undefined' && Auth.userId) || null;
-    if (!uid || typeof Friends === 'undefined' || !Friends.recentPosts) {
+    if (!uid || typeof Friends === 'undefined' || !Friends.todayFeed) {
       slot.innerHTML = friendsEmpty();
       return;
     }
-    if (friendsLoadedFor === uid && slot._posts) { drawFriends(slot, slot._posts); return; }
+    if (friendsLoadedFor === uid && slot._posts) { drawFriends(slot, slot._posts, slot._hasFriends); return; }
     slot.innerHTML = `<p class="arc-note">불러오는 중…</p>`;
-    const res = await Friends.recentPosts(12);
+    const res = await Friends.todayFeed(30);
     friendsLoadedFor = uid;
     slot._posts = res.posts || [];
-    drawFriends(slot, slot._posts);
+    slot._hasFriends = !!res.hasFriends;
+    drawFriends(slot, slot._posts, slot._hasFriends);
   }
   const friendsEmpty = () => `
     <div class="arc-friends-empty">
@@ -206,26 +226,50 @@
         <button type="button" class="arc-link" data-open-friends>코드로 추가하기</button>
       </div>
     </div>`;
-  function drawFriends(slot, posts) {
-    if (!posts.length) { slot.innerHTML = friendsEmpty(); return; }
-    slot.innerHTML = `<div class="arc-friends">${posts.map((p, i) => `
-      <article class="arc-fcard" data-i="${i}">
-        <img class="arc-fcard__img" src="${esc(p.url)}" alt="${esc(p.cap)}" draggable="false">
-        <div class="arc-fcard__who"><span class="arc-fcard__av">${esc(p.who[0] || '?')}</span><b>${esc(p.who)}</b></div>
-        <div class="arc-fcard__sub">${p.school ? `🎓 ${esc(p.school)}<br>` : ''}${p.city ? `📍 ${esc(p.city)}` : ''}</div>
-      </article>`).join('')}</div>`;
+  const clock = (iso) => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  /** 친구들이 오늘 올린 기록을 시간 순 타임라인으로 — 사진이 있으면 사진, 없으면 글만 */
+  function drawFriends(slot, posts, hasFriends) {
+    if (!hasFriends) { slot.innerHTML = friendsEmpty(); return; }
+    if (!posts.length) { slot.innerHTML = `<p class="ftl-empty">오늘은 아직 친구들의 기록이 없어요</p>`; return; }
+    let k = 0;
+    const caret = (i) => `<button type="button" class="ftl__toggle" data-ftl-toggle="${i}" aria-expanded="false" aria-label="내용 보기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
+    slot.innerHTML = `<ol class="ftl">${posts.map((p, i) => `
+      <li class="ftl__item">
+        <article class="ftl__card">
+          <div class="ftl__who"><span class="ftl__av">${esc(p.who[0] || '?')}</span><b>${esc(p.who)}</b>${p.school ? `<span class="ftl__school">${esc(p.school)}</span>` : ''}<span class="ftl__time">${clock(p.time)}</span></div>
+          ${p.url ? `
+          <div class="ftl__photo">
+            <img class="ftl__img" data-k="${k++}" src="${esc(p.url)}" alt="${esc(p.title || p.who + '의 사진')}" loading="lazy" draggable="false">
+            ${p.title ? `<p class="ftl__title">${esc(p.title)}</p>` : ''}
+            ${p.body ? caret(i) : ''}
+          </div>` : `
+          <div class="ftl__head">
+            <p class="ftl__title">${esc(p.title || '오늘의 기록')}</p>
+            ${p.body ? caret(i) : ''}
+          </div>`}
+          ${p.body ? `<p class="ftl__body" data-ftl-body="${i}" hidden>${esc(p.body).replace(/\n/g, '<br>')}</p>` : ''}
+        </article>
+      </li>`).join('')}</ol>`;
   }
   document.addEventListener('click', (e) => {
     const share = e.target.closest('#archiveFriends [data-invite-share]');
     if (share) { if (ctx && ctx.needLogin && ctx.needLogin()) return; if (typeof Friends !== 'undefined') Friends.shareInvite(); return; }
     const open = e.target.closest('#archiveFriends [data-open-friends]');
     if (open) { if (ctx && ctx.needLogin && ctx.needLogin()) return; if (typeof Friends !== 'undefined') Friends.openManager(); return; }
-    const img = e.target.closest('#archiveFriends .arc-fcard__img');
+    const tg = e.target.closest('#archiveFriends [data-ftl-toggle]');
+    if (tg) {
+      const body = tg.closest('.ftl__card').querySelector('[data-ftl-body]');
+      const open = tg.getAttribute('aria-expanded') !== 'true';
+      if (body) body.hidden = !open;
+      tg.setAttribute('aria-expanded', String(open));
+      tg.setAttribute('aria-label', open ? '내용 접기' : '내용 보기');
+      return;
+    }
+    const img = e.target.closest('#archiveFriends .ftl__img');
     if (img) {
       const slot = img.closest('#archiveFriends');
-      const posts = slot._posts || [];
-      const i = Number(img.closest('.arc-fcard').dataset.i);
-      openLightbox(posts.map(p => ({ url: p.url, info: p.info })), i, [...slot.querySelectorAll('.arc-fcard__img')]);
+      const shots = (slot._posts || []).filter(p => p.url);
+      openLightbox(shots.map(p => ({ url: p.url, info: p.info })), Number(img.dataset.k), [...slot.querySelectorAll('.ftl__img')]);
     }
   });
 
@@ -312,21 +356,23 @@
     sheet.hidden = true;
     sheet.innerHTML = `
       <div class="arc-sheet__scrim" data-cancel></div>
-      <div class="arc-sheet__panel" role="dialog" aria-label="폴더 꾸미기">
+      <div class="arc-sheet__panel rec-fsheet" role="dialog" aria-label="폴더 꾸미기">
         <div class="arc-sheet__grip"></div>
-        <div class="arc-sheet__preview" id="arcPreview"></div>
-        <div class="arc-field"><label for="arcName">이름</label><input class="arc-input" id="arcName" maxlength="14" autocomplete="off"></div>
-        <div class="arc-field"><span class="arc-lab">정리 방식</span>
-          <div class="arc-seg" id="arcType"><button type="button" data-type="manual">직접 담기</button><button type="button" data-type="monthly">Monthly</button></div>
-          <p class="arc-segnote" id="arcTypeNote"></p></div>
-        <div class="arc-field"><span class="arc-lab">색</span><div class="arc-swatches" id="arcColors"></div></div>
-        <div class="arc-field"><span class="arc-lab">패턴</span><div class="arc-pats" id="arcPats"></div></div>
-        <div class="arc-field"><span class="arc-lab">스티커 (선택)</span><div class="arc-emojis" id="arcEmojis"></div></div>
-        <div class="arc-sheet__actions">
-          <button type="button" class="arc-btn arc-btn--danger" id="arcDelete">폴더 삭제</button>
-          <button type="button" class="arc-btn arc-btn--ghost" data-cancel>취소</button>
-          <button type="button" class="arc-btn" id="arcSave">저장</button>
+        <h3 class="rec-fsheet__title" id="arcSheetTitle">폴더 꾸미기</h3>
+        <div class="rec-fsheet__name">
+          <div class="rec-fsheet__preview" id="arcPreview"></div>
+          <input class="rec-fsheet__input" id="arcName" maxlength="14" autocomplete="off" aria-label="폴더 이름" placeholder="폴더 이름">
         </div>
+        <p class="rec-fsheet__lab">색</p>
+        <div class="rec-fsheet__colors" id="arcColors"></div>
+        <p class="rec-fsheet__lab">무늬</p>
+        <div class="rec-fsheet__pats">
+          <div class="rec-fsheet__patlist" id="arcPats"></div>
+          <button type="button" class="rec-fsheet__sticker" id="arcStickerToggle">+ 스티커</button>
+        </div>
+        <div class="rec-fsheet__emojis" id="arcEmojis" hidden></div>
+        <button type="button" class="rec-fsheet__save" id="arcSave">저장</button>
+        <button type="button" class="rec-fsheet__delete" id="arcDelete">폴더 삭제</button>
       </div>`;
     document.body.appendChild(sheet);
     sheet.addEventListener('click', (e) => {
@@ -334,7 +380,7 @@
       const c = e.target.closest('[data-color]'); if (c) { draft.color = c.dataset.color; syncSheet(); return; }
       const p = e.target.closest('[data-pat]'); if (p) { draft.pattern = p.dataset.pat; syncSheet(); return; }
       const m = e.target.closest('[data-emo]'); if (m) { draft.emoji = m.dataset.emo; syncSheet(); return; }
-      const t = e.target.closest('[data-type]'); if (t) { draft.type = t.dataset.type; syncSheet(); return; }
+      if (e.target.closest('#arcStickerToggle')) { const box = sheet.querySelector('#arcEmojis'); box.hidden = !box.hidden; return; }
       if (e.target.closest('#arcSave')) {
         Object.assign(draftTarget, { name: (draft.name || '').trim() || 'Untitled', color: draft.color, pattern: draft.pattern, emoji: draft.emoji, type: draft.type });
         save(); closeSheet(false); refresh(); return;
@@ -353,8 +399,8 @@
     return sheet;
   }
   const TYPE_NOTE = { manual: '기록을 직접 골라 담고, 폴더 안에 폴더를 만들 수 있어요.', monthly: '기록을 날짜 기준으로 YYYY.MM 폴더에 자동으로 정리해요.' };
-  function patThumb(k) {
-    const d = '#8a7a68';
+  function patThumb(k, color) {
+    const d = color || '#8a7a68';
     const svg = {
       dots: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='4' cy='4' r='1.6' fill='${d}'/><circle cx='12' cy='12' r='1.6' fill='${d}'/></svg>`,
       stripes: `<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M-1 9L9 -1M3 11L11 3' stroke='${d}' stroke-opacity='.5' stroke-width='2'/></svg>`,
@@ -365,22 +411,35 @@
   }
   function syncSheet() {
     const s = ensureSheet();
-    s.querySelector('#arcPreview').innerHTML = `<div class="arc-folder arc-folder--preview">${folderIcon(draft, 'pv')}<span class="arc-folder__name">${esc(draft.name || '이름 없음')}</span></div>`;
+    s.querySelector('#arcPreview').innerHTML = folderIcon(draft, 'pv');
     s.querySelectorAll('#arcColors [data-color]').forEach(b => b.classList.toggle('is-sel', b.dataset.color === draft.color));
-    s.querySelectorAll('#arcPats [data-pat]').forEach(b => b.classList.toggle('is-sel', b.dataset.pat === draft.pattern));
+    // 무늬 칸은 지금 고른 색으로 미리 보여준다 — 폴더에 입혔을 때 모습 그대로
+    const c = COLORS[draft.color] || COLORS.beige;
+    s.querySelectorAll('#arcPats [data-pat]').forEach(b => {
+      b.classList.toggle('is-sel', b.dataset.pat === draft.pattern);
+      b.style.backgroundColor = c.f2;
+      b.style.backgroundImage = b.dataset.pat === 'none' ? 'none' : patThumb(b.dataset.pat, c.dot);
+    });
     s.querySelectorAll('#arcEmojis [data-emo]').forEach(b => b.classList.toggle('is-sel', b.dataset.emo === draft.emoji));
-    s.querySelectorAll('#arcType [data-type]').forEach(b => b.classList.toggle('is-sel', b.dataset.type === draft.type));
-    s.querySelector('#arcTypeNote').textContent = TYPE_NOTE[draft.type];
+    const st = s.querySelector('#arcStickerToggle');
+    st.textContent = draft.emoji ? `${draft.emoji} 스티커` : '+ 스티커';
   }
+  // 시안(Figma 기록하기/저장소)의 여섯 색 + 베이지 두 톤(피드백: 베이지 추가). 옛 폴더가 쓰던 peach·graphite도 그대로 그려진다
+  const SHEET_COLORS = ['beige', 'sand', 'sky', 'mint', 'lavender', 'pink', 'butter', 'peach'];
+  const SHEET_PATS = ['none', 'stripes', 'checks', 'dots', 'grid'];
   function openSheet(node, list, fresh) {
     const s = ensureSheet();
     draftTarget = node; draftList = list; isNew = fresh;
     draft = { ...node, type: node.type || 'manual' };
-    s.querySelector('#arcName').value = draft.name;
-    s.querySelector('#arcColors').innerHTML = Object.entries(COLORS).map(([k, c]) => `<button type="button" class="arc-swatch" data-color="${k}" style="background:${c.sw}" aria-label="${k}"></button>`).join('');
-    s.querySelector('#arcPats').innerHTML = Object.entries(PATTERNS).map(([k, label]) => `<button type="button" class="arc-pat" data-pat="${k}" style="${k === 'none' ? '' : `background-image:${patThumb(k)}`}">${k === 'none' ? label : ''}</button>`).join('');
-    s.querySelector('#arcEmojis').innerHTML = EMOJIS.map(e => `<button type="button" class="arc-emo" data-emo="${e}">${e || '–'}</button>`).join('');
-    s.querySelector('#arcDelete').hidden = fresh;
+    s.querySelector('#arcSheetTitle').textContent = fresh ? '새 폴더' : '폴더 꾸미기';
+    s.querySelector('#arcName').value = fresh ? '' : draft.name;
+    if (fresh) draft.name = '';
+    s.querySelector('#arcColors').innerHTML = SHEET_COLORS.map(k => `<button type="button" class="rec-fsheet__color" data-color="${k}" style="background:${COLORS[k].sw}" aria-label="${k}"></button>`).join('');
+    s.querySelector('#arcPats').innerHTML = SHEET_PATS.map(k => `<button type="button" class="rec-fsheet__pat" data-pat="${k}" aria-label="${PATTERNS[k]}" title="${PATTERNS[k]}"></button>`).join('');
+    s.querySelector('#arcEmojis').innerHTML = EMOJIS.map(e => `<button type="button" class="rec-fsheet__emo" data-emo="${e}" aria-label="${e || '스티커 없음'}">${e || '없음'}</button>`).join('');
+    s.querySelector('#arcEmojis').hidden = true;
+    s.querySelector('#arcDelete').hidden = fresh || node.type === 'monthly';
+    s.querySelector('#arcSave').textContent = fresh ? '만들기' : '저장';
     syncSheet();
     s.hidden = false;
     void s.offsetWidth;
@@ -396,11 +455,12 @@
   }
   function createFolder(list) {
     if (ctx && ctx.needLogin && ctx.needLogin()) return;
+    list = list || FOLDERS;
     const f = { id: 'f' + Date.now(), name: 'New folder', color: 'beige', pattern: 'none', emoji: '', type: 'manual', entryIds: [], children: [] };
     list.push(f);
     openSheet(f, list, true);
   }
-  function refresh() { if (root && ctx) render(root, ctx); }
+  function refresh() { if (root && ctx) render(root, ctx); document.dispatchEvent(new CustomEvent('archive:changed')); }
 
   /* ------------------------------------------------------------ 사진 담기(기록 고르기) */
   let picker = null;
@@ -437,19 +497,37 @@
     });
   }
 
+  /* ------------------------------------------------------------ 위치는 영어로
+   * 새 기록은 지명을 영어로 받는다(diary-view.js reverse geocode). 예전에 한국어로 저장된 기록도
+   * 나라는 countryCode → 영어 이름으로 바꿔 보여준다. 도시는 좌표를 저장하지 않아 다시 바꿀 수 없어 그대로 둔다. */
+  const regionEn = (() => { try { return new Intl.DisplayNames(['en'], { type: 'region' }); } catch (e) { return null; } })();
+  function placeEn(loc) {
+    if (!loc) return { city: null, country: null };
+    let country = loc.country || null;
+    if (loc.countryCode && regionEn) { try { country = regionEn.of(String(loc.countryCode).toUpperCase()) || country; } catch (e) { /* 그대로 */ } }
+    else if (country && typeof MOCK !== 'undefined') {
+      const sc = (MOCK.schools || []).find(x => x.country === country);
+      if (sc && sc.countryEn) country = sc.countryEn;
+    }
+    return { city: loc.city || loc.place || loc.name || null, country };
+  }
+  global.placeEn = placeEn;
+
   /* ------------------------------------------------------------ 확대: 사진 + 위치·날씨·노래 */
   function infoOf(e) {
-    const loc = e.location || {};
+    const loc = placeEn(e.location);
     const place = loc.city || loc.country ? [loc.city || loc.country, loc.city && loc.country ? loc.country : ''] : null;
     let weather = null;
     if (e.weather && typeof e.weather.code === 'number' && typeof SongEngine !== 'undefined') {
       const w = SongEngine.weatherLabel(e.weather.code);
       if (w) weather = { emoji: w.emoji, label: w.ko, temp: typeof e.weather.temp === 'number' ? Math.round(e.weather.temp) : null };
     }
-    const song = e.song || e.nowPlaying || null;
+    // 직접 고른 노래(그때 듣던 노래)가 먼저, 없을 때만 추천 노래
+    const song = e.nowPlaying || e.song || null;
+    const songRecommended = !e.nowPlaying && !!e.song;   // 직접 고른 게 아니면 '추천' 표시
     const t = e.createdAt ? new Date(e.createdAt) : null;
     const date = `${e.date.replace(/-/g, '.')}${t && !isNaN(t) ? ` · ${pad(t.getHours())}:${pad(t.getMinutes())}` : ''}`;
-    return { cap: e.title || e.body || '', date, place, weather, song };
+    return { cap: e.title || e.body || '', date, place, weather, song, songRecommended };
   }
 
   /*
@@ -568,7 +646,7 @@
     const s = info && info.song;
     q('.arc-lb__info--3').innerHTML = s
       ? `<div class="arc-song">${s.art ? `<img class="arc-song__art" src="${esc(s.art)}" alt="">` : `<span class="arc-song__art arc-song__art--empty">🎵</span>`}
-         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small></span></div>` : '';
+         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small>${info.songRecommended ? '<em class="arc-song__rec">날씨·위치 기반 추천 노래</em>' : ''}</span></div>` : '';
   }
   function placeInfo(rect) {
     const els = [q('.arc-lb__info--1'), q('.arc-lb__info--2'), q('.arc-lb__info--3')];
@@ -600,11 +678,13 @@
   }
   function closeLightbox() {
     if (!lb || lb.hidden) return;
-    const r = lbThumb.getBoundingClientRect();
     const th = lbThumb;
+    // 화면에 없는 사진(그날의 다른 사진을 넘겨 본 경우)은 돌아갈 자리가 없어 제자리에서 사라진다
+    const onScreen = th.isConnected;
+    const r = th.getBoundingClientRect();
     lb.classList.remove('is-on');
     lbImgs.forEach((el, i) => {
-      if (i === lbIndex) Object.assign(el.style, px(r));
+      if (i === lbIndex && onScreen) Object.assign(el.style, px(r));
       else el.style.opacity = '0';
     });
     setTimeout(() => { lb.hidden = true; th.style.visibility = ''; lbImgs.forEach(el => el.remove()); lbImgs.clear(); }, 430);
@@ -614,7 +694,7 @@
     lbThumb.style.visibility = '';
     lbThumb = lbCtx.thumbs[n];
     lbThumb.style.visibility = 'hidden';
-    if (lbThumb.scrollIntoView) lbThumb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
+    if (lbThumb.isConnected && lbThumb.scrollIntoView) lbThumb.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'instant' });
     // 정보는 잠깐 사라졌다가 새 사진의 것으로 다시 나타난다
     const infoEls = lb.querySelectorAll('.arc-lb__info');
     infoEls.forEach(el => { el.style.transition = 'opacity 140ms ease'; el.style.opacity = '0'; });
@@ -633,5 +713,29 @@
   /** 다른 화면(최근 사진 캐러셀·날짜 팝업)에서 같은 확대 화면을 쓴다. shots = [{ url, info }], thumbs = 눌린 사진 요소들 */
   /** 친구가 새로 생겼을 때(초대 링크 등) 친구들 줄을 다시 읽는다 */
   function reloadFriends() { friendsLoadedFor = null; const slot = root && root.querySelector('#archiveFriends'); if (slot) slot._posts = null; renderFriends(); }
-  global.DiaryArchive = { render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs) };
+  /** 새 기록하기 화면(js/record-v2.js)이 쓰는 것들 — 폴더 데이터와 아이콘, 꾸미기 시트 */
+  function ensureLoaded() { if (!FOLDERS.length || render._uid !== storeKey()) { render._uid = storeKey(); load(); } return FOLDERS; }
+  function editFolder(node) { const hit = findNode(node.id); if (hit && !hit.node.virtual) openSheet(hit.node, hit.list, false); }
+  function addEntries(node, ids) {
+    const list = node.entryIds = node.entryIds || [];
+    let added = 0;
+    ids.forEach(id => { if (!list.includes(id)) { list.push(id); added++; } });
+    save();
+    return added;
+  }
+  global.DiaryArchive = {
+    render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs),
+    folders: ensureLoaded, folderIcon, itemsOf, entriesOfNode, kidsOf, findNode,
+    editFolder, createFolder: () => { ensureLoaded(); createFolder(FOLDERS); }, openPicker, addEntries, save,
+    // 기록 쓰기 창에서 이름만으로 폴더를 바로 만든다 — 색은 베이지(길게 눌러 바꿀 수 있다)
+    addFolder(name) {
+      ensureLoaded();
+      const f = { id: 'f' + Date.now(), name, color: 'beige', pattern: 'none', emoji: '', type: 'manual', entryIds: [], children: [] };
+      const mi = FOLDERS.findIndex(x => x.type === 'monthly');
+      if (mi >= 0) FOLDERS.splice(mi, 0, f); else FOLDERS.push(f);
+      save();
+      refresh();
+      return f;
+    }
+  };
 })(window);

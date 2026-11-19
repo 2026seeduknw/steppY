@@ -2,64 +2,95 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>홈 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>홈 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/pages/home.css">
 <link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/v2.css">
 </head>
 <body data-page="home">
 
 <div id="app-nav" class="app-nav"></div>
 
-<div class="page-shell home-hero">
-  <div class="home-hero__row">
-    <h1 id="greeting">안녕하세요</h1>
-  </div>
-  <p id="greetingSub"></p>
-  <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
+<div class="page-shell v2-home">
+  <header class="v2-home__head">
+    <h1 class="v2-wordmark" aria-label="steppY">steppY</h1>
+    <p class="v2-home__greet" id="greeting"></p>
+    <a class="profile-cta" id="profileCta" href="onboarding.html" hidden>기본 정보를 입력해 주세요</a>
+  </header>
+
+  <!-- 진행 단계 — 화면 폭 전체의 얇은 띠. 발자국 길이 길어야 걸어가는 느낌이 산다 -->
+  <section class="v2-widget v2-widget--stage" aria-label="진행 단계">
+    <div id="journeySteps"></div>
+  </section>
+
+  <!-- 바로가기 — 그 아래 색 카드 세 장을 한 줄에(넘기지 않음) -->
+  <section class="v2-shortcuts" aria-label="바로가기">
+    <div class="v2-shortcuts__track" id="shortcutTrack">
+      <a class="v2-shortcut v2-shortcut--sand" href="credits.html?mode=major">
+        <strong class="v2-shortcut__title">전공 매칭</strong>
+        <span class="v2-shortcut__sub">내 전공과 가까운<br>파견교 학과 찾기</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+      <a class="v2-shortcut v2-shortcut--mint" href="consult.html">
+        <strong class="v2-shortcut__title">Talky</strong>
+        <span class="v2-shortcut__sub">다녀온 선배에게<br>물어보기</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+      <a class="v2-shortcut v2-shortcut--sky" href="credits.html">
+        <strong class="v2-shortcut__title">과목 찾기</strong>
+        <span class="v2-shortcut__sub">파견교 과목<br>학점 인정 확인</span>
+        <span class="v2-shortcut__go" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 다가오는 국제처 일정 두 줄 —
+       js/components/oia-timeline.js renderUpcomingSchedule -->
+  <section class="upcoming" id="homeSchedule" aria-label="다가오는 국제처 일정" hidden></section>
+
+  <!-- 할 일 — 두 상자 아래 가로로 긴 알약. 누르면 아래로 목록이 펼쳐진다 -->
+  <section class="v2-todo" id="todoCard" aria-label="할 일"></section>
+
+  <section class="v2-picks" aria-label="지망 학교">
+    <p class="v2-picks__label">My picks</p>
+    <!-- 같은 줄 오른쪽 끝 — 내 저장(PICKS) 탭으로 가서 지망·찜한 학교를 나란히 비교 -->
+    <a class="v2-picks__go" href="saved.html" aria-label="지망 학교 비교하러 가기">비교 →</a>
+    <div class="v2-wheel" id="picksWheel"></div>
+  </section>
+
+  <button type="button" class="search-cta" id="partnerPromoBanner" data-release="partnerPromo" style="border:none;width:100%;text-align:left;cursor:pointer;font:inherit;">
+    <div>
+      <h2>보험·어학원·여행까지, 제휴 혜택으로 준비해보세요</h2>
+      <p>교환학생 전용 해외보험·어학연수·여행 프로그램을 특별 혜택가로 준비할 수 있어요</p>
+    </div>
+    <span class="btn btn--accent">제휴 혜택 보기</span>
+  </button>
 </div>
 
-<div class="page-shell home-grid">
-  <div class="home-main">
-    <section class="journey-bar" aria-label="진행 단계">
-      <div id="journeySteps"></div>
-    </section>
-
-    <section id="todoCard"></section>
-
-    <section class="card card-pad" aria-label="지망하는 학교">
-      <div class="wishlist-row" id="wishlistRow"></div>
-    </section>
-
-    <a class="credits-cta" href="credits.html">
-      <div class="credits-cta__body">
-        <h2>다녀와서 이 과목, 학점으로 인정될까요?</h2>
-        <p>내 전공과 파견교 과목을 비교해 인정 가능성을 출국 전에 확인해요</p>
-      </div>
-      <span class="credits-cta__arrow" aria-hidden="true">→</span>
-    </a>
-
-    <a class="reviews-cta" href="consult.html">
-      <div class="reviews-cta__body">
-        <h2>파견 국가별 후기 보기</h2>
-        <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
-      </div>
-      <span class="reviews-cta__arrow" aria-hidden="true">→</span>
-    </a>
-
-    <button type="button" class="search-cta" id="partnerPromoBanner" data-release="partnerPromo" style="border:none;width:100%;text-align:left;cursor:pointer;font:inherit;">
-      <div>
-        <h2>보험·어학원·여행까지, 제휴 혜택으로 준비해보세요</h2>
-        <p>교환학생 전용 해외보험·어학연수·여행 프로그램을 특별 혜택가로 준비할 수 있어요</p>
-      </div>
-      <span class="btn btn--accent">제휴 혜택 보기</span>
-    </button>
-  </div>
-</div>
+<!-- 하단 정보 — 운영·문의와 약관. 광고 자리(.v2-home 맨 끝)보다 아래, 화면 맨 끝까지 -->
+<footer class="site-footer" aria-label="서비스 정보">
+  <p class="site-footer__brand">steppY</p>
+  <p class="site-footer__tag">연세대학교 교환학생 준비 플랫폼</p>
+  <nav class="site-footer__links" aria-label="약관">
+    <a href="terms.html">이용약관</a>
+    <a href="privacy.html"><strong>개인정보처리방침</strong></a>
+    <a href="mailto:2026.seed.uknw@gmail.com">문의하기</a>
+  </nav>
+  <dl class="site-footer__info">
+    <div><dt>운영</dt><dd>steppY 운영팀</dd></div>
+    <div><dt>이메일</dt><dd><a href="mailto:2026.seed.uknw@gmail.com">2026.seed.uknw@gmail.com</a></dd></div>
+  </dl>
+  <p class="site-footer__note">학교·학점·생활 정보는 국제처 공개 자료와 조사 시점 기준의 참고 정보예요.<br>지원·신청 전에 공식 안내를 꼭 직접 확인하세요.</p>
+  <p class="site-footer__copy">© 2026 steppY. All rights reserved.</p>
+</footer>
 
 <div id="mentor-float"></div>
 
@@ -76,9 +107,12 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/date-picker.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -91,7 +125,9 @@
 <script src="js/components/profile-card.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/target-major.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
+<script src="js/components/logo-fit.js"></script>
 <script src="js/home.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>

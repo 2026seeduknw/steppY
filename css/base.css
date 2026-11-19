@@ -4,8 +4,12 @@
 
 @import url('../vendor/fonts/pretendard.css');
 
-/* SUIT(SUNN, OFL) 가변 굵기 — 앱 기본 글꼴. Pretendard 는 SUIT 에 없는 글자를 받는 예비로 남긴다. */
+/* SUIT(SUNN, OFL) 가변 굵기 — 화면 맨 위 큰 영어 제목 전용(v2.css --font-title). 본문은 아래 Pretendard. */
 @font-face { font-family: 'SUIT Variable'; src: url('../assets/fonts/SUIT-Variable.woff2') format('woff2-variations'); font-weight: 100 900; font-display: swap; }
+/* 본문 글꼴 — Pretendard(OFL). 화면 맨 위 큰 영어 제목(SCHOOLS·steppY 등)만 SUIT를 쓴다(v2.css) */
+/* 영문·숫자 글꼴 — Manrope(OFL). 지금은 쓰지 않음: 앱 전체가 애플 고딕(없으면 Pretendard, tokens.css) */
+@font-face { font-family: 'Manrope'; src: url('../assets/fonts/Manrope-Variable.woff') format('woff'); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: 'Pretendard Variable'; src: url('../assets/fonts/PretendardVariable.woff2') format('woff2-variations'); font-weight: 45 920; font-display: swap; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -86,3 +90,6 @@ img { max-width: 100%; display: block; }
     scroll-behavior: auto !important;
   }
 }
+
+/* 화면이 옆으로 밀리지 않게 — 어느 기종에서든 화면 폭에 고정. clip 은 hidden 과 달리 스크롤 상자를 만들지 않아 sticky(위 검색 띠 등)가 그대로 동작한다 */
+html, body { overflow-x: clip; }

@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>교환 준비하기 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>교환 준비하기 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -16,25 +19,24 @@
 <div id="app-nav" class="app-nav"></div>
 
 <div class="page-shell prepare-hero" id="prepareHero"></div>
+<!-- 다가오는 국제처 일정 두 줄(홈과 같은 꼴) — 할 일은 아래 체크리스트에 녹아 있다 -->
+<div class="page-shell"><section class="upcoming" id="prepareSchedule" aria-label="다가오는 국제처 일정" hidden></section></div>
 
 <div class="page-shell prepare-grid">
   <div class="prepare-main">
     <div id="targetMajorCard"></div>
 
-    <section class="card card-pad" id="todoCard"></section>
+    <section id="todoCard" class="prep-todo"></section>
+
+
+    <!-- 국제처 일정 카드 — 파견 중·귀국 후에만 보인다(출국 전 할 일은 체크리스트에) -->
+
+    <section class="card card-pad" id="oiaTimeline"></section>
 
     <!-- 안쪽(머리줄·열고 닫기·진행 바)은 js/components/prepare-view.js가 그린다 -->
     <section class="card card-pad prep-card" id="checklistSection"></section>
     <section class="card card-pad prep-card" id="livingSection"></section>
 
-    <a class="reviews-cta" href="consult.html">
-      <div class="reviews-cta__body">
-        <span class="reviews-cta__eyebrow">선배 후기</span>
-        <h2>파견 국가별 후기 보기</h2>
-        <p>다녀온 선배들이 남긴 기숙사·교통·생활비 후기를 국가별로 모아봤어요</p>
-      </div>
-      <span class="reviews-cta__arrow" aria-hidden="true">→</span>
-    </a>
   </div>
 </div>
 
@@ -53,9 +55,12 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/departure.js"></script>
 <script src="js/components/layout.js"></script>
+<script src="js/components/date-picker.js"></script>
+<script src="js/components/dropdown.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/paywall.js"></script>
@@ -68,6 +73,7 @@
 <script src="js/components/progress-ring.js"></script>
 <script src="js/components/todo-card.js"></script>
 <script src="js/components/target-major.js"></script>
+<script src="js/components/oia-timeline.js"></script>
 <script src="js/components/prepare-view.js"></script>
 <script src="js/prepare.js"></script>
 <script src="js/app-links.js"></script>

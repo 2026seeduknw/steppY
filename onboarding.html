@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>시작하기 — steppY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
+     iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<title>시작하기 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
@@ -34,7 +37,7 @@
 <main class="ob">
   <div class="ob__head">
     <h1 class="ob__title">기본 정보를 알려 주세요</h1>
-    <p class="ob__desc">지원 가능한 학교와 준비 일정을 여기에 맞춰 보여드려요. 언제든 고칠 수 있어요.</p>
+    <p class="ob__desc">지원 가능한 학교와 준비 일정을 여기에 맞춰 보여드려요.<br>언제든 고칠 수 있어요.</p>
   </div>
 
   <div class="ob__form">
@@ -42,7 +45,7 @@
       <h2 class="ob__label">이름 <span class="ob__req">필수</span></h2>
       <input type="text" id="obName" maxlength="20" autocomplete="nickname"
              placeholder="예: 김스텝" aria-label="이름">
-      <p class="ob__hint">홈에서 “안녕하세요, ○○님”으로 불러드려요. 별명이어도 괜찮아요.</p>
+      <p class="ob__hint">홈에서 “안녕하세요, ○○님”으로 불러드려요.<br>별명이어도 괜찮아요.</p>
     </section>
 
     <section class="ob__group">
@@ -52,19 +55,17 @@
 
     <section class="ob__group">
       <h2 class="ob__label">학점 <span class="ob__req">필수</span></h2>
-      <div class="ob__row">
-        <input type="number" inputmode="decimal" step="0.01" min="0" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
-        <!-- 연세대는 4.3 만점 하나뿐이라 고르게 하지 않는다 -->
-        <span class="ob__suffix" aria-label="4.3 만점">/ 4.3</span>
+      <div class="ob__row ob__row--pair">
+        <div class="ob__row">
+          <input type="number" inputmode="decimal" step="0.01" min="0" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
+          <!-- 연세대는 4.3 만점 하나뿐이라 고르게 하지 않는다 -->
+          <span class="ob__suffix" aria-label="4.3 만점">/ 4.3</span>
+        </div>
+        <div class="ob__row">
+          <input type="number" inputmode="decimal" step="0.01" min="0" max="100" data-decimals="2" id="obPercentile" placeholder="백분위" aria-label="성적표 백분위">
+        </div>
       </div>
-    </section>
-
-    <section class="ob__group">
-      <h2 class="ob__label">어학 성적</h2>
-      <div class="ob__chips" id="obLangChips"></div>
-      <div class="ob__row ob__row--score" id="obScoreRow">
-        <input type="number" inputmode="numeric" id="obLangScore" placeholder="점수 (예: 96)" aria-label="어학 점수">
-      </div>
+      <p class="ob__hint">백분위는 성적표에 적힌 값이에요.<br>넣으면 배정 총점을 계산해요.</p>
     </section>
 
     <section class="ob__group">
@@ -73,6 +74,38 @@
         <select id="obYear" aria-label="연도"></select>
       </div>
       <div class="ob__chips" id="obSeasons"></div>
+      <div class="ob__chips" id="obLengthChips" aria-label="파견 기간"></div>
+    </section>
+
+    <!-- 전형이 먼저다 — 어떤 시험을 받을지, 점수인지 등급인지가 여기서 갈린다 -->
+    <section class="ob__group">
+      <h2 class="ob__label">지원 전형</h2>
+      <div class="ob__chips" id="obTrackChips"></div>
+      <p class="ob__hint">영어권과 비영어권은 하나만 지원할 수 있어요.<br>희망대학표에도 같은 언어권 학교만 담겨요.</p>
+    </section>
+
+    <section class="ob__group">
+      <h2 class="ob__label">어학 성적</h2>
+      <div id="obLangMount"></div>
+    </section>
+
+    <section class="ob__group">
+      <h2 class="ob__label">학적</h2>
+      <div class="ob__chips" id="obDegreeChips" aria-label="과정"></div>
+      <div id="obFieldRow">
+        <p class="ob__sub">계열 <span>(TOEFL 최소 점수가 달라요)</span></p>
+        <div class="ob__chips" id="obFieldChips"></div>
+      </div>
+      <div class="ob__row">
+        <input type="number" inputmode="numeric" min="0" max="12" id="obSemesters" placeholder="지원할 때까지 마친 학기 수" aria-label="이수 학기 수">
+        <span class="ob__suffix">학기</span>
+      </div>
+      <p class="ob__hint">지원서 내는 시점 기준이에요.<br>1학년 2학기라도 1월에 성적이 나오면 2학기로 쳐요.</p>
+      <div id="obTransferRow">
+        <p class="ob__sub">편입</p>
+        <div class="ob__chips" id="obTransferChips"></div>
+      </div>
+      <label class="ob__check"><input type="checkbox" id="obLastSemester"> 정규학기 마지막 학기에 파견돼요 <span>(초과학기 서약서 필요)</span></label>
     </section>
   </div>
 
@@ -95,11 +128,14 @@
 <script src="js/push.js"></script>
 <script src="js/data-source.js"></script>
 <script src="js/state.js"></script>
+<script src="js/oia-rules.js"></script>
 <script src="js/decimal-input.js"></script>
 <script src="js/components/modal.js"></script>
 <script src="js/components/searchable-select.js"></script>
 <script src="js/onboarding.js"></script>
 <script src="js/app-links.js"></script>
 <script src="js/invite.js"></script>
+<script src="js/components/dropdown.js"></script>
+<script src="js/components/date-picker.js"></script>
 </body>
 </html>

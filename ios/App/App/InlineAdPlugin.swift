@@ -64,7 +64,12 @@ class InlineAdPlugin: CAPPlugin, CAPBridgedPlugin, BannerViewDelegate {
                 clip.addSubview(banner)
                 self.banner = banner
                 self.loaded = false
-                banner.load(Request())
+                // 개인 맞춤 광고를 끈다(npa=1) — 개인정보처리방침 4·5항: 광고 목적 프로파일링을 하지 않는다
+                let request = Request()
+                let extras = Extras()
+                extras.additionalParameters = ["npa": "1"]
+                request.register(extras)
+                banner.load(request)
             }
 
             if self.offsetObservation == nil {
