@@ -490,6 +490,10 @@ body[data-page="credits"]::before {
   -webkit-text-stroke: 0.028em var(--key-ink);
   paint-order: stroke fill;
 }
+/* 로고 글씨체(SB Aggro)는 t 오른쪽 여백이 넓어서 "steppY" 의 t·e 사이가 유독
+   벌어져 보인다 — 그 한 쌍만 살짝 당긴다(원래 벌어진 만큼의 절반만).
+   랜딩·홈 어디서나 쓰도록 공통 파일에 둔다. */
+.wm-kern-te { margin-right: -0.065em; }
 .info-panel__text { font-size: var(--fs-small); color: var(--ink-700); margin-bottom: var(--space-2); }
 .info-panel--wide { grid-column: 1 / -1; }
 .info-panel--map { margin-bottom: var(--space-4); }

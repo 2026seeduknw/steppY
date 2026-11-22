@@ -15,7 +15,6 @@ body[data-page="journal"][data-theme="v2"] .diary-cal-section { margin-top: 40px
 body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px; }
 
 .rec-head { margin: 6px 0 0; }
-.rec-head .v2-head__title { font-size: 50px; }
 /* 기록하기 첫 화면의 D-N · Day N 제목만 가운데 정렬(다른 큰 제목은 왼쪽) */
 #journalRoot > .rec-head { text-align: center; }
 
