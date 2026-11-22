@@ -4,20 +4,13 @@
    ========================================================================== */
 
 :root {
-  /* ---- Color: "Moonlight / Frost Blue / Steel / Storm / Oxford Blue" 팔레트 ----
-     moonlight(cream) #F0ECDD / frost blue #8BA3C5 / steel #495B7D /
-     storm #23354D / oxford blue #02122F — Figma 목업에서 확정한 단일 블루 램프.
-     나머지 톤은 이 5색에서만 파생(밝기 조절)했습니다. F1은 oxford blue,
-     F2는 storm을 원색 배경으로 직접 사용(아래 --storm/--oxford 참고). */
+  /* ---- Color: 원색 배경 ----
+     moonlight(cream) — 어두운 바탕 위 글자·면 / oxford — 가장 어두운 바탕(html, 인트로). */
   --moonlight: #F0ECDD;
-  --frost-blue: #9DB0AB;
-  --steel: #4F6661;
-  --storm: #344945;   /* Viridian */
   --oxford: #1E2B29;
 
   /* ---- Color: 유틸리티 화면(캘린더/학점 인정) 전용 강조 배경 ---- */
   --beige: #F2EFE7;
-  --teal: #4B6B7C;
 
   /* ---- Color: ink — 흰 카드 위에 올라가는 텍스트 (페이지 배경과는 별개) ---- */
   --ink-900: #22302D;   /* Viridian 을 한 단 더 어둡게 — 본문 글자 */
@@ -28,9 +21,8 @@
   /* ---- Color: 네이비 배경 위에 올라가는 텍스트 ---- */
   --onnavy-100: #F0ECDD;   /* moonlight */
   --onnavy-300: #9DB0AB;
-  --onnavy-500: #7E918C;
 
-  /* ---- Color: sky (brand primary = steel/storm 램프) ---- */
+  /* ---- Color: sky (brand primary = Viridian 램프) ---- */
   --sky-700: #2A3B38;
   --sky-500: #344945;   /* Viridian */
   --sky-400: #5C706B;
@@ -72,11 +64,6 @@
   --page-mist: #FFFFFF;   /* Shell — Figma 시안대로 흰 바탕(예전 #F7F5F1). 이름은 Mist 테마 때 것 */
   --page-bg: var(--page-mist);
   --appbar-bg: rgba(255, 255, 255, 0.86);   /* 앱바 — 바탕과 같은 색, 조금 비치게 */
-
-  /* 랜딩 배경 — 가운데가 살짝 진한 옅은 하늘색 */
-  --sky-wash-mid:  #BFDCFA;
-  --sky-wash-edge: #E9F3FE;
-  --sky-wash-far:  #F7FBFF;
 
   /* ---- Color: amber (moonlight 액센트) ---- */
   --amber-700: #22302D;
