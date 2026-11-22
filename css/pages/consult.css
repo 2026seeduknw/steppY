@@ -162,7 +162,10 @@
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-md);
   background: var(--cloud-0);
-  font-size: 16px; /* iOS 자동 확대 방지 */
+  /* 드롭다운(국가·학교)과 같은 13px. 예전엔 iOS 가 16px 미만 입력칸을 누르면
+     화면을 확대해서 16px 로 뒀는데, 화면 viewport 에 maximum-scale=1 이 걸려
+     있어 확대되지 않는다. */
+  font-size: var(--fs-small);
   color: var(--ink-900);
 }
 .mentor-form textarea { min-height: 96px; resize: vertical; font-family: inherit; }
@@ -179,7 +182,9 @@
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-md);
   background: var(--cloud-0);
-  font-size: 16px; /* iOS 자동 확대 방지 — 다른 입력칸과 동일 */
+  /* 드롭다운 글자는 바로 아래 학교 칸(.ss__trigger)과 같은 크기. 버튼이라 글자를
+     쳐 넣지 않으므로 iOS 자동 확대(16px 미만 입력칸)와는 상관없다. */
+  font-size: var(--fs-small);
   color: var(--ink-900);
   text-align: left;
 }

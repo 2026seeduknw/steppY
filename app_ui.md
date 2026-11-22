@@ -384,6 +384,8 @@ flex 는 BFC 라 위에 뜬 `float` 만큼 폭이 줄어든다. 제목 옆 버�
 → **2026-11-15 결정: 앱 전체에서 확대·축소와 옆으로 밀리는 것을 잠근다**(모든 기기). 각 페이지 머리의 viewport 에
   `maximum-scale=1.0, user-scalable=no`, 그리고 iOS 사파리용으로 `gesturestart`·더블탭을 막는 짧은 스크립트.
   html·body 는 `overflow-x: clip`(css/base.css). 손가락 확대가 막히니 글씨 크기는 처음부터 읽기 좋게 잡는다.
+→ 이 잠금(`maximum-scale=1`) 덕에 입력칸을 16px 미만으로 줄여도 확대되지 않는다. 그래서 2026-11-22
+  부터 폼 안 글자를 13px 로 내린다(아래 "폼 안 글자는 13px 하나로").
 
 ### 위계가 같으면 크기도 같아야 한다
 
@@ -417,8 +419,26 @@ steppY 의 현재 위계:
 | 화면 히어로 제목 | 20px(`1.25rem`) / 800 |
 | 입력칸 위 라벨 | 13px / 700 |
 | 본문·칩 | 13px / 400 |
-| 입력칸 안 글자 | **16px** / 400 (아래로 내리지 않는다) |
+| 입력칸·드롭다운 안 글자 | **13px**(`--fs-small`) / 400 — 2026-11-22 변경, 아래 절 참고 |
 | 보조 설명·메타 | 11px / 400 |
+
+### 폼 안 글자는 13px 하나로
+
+**드롭다운 칸·입력칸·여러 줄 입력칸 안의 글자(입력값과 placeholder)는 모두 13px(`--fs-small`)**
+(2026-11-22, 사용자). Talky 질문하기 폼에서 학교 드롭다운(`.ss__trigger`)만 13px 이고 국가 칸·제목·내용은
+16px 이라 한 폼 안에서 칸마다 글자 크기가 달랐다. 16px 은 iOS 자동 확대를 피하려던 값인데, 앱 전체에
+확대 잠금(`maximum-scale=1`)이 걸린 뒤로는 필요 없다.
+
+- 적용함: Talky 질문하기 폼(`css/pages/consult.css` `.mentor-form input/select/textarea`, `.mentor-select-trigger`)
+- **아직 안 맞춘 곳(할 일)** — 지금 16px 이거나 크기가 제각각이다. 고칠 때 이 목록에서 지운다.
+  - 기본 정보 `.ob__form select`·입력칸 (`css/app.css`)
+  - 계정 시트·공통 `.field input, .field select` (`css/components.css`, `css/app.css`)
+  - 할 일 추가 `.todo-add-form select`·입력칸, 출국일 프롬프트 (`css/app.css`, `css/pages/prepare.css`)
+  - 학교 찾기 정렬 `.sort-select`, 필터 `select.quick-filter` (`css/pages/search.css`, `css/v2.css`)
+  - 학점 인정 필터 `select.credit-filter` (`css/pages/credits.css`)
+  - 성적 폼 `.score-prompt__field`, 시뮬레이션 배너 `.sim-banner__field` (`css/app.css`)
+  - 기본 입력칸 `input, select, textarea` (`css/base.css`) — 위를 다 맞춘 뒤 여기서 한 번에 정하면 끝
+- 드롭다운 칸 높이도 제각각이다(Talky 국가 칸 53px, 학교 칸 40px). 글자를 맞출 때 높이도 같이 본다.
 
 ### 마크업이 다르면 크기가 갈린다
 
@@ -480,6 +500,11 @@ steppY 의 현재 위계:
 글자가 도리어 얇아진다.
 
 ### 로고 글씨체는 폰트가 아니라 패스다
+
+> 2026-11-22: 랜딩(헤더·히어로·스플래시), 홈의 큰 steppY(54px), 화면 맨 위 큰 제목
+> `.v2-head__title`(Schools·Credits·Picks·Talky·Storage·Today, 45px), 앱바의 작은 steppY 는
+> 패스가 아니라 **SB 어그로 폰트**(`'SB Aggro Light'`, `css/components.css` 의 `@font-face`)로 바꿨다.
+> 아래 패스 방식은 아직 `[data-wordmark]`(`.brand-head` 등)에 남아 있다.
 
 `assets/wordmark-glyphs.json` 에 A–Z, a–z, `!` 만 있다. 한글도 물음표도 쉼표도 없다.
 [js/wordmark-text.js](js/wordmark-text.js) 가 `[data-wordmark]` 안에서 **알파벳이
