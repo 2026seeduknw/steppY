@@ -1222,7 +1222,7 @@ body[data-page="onboarding"] {
   top: 6px;
   margin-left: -6.5px;
   background: var(--key-500);
-  box-shadow: 0 0 0 3px rgba(52, 73, 69, 0.20);
+  box-shadow: 0 0 0 3px rgba(35, 53, 77, 0.20);
 }
 
 /* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
@@ -2134,7 +2134,7 @@ textarea {
 .paywall__premium .paywall__option { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
 .paywall__premium .paywall__option-label { color: rgba(255, 255, 255, 0.7); }
 .paywall__premium .paywall__option-sub { color: var(--key-500); }
-.paywall__premium .paywall__option.is-selected { border-color: var(--key-500); box-shadow: none; background: rgba(52, 73, 69, 0.10); }
+.paywall__premium .paywall__option.is-selected { border-color: var(--key-500); box-shadow: none; background: rgba(35, 53, 77, 0.10); }
 
 .paywall__cta { margin-top: var(--space-1); }
 .paywall__premium .paywall__cta { background: var(--key-500); color: var(--on-key); }

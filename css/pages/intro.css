@@ -782,7 +782,7 @@ body[data-page="intro"]:has(.intro--pager) { position: fixed; inset: 0; width: 1
   font-size: 3.4rem;
   line-height: 1;
   letter-spacing: -0.04em;
-  color: rgba(34, 48, 45, 0.08);
+  color: rgba(30, 42, 58, 0.08);
 }
 
 .ob-step {
@@ -906,7 +906,7 @@ body[data-page="intro"]:has(.intro--pager) { position: fixed; inset: 0; width: 1
   padding: 2.6%;
   border-radius: 17% / 8%;
   background: #15191a;
-  box-shadow: 0 0 0 1.5px #3a4043 inset, 0 16px 36px rgba(34, 48, 45, 0.22);
+  box-shadow: 0 0 0 1.5px #3a4043 inset, 0 16px 36px rgba(30, 42, 58, 0.22);
 }
 .ob-phone__screen {
   position: relative;

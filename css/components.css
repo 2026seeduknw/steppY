@@ -123,7 +123,7 @@ body[data-page="credits"]::before {
    하늘색·형광 노랑을 둘 다 대 봤는데, 화면 안에서 가장 큰 색면이라 브랜드 색을
    여기에 쓰면 그 색이 "브랜드"가 아니라 "버튼 색"으로 읽힌다. 버튼은 아이보리로
    두고 브랜드 색은 제목·진행 표시처럼 작고 반복되는 자리에 남긴다. */
-.btn--accent { background: var(--amber-500); color: var(--ink-900); box-shadow: 0 6px 16px rgba(242,166,90,0.32); }
+.btn--accent { background: var(--amber-500); color: var(--ink-900); box-shadow: 0 6px 16px rgba(53,64,36,0.16); }
 .btn--accent:hover { background: var(--amber-600); color: var(--ink-900); }
 
 .btn--ghost { background: transparent; color: var(--sky-700); border: 1.5px solid var(--sky-300); }
