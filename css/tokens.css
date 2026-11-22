@@ -4,44 +4,39 @@
    ========================================================================== */
 
 :root {
-  /* ---- Color: "Moonlight / Frost Blue / Steel / Storm / Oxford Blue" 팔레트 ----
-     moonlight(cream) #F0ECDD / frost blue #8BA3C5 / steel #495B7D /
-     storm #23354D / oxford blue #02122F — Figma 목업에서 확정한 단일 블루 램프.
-     나머지 톤은 이 5색에서만 파생(밝기 조절)했습니다. F1은 oxford blue,
-     F2는 storm을 원색 배경으로 직접 사용(아래 --storm/--oxford 참고). */
-  --moonlight: #F0ECDD;
-  --frost-blue: #9DB0AB;
-  --steel: #4F6661;
-  --storm: #344945;   /* Viridian */
-  --oxford: #1E2B29;
+  /* ---- Color: 팔레트 (2026-11 개편) ----
+     "톤다운된 블루 + 그린" 피드백으로 Viridian 에서 바꿨다.
+       블루(주색) — Blue Whale #1E3347 · Storm #23354D · Oxford Blue #02122F
+       그린(보조) — Kombu Green #354024 (강조 버튼·완료 표시는 이걸 옅게 편 램프)
+     moonlight — 어두운 바탕 위 글자·면 / oxford — 가장 어두운 바탕(html, 인트로). */
+  --moonlight: #EEF0EC;
+  --oxford: #02122F;
 
   /* ---- Color: 유틸리티 화면(캘린더/학점 인정) 전용 강조 배경 ---- */
-  --beige: #F2EFE7;
-  --teal: #4B6B7C;
+  --beige: #F0F2F5;
 
   /* ---- Color: ink — 흰 카드 위에 올라가는 텍스트 (페이지 배경과는 별개) ---- */
-  --ink-900: #22302D;   /* Viridian 을 한 단 더 어둡게 — 본문 글자 */
-  --ink-700: #46554F;
-  --ink-600: #5B6964;
-  --ink-400: #76837F;   /* Shell 바탕 위에서 읽히는 가장 옅은 글자 */
+  --ink-900: #1E2A3A;   /* 블루 기 도는 먹색 — 본문 글자 */
+  --ink-700: #3D4A5C;
+  --ink-600: #566174;
+  --ink-400: #7A8494;   /* Shell 바탕 위에서 읽히는 가장 옅은 글자 */
 
   /* ---- Color: 네이비 배경 위에 올라가는 텍스트 ---- */
-  --onnavy-100: #F0ECDD;   /* moonlight */
-  --onnavy-300: #9DB0AB;
-  --onnavy-500: #7E918C;
+  --onnavy-100: #EEF0EC;   /* moonlight */
+  --onnavy-300: #8E9CB2;
 
-  /* ---- Color: sky (brand primary = steel/storm 램프) ---- */
-  --sky-700: #2A3B38;
-  --sky-500: #344945;   /* Viridian */
-  --sky-400: #5C706B;
-  --sky-300: #9DB0AB;
-  --sky-100: #D5E3E8;   /* Sky */
-  --sky-50:  #EDF3F5;
+  /* ---- Color: sky (brand primary = Storm 블루 램프) ---- */
+  --sky-700: #1E3347;
+  --sky-500: #23354D;   /* Storm */
+  --sky-400: #4A5C76;
+  --sky-300: #8E9CB2;
+  --sky-100: #D7DEE9;
+  --sky-50:  #EEF2F7;
 
   /* ---- Color: cloud (surface) ---- */
   --cloud-0:  #FFFFFF;   /* clean white — 카드 표면 */
-  --cloud-50: #F2F0EA;   /* 카드 안쪽 면 — Shell 보다 한 단 진하게 */
-  --cloud-100:#E8E5DC;
+  --cloud-50: #F1F3F6;   /* 카드 안쪽 면 — Shell 보다 한 단 진하게 */
+  --cloud-100:#E4E8EE;
 
   /* ---- Color: key — 브랜드 키 컬러 ----
      #12E5E2 는 밝다(상대 휘도 .62). 규칙은 하나다: **밝은 바탕 위에 맨몸으로
@@ -50,20 +45,20 @@
        네이비 바탕 위 글자로는 그냥 써도 된다 (11.8:1).
        흰/아이보리 바탕 위 맨 글자 = 1.3:1 — 금지.
        키 컬러 바탕 위 흰 글자 = 1.6:1 — 금지. 글자는 --key-ink. */
-  --key-500: #344945;   /* Viridian — 흰 글자를 올리는 주 키 컬러 */
+  --key-500: #23354D;   /* Storm — 흰 글자를 올리는 주 키 컬러 */
   --on-key: #FFFFFF;    /* 키 컬러 면 위에 올라가는 글자·아이콘 */
   /* 글자용 — #12E5E2 에서 흰끼만 뺀 톤(같은 색상각, 명도만 90%→70%).
      면으로 칠할 때는 --key-500 이 맞지만 글자로 쓰면 흰 바탕에서 1.6:1 이라
      흐리다. 네이비 테두리를 두르는 방법도 있는데 한글 획이 메워져서 이쪽을 쓴다.
      흰 바탕 2.6:1 — 22px/800 같은 큰 글자에만. 본문에는 쓰지 않는다. */
-  --key-700: #2A3B38;
-  --key-200: #D5E3E8;   /* Sky — 선택 영역·테두리 */
-  --key-100: #EDF3F5;   /* Sky 를 옅게 — 강조 줄 배경 */
+  --key-700: #1E3347;
+  --key-200: #D7DEE9;   /* 선택 영역·테두리 */
+  --key-100: #EEF2F7;   /* 강조 줄 배경 */
   /* 키 컬러의 짝 — 테두리·키 컬러 위 글자.
      본문 글자색(--ink-900)과 **같은 값**이어야 한다. 예전에는 더 어둡고 찬
      #02122F(oxford) 였는데, 워드마크 테두리만 주변 글자보다 진해서 문장 속
      단어가 아니라 붙여 놓은 로고처럼 떠 보였다. */
-  --key-ink: #22302D;
+  --key-ink: #1E2A3A;
 
   /* ---- 페이지 바탕 ----
      팔레트: Shell #F7F5F1 · Stone #E0DCD1 · Sky #D5E3E8 · Honeydew #E4E3BC · Viridian #344945
@@ -73,30 +68,26 @@
   --page-bg: var(--page-mist);
   --appbar-bg: rgba(255, 255, 255, 0.86);   /* 앱바 — 바탕과 같은 색, 조금 비치게 */
 
-  /* 랜딩 배경 — 가운데가 살짝 진한 옅은 하늘색 */
-  --sky-wash-mid:  #BFDCFA;
-  --sky-wash-edge: #E9F3FE;
-  --sky-wash-far:  #F7FBFF;
-
-  /* ---- Color: amber (moonlight 액센트) ---- */
-  --amber-700: #22302D;
-  --amber-600: #D6D5A6;   /* Honeydew 를 한 단 진하게 — 버튼 눌림 */
-  --amber-500: #E4E3BC;   /* Honeydew — 강조 버튼·배지 바탕 */
-  --amber-200: #EFEED6;
-  --amber-100: #F7F6E8;
+  /* ---- Color: amber — 이름은 옛것, 값은 Kombu 그린 보조 램프 ----
+     강조 버튼(btn--accent)·선택 칩·포커스 링. 위 글자는 --ink-900. */
+  --amber-700: #1E2A3A;
+  --amber-600: #B5C19B;   /* 버튼 눌림 */
+  --amber-500: #CDD6B8;   /* 강조 버튼·배지 바탕 */
+  --amber-200: #E3E9D5;
+  --amber-100: #F1F4EA;
 
   /* ---- Color: status ---- */
   --coral-600: #C4432E;
   --coral-500: #E15D46; /* 경고/마감임박/불가 배지 — 여권 스탬프 잉크 느낌 */
   --coral-100: #FBE4DF;
 
-  --mint-600:  #1F7C65;
-  --mint-500:  #2F9E82; /* 지원가능/완료 배지 — 탁한 민트, 원색 그린 지양 */
-  --mint-100:  #DCF1EA;
+  --mint-600:  #354024;
+  --mint-500:  #56683A; /* 지원가능/완료 배지 — Kombu 그린 */
+  --mint-100:  #E4E9D8;
 
   /* ---- Line ---- */
-  --line-200: #E0DCD1;   /* Stone */
-  --line-100: #ECE9E1;
+  --line-200: #DADFE7;
+  --line-100: #E9ECF1;
 
   /* ---- Typography ---- */
   /* 전 계열 애플 고딕(Apple SD Gothic Neo, 아이폰·맥 기본). 없는 기기(안드로이드·윈도우)는 Pretendard.
