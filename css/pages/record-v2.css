@@ -96,7 +96,7 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .rec-fsheet__name { display: flex; align-items: center; gap: 14px; margin-top: 18px; }
 .rec-fsheet__preview { width: 78px; flex: none; }
 .rec-fsheet__preview .arc-icon__emoji { font-size: 18px; }
-.rec-fsheet__input { flex: 1; min-width: 0; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: #F3F1EC; color: var(--v2-ink); font: inherit; font-size: 15px; font-weight: 700; }
+.rec-fsheet__input { flex: 1; min-width: 0; height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: #F3F1EC; color: var(--v2-ink); font: inherit; font-size: var(--fs-small); font-weight: 700; }
 .rec-fsheet__input:focus { outline: 2px solid var(--v2-dark); outline-offset: 0; }
 .rec-fsheet__lab { margin: 18px 0 8px; font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); }
 .rec-fsheet__colors { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -258,7 +258,7 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .entry-v2__field { display: flex; flex-direction: column; gap: 8px; }
 .entry-v2__label { font-size: 12px; font-weight: 700; color: var(--v2-ink-soft); letter-spacing: 0.01em; }
 .entry-v2__note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--v2-ink-faint); word-break: keep-all; }
-.entry-v2 .entry-v2__input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; color: var(--v2-ink); font: inherit; font-size: 15px; }
+.entry-v2 .entry-v2__input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; color: var(--v2-ink); font: inherit; font-size: var(--fs-small); }
 .entry-v2 .entry-v2__input--title { font-weight: 700; }
 .entry-v2 .entry-v2__caption { min-height: 84px; resize: vertical; }
 .entry-v2 .entry-v2__input::placeholder { color: #A9AEA9; font-weight: 400; }
@@ -266,13 +266,13 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 32px
 .entry-v2__chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .entry-v2__chips::-webkit-scrollbar { display: none; }
 .entry-v2__empty { font-size: 13px; color: var(--v2-ink-soft); }
-.entry-v2 .diary-nowplaying-search input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: 14px; color: var(--v2-ink); }
+.entry-v2 .diary-nowplaying-search input { width: 100%; padding: 12px 14px; border: 1px solid #E6E2DA; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: var(--fs-small); color: var(--v2-ink); }
 .entry-v2 .diary-nowplaying-chip { border-radius: 14px; background: #F2F0EA; color: var(--v2-ink); }
 .entry-v2__submit { height: 52px; border: 0; border-radius: 26px; background: var(--v2-dark); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
 .entry-v2__submit:active { opacity: 0.85; }
 .entry-v2 .diary-photo-picker__add { border-radius: 16px; border: 1.5px dashed #D6D1C7; background: #FAF9F6; color: var(--v2-ink-soft); }
 /* 제목·캡션 상자 — 낮게, 글자 작게 */
-.entry-v2 .entry-v2__input { padding: 9px 12px; font-size: 13.5px; border-radius: 12px; }
+.entry-v2 .entry-v2__input { padding: 9px 12px; font-size: var(--fs-small); border-radius: 12px; }
 .entry-v2 .entry-v2__caption { min-height: 64px; }
 /* 예전 사진·쓰기 버튼 줄 — 코드에서만 누르는 숨은 버튼이다. display:flex 가 hidden 을 덮어 빈 상자 두 개로 보였다 */
 .diary-write-bar[hidden] { display: none !important; }
@@ -405,7 +405,7 @@ body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 19px
 
 /* 꾸미기 — 노래 고르기 */
 .rec-songpick { display: flex; align-items: center; gap: 8px; }
-.rec-songpick__input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 20px; font: inherit; font-size: 16px; background: #fff; }
+.rec-songpick__input { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 20px; font: inherit; font-size: var(--fs-small); background: #fff; }
 .rec-songpick__now { flex: 1; min-width: 0; font-size: 13.5px; color: var(--v2-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-songpick__clear { flex: none; height: 32px; padding: 0 12px; border: 1.5px solid #E0DCD1; border-radius: 16px; background: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .rec-songpick__hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--v2-ink-faint); }
@@ -450,10 +450,10 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-dnew { display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
 .rec-dnew__field { display: flex; flex-direction: column; gap: 8px; }
 .rec-dnew__field > span { font-size: 13px; font-weight: 800; color: var(--v2-ink); }
-.rec-dnew__field input[type="text"] { height: 46px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: 16px; background: #fff; }
+.rec-dnew__field input[type="text"] { height: 46px; padding: 0 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: var(--fs-small); background: #fff; }
 .rec-dnew__mode { margin: 0; padding: 0; }
 .rec-dnew__dates { display: flex; align-items: center; gap: 8px; }
-.rec-dnew__dates input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: 15px; background: #fff; }
+.rec-dnew__dates input { flex: 1; min-width: 0; height: 44px; padding: 0 12px; border: 1.5px solid #E0DCD1; border-radius: 14px; font: inherit; font-size: var(--fs-small); background: #fff; }
 .rec-dnew__dates input[hidden], .rec-dnew__tilde[hidden] { display: none; }
 .rec-dnew__tilde { color: var(--v2-ink-faint); }
 .rec-dnew__hint { margin: 0; font-size: 12px; line-height: 1.55; color: var(--v2-ink-faint); }
@@ -595,7 +595,7 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-ask__btns button[data-ask="yes"] { background: var(--v2-dark, #22302D); color: #fff; }
 .rec-ask__btns button.is-danger { background: #D9534A; }
 /* 글 입력 창(askText) — prompt 대신 */
-.rec-ask__input { display: block; width: 100%; margin-top: 12px; padding: 12px 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: 16px; line-height: 1.5; color: var(--v2-ink, #22302D); resize: none; }
+.rec-ask__input { display: block; width: 100%; margin-top: 12px; padding: 12px 14px; border: 1.5px solid #E0DCD1; border-radius: 14px; background: #FAF9F6; font: inherit; font-size: var(--fs-small); line-height: 1.5; color: var(--v2-ink, #22302D); resize: none; }
 .rec-ask__input:focus { outline: none; border-color: var(--v2-dark, #22302D); background: #fff; }
 .rec-ask__box--input .rec-ask__btns button[type="submit"] { background: var(--v2-dark, #22302D); color: #fff; }
 

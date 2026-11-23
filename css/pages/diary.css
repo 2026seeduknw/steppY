@@ -286,7 +286,7 @@
 
 .diary-form__title {
   width: 100%; border: 1px solid var(--diary-line-strong); border-radius: var(--radius-sm);
-  padding: 9px 11px; font-family: inherit; font-size: 16px; font-weight: 700;
+  padding: 9px 11px; font-family: inherit; font-size: var(--fs-small); font-weight: 700;
   color: var(--diary-text); background: var(--diary-surface);
 }
 .diary-form__title::placeholder { font-weight: 400; color: var(--diary-text-faint); }
@@ -406,7 +406,7 @@
   padding: var(--space-3);
   border: 1px solid var(--line-200);
   border-radius: var(--radius-md);
-  font-size: 16px;   /* iOS 자동 확대 방지 — 커 보이던 건 ::placeholder만 줄인다 */
+  font-size: var(--fs-small);
   background: var(--cloud-0);
 }
 .diary-nowplaying-results {
@@ -1903,7 +1903,7 @@ body[data-page="journal"][data-theme] .report-entry__caption { font-family: var(
 .ft-input {
   flex: 1; min-width: 0; padding: 9px 12px; border-radius: var(--radius-pill);
   border: 1px solid var(--diary-line-strong); background: var(--diary-surface-alt); color: var(--diary-text);
-  font: inherit; font-size: var(--fs-body);
+  font: inherit; font-size: var(--fs-small);
 }
 .ft-link { border: 0; background: transparent; padding: 2px 4px; font: inherit; font-size: var(--fs-micro); font-weight: 700; color: var(--diary-text-faint); cursor: pointer; }
 .ft-link--danger { color: var(--coral-500); }

@@ -323,9 +323,7 @@ body.is-sheet-open { overflow: hidden; }
 .chip { min-height: 34px; }
 .badge { height: 22px; }
 
-/* 입력 요소는 16px 미만이면 iOS가 포커스 시 화면을 확대한다. .ss__trigger는 여기서 뺐다 —
-   실제 타이핑 캐럿이 생기는 건 패널 안의 .ss__search뿐이고, 트리거는 누르면 패널만
-   여는 버튼이라 이 확대 버그와 무관하다. */
+/* 입력칸·드롭다운 안 글자는 13px(--fs-input). iOS 확대는 viewport 의 maximum-scale=1 이 막는다. */
 .field input, .field select,
 .search-input, .sort-select,
 .sim-banner__field input,
@@ -822,8 +820,7 @@ body[data-page="auth"] {
   background: #fff;
   color: var(--ink-900);
   font-weight: 400;
-  /* 16px 미만이면 iOS 가 포커스 때 화면을 확대한다 */
-  font-size: 16px;
+  font-size: var(--fs-small);
 }
 .auth__field input::placeholder { color: var(--ink-400); }
 .auth__field input:focus {
@@ -950,7 +947,7 @@ body[data-page="auth"] {
   border: 1.5px solid var(--line-200);
   border-radius: 10px;
   background: var(--cloud-0);
-  font-size: 16px;
+  font-size: var(--fs-small);
 }
 .todo-add-form input:focus,
 .todo-add-form select:focus { border-color: var(--sky-500); outline: none; }
@@ -1226,10 +1223,7 @@ body[data-page="onboarding"] {
   box-shadow: 0 0 0 3px rgba(35, 53, 77, 0.20);
 }
 
-/* ---- 입력창 예시(placeholder) 글씨 크기를 '기본순' 셀렉트에 맞춤 ---- */
-/* 입력창 자체의 font-size는 16px로 둔다 — 그보다 작으면 iOS가 포커스할 때
-   화면을 확대해버린다. 확대 판정은 입력창의 font-size만 보므로, ::placeholder
-   에만 작은 크기를 줘서 "예: 3.8" 같은 예시 글씨만 옆의 셀렉트와 맞춘다. */
+/* ---- 입력창 예시(placeholder) 글씨도 입력칸과 같은 13px ---- */
 .search-input::placeholder,
 .sim-banner__field input::placeholder,
 .todo-add-form input::placeholder,
@@ -1302,9 +1296,7 @@ a.todo-pill__add { text-decoration: none; }
   border: 1.5px solid var(--line-200);
   border-radius: 9px;
   background: var(--cloud-0);
-  /* 다른 화면의 입력칸과 같은 16px. 예전에는 13px 이라 이 폼만 글자가 작았고,
-     16px 미만이면 iOS가 포커스할 때 화면을 확대해 버리는 문제도 있었다. */
-  font-size: 16px;
+  font-size: var(--fs-small);
 }
 .score-prompt__field input::placeholder { font-size: var(--fs-small); }
 /* select 는 예외 — iOS 확대 버그는 글자를 입력하는 캐럿이 있는 input/textarea 에서만

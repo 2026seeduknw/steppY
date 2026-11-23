@@ -380,7 +380,7 @@ flex 는 BFC 라 위에 뜬 `float` 만큼 폭이 줄어든다. 제목 옆 버�
 
 확대된 배율은 포커스를 잃어도 돌아오지 않아, 한 번 검색어를 치면 화면이 옆으로
 밀린 채 남는다. 토큰이 15px이라 앱의 모든 입력칸이 여기 걸렸다.
-→ `font-size: max(16px, var(--fs-body))`.
+→ 당시 처리: `font-size: max(16px, var(--fs-body))`. 지금은 아래 확대 잠금으로 대체했다.
 → **2026-11-15 결정: 앱 전체에서 확대·축소와 옆으로 밀리는 것을 잠근다**(모든 기기). 각 페이지 머리의 viewport 에
   `maximum-scale=1.0, user-scalable=no`, 그리고 iOS 사파리용으로 `gesturestart`·더블탭을 막는 짧은 스크립트.
   html·body 는 `overflow-x: clip`(css/base.css). 손가락 확대가 막히니 글씨 크기는 처음부터 읽기 좋게 잡는다.
@@ -409,6 +409,7 @@ flex 는 BFC 라 위에 뜬 `float` 만큼 폭이 줄어든다. 제목 옆 버�
 입력칸 안의 글자도 마찬가지다. 다른 화면은 전부 16px 인데 성적 폼만 13px
 이었다(`--fs-small`). 크기가 튀는 것도 문제지만 **16px 미만은 iOS가 포커스할 때
 화면을 확대해 버린다**(아래 지뢰 절) — 위계를 맞추니 그 버그도 같이 사라졌다.
+(2026-11-22: 확대 잠금 뒤로 입력칸 안 글자 기준을 13px 로 바꿨다.)
 
 steppY 의 현재 위계:
 
@@ -429,16 +430,10 @@ steppY 의 현재 위계:
 16px 이라 한 폼 안에서 칸마다 글자 크기가 달랐다. 16px 은 iOS 자동 확대를 피하려던 값인데, 앱 전체에
 확대 잠금(`maximum-scale=1`)이 걸린 뒤로는 필요 없다.
 
-- 적용함: Talky 질문하기 폼(`css/pages/consult.css` `.mentor-form input/select/textarea`, `.mentor-select-trigger`)
-- **아직 안 맞춘 곳(할 일)** — 지금 16px 이거나 크기가 제각각이다. 고칠 때 이 목록에서 지운다.
-  - 기본 정보 `.ob__form select`·입력칸 (`css/app.css`)
-  - 계정 시트·공통 `.field input, .field select` (`css/components.css`, `css/app.css`)
-  - 할 일 추가 `.todo-add-form select`·입력칸, 출국일 프롬프트 (`css/app.css`, `css/pages/prepare.css`)
-  - 학교 찾기 정렬 `.sort-select`, 필터 `select.quick-filter` (`css/pages/search.css`, `css/v2.css`)
-  - 학점 인정 필터 `select.credit-filter` (`css/pages/credits.css`)
-  - 성적 폼 `.score-prompt__field`, 시뮬레이션 배너 `.sim-banner__field` (`css/app.css`)
-  - 기본 입력칸 `input, select, textarea` (`css/base.css`) — 위를 다 맞춘 뒤 여기서 한 번에 정하면 끝
-- 드롭다운 칸 높이도 제각각이다(Talky 국가 칸 53px, 학교 칸 40px). 글자를 맞출 때 높이도 같이 본다.
+- 기준값은 `--fs-input`(= `--fs-small`, `css/tokens.css`). **새 입력칸에 px 를 직접 적지 말고 이 토큰을 쓴다.**
+- 펼친 드롭다운 목록(`.dd__option`, `.ss__option`)과 검색칸(`.ss__search`)도 같은 13px.
+- 예외: 저장 화면 순위 칸(`.wish-row__rank select`)은 `opacity: 0` 으로 숨긴 선택 상자라 글자가 보이지 않아 그대로 둔다.
+- 남은 일: 칸 높이는 아직 화면마다 다르다(38~54px). Talky 도 국가 칸 53px, 학교 칸 40px.
 
 ### 마크업이 다르면 크기가 갈린다
 
