@@ -109,7 +109,7 @@
     <section class="dintro" aria-label="기록하기 소개">
       <header class="dintro__hero">
         <h1 class="dintro__headline"><span class="wm-text">Archive your memories</span></h1>
-        <p class="dintro__sub">교환 생활의 기억들을 모아요</p>
+        <p class="dintro__sub">교환 생활의 기억들을 모아요.</p>
       </header>
       ${PAGES.map((p, i) => `
         <article class="dintro__page" data-key="${p.key}">

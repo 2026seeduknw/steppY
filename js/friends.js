@@ -71,9 +71,9 @@ const Friends = (function () {
           <p class="ft-lead">친구에게 공개한 기록은 친구 목록에 있는 분들만 볼 수 있어요.<br>기록마다 공개 여부를 고를 수 있어요.</p>
           <ul class="ft-rules">
             <li>친구에게는 내 <b>이름과 파견 학교(국가·도시)</b>가 보여요.</li>
-            <li>욕설·혐오·성적인 내용, 타인을 괴롭히거나 사칭하는 글은 올릴 수 없어요.</li>
+            <li>욕설·혐오·성적인 내용, 타인을 괴롭히거나 사칭하는 글은 올릴 수 없어요</li>
             <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요.<br>차단하면 서로의 기록이 보이지 않아요.</li>
-            <li>신고된 내용은 운영자가 확인해 위반이 맞으면 삭제하고 이용을 제한해요.</li>
+            <li>신고된 내용은 운영자가 확인해 위반이 맞으면 삭제하고 이용을 제한해요</li>
             <li>문의 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></li>
           </ul>
           <div class="ft-actions">
@@ -104,7 +104,7 @@ const Friends = (function () {
     if (!AppState.isAuthed) { askLogin(); return; }
     if (!(await ensureTerms())) return;
     const res = await api.inviteCode();
-    if (!res.ok) { toast('초대 링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요'); return; }
+    if (!res.ok) { toast('초대 링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
     const text = inviteMessage(res.data);
     if (navigator.share) {
       try { await navigator.share({ title: 'steppY 친구 초대', text }); return; }
@@ -237,7 +237,7 @@ const Friends = (function () {
 
     body.querySelector('[data-copy]').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(code); toast('코드를 복사했어요'); }
-      catch (e) { toast('복사하지 못했어요. 코드를 직접 눌러 선택해 주세요'); }
+      catch (e) { toast('복사하지 못했어요. 코드를 직접 눌러 선택해 주세요.'); }
     });
     body.querySelector('[data-share]').addEventListener('click', async () => {
       if (navigator.share) {
@@ -253,13 +253,13 @@ const Friends = (function () {
       const value = input.value.trim();
       if (!value) return;
       const res = await api.request(value);
-      if (!res.ok) { toast('요청하지 못했어요. 잠시 후 다시 시도해 주세요'); return; }
+      if (!res.ok) { toast('요청하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
       const msg = {
         sent: '친구 요청을 보냈어요',
         accepted: '친구가 됐어요!',
         already_friends: '이미 친구예요',
         pending: '이미 요청을 보냈어요',
-        invalid_code: '코드를 찾을 수 없어요. 다시 확인해 주세요',
+        invalid_code: '코드를 찾을 수 없어요. 다시 확인해 주세요.',
         self: '내 코드예요'
       }[res.data] || '요청을 처리했어요';
       toast(msg);
@@ -328,8 +328,8 @@ const Friends = (function () {
       const reason = scrim.querySelector('input[name=ftReason]:checked').value;
       const res = await api.report({ kind, targetId, targetUser, reason });
       closeModal(scrim);
-      if (!res.ok) { toast('신고하지 못했어요. 잠시 후 다시 시도해 주세요'); return; }
-      toast('신고했어요. 확인 후 조치할게요');
+      if (!res.ok) { toast('신고하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
+      toast('신고했어요. 확인 후 조치할게요.');
       if (targetUser && window.confirm(`${name || '이 사용자'}님을 차단할까요? 서로의 기록과 댓글이 보이지 않아요.`)) {
         await api.block(targetUser);
         toast('차단했어요');
@@ -553,7 +553,7 @@ const Friends = (function () {
       box.innerHTML = `<p class="ft-muted">불러오는 중…</p>`;
       const res = await supabaseClient.from('journal_comments')
         .select('id, user_id, author_name, body, created_at').eq('entry_id', id).order('created_at');
-      if (res.error) { box.innerHTML = `<p class="ft-muted">댓글을 불러오지 못했어요</p>`; return; }
+      if (res.error) { box.innerHTML = `<p class="ft-muted">댓글을 불러오지 못했어요.</p>`; return; }
       commentCache[id] = res.data || [];
       tl.commentCounts[id] = commentCache[id].length;
       updateActions(id);
@@ -595,7 +595,7 @@ const Friends = (function () {
       .insert({ entry_id: id, body })
       .select('id, user_id, author_name, body, created_at').single();
     btn.disabled = false;
-    if (res.error) { toast('댓글을 등록하지 못했어요. 잠시 후 다시 시도해 주세요'); return; }
+    if (res.error) { toast('댓글을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.'); return; }
     (commentCache[id] || (commentCache[id] = [])).push(res.data);
     tl.commentCounts[id] = commentCache[id].length;
     input.value = '';

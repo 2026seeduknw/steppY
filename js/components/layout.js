@@ -121,7 +121,7 @@ function openDepartureGate({ dismissible = false } = {}) {
   }
   gate.querySelector('#gateSave').addEventListener('click', () => {
     const start = gate.querySelector('#gateStart').value;
-    if (!start) { showToast('출국일을 골라 주세요.'); return; }
+    if (!start) { showToast('출국일을 골라 주세요'); return; }
     const endInput = gate.querySelector('#gateEnd');
     let end = endInput ? endInput.value : (guess.end > start ? guess.end : '');
     if (!end) {
@@ -287,7 +287,7 @@ function openAccountSheet() {
   if (departureBtn) departureBtn.addEventListener('click', () => { close(); openDepartureGate({ dismissible: true }); });
   const CONSENT = {
     location: { get: () => AppState.locationConsent(), set: (v) => AppState.setLocationConsent(v),
-      off: '위치정보 이용 동의를 철회했어요. 앞으로 기록에는 학교 도시가 붙어요', on: '위치정보 이용에 동의했어요' }
+      off: '위치정보 이용 동의를 철회했어요. 앞으로 기록에는 학교 도시가 붙어요.', on: '위치정보 이용에 동의했어요' }
   };
   const drawConsent = (kind) => {
     const on = CONSENT[kind].get() === 'yes';

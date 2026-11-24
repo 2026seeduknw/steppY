@@ -321,6 +321,11 @@ body[data-page="credits"]::before {
   left: 50%;
   bottom: var(--space-7);
   transform: translate(-50%, 12px);
+  /* left:50% 면 기본 폭이 화면 절반까지로 묶여 짧은 문구도 접힌다 — 글자 길이만큼 늘린다 */
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  word-break: keep-all;
   background: var(--ink-900);
   color: #fff;
   padding: var(--space-3) var(--space-5);

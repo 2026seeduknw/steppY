@@ -97,7 +97,7 @@ function renderPrepareHero() {
       <div class="empty-hero">
         <div>
           <h2>아직 배정된 학교가 없어요</h2>
-          <p>희망대학표를 만들고 배정 결과(또는 미리 준비해볼 학교)를 등록하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요</p>
+          <p>희망대학표를 만들고 배정 결과(또는 미리 준비해볼 학교)를 등록하면, 여기서 서류·비자·생활 준비를 관리할 수 있어요.</p>
         </div>
         <a href="search.html" class="btn btn--accent">학교 찾기로 이동</a>
       </div>`;
@@ -372,7 +372,7 @@ function visaDocsHtml() {
     return `<a href="${prepEsc(s.url)}" target="_blank" rel="noopener">${VISA_SOURCE_KO[s.kind] || '공식 안내'} · ${prepEsc(host)}</a>`;
   });
   if (v.status === 'excluded') {
-    return `<div class="visa-docs"><p class="visa-docs__note">${prepEsc(v.statusLabelKo || '국가가 정해지면 그 나라 기준으로 확인하세요')}</p></div>`;
+    return `<div class="visa-docs"><p class="visa-docs__note">${prepEsc(v.statusLabelKo || '국가가 정해지면 그 나라 기준으로 확인하세요.')}</p></div>`;
   }
   // 같은 종류가 여러 이름으로 잡힌 경우(Passport / 여권)는 한 번만
   const seen = new Set();
@@ -619,7 +619,7 @@ function openDeparturePrompt() {
       <button type="button" class="modal-close" data-modal-close aria-label="닫기">✕</button>
       <p class="departure-prompt__icon" aria-hidden="true">✈️</p>
       <h2 class="departure-prompt__title" id="departurePromptTitle">출국일을 입력해주세요</h2>
-      <p class="departure-prompt__desc">출국일을 알면 항공권 예약 시기와 남은 날을 세어드려요</p>
+      <p class="departure-prompt__desc">출국일을 알면 항공권 예약 시기와 남은 날을 세어드려요.</p>
       <label class="departure-prompt__field">출국일<input type="date" id="dpStart" value="${range.start}"></label>
       <label class="departure-prompt__field departure-prompt__field--sub">귀국 예정일<input type="date" id="dpEnd" value="${range.end}"></label>
       <button type="button" class="btn btn--primary btn--block" id="dpSave">저장</button>

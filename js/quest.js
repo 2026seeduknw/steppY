@@ -177,7 +177,7 @@
       s.goals = s.goals.filter(g => g !== btn.dataset.removeGoal);
       save(s);
       const card = btn.closest('.quest-roadmap');
-      const done = () => { render(); if (typeof showToast === 'function') showToast('목표를 그만했어요. 다시 고르면 이어서 할 수 있어요'); };
+      const done = () => { render(); if (typeof showToast === 'function') showToast('목표를 그만했어요. 다시 고르면 이어서 할 수 있어요.'); };
       if (card) { card.classList.add('is-leaving'); setTimeout(done, 220); } else done();
     }));
     root.querySelectorAll('[data-complete-goal]').forEach(btn => btn.addEventListener('click', () => {

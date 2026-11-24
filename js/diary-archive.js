@@ -230,7 +230,7 @@
   /** 친구들이 오늘 올린 기록을 시간 순 타임라인으로 — 사진이 있으면 사진, 없으면 글만 */
   function drawFriends(slot, posts, hasFriends) {
     if (!hasFriends) { slot.innerHTML = friendsEmpty(); return; }
-    if (!posts.length) { slot.innerHTML = `<p class="ftl-empty">오늘은 아직 친구들의 기록이 없어요</p>`; return; }
+    if (!posts.length) { slot.innerHTML = `<p class="ftl-empty">오늘은 아직 친구들의 기록이 없어요.</p>`; return; }
     let k = 0;
     const caret = (i) => `<button type="button" class="ftl__toggle" data-ftl-toggle="${i}" aria-expanded="false" aria-label="내용 보기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
     slot.innerHTML = `<ol class="ftl">${posts.map((p, i) => `
@@ -322,8 +322,8 @@
                 <img class="arc-shot__img" src="${esc(it.url)}" alt="${esc(it.entry.title || '')}" data-k="${k}" draggable="false">
                 <figcaption><i>/${pad(k + 1)}</i><span>${esc(it.entry.title || it.entry.body || '')}</span></figcaption>
               </figure>`).join('')}</div>
-             <p class="arc-hint">옆으로 밀어서 보고, 사진을 누르면 크게 볼 수 있어요</p>`
-          : `<div class="arc-empty">아직 사진이 없어요<br>${node.type === 'monthly' || node.virtual ? '기록을 남기면 날짜별로 자동으로 모여요' : '‘사진 담기’로 기록을 이 폴더에 담아 보세요'}</div>`}
+             <p class="arc-hint">옆으로 밀어서 보고, 사진을 누르면 크게 볼 수 있어요.</p>`
+          : `<div class="arc-empty">아직 사진이 없어요<br>${node.type === 'monthly' || node.virtual ? '기록을 남기면 날짜별로 자동으로 모여요.' : '‘사진 담기’로 기록을 이 폴더에 담아 보세요.'}</div>`}
       </div>`;
   }
   function onPageClick(e) {
@@ -478,7 +478,7 @@
           const url = ctx.photoUrl((e.photos || []).find(p => ctx.photoUrl(p)));
           const on = chosen.has(e.id) || (e.tempId && chosen.has(e.tempId));
           return `<button type="button" class="arc-pick__item${on ? ' is-on' : ''}" data-eid="${esc(e.id)}"><img src="${esc(url)}" alt="" draggable="false"><i>${esc(e.date.slice(5).replace('-', '.'))}</i><b aria-hidden="true">✓</b></button>`;
-        }).join('')}</div>` : `<p class="arc-note">아직 사진이 있는 기록이 없어요</p>`}
+        }).join('')}</div>` : `<p class="arc-note">아직 사진이 있는 기록이 없어요.</p>`}
         <div class="arc-sheet__actions"><button type="button" class="arc-btn" data-close>완료</button></div>
       </div>`;
     document.body.appendChild(picker);
