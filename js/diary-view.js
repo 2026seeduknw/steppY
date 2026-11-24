@@ -1740,7 +1740,7 @@
 
   /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
   function stripCoords(loc) {
-    return loc ? { country: loc.country || null, city: loc.city || null, countryCode: loc.countryCode || null } : null;
+    return loc ? { country: loc.country || null, city: cityEn(loc.city), countryCode: loc.countryCode || null } : null;
   }
 
   function wireEntryForm(scrim) {

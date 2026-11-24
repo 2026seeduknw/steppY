@@ -499,8 +499,33 @@
 
   /* ------------------------------------------------------------ 위치는 영어로
    * 새 기록은 지명을 영어로 받는다(diary-view.js reverse geocode). 예전에 한국어로 저장된 기록도
-   * 나라는 countryCode → 영어 이름으로 바꿔 보여준다. 도시는 좌표를 저장하지 않아 다시 바꿀 수 없어 그대로 둔다. */
+   * 나라는 countryCode → 영어 이름으로 바꿔 보여준다. 도시는 좌표를 저장하지 않아 다시 찾을 수 없으니
+   * 아래 표로 바꾸고, 표에 없는 비라틴 문자 도시는 한글이 보이지 않게 비워 나라 이름만 남긴다. */
   const regionEn = (() => { try { return new Intl.DisplayNames(['en'], { type: 'region' }); } catch (e) { return null; } })();
+  const CITY_KO_EN = {
+    서울: 'Seoul', 부산: 'Busan', 인천: 'Incheon', 대구: 'Daegu', 대전: 'Daejeon', 광주: 'Gwangju', 울산: 'Ulsan', 제주: 'Jeju', 수원: 'Suwon', 원주: 'Wonju',
+    도쿄: 'Tokyo', 오사카: 'Osaka', 교토: 'Kyoto', 후쿠오카: 'Fukuoka', 삿포로: 'Sapporo', 나고야: 'Nagoya', 요코하마: 'Yokohama', 고베: 'Kobe', 나라: 'Nara', 오키나와: 'Okinawa',
+    베이징: 'Beijing', 상하이: 'Shanghai', 광저우: 'Guangzhou', 선전: 'Shenzhen', 항저우: 'Hangzhou', 난징: 'Nanjing', 청두: 'Chengdu', 홍콩: 'Hong Kong', 마카오: 'Macau', 타이베이: 'Taipei', 타이페이: 'Taipei', 가오슝: 'Kaohsiung',
+    싱가포르: 'Singapore', 방콕: 'Bangkok', 치앙마이: 'Chiang Mai', 하노이: 'Hanoi', 호치민: 'Ho Chi Minh City', 다낭: 'Da Nang', 마닐라: 'Manila', 세부: 'Cebu', 자카르타: 'Jakarta', 발리: 'Bali', 쿠알라룸푸르: 'Kuala Lumpur', 델리: 'Delhi', 뭄바이: 'Mumbai', 두바이: 'Dubai', 이스탄불: 'Istanbul', 앙카라: 'Ankara', 카이로: 'Cairo',
+    뉴욕: 'New York', 보스턴: 'Boston', 워싱턴: 'Washington D.C.', '워싱턴 D.C.': 'Washington D.C.', 필라델피아: 'Philadelphia', 시카고: 'Chicago', 로스앤젤레스: 'Los Angeles', 엘에이: 'Los Angeles', 샌프란시스코: 'San Francisco', 샌디에이고: 'San Diego', 새너제이: 'San Jose', 산호세: 'San Jose', 시애틀: 'Seattle', 포틀랜드: 'Portland', 라스베이거스: 'Las Vegas', 덴버: 'Denver', 오스틴: 'Austin', 댈러스: 'Dallas', 휴스턴: 'Houston', 애틀랜타: 'Atlanta', 마이애미: 'Miami', 올랜도: 'Orlando', 호놀룰루: 'Honolulu', 하와이: 'Hawaii',
+    토론토: 'Toronto', 밴쿠버: 'Vancouver', 몬트리올: 'Montreal', 오타와: 'Ottawa', 퀘벡: 'Quebec City', 캘거리: 'Calgary', 멕시코시티: 'Mexico City', 칸쿤: 'Cancun', 상파울루: 'São Paulo', 리우데자네이루: 'Rio de Janeiro', 부에노스아이레스: 'Buenos Aires', 산티아고: 'Santiago', 리마: 'Lima',
+    런던: 'London', 맨체스터: 'Manchester', 리버풀: 'Liverpool', 옥스퍼드: 'Oxford', 케임브리지: 'Cambridge', 에든버러: 'Edinburgh', 글래스고: 'Glasgow', 더블린: 'Dublin',
+    파리: 'Paris', 리옹: 'Lyon', 마르세유: 'Marseille', 니스: 'Nice', 보르도: 'Bordeaux', 스트라스부르: 'Strasbourg', 툴루즈: 'Toulouse', 릴: 'Lille',
+    베를린: 'Berlin', 뮌헨: 'Munich', 함부르크: 'Hamburg', 프랑크푸르트: 'Frankfurt', 쾰른: 'Cologne', 하이델베르크: 'Heidelberg', 슈투트가르트: 'Stuttgart', 드레스덴: 'Dresden', 라이프치히: 'Leipzig',
+    로마: 'Rome', 밀라노: 'Milan', 베네치아: 'Venice', 베니스: 'Venice', 피렌체: 'Florence', 나폴리: 'Naples', 볼로냐: 'Bologna', 토리노: 'Turin',
+    마드리드: 'Madrid', 바르셀로나: 'Barcelona', 세비야: 'Seville', 그라나다: 'Granada', 발렌시아: 'Valencia', 리스본: 'Lisbon', 포르투: 'Porto',
+    암스테르담: 'Amsterdam', 로테르담: 'Rotterdam', 브뤼셀: 'Brussels', 취리히: 'Zurich', 제네바: 'Geneva', 베른: 'Bern', 인터라켄: 'Interlaken', 빈: 'Vienna', 비엔나: 'Vienna', 잘츠부르크: 'Salzburg', 프라하: 'Prague', 부다페스트: 'Budapest', 바르샤바: 'Warsaw', 크라쿠프: 'Krakow', 아테네: 'Athens', 산토리니: 'Santorini', 두브로브니크: 'Dubrovnik', 자그레브: 'Zagreb',
+    코펜하겐: 'Copenhagen', 스톡홀름: 'Stockholm', 오슬로: 'Oslo', 헬싱키: 'Helsinki', 레이캬비크: 'Reykjavik', 모스크바: 'Moscow',
+    시드니: 'Sydney', 멜버른: 'Melbourne', 브리즈번: 'Brisbane', 퍼스: 'Perth', 애들레이드: 'Adelaide', 캔버라: 'Canberra', 오클랜드: 'Auckland', 웰링턴: 'Wellington', 퀸스타운: 'Queenstown'
+  };
+  /** 도시 이름을 영어(라틴 문자)로 돌려준다. 바꿀 수 없으면 null — 저장과 표시가 모두 이 함수를 거친다 */
+  function cityEn(name) {
+    const s = String(name || '').trim();
+    if (!s) return null;
+    if (!/[^\p{Script=Latin}\p{M}\p{N}\p{P}\p{S}\p{Zs}]/u.test(s)) return s;
+    return CITY_KO_EN[s] || CITY_KO_EN[s.replace(/(특별자치시|특별시|광역시|시)$/, '')] || null;
+  }
+  global.cityEn = cityEn;
   function placeEn(loc) {
     if (!loc) return { city: null, country: null };
     let country = loc.country || null;
@@ -509,7 +534,7 @@
       const sc = (MOCK.schools || []).find(x => x.country === country);
       if (sc && sc.countryEn) country = sc.countryEn;
     }
-    return { city: loc.city || loc.place || loc.name || null, country };
+    return { city: cityEn(loc.city || loc.place || loc.name), country };
   }
   global.placeEn = placeEn;
 
