@@ -723,15 +723,6 @@ body[data-page="journal"] {
 }
 .rec-hero__stack.is-stack > .rec-hero__card:not(.is-top) { pointer-events: none; }
 .rec-hero__stack.is-stack .rec-hero__img { aspect-ratio: var(--ratio, 4 / 5); object-fit: cover; }
-.rec-hero__stack.is-stack > .rec-hero__card.is-leaving { transform: translateX(70%) rotate(10deg); opacity: 0; transition: transform 240ms ease-in, opacity 240ms ease-in; }
-.rec-hero__next {
-  position: absolute; right: 12px; bottom: 12px; z-index: 30;
-  width: 44px; height: 44px; border-radius: 50%; border: 0;
-  background: rgba(255, 255, 255, 0.92); color: var(--v2-ink, #1E2A26);
-  font: inherit; font-size: 26px; font-weight: 500; line-height: 1; cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
-}
-.rec-hero__next:active { transform: scale(0.94); }
 .rec-hero__count {
   position: absolute; top: 26px; right: 12px; z-index: 30; pointer-events: none;
   padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, 0.5); color: #fff;

@@ -2216,8 +2216,7 @@
                   <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
                 </button>`;
               }).join('')}
-              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>
-              <button type="button" class="rec-hero__next" data-hero-next aria-label="뒷장 사진 보기">+</button>` : ''}
+              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>` : ''}
             </div>
             ${latest ? '' : `<p class="rec-hero__cap">${shortDate(d.date)}${place ? ` · ${esc(place)}` : ''}${n > 1 ? ` · ${n}장` : ''}</p>`}
           </div>`;
@@ -2245,39 +2244,6 @@
     const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
     requestAnimationFrame(toLatest);
     setTimeout(toLatest, 120);
-  }
-
-  /** 하루 사진 더미 — 맨 위 사진을 맨 뒤로 보내고 다음 사진을 올린다(끝까지 넘기면 처음으로) */
-  function flipHeroStack(st) {
-    if (!st || st._busy) return;
-    const slide = st.closest('.rec-hero__slide');
-    // 옆에 비친 날의 +를 눌렀으면 먼저 그날을 가운데로
-    if (slide && !slide.classList.contains('is-active')) {
-      const track = slide.parentElement;
-      track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
-    }
-    const cards = [...st.querySelectorAll('.rec-hero__card')].sort((a, b) => a.style.getPropertyValue('--pos') - b.style.getPropertyValue('--pos'));
-    const n = cards.length;
-    if (n < 2) return;
-    st._busy = true;
-    const top = cards[0];
-    top.classList.add('is-leaving');
-    setTimeout(() => {
-      top.classList.remove('is-leaving');
-      cards.forEach((c, k) => {
-        const pos = k === 0 ? n - 1 : k - 1;
-        c.style.setProperty('--pos', pos);
-        c.tabIndex = pos ? -1 : 0;
-        c.classList.toggle('is-top', !pos);
-      });
-      const nowTop = cards[1];
-      const topIdx = ((Number(st.dataset.top) || 0) + 1) % n;   // 지금 맨 위가 원래 몇 번째 사진인지
-      st.dataset.top = String(topIdx);
-      const count = st.querySelector('.rec-hero__count');
-      if (count) count.textContent = `${topIdx + 1} / ${n}`;
-      if (nowTop) nowTop.focus({ preventScroll: true });
-      st._busy = false;
-    }, 260);
   }
 
   /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
@@ -2367,8 +2333,6 @@
     });
     root.querySelector('#recHero').addEventListener('click', (ev) => {
       if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
-      const next = ev.target.closest('[data-hero-next]');
-      if (next) { flipHeroStack(next.closest('.rec-hero__stack')); return; }
       const btn = ev.target.closest('[data-hero-open]');
       if (!btn) return;
       const start = Number(btn.dataset.heroOpen) || 0;
