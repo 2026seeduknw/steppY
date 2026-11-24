@@ -32,6 +32,7 @@ function openSchoolModal(schoolId, opts = {}) {
   scrim.innerHTML = schoolModalTemplate(school, opts);
   // 카드 제목의 알파벳을 로고 글씨체로 (js/wordmark-text.js)
   if (typeof paintWordmarkText === 'function') paintWordmarkText(scrim);
+  if (typeof fitSchoolHeads === 'function') fitSchoolHeads(scrim);
   wireModalCloseButtons(scrim);
   wireSchoolModalActions(scrim, school, opts);
   openModal(scrim);
@@ -302,7 +303,7 @@ function livingCostPanelHtml(school) {
       ${dorm ? `<p class="info-panel__text">기숙사비(학기당) <strong class="tnum">${fmt(dorm.krw)}원</strong>${dorm.local != null && dorm.currency ? ` (현지 통화 ${fmt(dorm.local)} ${dorm.currency})` : ''}${dorm.confidence === 'LOW' ? ' <span class="badge badge--amber">추정치</span>' : ''}</p>` : ''}
       ${dorm ? mentalRateTipHtml(dorm.local, dorm.currency) : ''}
       ${monthly != null ? `<p class="info-panel__text">월 평균 생활비 <strong class="tnum">${fmt(monthly)}원</strong></p>` : ''}
-      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요.<br>여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요</p>
+      <p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">자동으로 모은 추정치예요.<br>여행을 얼마나 다니는지 같은 개인차에 따라 달라질 수 있어요.</p>
     </section>`;
 }
 

@@ -94,6 +94,45 @@
     scope.querySelectorAll('[data-wordmark=""]').forEach(paint);
   };
 
+  /**
+   * 학교 카드의 큰 제목이 길어 줄이 넘어가면 그 제목만 글자를 줄여 한 줄에 맞춘다.
+   * 도시 이름 길이가 학교마다 달라서 크기를 미리 정해 둘 수 없다.
+   * 14px 까지만 줄인다 — 그래도 넘치면 읽기 어려워지므로 원래 크기로 줄을 바꾼다.
+   */
+  const MIN_HEAD_PX = 14;
+  function fitHead(el) {
+    const box = el.closest('.info-panel, .score-card');
+    if (!box || !box.clientWidth) return;
+    el.style.fontSize = '';
+    el.style.whiteSpace = 'nowrap';
+    const cs = getComputedStyle(box);
+    const room = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const natural = range.getBoundingClientRect().width;
+    if (natural <= room) return;
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    const size = Math.floor((base * room / natural) * 10) / 10;
+    if (size < MIN_HEAD_PX) { el.style.whiteSpace = ''; return; }
+    el.style.fontSize = size + 'px';
+  }
+
+  window.fitSchoolHeads = function (root) {
+    const fit = () => root.querySelectorAll('.brand-head').forEach(fitHead);
+    fit();
+    // 글꼴이 늦게 도착하면 글자 폭이 달라진다
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    const modal = root.querySelector('.school-modal');
+    if (!modal || modal._headObserver || typeof ResizeObserver === 'undefined') return;
+    let lastWidth = modal.clientWidth;
+    modal._headObserver = new ResizeObserver(() => {
+      if (modal.clientWidth === lastWidth) return;   // 세로 변화에는 다시 재지 않는다
+      lastWidth = modal.clientWidth;
+      fit();
+    });
+    modal._headObserver.observe(modal);
+  };
+
   // 정적 HTML 에 박혀 있는 것(홈의 'Your Step !')은 알아서 칠한다.
   // 나중에 그려지는 조각은 그린 쪽에서 paintWordmarkText(mount) 를 부른다.
   const sweep = () => window.paintWordmarkText(document);
