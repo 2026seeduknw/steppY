@@ -384,7 +384,7 @@
     }
     const count = Object.keys(byDay).length;
     const navBtn = (dir, label, ch) => nav ? `<button type="button" class="rec-pcal__nav" data-mnav="${dir}" aria-label="${label}">${ch}</button>` : '<span></span>';
-    return `${photoBg(folderShots.length ? folderShots[0].url : '')}
+    return `
       <section class="rec-pcal" aria-label="${y}년 ${m + 1}월 사진 달력">
         <div class="rec-pcal__head">
           ${navBtn(-1, '이전 달', '‹')}
@@ -475,7 +475,7 @@
       if (!name) return;
       const key = name.toLowerCase();
       let stop = stops[stops.length - 1];
-      if (!stop || stop.key !== key) { stop = { key, name, from: e.date, to: e.date, cover: urls[0], shots: [] }; stops.push(stop); }
+      if (!stop || stop.key !== key) { stop = { key, name, country: String(loc.country || '').trim(), from: e.date, to: e.date, cover: urls[0], shots: [] }; stops.push(stop); }
       stop.to = e.date;
       urls.forEach(url => stop.shots.push({ url, info: DiaryArchive.infoOf(e) }));
     });
@@ -494,6 +494,32 @@
     return `${from} ~ ${s.to.slice(0, 4) === s.from.slice(0, 4) ? s.to.slice(5).replace('-', '.') : s.to.replace(/-/g, '.')}`;
   };
   const PIN = '<path d="M14 0a14 14 0 0 0-14 14c0 10 14 24 14 24s14-14 14-24A14 14 0 0 0 14 0Z"/><circle cx="14" cy="14" r="5"/>';
+  /** 오간 나라를 방문 순서로 묶는다. 같은 나라를 다시 가면 다시 한 줄로 남겨 오간 흐름이 보이게 한다 */
+  function countryVisits(stops) {
+    const visits = [];
+    stops.forEach(s => {
+      let v = visits[visits.length - 1];
+      if (!v || v.country !== s.country) { v = { country: s.country, from: s.from, to: s.to, cities: [] }; visits.push(v); }
+      v.to = s.to;
+      if (s.name !== s.country && !v.cities.includes(s.name)) v.cities.push(s.name);
+    });
+    return visits;
+  }
+  function countriesHtml(stops) {
+    const visits = countryVisits(stops);
+    const n = new Set(visits.map(v => v.country).filter(Boolean)).size;
+    return `<div class="rec-route__countries" id="recRouteCountries" hidden>
+      <p class="rec-route__chead">${n} ${n === 1 ? 'country' : 'countries'}</p>
+      <ol>${visits.map((v, i) => `<li><i>${i + 1}</i><span><b>${esc(v.country || '나라 미상')}</b><small>${esc([v.cities.join(', '), stopDates(v)].filter(Boolean).join(' · '))}</small></span></li>`).join('')}</ol>
+    </div>`;
+  }
+  function toggleCountries(open) {
+    const panel = recapView && recapView.querySelector('.rec-route__countries');
+    const pill = recapView && recapView.querySelector('.rec-route__pill');
+    if (!panel || !pill) return;
+    panel.hidden = !open;
+    pill.setAttribute('aria-expanded', String(open));
+  }
   function routeHtml(stops, W) {
     const sum = routeSummary(stops);
     const years = [...new Set([stops[0].from.slice(0, 4), stops[stops.length - 1].to.slice(0, 4)])].join(' ~ ');
@@ -523,7 +549,10 @@
       </button>`).join('');
     return `${photoBg(stops[stops.length - 1].cover)}
       <div class="rec-route">
-        <p class="rec-route__pill"><svg width="14" height="18" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg><b>${esc(sum.text)}</b><em>${esc(years)}</em></p>
+        <div class="rec-route__top">
+          <button type="button" class="rec-route__pill" data-countries aria-expanded="false" aria-controls="recRouteCountries" aria-label="${esc(sum.text)}, 다녀온 나라 보기"><svg width="14" height="18" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg><b>${esc(sum.text)}</b><em>${esc(years)}</em></button>
+          ${countriesHtml(stops)}
+        </div>
         <div class="rec-route__stage" style="height:${height}px">
           <svg class="rec-route__line" width="${W}" height="${height}" viewBox="0 0 ${W} ${height}" aria-hidden="true">${paths.join('')}</svg>
           ${marks}${kms.join('')}${cards}
@@ -560,6 +589,9 @@
       recapView.innerHTML = headHtml('Recap', '') + '<div class="rec-layer__body"></div>';
       recapView.addEventListener('click', (ev) => {
         if (ev.target.closest('[data-close]')) { const r = recapView; recapView = null; closeLayer(r); return; }
+        const panel = recapView.querySelector('.rec-route__countries');
+        if (ev.target.closest('[data-countries]')) { toggleCountries(!!(panel && panel.hidden)); return; }
+        if (panel && !panel.hidden) { if (!ev.target.closest('.rec-route__countries')) toggleCountries(false); return; }
         const stop = ev.target.closest('[data-stop]');
         if (stop) { pickStop(Number(stop.dataset.stop)); return; }
         const open = ev.target.closest('[data-open-stop]');
