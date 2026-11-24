@@ -5,7 +5,7 @@
  * 폴더 데이터와 아이콘, 폴더 꾸미기 시트는 js/diary-archive.js(DiaryArchive)를 그대로 쓴다.
  *
  * 다이어리 페이지 한 장 = 기록(user_journal 행) 하나. 페이지에 붙인 사진·글·스티커의 자리와
- * 배경은 이 기기(localStorage)에만 저장한다 — 서버 테이블은 아직 없다. 꾸민 적이 없는 기록은
+ * 배경은 localStorage 에 두고 js/diary-sync.js 가 서버와 맞춘다. 꾸민 적이 없는 기록은
  * 기록 내용(사진·본문·위치)으로 기본 배치를 만들어 보여준다.
  *
  * 좌표는 모두 "페이지 너비 = 1" 단위다. 페이지 높이는 너비의 PAGE_RATIO 배.
@@ -93,7 +93,7 @@
   const storeKey = () => `steppy_pages_v1_${(typeof Auth !== 'undefined' && Auth.userId) || 'guest'}`;
   function loadPages() { try { return JSON.parse(localStorage.getItem(storeKey()) || '{}') || {}; } catch (e) { return {}; } }
   function savePages(all) {
-    try { localStorage.setItem(storeKey(), JSON.stringify(all)); return true; }
+    try { localStorage.setItem(storeKey(), JSON.stringify(all)); if (typeof DiarySync !== 'undefined') DiarySync.touch(); return true; }
     catch (e) { toast('이 기기의 저장 공간이 부족해요. 올린 사진을 줄이거나 지운 뒤 다시 저장해 주세요.'); return false; }
   }
   // 방금 만든 기록은 서버 uuid가 도착하면 id가 바뀐다 — 꾸며 둔 페이지도 따라 옮긴다
@@ -519,58 +519,34 @@
     panel.hidden = !open;
     pill.setAttribute('aria-expanded', String(open));
   }
-  function routeHtml(stops, W) {
+  function routeHtml(stops) {
     const sum = routeSummary(stops);
     const years = [...new Set([stops[0].from.slice(0, 4), stops[stops.length - 1].to.slice(0, 4)])].join(' ~ ');
-    const cardW = Math.round(W * 0.29), cardH = Math.round(cardW * 1.22), side = 24;
-    const rowH = cardH + 34, firstTop = 78;
-    const spots = stops.map((s, i) => {
-      const left = i % 2 === 0;
-      const x = left ? side : W - side - cardW;
-      const top = firstTop + i * rowH;
-      return { s, i, left, x, top, cx: x + cardW / 2, tip: top - 8 };
-    });
-    const paths = [], kms = [];
-    spots.slice(1).forEach((b, k) => {
-      const a = spots[k], dir = b.cx > a.cx ? 1 : -1, reach = cardW / 2 + 12;
-      const midX = W / 2 + (k % 2 ? -8 : 8), midY = a.tip + (b.tip - a.tip) * 0.5;
-      paths.push(`<path pathLength="1" style="animation-delay:${Math.min(k * 0.18, 1)}s" d="M${a.cx} ${a.tip} L${a.cx + dir * reach} ${a.tip - 6} L${midX} ${midY} L${b.cx - dir * reach} ${b.tip - 6} L${b.cx} ${b.tip}"/>`);
-      if (sum.legs[k] != null) kms.push(`<span class="rec-route__km" style="left:${Math.round(W / 2)}px;top:${Math.round(midY + 8)}px">${sum.legs[k].toLocaleString('en-US')}km</span>`);
-    });
-    const height = firstTop + (stops.length - 1) * rowH + cardH + 44;
-    const marks = spots.map(p => p.i === 0
-      ? `<span class="rec-route__start" style="left:${p.cx - 13}px;top:${p.tip - 26}px"></span>`
-      : `<svg class="rec-route__pin" style="left:${p.cx - 14}px;top:${p.tip - 38}px" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg>`).join('');
-    const cards = spots.map(p => `
-      <button type="button" class="rec-route__stop ${p.left ? 'is-left' : 'is-right'}" data-stop="${p.i}" style="left:${p.x}px;top:${p.top}px;width:${cardW}px" aria-label="${esc(p.s.name)} 사진 ${p.s.shots.length}장">
-        <span class="rec-route__photo" style="height:${cardH}px"><img src="${esc(p.s.cover)}" alt="" loading="lazy" draggable="false"><b>${p.s.shots.length}</b></span>
-        <span class="rec-route__name">${esc(p.s.name)}</span>
-      </button>`).join('');
     return `
       <div class="rec-route">
         <div class="rec-route__top">
           <button type="button" class="rec-route__pill" data-countries aria-expanded="false" aria-controls="recRouteCountries" aria-label="${esc(sum.text)}, 다녀온 나라 보기"><svg width="14" height="18" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg><b>${esc(sum.text)}</b><em>${esc(years)}</em></button>
           ${countriesHtml(stops)}
         </div>
-        <div class="rec-route__stage" style="height:${height}px">
-          <svg class="rec-route__line" width="${W}" height="${height}" viewBox="0 0 ${W} ${height}" aria-hidden="true">${paths.join('')}</svg>
-          ${marks}${kms.join('')}${cards}
-        </div>
+        <div class="rec-route__map"></div>
         <button type="button" class="rec-route__sheet" data-open-stop></button>
       </div>`;
   }
+  function savedRouteMode() { try { return localStorage.getItem('steppy_route_mode'); } catch (e) { return null; } }
   function pickStop(i) {
     if (!recapView) return;
     const s = recapView._stops[i];
     const sheet = recapView.querySelector('.rec-route__sheet');
     if (!s || !sheet) return;
     recapView._picked = i;
+    if (recapView._map) recapView._map.pick(i);
     sheet.setAttribute('aria-label', `${s.name} 사진 보기`);
     sheet.innerHTML = `<img src="${esc(s.cover)}" alt="" draggable="false"><span><b>${esc(s.name)}</b><small>${esc(stopDates(s))} · 사진 ${s.shots.length}장</small></span><i aria-hidden="true">→</i>`;
   }
   let recapView = null;
   function renderRecap() {
     if (!recapView) return;
+    if (recapView._map) { recapView._map.destroy(); recapView._map = null; }
     const stops = routeStops(ctx);
     recapView._stops = stops;
     const body = recapView.querySelector('.rec-layer__body');
@@ -578,7 +554,8 @@
       body.innerHTML = `<div class="rec-route rec-route--empty"><p>사진에 위치를 남기면<br>여행 경로가 그려져요.</p></div>`;
       return;
     }
-    body.innerHTML = routeHtml(stops, recapView.clientWidth || 402);
+    body.innerHTML = routeHtml(stops);
+    recapView._map = RouteMap.create(body.querySelector('.rec-route__map'), stops.map(s => ({ name: s.name, cover: s.cover, coord: cityCoord(s.key) })), { mode: savedRouteMode() });
     pickStop(stops.length - 1);
   }
   function openRecap(c) {
@@ -587,7 +564,7 @@
       recapView = openLayer('rec-recapview rec-layer--photo', 'Recap');
       recapView.innerHTML = headHtml('Recap', '') + '<div class="rec-layer__body"></div>';
       recapView.addEventListener('click', (ev) => {
-        if (ev.target.closest('[data-close]')) { const r = recapView; recapView = null; closeLayer(r); return; }
+        if (ev.target.closest('[data-close]')) { const r = recapView; if (r._map) r._map.destroy(); recapView = null; closeLayer(r); return; }
         const panel = recapView.querySelector('.rec-route__countries');
         if (ev.target.closest('[data-countries]')) { toggleCountries(!!(panel && panel.hidden)); return; }
         if (panel && !panel.hidden) { if (!ev.target.closest('.rec-route__countries')) toggleCountries(false); return; }
@@ -1299,7 +1276,7 @@
   /* ------------------------------------------------------------ 다이어리 (Recent 밑 'Diary')
    * 다이어리 한 장 = 인상 깊었던 하루 또는 기간(여행 등). 제목과 날짜(하루 / 시작~끝)를 받고,
    * 그 기간에 남긴 기록의 사진·글로 첫 배치를 만든다. 꾸미기에서 사진·글·스티커·노래를 얹고, 열면 노래가 재생된다.
-   * 저장은 페이지 저장소에 'diary:<id>' 키로(이 기기). page.meta = { title, start, end }.
+   * 저장은 페이지 저장소에 'diary:<id>' 키로(diary-sync.js 가 서버와 맞춘다). page.meta = { title, start, end }.
    * 예전 'day:YYYY-MM-DD' 다이어리도 하루짜리로 그대로 읽는다. */
   const isDiaryKey = (k) => k.startsWith('diary:') || k.startsWith('day:');
   function metaOf(key, page) {
