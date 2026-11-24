@@ -354,7 +354,6 @@
   }
   const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const firstPhoto = (e) => (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean) || '';
-  const photoBg = (url) => `<div class="rec-photobg">${url ? `<img src="${esc(url)}" alt="" draggable="false">` : ''}</div>`;
   /** 칸 하나에서 여러 장을 크게 — 확대 화면은 사진마다 원본 비율이 필요해 나머지 장도 미리 읽어 넘긴다 */
   function openShots(shots, img) {
     const src = img.getAttribute('src');
@@ -547,7 +546,7 @@
         <span class="rec-route__photo" style="height:${cardH}px"><img src="${esc(p.s.cover)}" alt="" loading="lazy" draggable="false"><b>${p.s.shots.length}</b></span>
         <span class="rec-route__name">${esc(p.s.name)}</span>
       </button>`).join('');
-    return `${photoBg(stops[stops.length - 1].cover)}
+    return `
       <div class="rec-route">
         <div class="rec-route__top">
           <button type="button" class="rec-route__pill" data-countries aria-expanded="false" aria-controls="recRouteCountries" aria-label="${esc(sum.text)}, 다녀온 나라 보기"><svg width="14" height="18" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg><b>${esc(sum.text)}</b><em>${esc(years)}</em></button>
@@ -576,7 +575,7 @@
     recapView._stops = stops;
     const body = recapView.querySelector('.rec-layer__body');
     if (!stops.length) {
-      body.innerHTML = `${photoBg('')}<div class="rec-route rec-route--empty"><p>사진에 위치를 남기면<br>여행 경로가 그려져요.</p></div>`;
+      body.innerHTML = `<div class="rec-route rec-route--empty"><p>사진에 위치를 남기면<br>여행 경로가 그려져요.</p></div>`;
       return;
     }
     body.innerHTML = routeHtml(stops, recapView.clientWidth || 402);
@@ -612,7 +611,7 @@
     return `
       <button type="button" class="rec-recapcard" data-recap="route" aria-label="여행 경로 열기">
         <span class="rec-recapcard__text">
-          <b class="rec-recapcard__title">My route</b>
+          <b class="rec-recapcard__title">My steps</b>
           <small>${stops.length ? esc(routeSummary(stops).text) : '사진에 위치를 남기면 경로가 그려져요.'}</small>
         </span>
         <span class="rec-recapcard__thumbs" aria-hidden="true">${thumbs.map((u, i) => `<img src="${esc(u)}" alt="" style="--i:${i}" draggable="false">`).join('')}</span>

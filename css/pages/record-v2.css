@@ -622,9 +622,6 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-layer--photo .rec-top__title, .rec-layer--photo .rec-top__right { display: none; }
 .rec-layer--photo .rec-top__back { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); left: 16px; width: 40px; height: 40px; background: rgba(10, 16, 26, 0.46); color: #fff; }
 .rec-layer--photo .rec-layer__body { position: relative; padding: 0; }
-.rec-photobg { position: sticky; top: 0; height: 100dvh; margin-bottom: -100dvh; overflow: hidden; }
-.rec-photobg img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rec-photobg::after { content: ''; position: absolute; inset: 0; background: rgba(10, 16, 26, 0.38); }
 
 /* Monthly 사진 달력 */
 .rec-pcal { position: relative; z-index: 1; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: 72px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
