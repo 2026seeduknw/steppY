@@ -3,7 +3,7 @@
  * 손으로 그린 느낌(굵은 잉크선 + 크림·주황·하늘 포인트)으로 맞췄다.
  *
  * 페이지에는 { type: 'art', art: 'b:<key>' } 로 저장하고, 그릴 때 url()로 data URL을 만든다.
- * 사용자가 올린 SVG·PNG는 { art: 'u:<id>' } — 이 기기의 "내 스티커"(localStorage)에 들어 있다.
+ * 사용자가 올린 SVG·PNG는 { art: 'u:<id>' } — "내 스티커"(localStorage, diary-sync.js 가 서버와 맞춘다)에 들어 있다.
  * 둘 다 <img>로만 그린다 — SVG 안에 스크립트가 있어도 <img> 안에서는 돌지 않는다.
  */
 (function (global) {
@@ -79,11 +79,11 @@
     return cache[key];
   }
 
-  /* ---- 내 스티커(이 기기) ---- */
+  /* ---- 내 스티커 ---- */
   const myKey = () => `steppy_stickers_v1_${(typeof Auth !== 'undefined' && Auth.userId) || 'guest'}`;
   function mine() { try { return JSON.parse(localStorage.getItem(myKey()) || '[]') || []; } catch (e) { return []; } }
   function saveMine(list) {
-    try { localStorage.setItem(myKey(), JSON.stringify(list)); return true; }
+    try { localStorage.setItem(myKey(), JSON.stringify(list)); if (typeof DiarySync !== 'undefined') DiarySync.touch(); return true; }
     catch (e) { return false; }
   }
   function addMine(src, ratio) {

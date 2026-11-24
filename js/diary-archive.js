@@ -6,7 +6,7 @@
  *   - 폴더 안에 폴더를 만들 수 있고, 이름·색·패턴·스티커를 직접 꾸민다. Monthly는 날짜로 YYYY.MM 폴더를 자동으로 만든다.
  *   - 사진을 누르면 살짝 커지고 뒤는 블러, 빈 자리에 위치·날씨·노래가 나온다.
  *
- * 폴더 구조와 꾸밈은 이 기기(localStorage)에만 저장한다 — 서버 테이블은 아직 없다.
+ * 폴더 구조와 꾸밈은 localStorage 에 두고, js/diary-sync.js 가 서버(user_diary_docs)와 맞춘다.
  * 폴더에 "담는" 단위는 기록(user_journal 행)이고, 폴더 안에서는 그 기록의 사진들이 펼쳐진다.
  *
  * diary-view.js가 render(root, ctx)로 불러준다. ctx = { entries(), photoUrl(path), needLogin() }.
@@ -70,7 +70,7 @@
     FOLDERS = defaults();
   }
   function save() {
-    try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); } catch (e) { /* 무시 */ }
+    try { localStorage.setItem(storeKey(), JSON.stringify(FOLDERS)); if (typeof DiarySync !== 'undefined') DiarySync.touch(); } catch (e) { /* 무시 */ }
     document.dispatchEvent(new CustomEvent('archive:changed'));
   }
 
@@ -750,7 +750,7 @@
   }
   global.DiaryArchive = {
     render, refresh, reloadFriends, infoOf, openPhotos: (shots, k, thumbs) => openLightbox(shots, k, thumbs),
-    folders: ensureLoaded, folderIcon, itemsOf, entriesOfNode, kidsOf, findNode,
+    reload: () => { render._uid = storeKey(); load(); }, folders: ensureLoaded, folderIcon, itemsOf, entriesOfNode, kidsOf, findNode,
     editFolder, createFolder: () => { ensureLoaded(); createFolder(FOLDERS); }, openPicker, addEntries, save,
     // 기록 쓰기 창에서 이름만으로 폴더를 바로 만든다 — 색은 베이지(길게 눌러 바꿀 수 있다)
     addFolder(name) {
