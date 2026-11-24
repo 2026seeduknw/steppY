@@ -344,9 +344,65 @@
     pinsEl.hidden = false;
     // 예시 글이면 실제 선배 글로 오해하지 않게 질문·답변과 같은 자리에 '예시 글'을 붙인다
     const sampleNote = pins.every(p => p.sample) ? '<span>예시 글</span>' : '';
-    pinsEl.innerHTML = `<div class="m2-sec"><h2>선배의 기록</h2>${sampleNote}</div><div class="m2-cols">${pins.map(pinRowTemplate).join('')}</div>`;
+    // 카드가 옆으로 넘어가서 뒤쪽 글이 안 보인다 — 두 개 이상이면 한눈에 보는 화면을 연다
+    const allBtn = pins.length > 1 ? '<button type="button" class="m2-sec__all" data-pins-all>전체보기</button>' : '';
+    pinsEl.innerHTML = `<div class="m2-sec"><h2>선배의 기록</h2>${sampleNote}${allBtn}</div><div class="m2-cols">${pins.map(pinRowTemplate).join('')}</div>`;
     pinsEl.querySelectorAll('[data-open-pin]').forEach(el => {
       el.addEventListener('click', () => openPinPage(el.dataset.openPin));
+    });
+    const all = pinsEl.querySelector('[data-pins-all]');
+    if (all) all.addEventListener('click', openPinsPage);
+  }
+
+  /** 선배의 기록 전체 — 종류별 섹션의 한 줄 목록. 제목과 본문(FAQ 질문·답변 포함)을 검색한다. */
+  function openPinsPage() {
+    const SECTIONS = ['FAQ', '칼럼', '선배 기록', '공지'];
+    const norm = (v) => String(v || '').toLowerCase().replace(/\s+/g, '');
+    const page = document.createElement('div');
+    page.className = 'mentor-page';
+    page.setAttribute('role', 'dialog');
+    page.setAttribute('aria-modal', 'true');
+    page.setAttribute('aria-label', '선배의 기록 전체');
+    page.innerHTML = `
+      <div class="mentor-page__head">
+        <button type="button" class="mentor-page__back" data-page-close>← 뒤로</button>
+      </div>
+      <div class="mentor-page__body">
+        <h2 class="mentor-pins-all__title">선배의 기록</h2>
+        <input class="mentor-pins-all__search" type="search" placeholder="제목이나 내용으로 검색" aria-label="선배의 기록 검색" autocomplete="off">
+        <div class="mentor-pins-all" aria-live="polite"></div>
+      </div>`;
+    const list = page.querySelector('.mentor-pins-all');
+    const renderRows = (query) => {
+      const q = norm(query);
+      const found = q ? pins.filter(p => norm(`${p.title} ${p.body}`).includes(q)) : pins;
+      const labels = [...SECTIONS, ...new Set(found.map(pinLabel).filter(l => !SECTIONS.includes(l)))];
+      list.innerHTML = labels.map(label => {
+        const rows = found.filter(p => pinLabel(p) === label);
+        if (!rows.length) return '';
+        return `
+          <section class="mentor-pins-all__sec">
+            <h3>${escapeHtml(label)}<small>${rows.length}</small></h3>
+            ${rows.map(p => `
+              <button type="button" class="mentor-pins-all__row" data-open-pin="${escapeHtml(p.id)}">
+                <span>${escapeHtml(p.title)}</span>
+                <small>${escapeHtml(p.author_label || '운영진')}</small>
+              </button>`).join('')}
+          </section>`;
+      }).join('') || '<p class="mentor-pins-all__empty">검색 결과가 없어요.</p>';
+    };
+    renderRows('');
+    page.querySelector('.mentor-pins-all__search').addEventListener('input', (e) => renderRows(e.target.value));
+    document.body.appendChild(page);
+    document.body.classList.add('is-sheet-open');
+    requestAnimationFrame(() => page.classList.add('is-open'));
+    page.addEventListener('click', (e) => {
+      const row = e.target.closest('[data-open-pin]');
+      if (row) { openPinPage(row.dataset.openPin); return; }
+      if (!e.target.closest('[data-page-close]')) return;
+      page.classList.remove('is-open');
+      document.body.classList.remove('is-sheet-open');
+      setTimeout(() => page.remove(), 300);
     });
   }
 
@@ -767,7 +823,8 @@
     requestAnimationFrame(() => page.classList.add('is-open'));
     const close = () => {
       page.classList.remove('is-open');
-      document.body.classList.remove('is-sheet-open');
+      // 전체보기 위에서 열었으면 아래 화면이 남아 있으니 스크롤 잠금을 풀지 않는다
+      if (!document.querySelector('.mentor-page.is-open')) document.body.classList.remove('is-sheet-open');
       setTimeout(() => page.remove(), 300);
     };
     page.addEventListener('click', (e) => { if (e.target.closest('[data-page-close]')) close(); });
