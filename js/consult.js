@@ -47,7 +47,7 @@
           <div class="m2-ask"><span class="m2-ask__in">선배에게 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
           <div class="m2-sec"><h2>선배의 기록</h2></div>
           <div class="m2-cols">
-            ${pin('report', '2026-1 교환보고서 모음')}
+            ${pin('report', '2026-1 선배 기록 모음')}
             ${pin('column', '교환 가기 전 챙길 서류 TOP 5')}
             ${pin('notice', 'Talky 이용 규칙')}
           </div>
@@ -61,7 +61,7 @@
         <section class="mentor-preview__lock card card-pad">
           <div class="mentor-locked__icon" aria-hidden="true">🔒</div>
           <h2 class="mentor-locked__title">로그인하면 볼 수 있어요</h2>
-          <p class="mentor-locked__desc">다녀온 선배의 질문·답변, 교환보고서와 칼럼을 읽고 직접 질문도 할 수 있어요.</p>
+          <p class="mentor-locked__desc">다녀온 선배의 질문·답변과 칼럼을 읽고 직접 질문도 할 수 있어요.</p>
           <a class="btn btn--primary btn--block" href="auth.html">로그인 · 회원가입</a>
         </section>
       </div>`;
@@ -73,7 +73,7 @@
 
   // 상단 고정 글 — 운영자가 mentor_pins 테이블(supabase/mentor_pins.sql)에 직접 넣는다.
   // 테이블이 없거나 읽지 못하면 조용히 비워 둔다(게시판은 그대로 보인다).
-  const PIN_KIND = { notice: '공지', report: '교환보고서', column: '칼럼' };
+  const PIN_KIND = { notice: '공지', report: '선배 기록', column: '칼럼' };
   let pins = [];
 
   function escapeHtml(str) {
@@ -416,7 +416,7 @@
             </label>
             <label class="mentor-form__field">
               <span class="mentor-form__label">내용</span>
-              <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요."></textarea>
+              <textarea name="body" required placeholder="상황을 자세히 적어주면 상세한 답변을 받기 쉬워져요"></textarea>
             </label>
             <!-- 민감정보 공개 가능성 안내(개인정보 보호법 제23조 제3항) — Talky 글은 비공개로 할 수 없다 -->
             <p class="mentor-form__note">질문은 이름 없이 모든 회원에게 보여요.<br>연락처, 건강·종교처럼 민감한 내용은 쓰지 말아 주세요.</p>
@@ -455,7 +455,7 @@
           const title = (new FormData(form).get('title') || '').trim();
           const body = (new FormData(form).get('body') || '').trim();
           if (!selectedCountry) {
-            if (typeof showToast === 'function') showToast('국가를 선택해 주세요.');
+            if (typeof showToast === 'function') showToast('국가를 선택해 주세요');
             return;
           }
           if (!title || !body) return;
