@@ -275,13 +275,59 @@
 
   /** 선배의 기록 — 고정 글을 홈 바로가기처럼 색 상자로 옆으로 넘긴다(교환보고서 · 칼럼 · 공지) */
   const PIN_TONE = { report: 'sand', column: 'sky', notice: 'plum' };
-  function pinCardHtml({ kind, title, meta, id, image }) {
+  /**
+   * FAQ 고정 글 본문을 주제 → 질문 → 답변으로 나눈다.
+   * 형식(supabase/talky_uc_faq.sql): 안내 문장, [주제], Q. 질문, A. 답변, (근거 · 날짜)
+   * 형식이 맞지 않으면 null — 일반 칼럼처럼 본문을 그대로 보여준다.
+   */
+  function parseFaqBody(body) {
+    const intro = [], topics = [];
+    let topic = null, item = null;
+    String(body || '').split('\n').forEach(raw => {
+      const line = raw.trim();
+      if (!line) return;
+      const head = line.match(/^\[(.+)\]$/);
+      if (head) { topic = { name: head[1], items: [] }; topics.push(topic); item = null; return; }
+      if (!topic) { intro.push(line); return; }
+      if (line.startsWith('Q. ')) { item = { q: line.slice(3), a: '', meta: '' }; topic.items.push(item); return; }
+      if (!item) return;
+      if (line.startsWith('A. ')) item.a = line.slice(3);
+      else if (/^\(.+\)$/.test(line)) item.meta = line.slice(1, -1);
+      else item.a += (item.a ? ' ' : '') + line;
+    });
+    const ok = topics.length && topics.every(t => t.items.length && t.items.every(i => i.a));
+    return ok ? { intro, topics } : null;
+  }
+  const isFaqPin = (p) => p.kind === 'column' && /FAQ$/.test(p.title || '') && !!parseFaqBody(p.body);
+  const pinLabel = (p) => (isFaqPin(p) ? 'FAQ' : (PIN_KIND[p.kind] || '공지'));
+
+  function faqHtml(faq) {
+    const intro = faq.intro.length
+      ? `<p class="mentor-faq__intro">${faq.intro.map(escapeHtml).join('<br>')}</p>` : '';
+    const topics = faq.topics.map(t => `
+      <details class="mentor-faq__topic">
+        <summary><span>${escapeHtml(t.name)}</span><small>${t.items.length}</small></summary>
+        <div class="mentor-faq__list">
+          ${t.items.map(i => `
+            <details class="mentor-faq__item">
+              <summary><span>${escapeHtml(i.q)}</span></summary>
+              <div class="mentor-faq__answer">
+                <p>${escapeHtml(i.a)}</p>
+                ${i.meta ? `<small>${escapeHtml(i.meta)}</small>` : ''}
+              </div>
+            </details>`).join('')}
+        </div>
+      </details>`).join('');
+    return `${intro}<div class="mentor-faq">${topics}</div>`;
+  }
+
+  function pinCardHtml({ kind, title, meta, id, image, label }) {
     const tag = id ? 'button type="button"' : 'div';
     const photo = image ? ` style="background-image:url('${escapeHtml(image)}')"` : '';
     return `
       <${tag} class="m2-col m2-col--${PIN_TONE[kind] || 'plum'}${image ? ' has-photo' : ''}"${id ? ` data-open-pin="${escapeHtml(id)}"` : ''}${photo}>
         <span class="m2-col__top">
-          <span class="m2-col__k">${PIN_KIND[kind] || '공지'}</span>
+          <span class="m2-col__k">${label || PIN_KIND[kind] || '공지'}</span>
           <small class="m2-col__meta">${meta}</small>
         </span>
         <span class="m2-col__t">${escapeHtml(title).replace(/\n/g, '<br>')}</span>
@@ -289,7 +335,7 @@
   }
   function pinRowTemplate(p) {
     // 사진(image_url)이 있는 글은 카드 바탕을 사진으로 — 칼럼에 사진을 붙일 수 있게
-    return pinCardHtml({ id: p.id, kind: p.kind, title: p.title, image: p.image_url || p.image || '', meta: escapeHtml(p.author_label || '운영진') });
+    return pinCardHtml({ id: p.id, kind: p.kind, label: pinLabel(p), title: p.title, image: p.image_url || p.image || '', meta: escapeHtml(p.author_label || '운영진') });
   }
 
   function renderPins() {
@@ -700,7 +746,8 @@
     page.className = 'mentor-page';
     page.setAttribute('role', 'dialog');
     page.setAttribute('aria-modal', 'true');
-    page.setAttribute('aria-label', PIN_KIND[p.kind] || '공지');
+    const faq = isFaqPin(p) ? parseFaqBody(p.body) : null;
+    page.setAttribute('aria-label', pinLabel(p));
     page.innerHTML = `
       <div class="mentor-page__head">
         <button type="button" class="mentor-page__back" data-page-close>← 뒤로</button>
@@ -708,10 +755,10 @@
       <div class="mentor-page__body">
         <div class="mentor-detail">
           <div class="mentor-detail__tags">
-            <span class="mentor-pin__badge mentor-pin__badge--${escapeHtml(p.kind)}">${PIN_KIND[p.kind] || '공지'}</span>
+            <span class="mentor-pin__badge mentor-pin__badge--${escapeHtml(p.kind)}">${pinLabel(p)}</span>
           </div>
           <h3 class="mentor-detail__title">${escapeHtml(p.title)}</h3>
-          <p class="mentor-detail__body">${escapeHtml(p.body)}</p>
+          ${faq ? faqHtml(faq) : `<p class="mentor-detail__body">${escapeHtml(p.body)}</p>`}
           <div class="mentor-detail__meta">${escapeHtml(p.author_label || '운영진')} · ${timeAgo(p.created_at)}</div>
         </div>
       </div>`;
