@@ -5,7 +5,7 @@
  * 나간다. 아래에 고정해 두면 언제든 시작할 수 있고, 스크롤을 내리다 손가락이
  * 스치는 자리라 그냥 버튼이면 잘못 눌리기 쉽다. 밀어야 넘어가므로 오작동이 없다.
  *
- * 다만 밀기만 되면 접근성이 없다. 탭·엔터·스페이스로도 같은 동작을 하게 했다.
+ * 모바일 앱이라 시작하는 방법은 밀기 하나뿐이다. 누르기·키보드로는 시작되지 않는다.
  */
 (function () {
   const root = document.getElementById('swipeStart');
@@ -21,7 +21,6 @@
   let startX = 0;
   let offset = 0;
   let maxOffset = 0;
-  let moved = false;
 
   const measure = () => {
     // 손잡이가 트랙 밖으로 나가지 않는 최대 이동 거리
@@ -64,7 +63,6 @@
   knob.addEventListener('pointerdown', (e) => {
     measure();
     dragging = true;
-    moved = false;
     startX = e.clientX;
     knob.classList.add('is-dragging');
     knob.setPointerCapture(e.pointerId);
@@ -72,19 +70,11 @@
 
   knob.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    const dx = e.clientX - startX;
-    if (Math.abs(dx) > 3) moved = true;
-    setOffset(dx);
+    setOffset(e.clientX - startX);
   });
 
   knob.addEventListener('pointerup', release);
   knob.addEventListener('pointercancel', release);
-
-  // 밀지 않고 탭한 경우에도 넘어간다
-  track.addEventListener('click', () => { if (!moved) location.href = DEST; });
-  track.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.href = DEST; }
-  });
 
   window.addEventListener('resize', () => { measure(); setOffset(0); });
   measure();
