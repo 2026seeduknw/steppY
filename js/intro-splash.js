@@ -38,6 +38,31 @@
   const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
   const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+  /* 떨어지는 글자는 그림(SVG 패스)이 아니라 제목과 같은 SB 어그로 글자다.
+     글자 크기 = 흩어진 배치 폭 × LETTER_FS. */
+  const LETTER_FS = 0.15;
+  function makeLetter(stage, ch) {
+    const el = document.createElement('span');
+    el.className = 'splash__letter';
+    el.textContent = ch;
+    stage.appendChild(el);
+    return el;
+  }
+  /** 요소 안 글자 하나하나의 화면 사각형(공백 제외) — 제목 속 steppY 의 글자 자리를 잰다. */
+  function charRects(node) {
+    const out = [];
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+      for (let j = 0; j < t.data.length; j++) {
+        if (/\s/.test(t.data[j])) continue;
+        range.setStart(t, j); range.setEnd(t, j + 1);
+        out.push(range.getBoundingClientRect());
+      }
+    }
+    return out;
+  }
+
   let hasLoggedInBefore = false;
   try { hasLoggedInBefore = localStorage.getItem(LOGIN_KEY) === '1'; } catch (e) { /* 사생활 모드 */ }
 
@@ -116,25 +141,13 @@
   stage.style.width = LW + 'px';
   stage.style.height = LH + 'px';
 
-  const nodes = SPLASH_LETTERS.map((d, i) => {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', '#sp-' + i);
-    el.appendChild(use);
-    el.setAttribute('class', 'splash__letter');
-    el.style.width = (d.sw * LW) + 'px';
-    stage.appendChild(el);
-    // 심볼의 viewBox 높이 — stroke-width 를 화면 px 로 환산할 때 필요하다
-    const sym = document.getElementById('sp-' + i);
-    const vbH = sym ? parseFloat(sym.getAttribute('viewBox').split(/\s+/)[3]) : 1;
-    return { el, d, vbH };
-  });
+  stage.style.fontSize = (LW * LETTER_FS) + 'px';
+  const nodes = SPLASH_LETTERS.map((d) => ({ el: makeLetter(stage, d.ch), d, oy: 0 }));
 
   let starts = [], targets = [], raf = 0, t0 = 0, done = false;
-  /* 진짜 워드마크의 테두리 비율 — viewBox 1300 단위에 stroke 45 단위.
-     (CSS 의 stroke-width:450 은 scale(0.1) 안쪽 좌표라 화면에서는 45다) */
-  const HERO_STROKE_RATIO = 45 / 1300;
-  let heroH = 0;
+  /* 진짜 워드마크의 테두리 두께 — css/components.css 의 .wm-text 와 같은 0.028em */
+  const HERO_STROKE_EM = 0.028;
+  let heroFs = 0;
 
   /**
    * 목표는 **매 프레임 다시 잰다.**
@@ -145,18 +158,16 @@
    * 프레임 맨 앞에서 한 번에 읽으므로 transform 쓰기와 엇갈리지도 않는다.
    */
   function measureTargets() {
-    const hr = hero.getBoundingClientRect();
-    if (!hr.width) return false;
-    const br = bang && bang.getBoundingClientRect();
-    heroH = hr.height;
+    // 제목 속 steppY 를 글자 하나씩 잰다 — 글씨체가 바뀌어도 자리를 따로 맞출 필요가 없다
+    const heroChars = charRects(hero);
+    if (!heroChars.length || !heroChars[0].width) return false;
+    const bangChar = bang ? charRects(bang)[0] : null;
+    heroFs = parseFloat(getComputedStyle(hero).fontSize) || 0;
+    let k = 0;
     targets = nodes.map(({ d }) => {
-      if (d.hx == null) {                       // 느낌표는 제목 끝 느낌표 자리로
-        if (!br || !br.width) return null;
-        return { cx: br.left + br.width / 2, cy: br.top + br.height / 2, w: br.width };
-      }
-      return { cx: hr.left + (d.hx + d.hw / 2) * hr.width,
-               cy: hr.top + (d.hy + d.hh / 2) * hr.height,
-               w: d.hw * hr.width };
+      const r = d.hx == null ? bangChar : heroChars[k++];   // 느낌표는 제목 끝 느낌표 자리로
+      if (!r || !r.width) return null;
+      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2, w: r.width };
     });
     return true;
   }
@@ -164,11 +175,12 @@
   /** 출발 자리는 낙하가 시작되기 전까지만 다시 잰다 — 도중에 바꾸면 글자가 튄다. */
   function measureStarts() {
     const sr = stage.getBoundingClientRect();
+    // 글자는 이미 회전·확대 중이라 getBoundingClientRect 대신 변형 전 크기를 쓴다
     starts = nodes.map(({ el, d }) => {
-      const r = el.getBoundingClientRect();
-      return { cx: sr.left + d.sx * LW + r.width / 2,
-               cy: sr.top + d.sy * LH + r.height / 2,
-               w: r.width, h: r.height };
+      const w = el.offsetWidth, h = el.offsetHeight;
+      return { cx: sr.left + d.sx * LW + w / 2,
+               cy: sr.top + d.sy * LH + h / 2,
+               w, h };
     });
   }
 
@@ -225,17 +237,21 @@
         el.style.opacity = String(eE);
       }
 
-      // 위로 올라가는 글자는 "내려앉는" 것이 아니므로 스쿼시를 주지 않는다
-      const goingDown = tg ? tg.cy > s.cy : false;
-      const f = dP > 0 ? settle(dP) : 0;
+      /* 제자리로 들어갈 때 목표를 지나쳤다 되돌아오면(ease-out-back) 꿈틀거리는
+         것처럼 보였다 — 가로와 같은 곡선으로, 지나치지 않고 곧장 앉힌다. */
+      const f = dP > 0 ? easeInOutCubic(clamp01(dP * 1.02)) : 0;
       const glide = easeInOutCubic(clamp01(dP * 1.02));
       const scaleTo = tg ? tg.w / s.w : 1;
+      // 목표는 글자 획의 중심, 움직이는 건 글자 상자의 중심 — 둘 사이 세로 차이를 뺀다
+      const tgCy = tg ? tg.cy - nodes[i].oy * scaleTo : 0;
+      // 위로 올라가는 글자는 "내려앉는" 것이 아니므로 스쿼시를 주지 않는다
+      const goingDown = tg ? tgCy > s.cy : false;
 
       // 등장할 때는 위에서 내려오고, 낙하가 시작되면 목표를 향해 간다
       const cx = s.cx + (tg ? (tg.cx - s.cx) * glide : 0);
-      const cy = s.cy + (1 - eE) * -70 + (tg ? (tg.cy - s.cy) * f : 0);
+      const cy = s.cy + (1 - eE) * -70 + (tg ? (tgCy - s.cy) * f : 0);
       const sc = (0.88 + 0.12 * eE) * (1 + (scaleTo - 1) * glide);
-      const sq = goingDown ? squash(dP) : 0;
+      const sq = 0;   // 착지할 때 눌렸다 펴지는 것도 꿈틀거림으로 읽혀서 뺐다
       // 흩어진 배치의 기울기는 낙하하면서 0으로 풀린다
       const rot = ang * (1 - glide) + (1 - eE) * (i % 2 ? 8 : -8);
 
@@ -249,9 +265,8 @@
          화면에서 보이는 굵기가 늘 일정하게 한다. */
       if (tg) {
         const ramp = clamp01((dP - 0.5) / 0.38);
-        const targetPx = HERO_STROKE_RATIO * heroH;
-        const pxPerUnit = (s.h * sc) / nodes[i].vbH;
-        el.style.strokeWidth = String((targetPx / pxPerUnit) * 10 * ramp);
+        const targetPx = HERO_STROKE_EM * heroFs;
+        el.style.webkitTextStroke = ((targetPx / sc) * ramp).toFixed(2) + 'px var(--key-ink)';
       }
 
       const sy = sc * (1 + sq * 0.9);
@@ -277,6 +292,12 @@
 
   function boot() {
     if (!measure()) { finish(); return; }
+    // 글자 상자 중심과 실제 글자(획) 중심의 세로 차이 — 변형 전에 한 번만 잰다
+    nodes.forEach((n) => {
+      const box = n.el.getBoundingClientRect();
+      const txt = charRects(n.el)[0];
+      n.oy = txt ? (txt.top + txt.height / 2) - (box.top + box.height / 2) : 0;
+    });
     // 글자는 지금까지 문서 흐름에 놓여 있었다. 좌표를 다 쟀으니 화면 기준으로 띄운다.
     nodes.forEach(({ el }) => { el.style.position = 'fixed'; el.style.left = '0'; el.style.top = '0'; });
     raf = requestAnimationFrame(frame);
@@ -310,26 +331,18 @@
     stage.style.width = LW + 'px';
     stage.style.height = LH + 'px';
 
-    const nodes = SPLASH_LETTERS.map((d, i) => {
-      const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-      use.setAttribute('href', '#sp-' + i);
-      el.appendChild(use);
-      el.setAttribute('class', 'splash__letter');
-      el.style.width = (d.sw * LW) + 'px';
-      stage.appendChild(el);
-      return { el, d };
-    });
+    stage.style.fontSize = (LW * LETTER_FS) + 'px';
+    const nodes = SPLASH_LETTERS.map((d) => ({ el: makeLetter(stage, d.ch), d }));
 
     let starts = [], raf = 0, t0 = 0, done = false;
 
     function measureStarts() {
       const sr = stage.getBoundingClientRect();
       starts = nodes.map(({ el, d }) => {
-        const r = el.getBoundingClientRect();
-        return { cx: sr.left + d.sx * LW + r.width / 2,
-                 cy: sr.top + d.sy * LH + r.height / 2,
-                 w: r.width, h: r.height };
+        const w = el.offsetWidth, h = el.offsetHeight;
+        return { cx: sr.left + d.sx * LW + w / 2,
+                 cy: sr.top + d.sy * LH + h / 2,
+                 w, h };
       });
     }
 

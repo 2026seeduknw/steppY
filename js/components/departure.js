@@ -186,7 +186,7 @@ function renderDepartureCard(mount, opts = {}) {
       <section class="departure-card departure-card--setup">
         <span class="departure-card__eyebrow">출국까지</span>
         <h2 class="departure-card__title">출국일을 입력하면 남은 날을 세어드려요</h2>
-        <p class="departure-card__desc">떠나기 전 기록도, 교환 중 기록도 이 날짜를 기준으로 정리돼요</p>
+        <p class="departure-card__desc">떠나기 전 기록도, 교환 중 기록도 이 날짜를 기준으로 정리돼요.</p>
         <div class="departure-card__row">
           <label>출국<input type="date" id="depStart" value="${g.start}"></label>
           <label>귀국<input type="date" id="depEnd" value="${g.end}"></label>

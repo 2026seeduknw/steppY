@@ -88,7 +88,7 @@
   }
 
   function runQuery() {
-    if (!selectedMajor) { showToast('소속 학과를 먼저 골라 주세요.'); return; }
+    if (!selectedMajor) { showToast('소속 학과를 먼저 골라 주세요'); return; }
     applied = { major: selectedMajor, school: selectedSchool };
     selectedVerdict = ''; selectedCountry = ''; selectedRegion = '';
     markQueryDirty();
@@ -391,10 +391,10 @@
     // 칩의 학과와 정확히 맞는 카드가 없으면 그 학교·그 전공 카드로 간다
     const sameSchool = MOCK.majorMatches.filter(m => m.school === schoolId && m.homeMajor === selectedMajor);
     const target = sameSchool.find(m => (m.matchedTopics || []).includes(topic) || m.targetMajor === topic) || sameSchool[0];
-    if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
+    if (!target) { showToast('연결된 전공 매칭 카드를 찾지 못했어요'); return; }
     requestAnimationFrame(() => {
       const el = document.querySelector(`[data-match-id="${CSS.escape(String(target.id))}"]`);
-      if (!el) { showToast('연결된 전공 매칭 카드를 찾지 못했어요.'); return; }
+      if (!el) { showToast('연결된 전공 매칭 카드를 찾지 못했어요'); return; }
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('is-jumped');
       setTimeout(() => el.classList.remove('is-jumped'), 1600);

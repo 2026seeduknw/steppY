@@ -65,7 +65,7 @@ const Invite = (function () {
     const res = await supabaseClient.rpc('accept_invite', { code });
     if (res.error) {
       console.warn('[invite]', res.error.message);
-      toast('초대를 처리하지 못했어요. 잠시 후 다시 시도해 주세요');
+      toast('초대를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
       try { sessionStorage.setItem(FAILED, '1'); } catch (e) { /* 무시 */ }
       return;   // 코드는 남겨 둔다 — 앱을 다시 열면 한 번 더 시도한다
     }

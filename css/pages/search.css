@@ -15,7 +15,7 @@
   border: 1.5px solid var(--line-200);
   border-radius: var(--radius-md);
   background: var(--cloud-0);
-  font-size: var(--fs-body);
+  font-size: var(--fs-small);
 }
 .search-input:focus { border-color: var(--sky-500); }
 .sort-select {

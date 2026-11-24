@@ -25,13 +25,17 @@
 /* ---------------------------------------------------------------- 공통 */
 
 /* 화면 맨 위 큰 영어 제목 — 작은 한 줄(eyebrow) + 굵은 단어 */
+/* 홈의 steppY 는 랜딩·헤더와 같은 로고 글씨체(SB 어그로, @font-face 는 components.css).
+   어그로는 획이 가늘어 고딕 900 처럼 자간을 바짝 좁히면 글자가 붙는다 — 살짝만 당기고,
+   t·e 한 쌍은 .wm-kern-te 로 따로 당긴다. */
 .v2-wordmark {
   margin: 0;
-  font-family: var(--font-title);
-  font-size: clamp(56px, 18vw, 72px);
-  font-weight: 900;
+  font-family: 'SB Aggro Light', var(--font-title);
+  /* 54px 고정 — 다른 화면의 큰 제목(.v2-head__title, 45px)보다 크게 둔다 */
+  font-size: 54px;
+  font-weight: 700;
   line-height: 0.95;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.02em;
   color: var(--v2-ink);
 }
 
@@ -182,7 +186,9 @@ body[data-page="home"] .v2-todo .todo-pill { background: #fff; border: 1px solid
 .v2-head { text-align: left; margin: 4px 0 -1px; }   /* 큰 영어 제목은 모든 페이지에서 왼쪽 정렬 */
 /* 아래 검색줄은 붙박이(sticky)라 자기 위 여백 16px을 갖고 있다 — 제목과 사이는 15px */
 .v2-head__eyebrow { margin: 0; font-size: 14px; color: var(--v2-ink-soft); }
-.v2-head__title { margin: 0; font-family: var(--font-title); font-size: 54px; font-weight: 900; line-height: 1.05; letter-spacing: -0.04em; color: var(--v2-ink); }
+/* 큰 제목(Schools·Credits·Picks·Talky·Storage·Today)은 홈 steppY 와 같은 로고 글씨체(SB 어그로).
+   크기는 그대로 두고, 어그로는 획이 가늘어 고딕 900 처럼 자간을 바짝 좁히면 붙으므로 살짝만 당긴다. */
+.v2-head__title { margin: 0; font-family: 'SB Aggro Light', var(--font-title); font-size: 45px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; color: var(--v2-ink); }
 
 /* ---------------------------------------------------------------- 학교 찾기: 나라별 책장 */
 body[data-page="search"] .school-grid { display: block; }

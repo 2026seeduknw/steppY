@@ -156,7 +156,7 @@
       mount.innerHTML = `
         <a class="v2-wheel__empty" href="search.html">
           <strong>지원 가능한 학교부터 찾아보세요</strong>
-          <span>271개 파견교를 성적·국가·전공으로 골라볼 수 있어요</span>
+          <span>271개 파견교를 성적·국가·전공으로 골라볼 수 있어요.</span>
         </a>`;
       return;
     }
@@ -173,7 +173,7 @@
       mount.innerHTML = `
         <a class="v2-wheel__empty" href="search.html">
           <strong>아직 고른 학교가 없어요</strong>
-          <span>학교 찾기에서 ♡를 누르거나 희망대학표에 담으면 여기에 모여요</span>
+          <span>학교 찾기에서 ♡를 누르거나 희망대학표에 담으면 여기에 모여요.</span>
         </a>`;
       return;
     }

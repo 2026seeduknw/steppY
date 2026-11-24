@@ -184,7 +184,6 @@
                 <div class="diary-menu__pop" id="calMenu" role="menu" hidden>
                   <button type="button" class="diary-menu__item" id="openStampbook" role="menuitem">우표첩</button>
                   <button type="button" class="diary-menu__item" id="openWrapup" role="menuitem">이번 달 정리</button>
-                  <button type="button" class="diary-menu__item" id="openReport" role="menuitem">경험보고서 미리보기</button>
                 </div>
               </div>
               <span class="diary-cal-nav__divider"></span>
@@ -503,7 +502,7 @@
         <button type="button" class="diary-featured__empty" id="emptyStamp">
           <span class="diary-featured__empty-icon" aria-hidden="true">${isBefore ? '🇰🇷' : '✉️'}</span>
           <b>${isBefore ? '한국에서의 추억을 남겨보아요' : '첫 기록을 남겨보세요'}</b>
-          <span>${isBefore ? '지금 남긴 기록은 교환 가서도 다시 볼 수 있어요' : '사진 한 장이면 첫 우표가 붙어요'}</span>
+          <span>${isBefore ? '지금 남긴 기록은 교환 가서도 다시 볼 수 있어요' : '사진 한 장이면 첫 우표가 붙어요.'}</span>
         </button>`;
       slot.querySelector('#emptyStamp').addEventListener('click', () => { if (!needLogin()) openEntryModal(); });
       wireQuestion(slot);
@@ -1013,7 +1012,7 @@
 
   const EMPTY_HTML = `<div class="diary-empty">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.2h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" stroke-dasharray="3 3"/><circle cx="12" cy="13.5" r="3.4" stroke-dasharray="3 3"/></svg>
-      <p>이 날짜엔 아직 기록이 없어요<br>아래 카메라로 남겨보세요</p>
+      <p>이 날짜엔 아직 기록이 없어요.<br>아래 카메라로 남겨보세요.</p>
     </div>`;
 
   /** 사진 클릭 → 원본 크기 팝업, 삭제 버튼 연결. 사진 영역에만 리스너를 단다. */
@@ -1644,7 +1643,7 @@
         if (fb.lat && fb.lng && typeof SongEngine !== 'undefined') {
           SongEngine.fetchWeather(fb.lat, fb.lng).then(w => { pendingWeather = w; }).catch(() => {});
         }
-        if (note) note.textContent = `📍 ${reason}. 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
+        if (note) note.textContent = `📍 ${reason}. 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요.`;
       } else {
         pendingLocation = null;
         if (note) note.textContent = `📍 ${reason} (위치 없이 저장돼요)`;
@@ -1684,7 +1683,7 @@
           const fb = schoolFallbackLocation();
           pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
           if (note) note.textContent = fb
-            ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
+            ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요.`
             : '📍 지명을 확인하지 못했어요';
         }
       } catch (err) {
@@ -1692,7 +1691,7 @@
         const fb = schoolFallbackLocation();
         pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
         if (note) note.textContent = fb
-          ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
+          ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요.`
           : '📍 지명을 확인하지 못했어요';
       }
     }, () => fallback('위치 권한이 거부됐어요'), { timeout: 8000 });
@@ -1716,10 +1715,10 @@
           <p class="loc-consent__title">위치정보 이용 동의 <span>(선택)</span></p>
           <p class="loc-consent__lead">기록에 도시와 날씨를 붙이려고 사진에 담긴 위치(없으면 기기 위치)를 확인해요.</p>
           <ul class="loc-consent__list">
-            <li>위치(위도·경도)는 도시와 그때 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
-            <li>기록에는 도시·국가만 저장돼요.</li>
-            <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요.</li>
-            <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요.</li>
+            <li>위치(위도·경도)는 도시와 그때 날씨를 찾는 데만 쓰고 저장하지 않아요</li>
+            <li>기록에는 도시·국가만 저장돼요</li>
+            <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요</li>
+            <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요</li>
           </ul>
           <a class="loc-consent__link" href="terms.html#ch9" target="_blank" rel="noopener">이용약관 9장(위치기반서비스) 보기</a>
           <div class="loc-consent__actions">
@@ -1741,7 +1740,7 @@
 
   /** 기록에는 도시·국가·국가 코드만 저장한다. 정밀 좌표는 친구 공개 때 위치가 새는 길이라 남기지 않는다. */
   function stripCoords(loc) {
-    return loc ? { country: loc.country || null, city: loc.city || null, countryCode: loc.countryCode || null } : null;
+    return loc ? { country: loc.country || null, city: cityEn(loc.city), countryCode: loc.countryCode || null } : null;
   }
 
   function wireEntryForm(scrim) {
@@ -2127,7 +2126,6 @@
     });
     wireFriends();
     root.querySelector('#openWrapup').addEventListener('click', openWrapupModal);
-    root.querySelector('#openReport').addEventListener('click', openReportModal);
   }
 
   /** 친구 관리(코드로 추가·요청 수락·차단)로 들어가는 버튼. 받은 요청이 있으면 숫자 배지가 붙는다. */
@@ -2218,8 +2216,7 @@
                   <span class="rec-hero__date">${shortDate(x.entry.date)}</span>` : ''}
                 </button>`;
               }).join('')}
-              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>
-              <button type="button" class="rec-hero__next" data-hero-next aria-label="뒷장 사진 보기">+</button>` : ''}
+              ${n > 1 ? `<span class="rec-hero__count" aria-hidden="true">1 / ${n}</span>` : ''}
             </div>
             ${latest ? '' : `<p class="rec-hero__cap">${shortDate(d.date)}${place ? ` · ${esc(place)}` : ''}${n > 1 ? ` · ${n}장` : ''}</p>`}
           </div>`;
@@ -2247,39 +2244,6 @@
     const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
     requestAnimationFrame(toLatest);
     setTimeout(toLatest, 120);
-  }
-
-  /** 하루 사진 더미 — 맨 위 사진을 맨 뒤로 보내고 다음 사진을 올린다(끝까지 넘기면 처음으로) */
-  function flipHeroStack(st) {
-    if (!st || st._busy) return;
-    const slide = st.closest('.rec-hero__slide');
-    // 옆에 비친 날의 +를 눌렀으면 먼저 그날을 가운데로
-    if (slide && !slide.classList.contains('is-active')) {
-      const track = slide.parentElement;
-      track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
-    }
-    const cards = [...st.querySelectorAll('.rec-hero__card')].sort((a, b) => a.style.getPropertyValue('--pos') - b.style.getPropertyValue('--pos'));
-    const n = cards.length;
-    if (n < 2) return;
-    st._busy = true;
-    const top = cards[0];
-    top.classList.add('is-leaving');
-    setTimeout(() => {
-      top.classList.remove('is-leaving');
-      cards.forEach((c, k) => {
-        const pos = k === 0 ? n - 1 : k - 1;
-        c.style.setProperty('--pos', pos);
-        c.tabIndex = pos ? -1 : 0;
-        c.classList.toggle('is-top', !pos);
-      });
-      const nowTop = cards[1];
-      const topIdx = ((Number(st.dataset.top) || 0) + 1) % n;   // 지금 맨 위가 원래 몇 번째 사진인지
-      st.dataset.top = String(topIdx);
-      const count = st.querySelector('.rec-hero__count');
-      if (count) count.textContent = `${topIdx + 1} / ${n}`;
-      if (nowTop) nowTop.focus({ preventScroll: true });
-      st._busy = false;
-    }, 260);
   }
 
   /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
@@ -2369,8 +2333,6 @@
     });
     root.querySelector('#recHero').addEventListener('click', (ev) => {
       if (ev.target.closest('[data-hero-write]')) { if (!needLogin()) openEntryModal(); return; }
-      const next = ev.target.closest('[data-hero-next]');
-      if (next) { flipHeroStack(next.closest('.rec-hero__stack')); return; }
       const btn = ev.target.closest('[data-hero-open]');
       if (!btn) return;
       const start = Number(btn.dataset.heroOpen) || 0;

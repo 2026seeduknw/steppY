@@ -243,7 +243,7 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 .departure-prompt__field input {
   height: 46px; padding: 0 var(--space-3);
   border: 1.5px solid var(--key-500); border-radius: var(--radius-md);
-  background: var(--cloud-0); color: var(--ink-900); font: inherit; font-size: 16px; font-weight: 700;
+  background: var(--cloud-0); color: var(--ink-900); font: inherit; font-size: var(--fs-small); font-weight: 700;
 }
 .departure-prompt__field--sub { font-weight: 600; color: var(--ink-600); }
 .departure-prompt__field--sub input { border-color: var(--line-200); font-weight: 500; }
@@ -291,15 +291,14 @@ body[data-page="prepare"] .page-shell.prepare-hero {
 }
 .step-item__add:hover { background: var(--cloud-50); color: var(--ink-600); }
 .step-item__add.is-added { color: var(--ink-300, var(--ink-400)); font-size: 0.9rem; cursor: default; background: none; }
-/* 팝업 입력칸 — 출국일 팝업처럼 강조할 칸이 아니라서 회색 테두리·보통 굵기.
-   글자 크기는 16px 아래로 내리지 않는다(iPhone이 입력할 때 화면을 확대해 버린다). */
+/* 팝업 입력칸 — 출국일 팝업처럼 강조할 칸이 아니라서 회색 테두리·보통 굵기. */
 .todo-add-prompt .departure-prompt__field input,
 .todo-add-prompt .departure-prompt__field select {
   height: 42px; border-color: var(--line-200); font-weight: 500;
 }
 .todo-add-prompt .departure-prompt__field select {
   padding: 0 var(--space-3); border: 1.5px solid var(--line-200); border-radius: var(--radius-md);
-  background: var(--cloud-0); color: var(--ink-900); font-family: inherit; font-size: 16px;
+  background: var(--cloud-0); color: var(--ink-900); font-family: inherit; font-size: var(--fs-small);
 }
 
 /* 다가오는 국제처 일정 두 줄 — 학교 카드 아래(홈과 같은 꼴) */

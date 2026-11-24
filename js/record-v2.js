@@ -305,7 +305,7 @@
   }
   /*
    * 폴더 안 — 폴더는 '사진을 모아 두는 곳'이라 담긴 사진을 격자로 보여 준다(누르면 크게 + 위치·날씨·노래).
-   * Monthly는 한 달씩 넘겨 그 달 사진을 모두. 그 달을 잡지처럼 엮은 recap은 따로(첫 화면 Recap → openRecap).
+   * Monthly는 한 달씩 넘기는 사진 달력. 그동안 간 도시를 잇는 경로는 따로(첫 화면 Recap → openRecap).
    */
   let folderShots = [];
   function renderFolder() {
@@ -314,29 +314,22 @@
     folderView.querySelector('.rec-top__title b').textContent = folderNode.name;
     const body = folderView.querySelector('.rec-layer__body');
     const ym = monthOfNode(folderNode);
+    folderView.classList.toggle('rec-layer--photo', !!ym);
+    folderShots = [];
+    list.forEach(e => (e.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) folderShots.push({ url: u, e }); }));
+    if (ym) { body.innerHTML = monthCalendarHtml(ym, list, folderNode.type === 'monthly'); return; }
     const canPick = !(folderNode.type === 'monthly' || folderNode.virtual);
     if (!list.length && !ym) {
       body.innerHTML = `
         <div class="rec-fempty">
           ${DiaryArchive.folderIcon(folderNode, 'fe-' + folderNode.id)}
           <p class="rec-fempty__title">아직 담긴 사진이 없어요</p>
-          <p class="rec-fempty__sub">${folderNode.type === 'monthly' ? '사진을 기록하면 달마다 자동으로 모여요' : '사진 기록을 이 폴더에 담아 보세요'}</p>
+          <p class="rec-fempty__sub">${folderNode.type === 'monthly' ? '사진을 기록하면 달마다 자동으로 모여요.' : '사진 기록을 이 폴더에 담아 보세요.'}</p>
           ${canPick ? '<button type="button" class="rec-pill rec-pill--dark" data-pick>+ 사진 담기</button>' : ''}
         </div>`;
       return;
     }
-    folderShots = [];
-    list.forEach(e => (e.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) folderShots.push({ url: u, e }); }));
-    const monthHead = ym ? (() => {
-      const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
-      const nav = folderNode.type === 'monthly';
-      return `<div class="rec-pgrid__head">
-          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
-          <p class="rec-pgrid__month"><b>${MONTH_EN[m]}</b> ${y}</p>
-          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="1" aria-label="다음 달">›</button>' : '<span></span>'}
-        </div>`;
-    })() : '';
-    body.innerHTML = monthHead + `
+    body.innerHTML = `
       <div class="rec-pgrid__bar">
         <span class="rec-pgrid__count">사진 ${folderShots.length}장</span>
         ${canPick ? '<button type="button" class="rec-pager__add" data-pick>+ 사진 담기</button>' : ''}
@@ -344,9 +337,8 @@
       ${folderShots.length ? `<div class="rec-pgrid">${folderShots.map((x, i) => `
         <button type="button" class="rec-pgrid__item" data-shot="${i}" aria-label="${esc(x.e.date)} 사진 크게 보기">
           <img src="${esc(x.url)}" alt="" loading="lazy" draggable="false">
-        </button>`).join('')}</div>` : `<p class="rec-mcal__empty">${ym ? '이 달에는 아직 사진이 없어요' : '아직 담긴 사진이 없어요'}</p>`}`;
+        </button>`).join('')}</div>` : '<p class="rec-mcal__empty">아직 담긴 사진이 없어요</p>'}`;
   }
-  /* ---- Monthly: 그 달을 콜라주 달력 한 장으로 — 날마다 첫 사진을 오려 붙인 느낌 ---- */
   /** Monthly 아래 자동 폴더(이름 YYYY.MM)면 'YYYY-MM' */
   function monthOfNode(node) {
     if (!node) return '';
@@ -361,45 +353,47 @@
     return folderMonth;
   }
   const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  /**
-   * 한 달 recap — 잡지 "이달의 favorites"처럼 그 달 사진을 오려 붙이고 번호(01.)·제목·위치·노래를 단다.
-   * 하루에 한 장(그날 첫 사진), 최대 8일. 사진을 누르면 아래에서 그날 페이지로 간다.
-   */
-  function monthSheetHtml(ym, list, opts) {
+  const firstPhoto = (e) => (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean) || '';
+  /** 칸 하나에서 여러 장을 크게 — 확대 화면은 사진마다 원본 비율이 필요해 나머지 장도 미리 읽어 넘긴다 */
+  function openShots(shots, img) {
+    const src = img.getAttribute('src');
+    const k = Math.max(0, shots.findIndex(x => x.url === src));
+    const thumbs = shots.map((x, i) => { if (i === k) return img; const t = new Image(); t.src = x.url; return t; });
+    Promise.all(thumbs.map(t => (t.decode ? t.decode().catch(() => {}) : null))).then(() => {
+      if (img.isConnected) DiaryArchive.openPhotos(shots, k, thumbs);
+    });
+  }
+  /** 한 달 사진 달력 — 그달 사진을 배경에 깔고, 기록한 날 칸에 그날 첫 사진을 채운다(월요일 시작) */
+  function monthCalendarHtml(ym, list, nav) {
     const y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1;
-    const days = {};
+    const byDay = {};
     list.slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt)))
-      .forEach(e => { if (!days[e.date] && (e.photos || []).some(p => ctx.photoUrl(p))) days[e.date] = e; });
-    const picks = Object.values(days).slice(0, 8);
-    const nav = !!(opts && opts.nav);
-    const head = `
-        <div class="rec-recap__head">
-          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="-1" aria-label="이전 달">‹</button>' : '<span></span>'}
-          <div class="rec-recap__title">
-            <h3><b>${MONTH_EN[m]}</b> Recap</h3>
-            <p><span>CRAFTED BY steppY · ${y}</span></p>
-          </div>
-          ${nav ? '<button type="button" class="rec-mcal__nav" data-mnav="1" aria-label="다음 달">›</button>' : '<span></span>'}
-        </div>`;
-    if (!picks.length) return `<section class="rec-recap" aria-label="${y}년 ${m + 1}월 recap">${head}</section>`;
-    const DECO = ['b:smile', 'b:star', 'b:sparkle', 'b:heart'];
-    const items = picks.map((e, i) => {
-      const url = (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean);
-      const info = typeof DiaryArchive !== 'undefined' ? DiaryArchive.infoOf(e) : {};
-      const place = info.place ? info.place.filter(Boolean).join(', ') : '';
-      const deco = i % 3 === 1 && typeof DiaryStickers !== 'undefined' ? `<img class="rec-recap__deco" src="${esc(DiaryStickers.url(DECO[i % DECO.length]))}" alt="" aria-hidden="true">` : '';
-      return `
-        <article class="rec-recap__item${i % 2 ? ' is-right' : ''}" data-goto="${list.indexOf(e)}" role="button" tabindex="0" aria-label="${Number(e.date.slice(5, 7))}월 ${Number(e.date.slice(8, 10))}일 기록 보기">
-          <div class="rec-recap__photo"><img src="${esc(url)}" alt="" draggable="false" loading="lazy">${deco}</div>
-          <div class="rec-recap__text">
-            <span class="rec-recap__no">${String(i + 1).padStart(2, '0')}.</span>
-            <h4>${esc(e.title || place || enD(e.date))}</h4>
-            ${place ? `<p class="rec-recap__place">📍 ${esc(place)}</p>` : ''}
-            <p class="rec-recap__meta">${esc(enD(e.date))}${info.song ? ` · ♪ ${esc(info.song.name)}` : ''}</p>
-          </div>
-        </article>`;
-    }).join('');
-    return `<section class="rec-recap" aria-label="${y}년 ${m + 1}월 recap">${head}<div class="rec-recap__list">${items}</div></section>`;
+      .forEach(e => { const u = firstPhoto(e); if (u && !byDay[e.date]) byDay[e.date] = u; });
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    const last = new Date(y, m + 1, 0).getDate();
+    const total = Math.ceil((lead + last) / 7) * 7;
+    let cells = '';
+    for (let i = 0; i < total; i++) {
+      const d = i - lead + 1;
+      if (d < 1 || d > last) { cells += '<span class="rec-pcal__day"></span>'; continue; }
+      const iso = `${ym}-${pad(d)}`;
+      cells += byDay[iso]
+        ? `<button type="button" class="rec-pcal__day" data-day="${iso}" aria-label="${m + 1}월 ${d}일 사진 보기"><img src="${esc(byDay[iso])}" alt="" loading="lazy" draggable="false"><span>${d}</span></button>`
+        : `<span class="rec-pcal__day"><span>${d}</span></span>`;
+    }
+    const count = Object.keys(byDay).length;
+    const navBtn = (dir, label, ch) => nav ? `<button type="button" class="rec-pcal__nav" data-mnav="${dir}" aria-label="${label}">${ch}</button>` : '<span></span>';
+    return `
+      <section class="rec-pcal" aria-label="${y}년 ${m + 1}월 사진 달력">
+        <div class="rec-pcal__head">
+          ${navBtn(-1, '이전 달', '‹')}
+          <h2>${MONTH_EN[m]} ${y}</h2>
+          ${navBtn(1, '다음 달', '›')}
+        </div>
+        <div class="rec-pcal__week" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="rec-pcal__grid">${cells}</div>
+        <p class="rec-pcal__sum">${count ? `${count}일의 기록` : '이 달에는 아직 사진이 없어요.'}</p>
+      </section>`;
   }
   function openFolder(c, node) {
     ctx = c;
@@ -417,6 +411,13 @@
           folderMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
           renderFolder(); return;
         }
+        const day = ev.target.closest('[data-day]');
+        if (day) {
+          const shots = folderShots.filter(x => x.e.date === day.dataset.day).reverse().map(x => ({ url: x.url, info: DiaryArchive.infoOf(x.e) }));
+          const img = day.querySelector('img');
+          if (shots.length && img) openShots(shots, img);
+          return;
+        }
         const shot = ev.target.closest('[data-shot]');
         if (shot) {
           const imgs = [...folderView.querySelectorAll('.rec-pgrid__item img')];
@@ -427,68 +428,191 @@
     renderFolder();
   }
 
-  /* ------------------------------------------------------------ Recap — 한 달을 잡지 한 장처럼(예전 Monthly 폴더 화면) */
-  let recapView = null, recapMonth = '';
-  function recapEntries(ym) {
-    return ctx.entries().filter(e => e.date.startsWith(ym) && (e.photos || []).some(p => ctx.photoUrl(p)))
-      .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  /* ------------------------------------------------------------ Recap — 그동안 간 도시를 사진과 경로로
+     GPS는 저장하지 않는다(diary-view.js stripCoords). 기록에 남은 도시 이름만 쓰고, 화면의 자리는 지도가 아니라
+     방문 순서대로 지그재그로 놓는다. 거리는 도시 중심끼리의 직선거리이며 좌표를 모르는 구간은 적지 않는다. */
+  const CITY_COORDS = {
+    amsterdam: [52.37, 4.9], athens: [37.98, 23.73], auckland: [-36.85, 174.76], bangkok: [13.76, 100.5], barcelona: [41.39, 2.17],
+    beijing: [39.9, 116.41], berlin: [52.52, 13.41], bern: [46.95, 7.45], bologna: [44.49, 11.34], boston: [42.36, -71.06],
+    brisbane: [-27.47, 153.03], brussels: [50.85, 4.35], budapest: [47.5, 19.04], busan: [35.18, 129.08], cairo: [30.04, 31.24],
+    chicago: [41.88, -87.63], copenhagen: [55.68, 12.57], dublin: [53.35, -6.26], edinburgh: [55.95, -3.19], florence: [43.77, 11.26],
+    frankfurt: [50.11, 8.68], fukuoka: [33.59, 130.4], geneva: [46.2, 6.14], granada: [37.18, -3.6], hamburg: [53.55, 9.99],
+    hanoi: [21.03, 105.85], helsinki: [60.17, 24.94], 'ho chi minh city': [10.82, 106.63], 'hong kong': [22.32, 114.17], honolulu: [21.31, -157.86],
+    interlaken: [46.69, 7.86], istanbul: [41.01, 28.98], jakarta: [-6.21, 106.85], kyoto: [35.01, 135.77], 'kuala lumpur': [3.14, 101.69],
+    lisbon: [38.72, -9.14], liverpool: [53.41, -2.98], london: [51.51, -0.13], 'los angeles': [34.05, -118.24], lyon: [45.76, 4.84],
+    madrid: [40.42, -3.7], manchester: [53.48, -2.24], manila: [14.6, 120.98], marrakesh: [31.63, -8], melbourne: [-37.81, 144.96],
+    miami: [25.76, -80.19], milan: [45.46, 9.19], montreal: [45.5, -73.57], munich: [48.14, 11.58], nagoya: [35.18, 136.91],
+    naples: [40.85, 14.27], nice: [43.7, 7.27], 'new york': [40.71, -74.01], osaka: [34.69, 135.5], oslo: [59.91, 10.75],
+    paris: [48.86, 2.35], perth: [-31.95, 115.86], porto: [41.15, -8.61], prague: [50.08, 14.44], reykjavik: [64.15, -21.94],
+    rome: [41.9, 12.5], salzburg: [47.81, 13.05], 'san francisco': [37.77, -122.42], sapporo: [43.06, 141.35], seattle: [47.61, -122.33],
+    seoul: [37.57, 126.98], seville: [37.39, -5.99], shanghai: [31.23, 121.47], singapore: [1.35, 103.82], stockholm: [59.33, 18.07],
+    sydney: [-33.87, 151.21], taipei: [25.03, 121.57], tokyo: [35.68, 139.69], toronto: [43.65, -79.38], valencia: [39.47, -0.38],
+    vancouver: [49.28, -123.12], venice: [45.44, 12.32], vienna: [48.21, 16.37], warsaw: [52.23, 21.01], zurich: [47.38, 8.54]
+  };
+  function cityCoord(key) {
+    if (CITY_COORDS[key]) return CITY_COORDS[key];
+    const sc = typeof MOCK !== 'undefined' ? (MOCK.schools || []).find(s => s.lat != null && s.lng != null
+      && [s.city, s.campusCity].some(v => String(v || '').trim().toLowerCase() === key)) : null;
+    return sc ? [Number(sc.lat), Number(sc.lng)] : null;
   }
-  function latestMonth(c) {
-    const dates = c.entries().filter(e => (e.photos || []).length).map(e => e.date).sort();
-    const t = new Date();
-    return dates.length ? dates[dates.length - 1].slice(0, 7) : `${t.getFullYear()}-${pad(t.getMonth() + 1)}`;
+  function distanceKm(a, b) {
+    const pa = cityCoord(a), pb = cityCoord(b);
+    if (!pa || !pb) return null;
+    const rad = (v) => v * Math.PI / 180;
+    const dLat = rad(pb[0] - pa[0]), dLng = rad(pb[1] - pa[1]);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(pa[0])) * Math.cos(rad(pb[0])) * Math.sin(dLng / 2) ** 2;
+    return Math.round(6371 * 2 * Math.asin(Math.sqrt(h)));
   }
+  /** 사진 기록을 시간순으로 훑어, 같은 도시가 이어지면 한 번의 방문으로 묶는다 */
+  function routeStops(c) {
+    const stops = [];
+    c.entries().slice().sort((a, b) => a.date.localeCompare(b.date) || String(a.createdAt).localeCompare(String(b.createdAt))).forEach(e => {
+      const urls = (e.photos || []).map(p => c.photoUrl(p)).filter(Boolean);
+      if (!urls.length || typeof placeEn !== 'function') return;
+      const loc = placeEn(e.location);
+      const name = String(loc.city || loc.country || '').trim();
+      if (!name) return;
+      const key = name.toLowerCase();
+      let stop = stops[stops.length - 1];
+      if (!stop || stop.key !== key) { stop = { key, name, country: String(loc.country || '').trim(), from: e.date, to: e.date, cover: urls[0], shots: [] }; stops.push(stop); }
+      stop.to = e.date;
+      urls.forEach(url => stop.shots.push({ url, info: DiaryArchive.infoOf(e) }));
+    });
+    return stops;
+  }
+  function routeSummary(stops) {
+    const cities = new Set(stops.map(s => s.key)).size;
+    const legs = stops.slice(1).map((s, i) => distanceKm(stops[i].key, s.key));
+    const km = legs.length && legs.every(v => v != null) ? legs.reduce((sum, v) => sum + v, 0) : null;
+    const label = `${cities} ${cities === 1 ? 'city' : 'cities'}`;
+    return { label, km, legs, text: km != null ? `${label} · ${km.toLocaleString('en-US')}km` : label };
+  }
+  const stopDates = (s) => {
+    const from = s.from.replace(/-/g, '.');
+    if (s.from === s.to) return from;
+    return `${from} ~ ${s.to.slice(0, 4) === s.from.slice(0, 4) ? s.to.slice(5).replace('-', '.') : s.to.replace(/-/g, '.')}`;
+  };
+  const PIN = '<path d="M14 0a14 14 0 0 0-14 14c0 10 14 24 14 24s14-14 14-24A14 14 0 0 0 14 0Z"/><circle cx="14" cy="14" r="5"/>';
+  /** 오간 나라를 방문 순서로 묶는다. 같은 나라를 다시 가면 다시 한 줄로 남겨 오간 흐름이 보이게 한다 */
+  function countryVisits(stops) {
+    const visits = [];
+    stops.forEach(s => {
+      let v = visits[visits.length - 1];
+      if (!v || v.country !== s.country) { v = { country: s.country, from: s.from, to: s.to, cities: [] }; visits.push(v); }
+      v.to = s.to;
+      if (s.name !== s.country && !v.cities.includes(s.name)) v.cities.push(s.name);
+    });
+    return visits;
+  }
+  function countriesHtml(stops) {
+    const visits = countryVisits(stops);
+    const n = new Set(visits.map(v => v.country).filter(Boolean)).size;
+    return `<div class="rec-route__countries" id="recRouteCountries" hidden>
+      <p class="rec-route__chead">${n} ${n === 1 ? 'country' : 'countries'}</p>
+      <ol>${visits.map((v, i) => `<li><i>${i + 1}</i><span><b>${esc(v.country || '나라 미상')}</b><small>${esc([v.cities.join(', '), stopDates(v)].filter(Boolean).join(' · '))}</small></span></li>`).join('')}</ol>
+    </div>`;
+  }
+  function toggleCountries(open) {
+    const panel = recapView && recapView.querySelector('.rec-route__countries');
+    const pill = recapView && recapView.querySelector('.rec-route__pill');
+    if (!panel || !pill) return;
+    panel.hidden = !open;
+    pill.setAttribute('aria-expanded', String(open));
+  }
+  function routeHtml(stops, W) {
+    const sum = routeSummary(stops);
+    const years = [...new Set([stops[0].from.slice(0, 4), stops[stops.length - 1].to.slice(0, 4)])].join(' ~ ');
+    const cardW = Math.round(W * 0.29), cardH = Math.round(cardW * 1.22), side = 24;
+    const rowH = cardH + 34, firstTop = 78;
+    const spots = stops.map((s, i) => {
+      const left = i % 2 === 0;
+      const x = left ? side : W - side - cardW;
+      const top = firstTop + i * rowH;
+      return { s, i, left, x, top, cx: x + cardW / 2, tip: top - 8 };
+    });
+    const paths = [], kms = [];
+    spots.slice(1).forEach((b, k) => {
+      const a = spots[k], dir = b.cx > a.cx ? 1 : -1, reach = cardW / 2 + 12;
+      const midX = W / 2 + (k % 2 ? -8 : 8), midY = a.tip + (b.tip - a.tip) * 0.5;
+      paths.push(`<path pathLength="1" style="animation-delay:${Math.min(k * 0.18, 1)}s" d="M${a.cx} ${a.tip} L${a.cx + dir * reach} ${a.tip - 6} L${midX} ${midY} L${b.cx - dir * reach} ${b.tip - 6} L${b.cx} ${b.tip}"/>`);
+      if (sum.legs[k] != null) kms.push(`<span class="rec-route__km" style="left:${Math.round(W / 2)}px;top:${Math.round(midY + 8)}px">${sum.legs[k].toLocaleString('en-US')}km</span>`);
+    });
+    const height = firstTop + (stops.length - 1) * rowH + cardH + 44;
+    const marks = spots.map(p => p.i === 0
+      ? `<span class="rec-route__start" style="left:${p.cx - 13}px;top:${p.tip - 26}px"></span>`
+      : `<svg class="rec-route__pin" style="left:${p.cx - 14}px;top:${p.tip - 38}px" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg>`).join('');
+    const cards = spots.map(p => `
+      <button type="button" class="rec-route__stop ${p.left ? 'is-left' : 'is-right'}" data-stop="${p.i}" style="left:${p.x}px;top:${p.top}px;width:${cardW}px" aria-label="${esc(p.s.name)} 사진 ${p.s.shots.length}장">
+        <span class="rec-route__photo" style="height:${cardH}px"><img src="${esc(p.s.cover)}" alt="" loading="lazy" draggable="false"><b>${p.s.shots.length}</b></span>
+        <span class="rec-route__name">${esc(p.s.name)}</span>
+      </button>`).join('');
+    return `
+      <div class="rec-route">
+        <div class="rec-route__top">
+          <button type="button" class="rec-route__pill" data-countries aria-expanded="false" aria-controls="recRouteCountries" aria-label="${esc(sum.text)}, 다녀온 나라 보기"><svg width="14" height="18" viewBox="0 0 28 38" aria-hidden="true">${PIN}</svg><b>${esc(sum.text)}</b><em>${esc(years)}</em></button>
+          ${countriesHtml(stops)}
+        </div>
+        <div class="rec-route__stage" style="height:${height}px">
+          <svg class="rec-route__line" width="${W}" height="${height}" viewBox="0 0 ${W} ${height}" aria-hidden="true">${paths.join('')}</svg>
+          ${marks}${kms.join('')}${cards}
+        </div>
+        <button type="button" class="rec-route__sheet" data-open-stop></button>
+      </div>`;
+  }
+  function pickStop(i) {
+    if (!recapView) return;
+    const s = recapView._stops[i];
+    const sheet = recapView.querySelector('.rec-route__sheet');
+    if (!s || !sheet) return;
+    recapView._picked = i;
+    sheet.setAttribute('aria-label', `${s.name} 사진 보기`);
+    sheet.innerHTML = `<img src="${esc(s.cover)}" alt="" draggable="false"><span><b>${esc(s.name)}</b><small>${esc(stopDates(s))} · 사진 ${s.shots.length}장</small></span><i aria-hidden="true">→</i>`;
+  }
+  let recapView = null;
   function renderRecap() {
     if (!recapView) return;
-    const list = recapEntries(recapMonth);
-    recapView.querySelector('.rec-layer__body').innerHTML = monthSheetHtml(recapMonth, list, { nav: true })
-      + (list.length ? '' : '<p class="rec-mcal__empty">이 달에는 아직 사진 기록이 없어요</p>');
-    recapView._list = list;
+    const stops = routeStops(ctx);
+    recapView._stops = stops;
+    const body = recapView.querySelector('.rec-layer__body');
+    if (!stops.length) {
+      body.innerHTML = `<div class="rec-route rec-route--empty"><p>사진에 위치를 남기면<br>여행 경로가 그려져요.</p></div>`;
+      return;
+    }
+    body.innerHTML = routeHtml(stops, recapView.clientWidth || 402);
+    pickStop(stops.length - 1);
   }
-  function openRecap(c, ym) {
+  function openRecap(c) {
     ctx = c;
-    recapMonth = ym || latestMonth(c);
     if (!recapView) {
-      recapView = openLayer('rec-recapview', 'Recap');
+      recapView = openLayer('rec-recapview rec-layer--photo', 'Recap');
       recapView.innerHTML = headHtml('Recap', '') + '<div class="rec-layer__body"></div>';
       recapView.addEventListener('click', (ev) => {
         if (ev.target.closest('[data-close]')) { const r = recapView; recapView = null; closeLayer(r); return; }
-        const mn = ev.target.closest('[data-mnav]');
-        if (mn) {
-          const [yy, mm] = recapMonth.split('-').map(Number);
-          const d = new Date(yy, mm - 1 + Number(mn.dataset.mnav), 1);
-          recapMonth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
-          renderRecap(); return;
-        }
-        // 사진을 누르면 그날 사진을 크게
-        const go = ev.target.closest('[data-goto]');
-        if (go) {
-          const e = (recapView._list || [])[Number(go.dataset.goto)];
-          if (!e) return;
-          const day = (recapView._list || []).filter(x => x.date === e.date).reverse();
-          const shots = [];
-          day.forEach(x => (x.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) shots.push({ url: u, info: DiaryArchive.infoOf(x) }); }));
-          const img = go.querySelector('img');
-          if (shots.length && img) DiaryArchive.openPhotos(shots, 0, [img]);
+        const panel = recapView.querySelector('.rec-route__countries');
+        if (ev.target.closest('[data-countries]')) { toggleCountries(!!(panel && panel.hidden)); return; }
+        if (panel && !panel.hidden) { if (!ev.target.closest('.rec-route__countries')) toggleCountries(false); return; }
+        const stop = ev.target.closest('[data-stop]');
+        if (stop) { pickStop(Number(stop.dataset.stop)); return; }
+        const open = ev.target.closest('[data-open-stop]');
+        if (open) {
+          const s = recapView._stops[recapView._picked];
+          const img = open.querySelector('img');
+          if (s && img) openShots(s.shots, img);
         }
       });
     }
     renderRecap();
   }
-  /** 첫 화면 Recap 카드 — 기록이 있는 가장 최근 달의 사진 몇 장을 겹쳐 보여 준다 */
+  /** 첫 화면 Recap 카드 — 최근에 간 도시 사진을 겹쳐 보여 준다 */
   function recapCardHtml(c) {
     ctx = c;
-    const ym = latestMonth(c);
-    const list = recapEntries(ym);
-    const m = Number(ym.slice(5, 7)) - 1;
-    const days = new Set(list.map(e => e.date)).size;
-    const thumbs = [];
-    list.slice().reverse().forEach(e => { const u = (e.photos || []).map(p => ctx.photoUrl(p)).find(Boolean); if (u && thumbs.length < 3) thumbs.push(u); });
+    const stops = routeStops(c);
+    const thumbs = stops.slice(-3).reverse().map(s => s.cover);
     return `
-      <button type="button" class="rec-recapcard" data-recap="${ym}" aria-label="${m + 1}월 recap 열기">
+      <button type="button" class="rec-recapcard" data-recap="route" aria-label="여행 경로 열기">
         <span class="rec-recapcard__text">
-          <b class="rec-recapcard__title">${MONTH_EN[m]} Recap</b>
-          <small>${days ? `${days}일의 기록을 한 장으로` : '이 달의 사진을 한 장으로 엮어 드려요'}</small>
+          <b class="rec-recapcard__title">My steps</b>
+          <small>${stops.length ? esc(routeSummary(stops).text) : '사진에 위치를 남기면 경로가 그려져요.'}</small>
         </span>
         <span class="rec-recapcard__thumbs" aria-hidden="true">${thumbs.map((u, i) => `<img src="${esc(u)}" alt="" style="--i:${i}" draggable="false">`).join('')}</span>
         <span class="rec-recapcard__arrow" aria-hidden="true">→</span>
