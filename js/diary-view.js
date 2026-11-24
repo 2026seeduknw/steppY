@@ -2349,7 +2349,12 @@
       if (!shots.length || !imgs[start]) return;
       DiaryArchive.openPhotos(shots, start, imgs);
     });
-    if (!wireHome._doc) { wireHome._doc = true; document.addEventListener('archive:changed', () => { if (root) renderRecent(); }); }
+    if (!wireHome._doc) {
+      wireHome._doc = true;
+      document.addEventListener('archive:changed', () => { if (root) renderRecent(); });
+      // 다른 기기에서 고친 다이어리·폴더가 도착했을 때
+      document.addEventListener('diary:synced', () => { DiaryArchive.reload(); if (root) { renderRecent(); renderDiaryRow(); } });
+    }
   }
 
   function renderHome() {
