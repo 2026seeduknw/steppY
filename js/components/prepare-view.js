@@ -161,6 +161,7 @@ function renderPrepareHero() {
       if (typeof showToast === 'function') showToast('취소하지 못했어요. 잠시 후 다시 시도해 주세요.');
       return;
     }
+    try { localStorage.removeItem('steppy_entry_route'); } catch (e) { /* 사생활 모드 */ }
     window.location.href = 'home.html';
   });
 }

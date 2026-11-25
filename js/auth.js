@@ -158,7 +158,8 @@ const Auth = {
     await supabaseClient.auth.signOut();
     this.session = null;
     // 사용자가 직접 누른 로그아웃이므로 여기서만 "로그인해 본 적" 표시를 지운다.
-    try { localStorage.removeItem(HAS_LOGGED_IN_KEY); } catch (e) { /* 사생활 모드 */ }
+    // 홈으로 들어올 때 갈 첫 화면(js/components/layout.js rememberEntryRoute)도 그 사람 것이라 함께 지운다.
+    try { localStorage.removeItem(HAS_LOGGED_IN_KEY); localStorage.removeItem('steppy_entry_route'); } catch (e) { /* 사생활 모드 */ }
   },
 
   /**

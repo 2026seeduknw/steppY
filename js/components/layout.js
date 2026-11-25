@@ -448,6 +448,25 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'search') mountFilterSheet();
 });
 
+/**
+ * 홈(home.html)으로 들어왔을 때 보여줄 첫 화면을 기억해 둔다 — home.html <head>가 이 값을 읽고
+ * 홈을 그리기 전에 바로 넘긴다(js/home.js redirectIfConfirmed 와 같은 판단).
+ * 서버 값을 받은 뒤(_hydrated)에만 적는다. 학교 확정 취소·로그아웃 때는 지운다.
+ */
+const ENTRY_ROUTE_KEY = 'steppy_entry_route';
+function rememberEntryRoute() {
+  if (!AppState._hydrated) return;
+  let route = '';
+  if (AppState.isAuthed && AppState.load().confirmedSchoolId) {
+    route = (typeof hasReturned === 'function' && hasReturned()) ? 'credits'
+      : (typeof hasDeparted === 'function' && hasDeparted()) ? 'journal' : 'prepare';
+  }
+  try {
+    if (route) localStorage.setItem(ENTRY_ROUTE_KEY, JSON.stringify({ uid: Auth.userId, route }));
+    else localStorage.removeItem(ENTRY_ROUTE_KEY);
+  } catch (e) { /* 사생활 모드 */ }
+}
+
 // Supabase 응답이 도착해야 getConfirmedSchool()이 정확해진다 — 홈 탭의 목적지가
 // prepare.html로 바뀌어야 하는 경우가 있어 데이터 갱신 후 탭바만 다시 그린다.
 document.addEventListener('MOCK:updated', () => {
@@ -464,6 +483,8 @@ document.addEventListener('MOCK:updated', () => {
       return;
     }
   }
+
+  rememberEntryRoute();
 
   // 프로필 이름(아바타 이니셜)과 확정 여부(홈 탭 목적지)가 하이드레이션 후에
   // 확정되므로 앱바와 탭바를 함께 다시 그린다.
