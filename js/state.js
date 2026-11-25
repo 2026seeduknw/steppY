@@ -980,6 +980,31 @@ const AppState = {
     }, '기록 수정');
   },
 
+  /**
+   * 기록에서 사진 한 장만 지운다(사진 크게 보기 화면의 삭제 — js/diary-archive.js).
+   * 사진만 있던 기록에서 마지막 사진을 지우면 남을 게 없으니 기록째 지운다.
+   * Storage 파일은 행이 고쳐진 뒤에 지운다 — 행 수정이 실패하면 사진이 아직 쓰이고 있으니 남긴다.
+   */
+  removeJournalPhoto(id, path) {
+    const entry = this.load().journal.find(e => e.id === id || e.tempId === id);
+    if (!entry || !(entry.photos || []).includes(path)) return;
+    const rest = entry.photos.filter(p => p !== path);
+    if (!rest.length && !String(entry.body || '').trim() && !String(entry.title || '').trim()) {
+      this.deleteJournalEntry(entry.id);
+    } else {
+      entry.photos = rest;
+      this.save();
+      this._push(async () => {
+        const res = await supabaseClient.from('user_journal')
+          .update({ photos: rest, updated_at: new Date().toISOString() })
+          .eq('id', entry.id).eq('user_id', Auth.userId);
+        if (!res.error) await supabaseClient.storage.from('diary-photos').remove([path]);
+        return res;
+      }, '사진 삭제');
+    }
+    document.dispatchEvent(new CustomEvent('MOCK:updated'));
+  },
+
   deleteJournalEntry(id) {
     const s = this.load();
     const i = s.journal.findIndex(e => e.id === id);

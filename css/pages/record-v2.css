@@ -486,7 +486,8 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-hero__track::-webkit-scrollbar { display: none; }
 .rec-hero__slide {
   flex: 0 0 100%; scroll-snap-align: center; position: relative; display: flex; flex-direction: column; justify-content: center;
-  opacity: 0.4; transform: scale(0.94); transition: opacity 220ms ease, transform 220ms ease;
+  /* 밝기·크기는 스크롤 위치에 따라 JS 가 매 프레임 정한다(diary-view.js mark) — 전환을 걸면 손가락보다 늦게 따라온다 */
+  opacity: 0.4; transform: scale(0.94); will-change: transform, opacity;
 }
 .rec-hero__slide.is-active { opacity: 1; transform: none; }
 /* 칸(바탕) 없이 사진 비율 그대로 — 사진만 둥글게 */
@@ -496,7 +497,7 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-hero--reel .rec-hero__img { width: 100%; height: auto; max-height: min(440px, 58vh); object-fit: cover; }
 /* 줄 높이는 가장 긴 사진이 아니라 지금 가운데 사진에 맞춘다(js: diary-view.js mark).
    위에 붙여 두면 옆의 더 긴 사진은 아래가 잘릴 뿐 위아래 빈 여백이 생기지 않는다. */
-.rec-hero__track { align-items: flex-start; transition: height 220ms ease; }
+.rec-hero__track { align-items: flex-start; transition: height 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 .rec-hero__cap { margin: 8px 4px 0; font-size: 12px; font-weight: 600; color: var(--v2-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-hero--reel .rec-hero__add { top: 12px; right: calc(6% + 12px); }
 
