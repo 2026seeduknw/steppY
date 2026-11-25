@@ -588,7 +588,7 @@
     return `
       <button type="button" class="rec-recapcard" data-recap="route" aria-label="여행 경로 열기">
         <span class="rec-recapcard__text">
-          <b class="rec-recapcard__title">My steps</b>
+          <b class="rec-recapcard__title">My Steps !</b>
           <small>${stops.length ? esc(routeSummary(stops).text) : '사진에 위치를 남기면 경로가 그려져요.'}</small>
         </span>
         <span class="rec-recapcard__thumbs" aria-hidden="true">${thumbs.map((u, i) => `<img src="${esc(u)}" alt="" style="--i:${i}" draggable="false">`).join('')}</span>
