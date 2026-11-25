@@ -128,7 +128,7 @@
 
     <section class="rec-recent">
       <div class="rec-sec-head">
-        <h2 class="rec-sec-head__title">Recent</h2>
+        <h2 class="rec-sec-head__title">Storage</h2>
         <button type="button" class="rec-sec-head__more" id="recOpenStorage" aria-label="저장소 전체 보기">→</button>
       </div>
       <div class="rec-recent__row" id="recRecent"></div>
@@ -136,9 +136,6 @@
 
     <!-- Recap — 한 달 사진을 잡지 한 장처럼(예전에는 Monthly 폴더를 열면 나왔다. 폴더는 이제 사진 보관용). js/record-v2.js openRecap -->
     <section class="rec-recap-home">
-      <div class="rec-sec-head">
-        <h2 class="rec-sec-head__title">Recap</h2>
-      </div>
       <div id="recRecapSlot"></div>
     </section>
 
@@ -2222,10 +2219,18 @@
           </div>`;
         }).join('')}
       </div>`;
+    // 세로로 긴 사진은 4:5까지만 보여주고 위아래를 자른다(누르면 원본 전체) — 줄이 지나치게 길어지지 않게.
+    // 가로 사진은 원래 비율 그대로.
+    const heroRatio = (img) => (img.naturalHeight / img.naturalWidth > 5 / 4 ? '4 / 5' : `${img.naturalWidth} / ${img.naturalHeight}`);
     // 더미는 맨 위 사진의 비율로 틀을 정한다 — 나머지 사진은 그 틀을 채운다(진짜 카드 더미처럼)
-    slot.querySelectorAll('.rec-hero__stack.is-stack').forEach(st => {
+    slot.querySelectorAll('.rec-hero__stack').forEach(st => {
       const img = st.querySelector('.rec-hero__card img');
-      const set = () => { if (img.naturalWidth) st.style.setProperty('--ratio', `${img.naturalWidth} / ${img.naturalHeight}`); };
+      const stacked = st.classList.contains('is-stack');
+      const set = () => {
+        if (!img.naturalWidth) return;
+        if (stacked) st.style.setProperty('--ratio', heroRatio(img));
+        else img.style.aspectRatio = heroRatio(img);
+      };
       if (img.complete) set(); else img.addEventListener('load', set, { once: true });
     });
     const track = slot.querySelector('#recHeroTrack');
@@ -2237,7 +2242,15 @@
         if (d < bd) { bd = d; best = sl; }
       });
       track.querySelectorAll('.rec-hero__slide').forEach(sl => sl.classList.toggle('is-active', sl === best));
+      // 가운데 사진 높이만큼만 차지한다 — 긴 사진일 때만 길어지고 가로 사진이면 줄어든다
+      if (best && best.offsetHeight) track.style.height = `${best.offsetHeight}px`;
     };
+    // 사진이 늦게 뜨면 높이가 바뀌므로 그때 다시 잰다
+    track.querySelectorAll('.rec-hero__img').forEach(img => { if (!img.complete) img.addEventListener('load', () => mark(), { once: true }); });
+    // 다시 그릴 때마다 붙으면 쌓이므로 하나만 남긴다
+    if (renderHomeHero.onResize) window.removeEventListener('resize', renderHomeHero.onResize);
+    renderHomeHero.onResize = () => { if (track.isConnected) mark(); };
+    window.addEventListener('resize', renderHomeHero.onResize);
     let ticking = false;
     track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(); }); } }, { passive: true });
     // 가장 최근(맨 오른쪽)에서 시작 — 자리가 다 잡힌 뒤에(바로 하면 폭이 0이라 안 먹는다)

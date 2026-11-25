@@ -204,7 +204,12 @@ body[data-page="credits"] .home-hero h1 { position: relative; top: 10px; }
 .match-query .match-query__cta { flex: none; width: auto; margin: 0; padding: 0 16px; height: 40px; min-height: 0; font-size: 13px; border-radius: 12px; white-space: nowrap; }   /* 파견교 드롭다운(40px)과 같은 높이 */
 .match-query__cta[hidden] { display: none; }
 /* 고른 값이 아직 조회되지 않았다 — 눌러야 목록이 바뀐다는 걸 버튼이 알린다 */
-.match-query__cta.is-dirty { background: var(--ink-900); color: #fff; }
+/* 조회하기는 늘 녹색 바탕 + 흰 글자. Kombu 그린(--mint-500)보다 살짝 밝게 — 흰 글자 대비 4.9:1.
+   조건을 바꿔 다시 눌러야 할 때·누를 때는 한 단계 진하게 */
+.match-query .match-query__cta,
+.match-query .match-query__cta:hover { background: #647845; color: #fff; box-shadow: none; }
+.match-query .match-query__cta:active { background: var(--mint-500); }
+.match-query .match-query__cta.is-dirty { background: var(--mint-500); color: #fff; }
 
 /* 예상 가능성 — 카드 맨 위 한 줄 */
 .verdict {

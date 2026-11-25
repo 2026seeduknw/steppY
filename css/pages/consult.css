@@ -271,6 +271,42 @@
 .mentor-detail__body { font-size: var(--fs-small); line-height: 1.65; color: var(--ink-900); white-space: pre-wrap; word-break: keep-all; }
 .mentor-detail__meta { font-size: var(--fs-micro); font-family: var(--font-mono); color: var(--ink-400); }
 
+/* 선배의 기록 전체보기 */
+.m2-sec__all { margin: -10px -6px -10px 0; padding: 10px 6px; border: 0; background: none; font: inherit; font-size: var(--fs-small); font-weight: 600; color: var(--ink-600); cursor: pointer; }
+.m2-sec__all:focus-visible { outline: 2px solid var(--sky-500); outline-offset: -2px; border-radius: 8px; }
+.mentor-pins-all__title { margin: 0 0 var(--space-3); font-size: 18px; font-weight: 700; color: var(--ink-900); }
+.mentor-pins-all__search { box-sizing: border-box; width: 100%; height: 44px; margin-bottom: var(--space-4); padding: 0 var(--space-4); border: 1.5px solid var(--line-200); border-radius: var(--radius-pill); background: var(--cloud-0); font: inherit; font-size: var(--fs-input); color: var(--ink-900); }
+.mentor-pins-all__search::placeholder { color: var(--ink-400); }
+.mentor-pins-all__search:focus { outline: none; border-color: var(--sky-500); }
+.mentor-pins-all { display: flex; flex-direction: column; gap: var(--space-5); }
+.mentor-pins-all__sec h3 { display: flex; align-items: baseline; gap: 6px; margin: 0 0 var(--space-1); font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.mentor-pins-all__sec h3 small { font-size: var(--fs-small); font-weight: 600; color: var(--ink-400); }
+.mentor-pins-all__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; min-height: 52px; padding: var(--space-2) 0; border: 0; border-bottom: 1px solid var(--line-100); background: none; font: inherit; color: var(--ink-900); text-align: left; cursor: pointer; }
+.mentor-pins-all__row span { flex: 1; min-width: 0; font-size: var(--fs-small); font-weight: 600; line-height: 1.45; word-break: keep-all; }
+.mentor-pins-all__row small { flex: none; font-size: var(--fs-micro); color: var(--ink-400); }
+.mentor-pins-all__row:focus-visible { outline: 2px solid var(--sky-500); outline-offset: -2px; }
+.mentor-pins-all__empty { margin: var(--space-6) 0; font-size: var(--fs-small); color: var(--ink-400); text-align: center; }
+
+/* FAQ 고정 글 — 주제를 누르면 질문, 질문을 누르면 답변이 열린다 */
+.mentor-faq__intro { margin: 0 0 var(--space-2); font-size: var(--fs-small); line-height: 1.6; color: var(--ink-600); word-break: keep-all; }
+.mentor-faq { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-2); }
+.mentor-faq__topic { border: 1.5px solid var(--line-200); border-radius: var(--radius-md); background: var(--cloud-0); overflow: hidden; }
+.mentor-faq summary { display: flex; align-items: center; gap: var(--space-2); min-height: 48px; cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.mentor-faq summary::-webkit-details-marker { display: none; }
+.mentor-faq summary::after { content: ''; flex: none; width: 7px; height: 7px; margin: -3px 3px 0 var(--space-1); border-right: 1.5px solid var(--ink-400); border-bottom: 1.5px solid var(--ink-400); transform: rotate(45deg); transition: transform var(--dur-fast) var(--ease-out); }
+.mentor-faq details[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
+.mentor-faq summary:focus-visible { outline: 2px solid var(--sky-500); outline-offset: -2px; }
+.mentor-faq__topic > summary { padding: 0 var(--space-4); font-size: var(--fs-body); font-weight: 700; color: var(--ink-900); }
+.mentor-faq__topic > summary span { flex: 1; min-width: 0; }
+.mentor-faq__topic > summary small { flex: none; font-size: var(--fs-small); font-weight: 600; color: var(--ink-400); }
+.mentor-faq__list { border-top: 1px solid var(--line-100); padding: 0 var(--space-4); }
+.mentor-faq__item + .mentor-faq__item { border-top: 1px solid var(--line-100); }
+.mentor-faq__item > summary { padding: var(--space-3) 0; font-size: var(--fs-small); font-weight: 600; line-height: 1.5; color: var(--ink-900); word-break: keep-all; }
+.mentor-faq__item > summary span { flex: 1; min-width: 0; }
+.mentor-faq__answer { padding: 0 0 var(--space-3); }
+.mentor-faq__answer p { margin: 0; font-size: var(--fs-small); line-height: 1.65; color: var(--ink-700); word-break: keep-all; overflow-wrap: anywhere; }
+.mentor-faq__answer small { display: block; margin-top: 4px; font-size: var(--fs-micro); color: var(--ink-400); }
+
 .mentor-section-title { font-size: var(--fs-small); font-weight: 700; margin-bottom: var(--space-3); }
 
 .mentor-related { margin-bottom: var(--space-5); }

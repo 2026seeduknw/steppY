@@ -6,6 +6,10 @@
 <!-- 앱처럼 화면을 고정 — 확대·축소와 옆으로 밀리는 것을 모든 기기에서 막는다(app_ui.md).
      iOS 사파리는 viewport 설정만으로는 손가락 확대를 막지 않아 gesture 이벤트도 막는다. -->
 <script>document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});document.addEventListener('dblclick',function(e){if(!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault();},{passive:false});</script>
+<!-- 학교를 확정한 사람은 홈 대신 준비하기·기록하기·학점 인정이 첫 화면이다. 그 판단(js/components/layout.js
+     rememberEntryRoute)을 지난번에 남겨 두고, 홈 화면을 한 번 그렸다가 넘어가며 번쩍이지 않게 그리기 전에 바로 넘긴다.
+     이 기기에 저장된 로그인 세션과 같은 사람일 때만 넘긴다. 틀렸으면 그 화면에서 다시 고쳐 적는다. -->
+<script>(function(){try{if(location.search||location.hash)return;var r=JSON.parse(localStorage.getItem('steppy_entry_route')||'null');if(!r||!/^(prepare|journal|credits)$/.test(r.route))return;var uid=null;for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^sb-.+-auth-token$/.test(k)){var p=JSON.parse(localStorage.getItem(k)||'null');uid=p&&p.user&&p.user.id;break;}}if(uid&&uid===r.uid)location.replace(r.route+'.html');}catch(e){}})();</script>
 <title>홈 · steppY</title>
 <link rel="icon" href="assets/logo-mark-circle.png" type="image/png">
 <link rel="stylesheet" href="css/tokens.css">

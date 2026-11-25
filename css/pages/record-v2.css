@@ -284,8 +284,9 @@ body[data-page="journal"] .diary-weekdays, body[data-page="journal"] .diary-mont
 .entry-v2__chip-input { flex: none; width: 110px; cursor: text; outline: none; border-color: var(--v2-dark); font-weight: 600; }
 
 /* ---------------------------------------------------------------- D-day 밑 이번 주 기록 */
-.rec-streak { margin-top: 18px; padding: 8px 8px 7px; border-radius: 22px; background: #F6F4EF; }
-.rec-streak__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rec-streak { margin-top: 18px; padding: 8px 8px 14px; border-radius: 22px; background: #F6F4EF; }
+/* 제목·자세히 보기를 상자 테두리에서 16px 띄운다(상자 안쪽 여백 8px + 8px) — 8px 은 테두리에 붙어 보였다 */
+.rec-streak__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 8px; }
 .rec-streak__count { margin: 0; font-family: var(--font-title); font-size: 15px; font-weight: 700; color: var(--v2-ink); }
 .rec-streak__count b { font-size: 20px; font-weight: 800; margin-left: 2px; }
 .rec-streak__count span { font-weight: 500; color: var(--v2-ink-soft); }
@@ -376,7 +377,7 @@ body[data-page="journal"] .rec-calpage .diary-day.is-empty { background: transpa
    제목 ↔ Streak 16, 카드끼리(Streak ↔ 사진) 8, 구역 사이(Recent · Friends Today) 24, 구역 제목 ↔ 내용 12.
    구역 제목은 줄 높이 위쪽 여유(약 4px·3px)를 빼서 "보이는" 거리가 24가 되게 margin을 잡았다 */
 #journalRoot > .rec-streak { margin-top: 16px; }
-#journalRoot > .rec-hero { margin-top: 8px; }
+#journalRoot > .rec-hero { margin-top: 16px; }   /* 주간 기록 상자와 사진 사이 — 8px 은 붙어 보였다 */
 #journalRoot > .rec-recent { margin-top: 20px; }
 body[data-page="journal"][data-theme="v2"] #archiveFriendsSec { margin-top: 19px; gap: 12px; }
 .rec-recent__row { margin-top: 12px; }
@@ -493,19 +494,23 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 .rec-hero--reel .rec-hero__btn::after { display: none; }
 .rec-hero--reel .is-latest .rec-hero__btn::after { display: block; }
 .rec-hero--reel .rec-hero__img { width: 100%; height: auto; max-height: min(440px, 58vh); object-fit: cover; }
-.rec-hero__track { align-items: center; }
+/* 줄 높이는 가장 긴 사진이 아니라 지금 가운데 사진에 맞춘다(js: diary-view.js mark).
+   위에 붙여 두면 옆의 더 긴 사진은 아래가 잘릴 뿐 위아래 빈 여백이 생기지 않는다. */
+.rec-hero__track { align-items: flex-start; transition: height 220ms ease; }
 .rec-hero__cap { margin: 8px 4px 0; font-size: 12px; font-weight: 600; color: var(--v2-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-hero--reel .rec-hero__add { top: 12px; right: calc(6% + 12px); }
 
 /* 기록하기 제목 — 왼쪽 정렬, 오른쪽에 사진 추가 버튼(사진 위 + 대신) */
 #journalRoot > .rec-head { text-align: left; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .rec-head__text { min-width: 0; }
+/* 작은 녹색 알약 — 학점 인정의 조회하기와 같은 녹색(흰 글자 대비 4.9:1) */
 .rec-head__add {
-  flex: none; height: 40px; margin-bottom: 6px; padding: 0 16px; border: 0; border-radius: 20px;
-  background: var(--v2-dark); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap;
-  display: inline-flex; align-items: center; gap: 4px;
+  flex: none; height: 28px; margin-bottom: 8px; padding: 0 10px; border: 0; border-radius: 14px;
+  background: #647845; color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 3px;
 }
-.rec-head__add span { font-size: 18px; font-weight: 500; line-height: 1; }
+.rec-head__add:active { background: var(--mint-500); }
+.rec-head__add span { font-size: 14px; font-weight: 500; line-height: 1; }
 /* 사진 테두리 빼기 — 흰 여백·그림자 없이 사진만(모서리만 살짝 둥글게) */
 .rec-it--photo.is-noframe { padding: 0; background: none; box-shadow: none; }
 /* 사진은 넣은 그대로의 비율 — 칸 높이를 정하지 않고 사진 높이를 따른다(템플릿으로 자른 사진만 칸 모양대로) */
@@ -756,7 +761,7 @@ body[data-page="journal"] {
 }
 
 /* 첫 화면 Recap 카드 */
-.rec-recap-home { margin-top: 24px; }
+.rec-recap-home { margin-top: 10px; }
 .rec-recapcard {
   width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 12px;
   padding: 16px 16px 16px 18px; border: 0; border-radius: 20px; background: #F3F1EC;
