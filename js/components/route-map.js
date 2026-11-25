@@ -1,5 +1,6 @@
 /**
- * My steps — 다녀온 도시를 흑백 지구본이나 평면 지도의 실제 자리에 올리고 방문 순서대로 잇는다.
+ * My steps — 다녀온 도시를 하얀 지구본이나 평면 지도의 실제 자리에 올리고 방문 순서대로 잇는다.
+ * 지도는 밝은 회색 한 톤으로 물러나 있고, 다녀온 곳(빛나는 라임 점)과 이동한 길(점선)만 색으로 눈에 띈다.
  *
  * 지도 그림은 학교 지구본과 같은 assets/globe 를 쓴다. 사진에서 땅·바다만 뽑아 흑백으로 그린다.
  * 위치는 도시 중심 좌표뿐이고(GPS는 저장하지 않는다), 도시 사이는 실제 이동 길이 아니라 최단 대권 항로로 긋는다.
@@ -9,8 +10,12 @@
  */
 const RouteMap = (function () {
   const D2R = Math.PI / 180;
-  const OCEAN = [22, 22, 22], LAND = [252, 252, 252], COAST = [150, 150, 150], GRID = [46, 46, 46];
-  const ROUTE = '#4D9BFF', DOT = '#E5483D';
+  // 지구본: 바다는 밝은 회색, 땅은 한 단계 진한 회색 — 빛은 왼쪽 위 앞에서 비춘다(가장자리로 갈수록 살짝 어둡다)
+  const OCEAN = 236, LAND = 198, COAST = 182;
+  const LIGHT = (() => { const v = [-0.45, 0.55, 0.7], n = Math.hypot(...v); return v.map(x => x / n); })();
+  // 평면 지도: 바다는 비워 화면 바탕(#F4F4F2)이 보이고, 땅만 회색으로 얹는다
+  const FLAT_LAND = 206;
+  const ROUTE = '#BCD020', DOT = '#E2F23C', GLOW = 'rgba(226, 242, 60, 0.42)';
   const ZOOMS = { globe: [1, 1.8, 3.2, 5.5], map: [1, 1.7, 2.8, 4.5] };
   const CARD = 48, CARD_H = 66;
   const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -80,6 +85,12 @@ const RouteMap = (function () {
       out.push([Math.atan2(z, Math.hypot(x, y)) / D2R, Math.atan2(y, x) / D2R]);
     }
     return out;
+  }
+
+  /** 두 지점 사이 대권 거리(km, 반올림) */
+  function legKm([a1, o1], [a2, o2]) {
+    const h = Math.sin((a2 - a1) * D2R / 2) ** 2 + Math.cos(a1 * D2R) * Math.cos(a2 * D2R) * Math.sin((o2 - o1) * D2R / 2) ** 2;
+    return Math.round(6371 * 2 * Math.asin(Math.sqrt(h)));
   }
 
   function create(el, stops, opts) {
@@ -155,23 +166,23 @@ const RouteMap = (function () {
             lat = Math.asin(Math.min(1, nz * sp0 + ny * cp0)) / D2R;
             lon = lon0 + Math.atan2(nx, nz * cp0 - ny * sp0) / D2R;
           } else { lat = unmerc(merc(lat0) + Y / K); lon = lon0 + X / K; }
-          let v = OCEAN;
-          let c = [v[0], v[1], v[2]];
-          if (globe || (lat <= 85 && lat >= MAP_SOUTH)) {
-            let u = (lon / 360 + 0.5) % 1; if (u < 0) u += 1;
-            const m = maskAt(u, 0.5 - lat / 180), t = Math.max(0, Math.min(1, (m - 0.42) / 0.16));
-            c = [OCEAN[0] + (LAND[0] - OCEAN[0]) * t, 0, 0]; c[1] = c[2] = c[0];
-            if (t < 0.5) {
-              const unit = globe ? D2R * R : K;
-              const dl = Math.abs(lat - Math.round(lat / 30) * 30) * unit / (globe ? 1 : Math.cos(lat * D2R));
-              const dn = Math.abs(lon - Math.round(lon / 30) * 30) * unit * (globe ? Math.cos(lat * D2R) : 1);
-              if (Math.min(dl, dn) < 0.7) c = GRID.slice();
-            }
-            const edge = Math.abs(m - 0.5);
-            if (edge < 0.05) { const e = 1 - edge / 0.05; c = c.map((x, i) => x + (COAST[i] - x) * e); }
+          if (!globe && (lat > 85 || lat < MAP_SOUTH)) continue;
+          let u = (lon / 360 + 0.5) % 1; if (u < 0) u += 1;
+          const m = maskAt(u, 0.5 - lat / 180), t = Math.max(0, Math.min(1, (m - 0.42) / 0.16));
+          if (!globe) {
+            if (t <= 0) continue;
+            const a = Math.round(t * 255);
+            out[py * W + px] = (a << 24) | (FLAT_LAND << 16) | (FLAT_LAND << 8) | FLAT_LAND;
+            continue;
           }
-          const shade = globe ? 0.93 + 0.07 * nz : 1;
-          const g = (c[0] * shade) & 255;
+          let c = OCEAN + (LAND - OCEAN) * t;
+          const edge = Math.abs(m - 0.5);
+          if (edge < 0.05) c += (COAST - c) * (1 - edge / 0.05) * 0.8;
+          // 구 음영 — 빛 받는 쪽은 하얗게 날리고, 테두리는 은은하게 어두워진다
+          const nx = X / R, ny = Y / R;
+          const lit = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+          const spec = Math.pow(lit, 24) * 18;
+          const g = Math.max(0, Math.min(255, Math.round(c * (0.93 + 0.08 * lit) + spec - (1 - nz) * 8)));
           out[py * W + px] = (255 << 24) | (g << 16) | (g << 8) | g;
         }
       }
@@ -188,7 +199,7 @@ const RouteMap = (function () {
             last = q;
           }
         }
-        ex.strokeStyle = 'rgba(0, 0, 0, 0.24)'; ex.lineWidth = 0.7; ex.stroke(); ex.restore();
+        ex.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ex.lineWidth = 0.6; ex.stroke(); ex.restore();
       }
     }
 
@@ -210,7 +221,8 @@ const RouteMap = (function () {
           last = q;
         }
       }
-      rx.strokeStyle = ROUTE; rx.lineWidth = 3; rx.stroke();
+      // 이동한 길은 라임 점선 — 지도가 회색이라 이것만 눈에 들어온다
+      rx.setLineDash([1.5, 5]); rx.strokeStyle = ROUTE; rx.lineWidth = 2.5; rx.stroke(); rx.setLineDash([]);
       const showNames = placed.length <= 6;
       const taken = [];
       const gapX = showNames ? 86 : CARD + 6;
@@ -219,7 +231,7 @@ const RouteMap = (function () {
       const order = placed.map((p, n) => ({ p, n, q: project(p.coord[0], p.coord[1]) }));
       // 고른 도시가 가장 좋은 자리를 먼저 갖는다
       order.sort((a, b) => (b.p.i === picked) - (a.p.i === picked) || a.n - b.n);
-      rx.lineWidth = 1.5; rx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      rx.lineWidth = 1; rx.strokeStyle = 'rgba(30, 42, 58, 0.28)';
       order.forEach(({ p, n, q }) => {
         const card = cards[n];
         const show = q.front && q.x > -8 && q.y > -8 && q.x < w + 8 && q.y < h + 8;
@@ -244,11 +256,34 @@ const RouteMap = (function () {
         rx.lineTo(spot.x + CARD / 2, spot.y + (spot.y > q.y ? 0 : CARD));
         rx.stroke();
       });
+      // 구간마다 거리 — 대권 길이(합계는 위 알약의 km 와 같은 계산, js/record-v2.js). 흰 알약을 선 위에 얹되,
+      // 사진 카드·다른 알약에 가리지 않는 자리를 선을 따라 찾는다(가운데부터). 자리가 없으면 그 구간은 뺀다
+      rx.font = '700 10.5px Pretendard, system-ui, sans-serif'; rx.textAlign = 'center'; rx.textBaseline = 'middle';
+      const boxes = taken.map(t => ({ x: t.x - 2, y: t.y - 10, w: CARD + 4, h: CARD_H + 12 }));
+      const hit = (r) => boxes.some(o => r.x < o.x + o.w && o.x < r.x + r.w && r.y < o.y + o.h && o.y < r.y + r.h);
+      for (let n = 1; n < placed.length; n++) {
+        const pts = arc(placed[n - 1].coord, placed[n].coord);
+        const label = `${legKm(placed[n - 1].coord, placed[n].coord).toLocaleString('en-US')}km`;
+        const bw = rx.measureText(label).width + 12, bh = 18;
+        let spot = null;
+        for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+          const q = project(...pts[Math.round(t * (pts.length - 1))]);
+          const r = { x: q.x - bw / 2, y: q.y - bh / 2, w: bw, h: bh };
+          if (q.front && r.x >= 4 && r.y >= 4 && r.x + bw <= w - 4 && r.y + bh <= h - 4 && !hit(r)) { spot = r; break; }
+        }
+        if (!spot) continue;
+        boxes.push(spot);
+        rx.beginPath(); rx.roundRect(spot.x, spot.y, bw, bh, bh / 2);
+        rx.fillStyle = '#fff'; rx.shadowColor = 'rgba(0, 0, 0, 0.14)'; rx.shadowBlur = 4; rx.shadowOffsetY = 1; rx.fill();
+        rx.shadowColor = 'transparent'; rx.shadowBlur = 0; rx.shadowOffsetY = 0;
+        rx.fillStyle = '#1E2A3A'; rx.fillText(label, spot.x + bw / 2, spot.y + bh / 2 + 0.5);
+      }
       order.forEach(({ p, q }) => {
         if (!q.front) return;
-        rx.beginPath(); rx.arc(q.x, q.y, p.i === picked ? 6 : 4.5, 0, Math.PI * 2);
-        rx.fillStyle = DOT; rx.fill();
-        rx.lineWidth = 2; rx.strokeStyle = '#fff'; rx.stroke();
+        // 다녀온 곳 — 번진 빛 위에 라임 점. 고른 도시는 더 크게
+        const r = p.i === picked ? 4.5 : 3.5;
+        rx.beginPath(); rx.arc(q.x, q.y, r * 2.2, 0, Math.PI * 2); rx.fillStyle = GLOW; rx.fill();
+        rx.beginPath(); rx.arc(q.x, q.y, r, 0, Math.PI * 2); rx.fillStyle = DOT; rx.fill();
       });
     }
     function draw() { raf = 0; if (dead) return; drawEarth(); drawRoute(); }
