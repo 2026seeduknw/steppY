@@ -552,7 +552,7 @@
     const songRecommended = !e.nowPlaying && !!e.song;   // 직접 고른 게 아니면 '추천' 표시
     const t = e.createdAt ? new Date(e.createdAt) : null;
     const date = `${e.date.replace(/-/g, '.')}${t && !isNaN(t) ? ` · ${pad(t.getHours())}:${pad(t.getMinutes())}` : ''}`;
-    return { cap: e.title || e.body || '', date, place, weather, song, songRecommended };
+    return { cap: e.title || e.body || '', date, place, weather, song, songRecommended, entryId: e.id };
   }
 
   /*
@@ -570,6 +570,20 @@
     lb.innerHTML = `
       <div class="arc-lb__bg"></div>
       <button type="button" class="arc-lb__close" aria-label="닫기">✕</button>
+      <div class="arc-lb__acts" hidden>
+        <button type="button" class="arc-lb__act arc-lb__edit" aria-label="제목·노래 수정">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>
+          수정
+        </button>
+        <button type="button" class="arc-lb__act arc-lb__del" aria-label="사진 삭제">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+          삭제
+        </button>
+      </div>
+      <div class="arc-lb__ask" hidden role="alertdialog" aria-label="사진 삭제 확인">
+        <p>이 사진을 삭제할까요? 되돌릴 수 없어요.</p>
+        <div><button type="button" class="arc-lb__act" data-ask-no>취소</button><button type="button" class="arc-lb__act arc-lb__act--danger" data-ask-yes>삭제</button></div>
+      </div>
       <button type="button" class="arc-lb__nav arc-lb__nav--prev" aria-label="이전 사진">‹</button>
       <button type="button" class="arc-lb__nav arc-lb__nav--next" aria-label="다음 사진">›</button>
       <div class="arc-lb__info arc-lb__info--1"></div>
@@ -578,6 +592,26 @@
     document.body.appendChild(lb);
     lb.querySelector('.arc-lb__bg').addEventListener('click', closeLightbox);
     lb.querySelector('.arc-lb__close').addEventListener('click', closeLightbox);
+    // 수정 — 확대 화면을 닫고 그 기록의 쓰기 창(제목·캡션·그때 듣던 노래)을 수정으로 연다
+    lb.querySelector('.arc-lb__edit').addEventListener('click', () => {
+      const own = ownPhoto(lbIndex);
+      if (!own || typeof global.diaryEditEntry !== 'function') return;
+      closeLightbox();
+      setTimeout(() => global.diaryEditEntry(own.entry.id), 200);
+    });
+    // 확인은 화면 안에서 묻는다 — 브라우저 기본 확인창(confirm)은 앱 웹뷰·일부 브라우저에서 뜨지 않고 바로 '취소'가 됐다
+    const ask = lb.querySelector('.arc-lb__ask');
+    const setAsking = (on) => { ask.hidden = !on; lb.querySelector('.arc-lb__acts').style.visibility = on ? 'hidden' : ''; };
+    lb.querySelector('.arc-lb__del').addEventListener('click', () => { if (ownPhoto(lbIndex)) setAsking(true); });
+    ask.querySelector('[data-ask-no]').addEventListener('click', () => setAsking(false));
+    ask.querySelector('[data-ask-yes]').addEventListener('click', () => {
+      const own = ownPhoto(lbIndex);
+      setAsking(false);
+      if (!own) return;
+      closeLightbox();
+      AppState.removeJournalPhoto(own.entry.id, own.path);
+      if (typeof showToast === 'function') showToast('사진을 삭제했어요.');
+    });
     lb.querySelector('.arc-lb__nav--prev').addEventListener('click', () => goTo(lbIndex - 1));
     lb.querySelector('.arc-lb__nav--next').addEventListener('click', () => goTo(lbIndex + 1));
     // 옆에 비친 사진을 누르면 그 사진으로 / 좌우로 쓸어도 넘어간다
@@ -730,7 +764,21 @@
       infoEls.forEach(el => { el.style.opacity = ''; el.style.transition = ''; });
     }, 160);
   }
+  /** 지금 사진이 내 기록의 사진이면 { entry, path } — 친구 사진·둘러보기 예시는 지울 수 없다 */
+  function ownPhoto(i) {
+    const sh = lbCtx && lbCtx.shots[i];
+    const id = sh && sh.info && sh.info.entryId;
+    if (!id || typeof AppState === 'undefined' || !AppState.isAuthed) return null;
+    const entry = AppState.load().journal.find(e => e.id === id);
+    // 화면의 주소는 서명된 URL 이라 저장 경로(사용자id/파일)를 품고 있다
+    const path = entry && (entry.photos || []).find(p => sh.url === p || sh.url.includes(p) || sh.url.includes(encodeURI(p)));
+    return path ? { entry, path } : null;
+  }
   function syncNav() {
+    const own = !!ownPhoto(lbIndex);
+    q('.arc-lb__ask').hidden = true; q('.arc-lb__acts').style.visibility = '';
+    q('.arc-lb__acts').hidden = !own;
+    q('.arc-lb__edit').hidden = !(own && typeof global.diaryEditEntry === 'function');
     q('.arc-lb__nav--prev').disabled = lbIndex <= 0;
     q('.arc-lb__nav--next').disabled = lbIndex >= lbCtx.shots.length - 1;
   }

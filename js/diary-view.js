@@ -24,6 +24,9 @@
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
+  // 사진 찍은 곳·날씨를 찾는 중인 작업들 — 이게 끝나기 전에 저장을 누르면 위치 없이 저장됐다. 저장 때 잠깐 기다린다
+  let placeJobs = [];
+  const placeJob = (p) => { placeJobs.push(Promise.resolve(p).catch(() => {})); return p; };
   let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
   let nowPlayingSearchTimer = null;
   let root = null;
@@ -1364,6 +1367,7 @@
     pendingLocation = null;
     pendingWeather = null;
     photoPlaceKey = '';
+    placeJobs = [];
     pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
@@ -1663,7 +1667,7 @@
     pendingLocation = null;
     pendingWeather = null;
     // 도시는 기기 안에서 찾는다(js/nearest-city.js) — 사진 좌표는 밖으로 보내지 않는다
-    NearestCity.find(lat, lng)
+    placeJob(NearestCity.find(lat, lng)
       .then(place => {
         if (photoPlaceKey !== key) return;
         // 날씨는 사진 좌표가 아니라 찾은 도시의 중심 좌표로, 찍은 날을 알 때만 조회한다 —
@@ -1676,12 +1680,13 @@
         pendingLocation = { country: place.country, city: place.city, countryCode: place.countryCode };
         showPlaceNote();
         if (sendWeather) {
-          SongEngine.fetchWeatherAt(place.lat, place.lng, when)
+          // 저장이 날씨도 기다리도록 같은 작업으로 돌려준다
+          return SongEngine.fetchWeatherAt(place.lat, place.lng, when)
             .then(w => { if (photoPlaceKey === key) { pendingWeather = w; showPlaceNote(); } })
             .catch(() => {});
         }
       })
-      .catch(() => { if (photoPlaceKey === key) setLocationNote('📍 사진 찍은 곳의 도시를 찾지 못했어요'); });
+      .catch(() => { if (photoPlaceKey === key) setLocationNote('📍 사진 찍은 곳의 도시를 찾지 못했어요'); }));
   }
   function showPlaceNote() {
     const place = pendingLocation ? [pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') : '';
@@ -1830,8 +1835,18 @@
       });
     });
 
-    scrim.querySelector('#entryForm').addEventListener('submit', (e) => {
+    scrim.querySelector('#entryForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      // 사진 찍은 곳·지금 있는 곳을 아직 찾는 중이면 끝날 때까지(최대 5초) 기다렸다 저장한다 — 안 그러면 위치·날씨 없이 저장된다
+      if (!editingEntry && !e.target._saving && !e.target._waitingPlace && placeJobs.length && (!pendingLocation || !pendingWeather)) {
+        e.target._waitingPlace = true;
+        const btn = e.target.querySelector('#entrySubmit');
+        const label = btn && btn.textContent;
+        if (btn) { btn.disabled = true; btn.textContent = '위치 확인 중…'; }
+        await Promise.race([Promise.all(placeJobs), new Promise(r => setTimeout(r, 5000))]);
+        e.target._waitingPlace = false;
+        if (btn) { btn.disabled = false; btn.textContent = label; }
+      } else if (e.target._waitingPlace) return;
       // 저장 버튼을 빠르게 두 번 누르면(휴대폰에서 키보드가 닫히며 한 번 더 눌리는 경우 포함) 기록이 두 번
       // 저장되고 우표도 두 번 찍혔다 — 한 번 저장을 시작하면 이 창에서는 다시 받지 않는다
       if (e.target._saving) return;
@@ -2248,25 +2263,45 @@
       if (img.complete) set(); else img.addEventListener('load', set, { once: true });
     });
     const track = slot.querySelector('#recHeroTrack');
-    const mark = () => {
+    // 줄 높이는 넘기는 도중이 아니라 멈춘 뒤에만 바꾼다 — 넘기는 중에 가운데 사진이 바뀔 때마다
+    // 높이가 오르내리면 아래 화면 전체가 같이 출렁였다
+    const slides = [...track.querySelectorAll('.rec-hero__slide')];
+    // 사진 칸의 가운데 자리는 스크롤해도 변하지 않는다 — 매 프레임 재지 않고 한 번 재 둔다(크기가 바뀔 때만 다시)
+    let centers = [], slideW = 1;
+    const measure = () => {
+      slideW = (slides[0] && slides[0].offsetWidth) || 1;
+      centers = slides.map(sl => sl.offsetLeft - track.offsetLeft + sl.offsetWidth / 2);
+    };
+    const fitHeight = (best) => { if (best && best.offsetHeight) track.style.height = `${best.offsetHeight}px`; };
+    const mark = (settled = true) => {
+      if (!centers.length) measure();
       const mid = track.scrollLeft + track.clientWidth / 2;
       let best = null, bd = Infinity;
-      track.querySelectorAll('.rec-hero__slide').forEach(sl => {
-        const d = Math.abs(sl.offsetLeft - track.offsetLeft + sl.offsetWidth / 2 - mid);
+      slides.forEach((sl, i) => {
+        const d = Math.abs(centers[i] - mid);
         if (d < bd) { bd = d; best = sl; }
+        // 손가락을 따라 이어서 밝아지고 커진다 — 가운데를 넘는 순간 확 바뀌지 않게(transform·opacity 만 써서 버벅이지 않는다)
+        const t = Math.max(0, 1 - d / slideW);
+        sl.style.opacity = (0.4 + 0.6 * t).toFixed(3);
+        sl.style.transform = t >= 0.999 ? 'none' : `scale(${(0.94 + 0.06 * t).toFixed(4)})`;
       });
-      track.querySelectorAll('.rec-hero__slide').forEach(sl => sl.classList.toggle('is-active', sl === best));
+      slides.forEach(sl => { const on = sl === best; if (sl.classList.contains('is-active') !== on) sl.classList.toggle('is-active', on); });
       // 가운데 사진 높이만큼만 차지한다 — 긴 사진일 때만 길어지고 가로 사진이면 줄어든다
-      if (best && best.offsetHeight) track.style.height = `${best.offsetHeight}px`;
+      if (settled) fitHeight(best);
     };
     // 사진이 늦게 뜨면 높이가 바뀌므로 그때 다시 잰다
     track.querySelectorAll('.rec-hero__img').forEach(img => { if (!img.complete) img.addEventListener('load', () => mark(), { once: true }); });
     // 다시 그릴 때마다 붙으면 쌓이므로 하나만 남긴다
     if (renderHomeHero.onResize) window.removeEventListener('resize', renderHomeHero.onResize);
-    renderHomeHero.onResize = () => { if (track.isConnected) mark(); };
+    renderHomeHero.onResize = () => { if (track.isConnected) { measure(); mark(); } };
     window.addEventListener('resize', renderHomeHero.onResize);
-    let ticking = false;
-    track.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(); }); } }, { passive: true });
+    let ticking = false, settle = 0;
+    track.addEventListener('scroll', () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(false); }); }
+      // 멈추면 곧바로 높이를 맞춘다. scrollend 가 없는 브라우저(iOS 사파리 일부)는 마지막 스크롤 뒤 잠깐 기다린다
+      clearTimeout(settle); settle = setTimeout(() => mark(true), 120);
+    }, { passive: true });
+    track.addEventListener('scrollend', () => { clearTimeout(settle); mark(true); });
     // 가장 최근(맨 오른쪽)에서 시작 — 자리가 다 잡힌 뒤에(바로 하면 폭이 0이라 안 먹는다)
     const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
     requestAnimationFrame(toLatest);
@@ -2435,5 +2470,13 @@
   global.diaryViewIsMounted = () => !!root;
   global.diaryRefreshPhotos = refreshPhotoUrls;
   // 하이드레이션 뒤 파견 기간·기록이 바뀌었을 수 있다 — Day N·연속 기록·달력을 다시 그린다
+  // 사진 크게 보기(js/diary-archive.js)에서 그 기록의 제목·노래를 고치러 들어온다 — 기록 쓰기 창을 수정으로 연다
+  global.diaryEditEntry = (id) => {
+    const entry = root && AppState.isAuthed ? AppState.load().journal.find(e => e.id === id) : null;
+    if (!entry) return false;
+    stopPreview();
+    openEntryModal(null, null, entry);
+    return true;
+  };
   global.diaryRefreshAll = () => { if (root) { renderAll(); refreshPhotoUrls(); } };
 })(window);

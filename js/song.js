@@ -340,7 +340,9 @@ const SongEngine = (function () {
   function dedupeTracks(tracks) {
     const seen = new Set();
     return tracks.filter((t) => {
-      const key = `${t.name.toLowerCase()}::${t.artist.toLowerCase()}`;
+      // 비비 · 비비 (BIBI) · 비비(BIBI) 를 한 곡으로 — 괄호 안 표기와 띄어쓰기는 무시한다
+      const norm = (v) => v.toLowerCase().replace(/\([^)]*\)/g, '').replace(/\s+/g, '');
+      const key = `${norm(t.name)}::${norm(t.artist)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -426,18 +428,86 @@ const SongEngine = (function () {
     };
   }
 
-  // "지금 듣고 있는 노래" 자기입력용 검색 자동완성 — 오타 없이 정확한 곡을 고르게 함
-  async function searchTracks(query) {
-    if (!query || query.trim().length < 2) return [];
+  // "지금 듣고 있는 노래" 자기입력용 검색 자동완성 — 오타 없이 정확한 곡을 고르게 함.
+  // 두 곳을 함께 찾는다.
+  //   Last.fm — 한국 노래를 한글 제목 그대로 준다(아이유 - 좋은날). 대신 커버·직캠·남이 올린 영상이 섞여 걸러 낸다.
+  //   iTunes  — 공식 음원만 있고 한글로 쳐도 찾는다(하입보이 → NewJeans - Hype Boy). 제목은 영어로 온다.
+  // Last.fm 에서 깨끗한 곡을 먼저, iTunes 에만 있는 곡을 뒤에 붙인다.
+  const JUNK = /cover|커버|reaction|리액션|교차편집|stage ?mix|직캠|fancam|\bver\.|버전|lyrics|가사|karaoke|노래방|instrumental|\binst\b|\bmr\b|unknown|1thek|원더케이|playground4music|flow music|piano ver|\[piano\]|피아노|orchestra\]|remix by/i;
+  // 유튜브에서 긁혀 온 항목 — 'MV'·'Official Video', 채널 이름(SMTOWN 등)이 가수 자리에, "• Recommended for you" 같은 꼬리,
+  // 제목을 따옴표로 감싼 영상 제목(Hearts2Hearts 하츠투하츠 'Lemon Tang' MV)
+  const VIDEO = /\bm\/?v\b|official (video|audio|music video)|teaser|performance|recommended for you|[•·|]|smtown|hybe labels|jyp ?entertainment|stone music|starship|mnet|\bkbs\b|\bsbs\b|\bmbc\b|dingo|killing voice/i;
+  const clean = (t) => t.name && t.artist && !JUNK.test(`${t.name} ${t.artist}`) && !VIDEO.test(`${t.name} ${t.artist}`)
+    && !/ - /.test(t.name) && !/(^|\s)['‘][^'’]+['’]/.test(t.name);
+  async function searchLastfm(q) {
     try {
-      const data = await lastfmGet({ method: 'track.search', track: query.trim(), limit: 8 });
+      const data = await lastfmGet({ method: 'track.search', track: q, limit: 15 });
       const matches = (data.results && data.results.trackmatches && data.results.trackmatches.track) || [];
-      return dedupeTracks(
-        matches.map((t) => ({ name: t.name, artist: t.artist || '' })).filter((t) => t.name && t.artist)
-      );
-    } catch (e) {
-      return [];
-    }
+      // 남이 올린 영상·직캠은 듣는 사람이 수십 명뿐이다 — 공식 곡은 적어도 수백 명(밤양갱 2,448 / 영상 12~33)
+      return matches.filter((t) => Number(t.listeners) >= 50).map((t) => ({ name: t.name, artist: t.artist || '' })).filter(clean);
+    } catch (e) { return []; }
+  }
+  async function searchItunes(q) {
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=10`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.results || []).map((r) => ({ name: r.trackName || '', artist: r.artistName || '' })).filter(clean);
+    } catch (e) { return []; }
+  }
+  /*
+   * 같은 곡이 한글·영어 이름으로 여러 번 나오는 것 합치기 —
+   *   황가람 - 나는 반딧불 / Hwang Karam - I`m Firefly (나는 반딧불) / Hwang Karam - I'm Firefly
+   * 제목: 괄호 안 이름도 다른 이름으로 치고, 기호·띄어쓰기는 뺀 채 하나라도 같으면 같은 제목.
+   * 가수: 한글은 로마자로 바꾼 뒤 비슷한 소리(ㄱ/ㅋ·ㅂ/ㅍ·ㄷ/ㅌ·ㄹ/l, 겹글자)를 묶어 비교한다(황가람 ≈ Hwang Karam).
+   * 제목과 가수가 둘 다 같아야 합친다 — 제목만 같은 다른 가수의 곡(중식이 - 나는 반딧불)은 남긴다.
+   */
+  const CHO = ['g', 'kk', 'n', 'd', 'tt', 'r', 'm', 'b', 'pp', 's', 'ss', '', 'j', 'jj', 'ch', 'k', 't', 'p', 'h'];
+  const JUNG = ['a', 'ae', 'ya', 'yae', 'eo', 'e', 'yeo', 'ye', 'o', 'wa', 'wae', 'oe', 'yo', 'u', 'wo', 'we', 'wi', 'yu', 'eu', 'ui', 'i'];
+  const JONG = ['', 'k', 'k', 'k', 'n', 'n', 'n', 't', 'l', 'k', 'm', 'l', 'l', 'l', 'p', 'l', 'm', 'p', 'p', 't', 't', 'ng', 't', 't', 'k', 't', 'p', 't'];
+  function romanize(str) {
+    return String(str).replace(/[\uAC00-\uD7A3]/g, (ch) => {
+      const c = ch.charCodeAt(0) - 0xAC00;
+      return CHO[Math.floor(c / 588)] + JUNG[Math.floor((c % 588) / 28)] + JONG[c % 28];
+    });
+  }
+  const soundKey = (v) => romanize(v.toLowerCase().replace(/\([^)]*\)/g, ''))
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/eo/g, 'o').replace(/ou|oo|eu/g, 'u').replace(/ae/g, 'e')
+    .replace(/g/g, 'k').replace(/b/g, 'p').replace(/d/g, 't').replace(/r/g, 'l')
+    .replace(/(.)\1+/g, '$1');
+  function nearSame(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (Math.min(a.length, b.length) < 4 || Math.abs(a.length - b.length) > 1) return false;
+    // 한 글자 차이까지(윤하 yunha ≈ Younha younha)
+    let i = 0; while (i < a.length && a[i] === b[i]) i++;
+    const ra = a.slice(i + 1), rb = b.slice(i + 1);
+    return ra === rb || a.slice(i) === rb || ra === b.slice(i);
+  }
+  function titleKeys(name) {
+    const keys = new Set();
+    const add = (v) => { const k = v.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); if (k) keys.add(k); };
+    add(name.replace(/\([^)]*\)|\[[^\]]*\]/g, ''));
+    (name.match(/\(([^)]*)\)/g) || []).forEach(m => { if (!/feat|prod|ver|remaster|live/i.test(m)) add(m.slice(1, -1)); });
+    return keys;
+  }
+  function mergeSameSong(tracks) {
+    // 합친 곡의 다른 이름들도 남겨 둔다 — "I`m Firefly (나는 반딧불)" 이 한글 곡과 영어 곡(I'm Firefly)을 이어 준다
+    const kept = [];
+    tracks.forEach((t) => {
+      const tk = titleKeys(t.name), ak = soundKey(t.artist.split(/[,&]| x | feat/i)[0]);
+      const hit = kept.find((k) => [...tk].some(x => k.tk.has(x)) && [...k.ak].some(a => nearSame(a, ak)));
+      if (hit) { tk.forEach(x => hit.tk.add(x)); hit.ak.add(ak); }
+      else kept.push({ t, tk, ak: new Set([ak]) });
+    });
+    return kept.map(k => k.t);
+  }
+  async function searchTracks(query) {
+    const q = (query || '').trim();
+    if (q.length < 2) return [];
+    const [lf, it] = await Promise.all([searchLastfm(q), searchItunes(q)]);
+    return mergeSameSong(dedupeTracks([...lf.slice(0, 5), ...it, ...lf.slice(5)])).slice(0, 8);
   }
 
   function buildSongLinks(name, artist) {

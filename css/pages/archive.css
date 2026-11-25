@@ -148,6 +148,19 @@
 .arc-lb__nav--prev { left: 22px; bottom: max(26px, env(safe-area-inset-bottom, 0px)); }
 .arc-lb__nav--next { right: 22px; bottom: max(26px, env(safe-area-inset-bottom, 0px)); }
 .arc-lb__nav[disabled] { opacity: 0 !important; pointer-events: none; }
+/* 내 사진 수정·삭제 — 아래 가운데, 이전·다음 버튼 사이. 눈에 띄지 않게 반투명 알약 두 개 */
+.arc-lb__acts { position: absolute; z-index: 2; left: 50%; bottom: max(28px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; gap: 8px; opacity: 0; transition: opacity 300ms ease 200ms; }
+.arc-lb.is-on .arc-lb__acts { opacity: 1; }
+.arc-lb__acts[hidden], .arc-lb__act[hidden] { display: none; }
+.arc-lb__act { height: 34px; padding: 0 14px; border: 0; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.16); color: #fff; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.arc-lb__act:active { background: rgba(255, 255, 255, 0.28); }
+/* 삭제 확인 — 버튼 자리에 한 줄 묻고 취소·삭제 */
+.arc-lb__ask { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.arc-lb__ask[hidden] { display: none; }
+.arc-lb__ask p { margin: 0; font-size: 13px; font-weight: 600; color: #fff; }
+.arc-lb__ask > div { display: flex; gap: 8px; }
+.arc-lb__act--danger { background: #D84A3A; }
+.arc-lb__act--danger:active { background: #B83A2C; }
 @media (prefers-reduced-motion: reduce) { .arc-page, .arc-sheet__panel, .arc-lb__img, .arc-lb__info, .arc-icon { transition: none; } .arc-song__art { animation: none; } }
 
 /* 친구 관리 버튼의 받은 요청 수 */
