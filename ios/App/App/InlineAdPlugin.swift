@@ -110,5 +110,6 @@ class InlineAdPlugin: CAPPlugin, CAPBridgedPlugin, BannerViewDelegate {
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(InlineAdPlugin())
+        bridge?.registerPluginInstance(PhotoPickerPlugin())   // 기록하기 사진 고르기(PhotoPickerPlugin.swift)
     }
 }

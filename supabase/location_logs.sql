@@ -1,8 +1,9 @@
 -- 개인위치정보 수집·이용·제공사실 확인자료 (위치정보법 제16조 제2항) — 2026-11-12
 --
--- 기록 쓰기에서 GPS 위치를 쓸 때마다, 그리고 위치정보 이용에 동의할 때 한 줄씩 남긴다.
+-- 기록 쓰기에서 위치를 쓸 때마다, 그리고 위치정보 이용에 동의할 때 한 줄씩 남긴다.
 -- 좌표는 남기지 않는다 — 누가(user_id) 언제(used_at) 무엇을 위해(purpose) 어디로 보냈는지(provided_to)만.
---   purpose: 'journal_place_weather'(기록의 도시·날씨) | 'consent'(동의)
+--   purpose: 'journal_photo_place_weather'(사진 촬영 위치로 기록의 도시·날씨) | 'consent'(동의)
+--            'journal_place_weather'(기기의 지금 위치 — 2026-11-19부터 쓰지 않는다. 예전 행 때문에 남겨 둔다)
 --
 -- 보관: 6개월. 다만 동의를 철회하거나 탈퇴하면 지체 없이 지운다(위치정보법 제24조 제4항) —
 --   철회: 앱이 본인 행을 지운다(아래 삭제 정책) / 탈퇴: auth.users 외래키 on delete cascade.
@@ -13,10 +14,16 @@ create table if not exists public.location_logs (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   used_at timestamptz not null default now(),
-  purpose text not null check (purpose in ('journal_place_weather', 'consent')),
+  purpose text not null check (purpose in ('journal_place_weather', 'journal_photo_place_weather', 'consent')),
   provided_to text[] not null default '{}'
 );
 create index if not exists location_logs_user_idx on public.location_logs (user_id, used_at desc);
+
+-- 이미 만들어진 표에도 사진 위치 목적을 허용한다(2026-11-19). 이게 없으면 사진 위치를 쓸 때
+-- 확인자료 insert가 check 제약에 막혀 조용히 실패한다(js/state.js logLocationUse는 경고만 남긴다).
+alter table public.location_logs drop constraint if exists location_logs_purpose_check;
+alter table public.location_logs add constraint location_logs_purpose_check
+  check (purpose in ('journal_place_weather', 'journal_photo_place_weather', 'consent'));
 
 alter table public.location_logs enable row level security;
 

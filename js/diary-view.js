@@ -24,7 +24,6 @@
   let pendingPhotos = [];   // { path, url } — 모달에서 올린 뒤 저장 전까지
   let pendingLocation = null;
   let pendingWeather = null;     // 위치 확인과 동시에 미리 받아둔다 — 저장 시점엔 준비돼 있게
-  let photoPlaceSet = false;     // 사진 GPS로 위치·날씨를 정했으면 기기 위치가 나중에 와도 덮지 않는다
   let pendingNowPlaying = null;  // 사용자가 직접 고른 "그때 듣던 노래"
   let nowPlayingSearchTimer = null;
   let root = null;
@@ -1236,6 +1235,66 @@
     return { takenAt, gps };
   }
 
+  /**
+   * 앱(iOS)의 사진 고르기 — ios/App/App/PhotoPickerPlugin.swift.
+   * 웹 사진 창(<input type="file">)으로 고르면 iOS가 촬영 위치(GPS)를 지우고 넘겨줄 때가 있어서,
+   * 앱에서는 사진 보관함 권한을 받아 사진 앱에 저장된 촬영 위치·시각을 직접 읽는다.
+   * 권한을 거부해도 사진은 고를 수 있고, 그때는 파일 안에 남은 정보만 쓴다(없으면 위치 없음).
+   * 웹에서는 null — 원래대로 파일 창을 연다.
+   */
+  function nativePhotoPicker() {
+    const cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return null;
+    return (cap.Plugins && cap.Plugins.PhotoPicker) || null;
+  }
+
+  let nativePicking = false;
+  async function pickPhotosNative(picker, scrim) {
+    if (nativePicking) return;
+    nativePicking = true;
+    try {
+      const left = AppState.freePhotoUploadsLeft();
+      const { photos } = await picker.pick({ limit: Number.isFinite(left) ? left : 0 });
+      const stamped = await Promise.all((photos || []).map(async (p) => {
+        const res = await fetch(window.Capacitor.convertFileSrc(p.path));
+        const blob = await res.blob();
+        const file = new File([blob], p.name || 'photo.jpg', { type: p.mimeType || blob.type || 'image/jpeg' });
+        const fromFile = await readPhotoMeta(file);
+        return {
+          f: file,
+          m: {
+            // 시각은 파일 EXIF(찍은 곳의 벽시계 시각)를 먼저 쓴다. 보관함의 creationDate는 절대 시각이라
+            // 기기 시간대로 바뀌면서 해외에서 찍은 사진의 날짜가 하루 밀릴 수 있다(예: 바르셀로나 19:45 → 서울 02:45)
+            takenAt: fromFile.takenAt || (p.takenAt ? new Date(p.takenAt) : null),
+            // 위치는 보관함 값을 먼저 쓴다 — 파일 쪽 위치는 iOS가 지웠을 수 있다
+            gps: p.location || fromFile.gps
+          }
+        };
+      }));
+      await addPickedPhotos(scrim, stamped);
+    } catch (err) {
+      const msg = (err && err.message) || '';
+      if (!/already picking/.test(msg)) showToast('사진을 불러오지 못했어요');   // 네이티브 오류 문구(영어)는 그대로 보이지 않는다
+      console.warn('[photo-picker]', err);
+    } finally {
+      nativePicking = false;
+    }
+  }
+
+  /** 고른 사진들을 올린다 — 고른 순서가 아니라 찍은 순서로 줄을 세운다(모르는 건 맨 뒤) */
+  async function addPickedPhotos(scrim, stamped) {
+    if (!stamped.length) return;
+    let blocked = false;
+    stamped.sort((a, b) => (a.m.takenAt ? +a.m.takenAt : Infinity) - (b.m.takenAt ? +b.m.takenAt : Infinity));
+    for (const { f: file, m } of stamped) {
+      if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
+      try { await addPendingPhoto(file, m); AppState.recordPhotoUpload(); }
+      catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
+    }
+    renderPhotoPicker(scrim);
+    if (blocked) openPaywall({ reason: 'photo' });
+  }
+
   async function addPendingPhoto(file, meta) {
     if (meta === undefined) meta = await readPhotoMeta(file);
     const takenAt = meta ? meta.takenAt : null;
@@ -1308,7 +1367,7 @@
     pendingPhotos = edit ? (edit.photos || []).map(p => ({ path: p, url: photoUrl(p) })) : [];
     pendingLocation = null;
     pendingWeather = null;
-    photoPlaceSet = false; photoPlaceKey = '';
+    photoPlaceKey = '';
     pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
@@ -1381,14 +1440,16 @@
     }
     renderPhotoPicker(scrim);
     renderNowPlayingPicker(scrim);
-    if (!edit) requestLocation();
+    // 기기의 지금 위치는 읽지 않는다 — 위치는 고른 사진의 촬영 위치에서만 온다(usePhotoPlace)
 
     if (initialFile) {
       // 메인 화면 카메라로 바로 찍은 사진도 하루 무료 한도에 똑같이 센다
       if (AppState.freePhotoUploadsLeft() <= 0) {
         openPaywall({ reason: 'photo' });
       } else {
-        addPendingPhoto(initialFile)
+        // 방금 찍은 사진의 위치는 곧 지금 있는 곳(실시간 위치)이라 쓰지 않는다 — 찍은 시각만 쓴다
+        readPhotoMeta(initialFile)
+          .then(m => addPendingPhoto(initialFile, { takenAt: m.takenAt, gps: null }))
           .then(() => { AppState.recordPhotoUpload(); renderPhotoPicker(scrim); })
           .catch(err => showToast(err.message || '사진을 올리지 못했어요'));
       }
@@ -1522,11 +1583,13 @@
       stack.querySelector('.diary-photo-stack__remove').addEventListener('click', () => {
         pendingPhotos.shift();
         renderPhotoPicker(scrim);
+        usePhotoPlace();   // 대표 사진이 바뀌었으니 위치도 그 사진 기준으로 다시
       });
       const flipBtn = stack.querySelector('.diary-photo-stack__flip');
       if (flipBtn) flipBtn.addEventListener('click', () => {
         pendingPhotos.push(pendingPhotos.shift());
         renderPhotoPicker(scrim);
+        usePhotoPlace();
       });
     }
 
@@ -1553,20 +1616,22 @@
   }
 
   /*
-   * GPS(위치 권한)가 없거나 지명 변환에 실패해도 노래 추천은 끊기면 안 된다 — 확정한
-   * 학교의 나라를 이미 알고 있으니 그걸 대신 쓴다. recommendSongFor()가 countryCode
-   * 하나만 있으면 돌아가므로, 이걸로 "위치 거부 = 노래 안 뜸" 문제가 없어진다.
-   * country-flags.js의 COUNTRY_ISO2(영문 국가명 → ISO 코드)를 그대로 재사용한다.
-   */
-  /*
-   * 사진에 찍힌 곳(GPS)이 있으면 그 자리와 그 시각의 날씨로 기록한다 — 지금 있는 곳·지금 날씨가 아니라.
-   * 대표(맨 앞) 사진 기준이고, 위치정보 이용 동의를 받은 뒤에만 좌표를 밖(지명·날씨 서비스)으로 보낸다.
+   * 위치 = 대표(맨 앞) 사진의 촬영 위치. 그 사진에 위치가 없으면 비워 둔다 — 다른 사진의 위치나
+   * 기기의 지금 위치로 채우지 않는다(실시간 위치는 받지 않는다). ⟳로 대표 사진이 바뀌면 다시 정한다.
+   * 도시는 기기 안에서 찾고(NearestCity — 사진 좌표는 밖으로 안 나간다), 날씨는 그 도시 중심 좌표와
+   * 찍은 날짜로 조회한다. 위치정보 이용 동의를 받은 뒤에만 하고, 기록에는 도시·국가만 남긴다(stripCoords).
    * 기록 날짜도 사진을 찍은 날로 맞춘다(새 기록일 때만).
    */
   let photoPlaceKey = '';   // 지금 위치·날씨를 가져온 사진(같은 사진으로 두 번 묻지 않게)
   function setLocationNote(text) {
     const note = document.getElementById('locationNote');
     if (note) { note.textContent = text || ''; note.hidden = !text; }
+  }
+  function clearPhotoPlace() {
+    photoPlaceKey = '';
+    pendingLocation = null;
+    pendingWeather = null;
+    setLocationNote('');
   }
   function usePhotoPlace() {
     if (editingEntry) return;
@@ -1582,10 +1647,11 @@
         if (eb) eb.textContent = `${d} · 사진 찍은 날`;
       }
     }
-    const withGps = pendingPhotos.find(p => p.gps);
-    if (!withGps || photoPlaceKey === withGps.path) return;
+    const front = pendingPhotos[0] || null;
+    if (!front || !front.gps) { clearPhotoPlace(); return; }
+    if (photoPlaceKey === front.path) return;
     const consent = AppState.locationConsent();
-    if (consent === 'no') return;
+    if (consent === 'no') { clearPhotoPlace(); return; }
     if (consent !== 'yes') {
       askLocationConsent().then(ok => {
         AppState.setLocationConsent(ok ? 'yes' : 'no');
@@ -1593,25 +1659,33 @@
       });
       return;
     }
-    photoPlaceKey = withGps.path;
-    photoPlaceSet = true;
-    const { lat, lng } = withGps.gps;
-    const when = withGps.takenAt || null;
-    AppState.logLocationUse('journal_photo_place_weather', ['BigDataCloud', 'Open-Meteo']);
+    photoPlaceKey = front.path;
+    const key = front.path;
+    const { lat, lng } = front.gps;
+    const when = front.takenAt || null;
     setLocationNote('📍 사진 찍은 곳을 찾는 중…');
+    pendingLocation = null;
     pendingWeather = null;
-    if (typeof SongEngine !== 'undefined' && SongEngine.fetchWeatherAt) {
-      SongEngine.fetchWeatherAt(lat, lng, when).then(w => { if (photoPlaceKey === withGps.path) { pendingWeather = w; showPlaceNote(); } }).catch(() => {});
-    }
-    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
-      .then(r => r.json())
-      .then(data => {
-        if (photoPlaceKey !== withGps.path) return;
-        // 도시·국가만 남긴다 — 정밀 좌표는 저장하지 않는다(stripCoords)
-        pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode || null };
+    // 도시는 기기 안에서 찾는다(js/nearest-city.js) — 사진 좌표는 밖으로 보내지 않는다
+    NearestCity.find(lat, lng)
+      .then(place => {
+        if (photoPlaceKey !== key) return;
+        // 날씨는 사진 좌표가 아니라 찾은 도시의 중심 좌표로, 찍은 날을 알 때만 조회한다 —
+        // 날짜를 모르는데 지금 날씨를 붙이면 찍을 때 날씨처럼 보인다
+        const sendWeather = !!(place && when && typeof SongEngine !== 'undefined' && SongEngine.fetchWeatherAt);
+        // 이용사실 확인자료 — 좌표는 남기지 않고 목적과 보낸 곳만(위치정보법 제16조 제2항)
+        AppState.logLocationUse('journal_photo_place_weather', sendWeather ? ['Open-Meteo'] : []);
+        if (!place) { setLocationNote('📍 사진 찍은 곳 근처에서 도시를 찾지 못했어요'); return; }
+        // 도시·국가만 남긴다 — 좌표는 저장하지 않는다(stripCoords)
+        pendingLocation = { country: place.country, city: place.city, countryCode: place.countryCode };
         showPlaceNote();
+        if (sendWeather) {
+          SongEngine.fetchWeatherAt(place.lat, place.lng, when)
+            .then(w => { if (photoPlaceKey === key) { pendingWeather = w; showPlaceNote(); } })
+            .catch(() => {});
+        }
       })
-      .catch(() => { if (photoPlaceKey === withGps.path) setLocationNote('📍 사진 위치의 지명을 찾지 못했어요'); });
+      .catch(() => { if (photoPlaceKey === key) setLocationNote('📍 사진 찍은 곳의 도시를 찾지 못했어요'); });
   }
   function showPlaceNote() {
     const place = pendingLocation ? [pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') : '';
@@ -1620,89 +1694,27 @@
       const lb = SongEngine.weatherLabel(pendingWeather.code);
       if (lb) w = ` · ${lb.emoji} ${lb.ko}${typeof pendingWeather.temp === 'number' ? ` ${Math.round(pendingWeather.temp)}°` : ''}`;
     }
-    const first = pendingPhotos.find(p => p.takenAt);
-    const t = first ? ` · ${String(first.takenAt.getHours()).padStart(2, '0')}:${String(first.takenAt.getMinutes()).padStart(2, '0')}` : '';
+    const front = pendingPhotos[0];
+    const t = front && front.takenAt ? ` · ${String(front.takenAt.getHours()).padStart(2, '0')}:${String(front.takenAt.getMinutes()).padStart(2, '0')}` : '';
     if (place || w) setLocationNote(`📍 ${place || '사진 찍은 곳'}${t}${w} — 사진 기준`);
   }
 
-  function schoolFallbackLocation() {
+  /*
+   * 노래 추천은 나라(countryCode) 하나만 있으면 돌아간다. 사진에 위치가 없어 기록의 위치가 비어 있어도
+   * 추천이 끊기지 않게, 확정한 학교의 나라를 추천에만 쓴다 — 기록에 위치로 저장하지는 않는다.
+   * country-flags.js의 COUNTRY_ISO2(영문 국가명 → ISO 코드)를 그대로 재사용한다.
+   */
+  function schoolCountryCode() {
     const school = typeof AppState !== 'undefined' ? AppState.getConfirmedSchool() : null;
-    if (!school) return null;
-    const iso2 = (typeof COUNTRY_ISO2 !== 'undefined' && school.countryEn) ? COUNTRY_ISO2[school.countryEn] : null;
-    if (!iso2) return null;
-    return { country: school.countryEn || school.country, city: school.city || school.campusCity || null, countryCode: iso2, lat: school.lat || null, lng: school.lng || null };
-  }
-
-  function requestLocation() {
-    // 기기 위치 안내 글은 띄우지 않는다(사진 위치를 찾았을 때만 보여 준다). 사진 위치가 먼저 정해졌으면 덮지 않는다
-    const note = null;
-    const fallback = (reason) => {
-      if (photoPlaceSet) return;
-      const fb = schoolFallbackLocation();
-      if (fb) {
-        pendingLocation = fb;
-        if (fb.lat && fb.lng && typeof SongEngine !== 'undefined') {
-          SongEngine.fetchWeather(fb.lat, fb.lng).then(w => { pendingWeather = w; }).catch(() => {});
-        }
-        if (note) note.textContent = `📍 ${reason}. 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`;
-      } else {
-        pendingLocation = null;
-        if (note) note.textContent = `📍 ${reason} (위치 없이 저장돼요)`;
-      }
-    };
-    if (!navigator.geolocation) { fallback('위치 정보를 사용할 수 없어요'); return; }
-    // 개인위치정보는 따로 동의를 받은 뒤에만 읽는다(위치정보법 제18조·제19조). 동의하지 않으면 학교 도시로 대신한다
-    const consent = AppState.locationConsent();
-    if (consent === 'no') { fallback('위치 이용에 동의하지 않았어요'); return; }
-    if (consent !== 'yes') {
-      askLocationConsent().then(ok => {
-        AppState.setLocationConsent(ok ? 'yes' : 'no');
-        if (ok) requestLocation(); else fallback('위치 이용에 동의하지 않았어요');
-      });
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      if (photoPlaceSet) return;
-      const { latitude, longitude } = pos.coords;
-      // 이용사실 확인자료 — 좌표는 남기지 않고 목적과 보낸 곳만(위치정보법 제16조 제2항)
-      AppState.logLocationUse('journal_place_weather', ['BigDataCloud', 'Open-Meteo']);
-      // 노래 추천에 쓸 날씨는 저장 버튼을 기다리지 않고 지금 받아둔다.
-      if (typeof SongEngine !== 'undefined') {
-        SongEngine.fetchWeather(latitude, longitude).then(w => { if (!photoPlaceSet) pendingWeather = w; }).catch(() => {});
-      }
-      try {
-        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);   // 위치는 영어로(도시·나라)
-        const data = await res.json();
-        if (photoPlaceSet) return;
-        // 도시·국가만 남긴다 — 정밀 좌표는 친구에게 공개된 기록에서 정확한 위치가 새는 길이라 저장하지 않는다
-        // (날씨는 위에서 GPS 값으로 이미 받아 두었고, 저장 직전에 stripCoords가 한 번 더 거른다)
-        if (data.countryCode) {
-          pendingLocation = { country: data.countryName || null, city: data.city || data.locality || null, countryCode: data.countryCode };
-          if (note) note.textContent = `📍 ${[pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') || '위치 확인됨'}`;
-        } else {
-          // GPS는 받았는데 나라를 못 읽은 경우 — 노래 추천에 쓰는 countryCode는 학교 나라로 채운다.
-          const fb = schoolFallbackLocation();
-          pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
-          if (note) note.textContent = fb
-            ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
-            : '📍 지명을 확인하지 못했어요';
-        }
-      } catch (err) {
-        if (photoPlaceSet) return;
-        const fb = schoolFallbackLocation();
-        pendingLocation = { country: fb ? fb.country : null, city: fb ? fb.city : null, countryCode: fb ? fb.countryCode : null };
-        if (note) note.textContent = fb
-          ? `📍 지명 변환은 실패했지만 확정한 학교(${[fb.city, fb.country].filter(Boolean).join(', ')}) 기준으로 추천해요`
-          : '📍 지명을 확인하지 못했어요';
-      }
-    }, () => fallback('위치 권한이 거부됐어요'), { timeout: 8000 });
+    if (!school || typeof COUNTRY_ISO2 === 'undefined' || !school.countryEn) return null;
+    return COUNTRY_ISO2[school.countryEn] || null;
   }
 
   /**
-   * 개인위치정보 이용 동의(선택) — 처음 위치를 쓰려 할 때 한 번 묻는다. 기록 쓰기 창 위에 한 장 더 뜬다.
-   * 동의하지 않아도 기록은 그대로 저장되고, 위치는 확정한 학교 도시로 대신한다.
+   * 개인위치정보 이용 동의(선택) — 사진의 촬영 위치를 처음 쓰려 할 때 한 번 묻는다. 기록 쓰기 창 위에 한 장 더 뜬다.
+   * 동의하지 않아도 기록은 그대로 저장되고, 위치 없이 남는다. 기기의 지금 위치는 동의와 상관없이 읽지 않는다.
    */
-  let consentAsking = null;   // 기기 위치·사진 위치가 동시에 물으면 창을 하나만 띄운다
+  let consentAsking = null;   // 사진을 여러 장 올려 동시에 물어도 창을 하나만 띄운다
   function askLocationConsent() {
     if (consentAsking) return consentAsking;
     consentAsking = new Promise((resolve) => {
@@ -1714,11 +1726,12 @@
       box.innerHTML = `
         <div class="loc-consent__panel">
           <p class="loc-consent__title">위치정보 이용 동의 <span>(선택)</span></p>
-          <p class="loc-consent__lead">기록에 도시와 날씨를 붙이려고 사진에 담긴 위치(없으면 기기 위치)를 확인해요.</p>
+          <p class="loc-consent__lead">기록에 도시와 날씨를 붙이려고 사진에 담긴 촬영 위치를 확인해요. 지금 계신 곳은 확인하지 않아요.</p>
           <ul class="loc-consent__list">
-            <li>위치(위도·경도)는 도시와 그때 날씨를 찾는 데만 쓰고 저장하지 않아요.</li>
+            <li>위치(위도·경도)는 휴대폰 안에서 가까운 도시를 찾는 데만 쓰고, 밖으로 보내거나 저장하지 않아요.</li>
+            <li>날씨는 찾은 도시의 중심 좌표와 사진 찍은 날짜로 Open-Meteo에서 조회해요.</li>
             <li>기록에는 도시·국가만 저장돼요.</li>
-            <li>동의하지 않아도 기록은 저장되고, 확정한 학교 도시로 대신 표시돼요.</li>
+            <li>동의하지 않아도 기록은 저장되고, 위치 없이 남아요.</li>
             <li>계정 메뉴에서 언제든 동의를 철회할 수 있어요.</li>
           </ul>
           <a class="loc-consent__link" href="terms.html#ch9" target="_blank" rel="noopener">이용약관 9장(위치기반서비스) 보기</a>
@@ -1799,26 +1812,25 @@
 
     ['#photoInput'].forEach((sel) => {
       const input = scrim.querySelector(sel);
-      // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
       input.closest('label').addEventListener('click', (e) => {
-        if (AppState.freePhotoUploadsLeft() > 0) return;
+        // 한도를 다 썼으면 사진 고르는 창 대신 결제창을 연다 — 고른 뒤에 막히면 헛수고라서
+        if (AppState.freePhotoUploadsLeft() <= 0) {
+          e.preventDefault();
+          openPaywall({ reason: 'photo' });
+          return;
+        }
+        // 앱에서는 웹 사진 창 대신 네이티브 창으로 고른다(촬영 위치를 읽으려고 — nativePhotoPicker 참고)
+        const picker = nativePhotoPicker();
+        if (!picker) return;
         e.preventDefault();
-        openPaywall({ reason: 'photo' });
+        pickPhotosNative(picker, scrim);
       });
       input.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files || []);
         input.value = '';
-        let blocked = false;
-        // 한 번에 여러 장을 고르면 고른 순서가 아니라 찍은 순서로 줄을 세운다(모르는 건 맨 뒤)
+        // 웹(브라우저)에서는 파일 안의 EXIF에서 찍은 시각·위치를 읽는다
         const stamped = await Promise.all(files.map(async (f) => ({ f, m: await readPhotoMeta(f) })));
-        stamped.sort((a, b) => (a.m.takenAt ? +a.m.takenAt : Infinity) - (b.m.takenAt ? +b.m.takenAt : Infinity));
-        for (const { f: file, m } of stamped) {
-          if (AppState.freePhotoUploadsLeft() <= 0) { blocked = true; break; }
-          try { await addPendingPhoto(file, m); AppState.recordPhotoUpload(); }
-          catch (err) { showToast(err.message || '사진을 올리지 못했어요'); }
-        }
-        renderPhotoPicker(scrim);
-        if (blocked) openPaywall({ reason: 'photo' });
+        await addPickedPhotos(scrim, stamped);
       });
     });
 
@@ -1919,7 +1931,9 @@
    */
   async function recommendSongFor(entry, tags) {
     if (typeof SongEngine === 'undefined') return;
-    if (!entry || !pendingLocation || !pendingLocation.countryCode) return;
+    // 나라 — 사진 위치에서 온 것, 없으면 확정한 학교의 나라(추천에만 쓰고 기록에는 저장하지 않는다)
+    const countryCode = (pendingLocation && pendingLocation.countryCode) || schoolCountryCode();
+    if (!entry || !countryCode) return;
     if (entry.nowPlaying) return;   // 직접 고른 노래가 있으면 추천하지 않는다
     try {
       const { mood, moodKo, keywords } = SongEngine.computeMood({
@@ -1929,7 +1943,7 @@
         date: new Date(entry.createdAt)
       });
       const song = await SongEngine.fetchSongRecommendation({
-        countryCode: pendingLocation.countryCode, keywords
+        countryCode, keywords
       });
       if (!song) return;
       song.mood = mood;
