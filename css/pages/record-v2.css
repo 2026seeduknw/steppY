@@ -479,13 +479,14 @@ body[data-page="journal"][data-theme="v2"] .arc-friends-empty { border-color: #D
 /* ---------------------------------------------------------------- 큰 사진 — 시간순 줄(왼쪽이 과거) */
 .rec-hero.rec-hero--reel { --rec-gutter: 21px; aspect-ratio: auto; background: none; border-radius: 0; overflow: visible; position: relative; }
 .rec-hero__track {
-  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  /* 손가락으로 흘려 넘기지 않는다 — 한 번 쓸면 한 장씩 JS(diary-view.js go)가 천천히 넘긴다. 세로 스크롤은 그대로 */
+  display: flex; gap: 10px; overflow-x: hidden; scrollbar-width: none; touch-action: pan-y;
   margin: 0 calc(-1 * var(--rec-gutter, 16px)); padding: 0 calc(var(--rec-gutter, 16px) + 6%);
   scroll-padding: 0 calc(var(--rec-gutter, 16px) + 6%); overscroll-behavior-x: contain;
 }
 .rec-hero__track::-webkit-scrollbar { display: none; }
 .rec-hero__slide {
-  flex: 0 0 100%; scroll-snap-align: center; position: relative; display: flex; flex-direction: column; justify-content: center;
+  flex: 0 0 100%; position: relative; display: flex; flex-direction: column; justify-content: center;
   /* 밝기·크기는 스크롤 위치에 따라 JS 가 매 프레임 정한다(diary-view.js mark) — 전환을 걸면 손가락보다 늦게 따라온다 */
   opacity: 0.4; transform: scale(0.94); will-change: transform, opacity;
 }

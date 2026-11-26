@@ -2293,17 +2293,42 @@
     track.querySelectorAll('.rec-hero__img').forEach(img => { if (!img.complete) img.addEventListener('load', () => mark(), { once: true }); });
     // 다시 그릴 때마다 붙으면 쌓이므로 하나만 남긴다
     if (renderHomeHero.onResize) window.removeEventListener('resize', renderHomeHero.onResize);
-    renderHomeHero.onResize = () => { if (track.isConnected) { measure(); mark(); } };
+    renderHomeHero.onResize = () => { if (track.isConnected) { measure(); go(cur, true); } };
     window.addEventListener('resize', renderHomeHero.onResize);
-    let ticking = false, settle = 0;
-    track.addEventListener('scroll', () => {
-      if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; mark(false); }); }
-      // 멈추면 곧바로 높이를 맞춘다. scrollend 가 없는 브라우저(iOS 사파리 일부)는 마지막 스크롤 뒤 잠깐 기다린다
-      clearTimeout(settle); settle = setTimeout(() => mark(true), 120);
-    }, { passive: true });
-    track.addEventListener('scrollend', () => { clearTimeout(settle); mark(true); });
+    // 손가락을 따라 흐르는 스크롤은 빨리 쓸면 사진이 깨져 보였다 — 한 번 쓸면 한 장씩, 정해진 속도로 천천히 넘긴다
+    let cur = 0, anim = 0, swiped = false;
+    const leftOf = (i) => slides[i].offsetLeft - track.offsetLeft - (track.clientWidth - slides[i].offsetWidth) / 2;
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const go = (i, instant) => {
+      if (!slides.length) return;
+      cur = Math.max(0, Math.min(slides.length - 1, i));
+      cancelAnimationFrame(anim);
+      const from = track.scrollLeft, to = leftOf(cur);
+      if (instant || Math.abs(to - from) < 1) { track.scrollLeft = to; mark(true); return; }
+      const DUR = 520, t0 = performance.now();
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / DUR);
+        track.scrollLeft = from + (to - from) * ease(t);
+        mark(t >= 1);
+        if (t < 1) anim = requestAnimationFrame(step);
+      };
+      anim = requestAnimationFrame(step);
+    };
+    track._go = (slide) => go(slides.indexOf(slide));
+    let sx = 0, sy = 0, down = false;
+    track.addEventListener('pointerdown', (ev) => { down = true; swiped = false; sx = ev.clientX; sy = ev.clientY; });
+    const finish = (ev) => {
+      if (!down) return;
+      down = false;
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { swiped = true; go(cur + (dx < 0 ? 1 : -1)); }
+    };
+    track.addEventListener('pointerup', finish);
+    track.addEventListener('pointercancel', finish);
+    // 쓸어 넘긴 뒤 따라오는 click 은 사진 열기로 치지 않는다
+    track.addEventListener('click', (ev) => { if (swiped) { ev.stopPropagation(); ev.preventDefault(); swiped = false; } }, true);
     // 가장 최근(맨 오른쪽)에서 시작 — 자리가 다 잡힌 뒤에(바로 하면 폭이 0이라 안 먹는다)
-    const toLatest = () => { track.scrollLeft = track.scrollWidth; mark(); };
+    const toLatest = () => { measure(); go(slides.length - 1, true); };
     requestAnimationFrame(toLatest);
     setTimeout(toLatest, 120);
   }
@@ -2379,7 +2404,7 @@
       const b = ev.target.closest('[data-diary]');
       if (b) RecordV2.openDiary(recordCtx(), b.dataset.diary, renderDiaryRow);
     });
-    root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) openCalPage(); });
+    root.querySelector('#recStreak').addEventListener('click', (ev) => { if (ev.target.closest('#recCalOpen')) RecordV2.openCalendar(recordCtx()); });
     root.querySelector('#recCalClose').addEventListener('click', closeCalPage);
     root.querySelector('#recOpenStorage').addEventListener('click', () => RecordV2.openStorage(recordCtx()));
     root.querySelector('#recRecapSlot').addEventListener('click', (ev) => {
@@ -2402,7 +2427,7 @@
       const slide = btn.closest('.rec-hero__slide');
       if (slide && !slide.classList.contains('is-active')) {
         const track = slide.parentElement;
-        track.scrollTo({ left: slide.offsetLeft - track.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2, behavior: 'smooth' });
+        if (track._go) track._go(slide);
         return;
       }
       // 확대 화면도 같은 줄(시간순 전체)로 — 양옆 사진이 비치고 넘겨 볼 수 있다

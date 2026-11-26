@@ -295,7 +295,7 @@
   /* ------------------------------------------------------------ 폴더 안(다이어리 보기) */
   let folderView = null, folderNode = null, folderIndex = 0, folderMonth = '';
   function folderEntries() {
-    const ym = folderNode && folderNode.type === 'monthly' ? monthOfNode(folderNode) : '';
+    const ym = calMode ? monthOfNode(folderNode) : '';
     return DiaryArchive.entriesOfNode(folderNode).filter(e => !ym || e.date.startsWith(ym)).slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
   }
   function metaLine(e) {
@@ -305,19 +305,21 @@
   }
   /*
    * 폴더 안 — 폴더는 '사진을 모아 두는 곳'이라 담긴 사진을 격자로 보여 준다(누르면 크게 + 위치·날씨·노래).
-   * Monthly는 한 달씩 넘기는 사진 달력. 그동안 간 도시를 잇는 경로는 따로(첫 화면 Recap → openRecap).
+   * Monthly 폴더도 사진 모음이다. 한 달씩 넘기는 사진 달력은 첫 화면 'n days recorded' 옆 자세히 보기로 연다(openCalendar).
+   * 그동안 간 도시를 잇는 경로는 따로(첫 화면 Recap → openRecap).
    */
   let folderShots = [];
+  let calMode = false;   // true 면 폴더 대신 사진 달력(openCalendar)
   function renderFolder() {
     if (!folderView) return;
     const list = folderEntries();
     folderView.querySelector('.rec-top__title b').textContent = folderNode.name;
     const body = folderView.querySelector('.rec-layer__body');
-    const ym = monthOfNode(folderNode);
+    const ym = calMode ? monthOfNode(folderNode) : '';
     folderView.classList.toggle('rec-layer--photo', !!ym);
     folderShots = [];
     list.forEach(e => (e.photos || []).forEach(p => { const u = ctx.photoUrl(p); if (u) folderShots.push({ url: u, e }); }));
-    if (ym) { body.innerHTML = monthCalendarHtml(ym, list, folderNode.type === 'monthly'); return; }
+    if (ym) { body.innerHTML = monthCalendarHtml(ym, list, true); return; }
     const canPick = !(folderNode.type === 'monthly' || folderNode.virtual);
     if (!list.length && !ym) {
       body.innerHTML = `
@@ -395,8 +397,13 @@
         <p class="rec-pcal__sum">${count ? `${count}일의 기록` : '이 달에는 아직 사진이 없어요.'}</p>
       </section>`;
   }
-  function openFolder(c, node) {
+  /** 사진 달력 — 기록 전체를 한 달씩. 첫 화면 'n days recorded' 옆 자세히 보기에서 연다 */
+  function openCalendar(c) {
+    openFolder(c, { id: 'cal', name: 'Calendar', type: 'monthly', virtual: true, children: [] }, true);
+  }
+  function openFolder(c, node, asCalendar) {
     ctx = c;
+    calMode = !!asCalendar;
     folderNode = node; folderMonth = '';
     if (!folderView) {
       folderView = openLayer('rec-folderview', node.name);
@@ -1476,5 +1483,5 @@
     });
   }
 
-  global.RecordV2 = { openStorage, openFolder, openRecap, recapCardHtml, chooseFolder, listDiaries, diaryThumbHtml, createDiary, openDiary, rangeLabel };
+  global.RecordV2 = { openStorage, openFolder, openCalendar, openRecap, recapCardHtml, chooseFolder, listDiaries, diaryThumbHtml, createDiary, openDiary, rangeLabel };
 })(window);
