@@ -233,7 +233,6 @@
     const SORTS = [['recent', '최근'], ['name', '이름순'], ['count', '사진 많은 순']];
     storage.querySelector('.rec-layer__body').innerHTML = `
       <header class="v2-head rec-head">
-        <p class="v2-head__eyebrow">Your</p>
         <h1 class="v2-head__title">Storage</h1>
       </header>
       <div class="rec-chips">

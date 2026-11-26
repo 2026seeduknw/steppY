@@ -87,6 +87,23 @@ const NearestCity = {
     return { city: d.name[best], country: this.countryName(cc), countryCode: cc, lat: round2(d.lat[best]), lng: round2(d.lng[best]) };
   },
 
+  /** 도시 이름으로 찾기(직접 위치 입력) — 앞글자가 맞는 도시를 인구 많은 순으로. → [{ city, country, countryCode, lat, lng }] */
+  async search(q, limit = 6) {
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const key = norm(q);
+    if (key.length < 2) return [];
+    const d = await this.load();
+    if (!d.key) d.key = d.name.map(norm);   // 처음 찾을 때 한 번만
+    const hits = [];
+    for (let i = 0; i < d.n; i++) {
+      const k = d.key[i];
+      if (k.startsWith(key) || (key.length >= 3 && k.includes(' ' + key))) hits.push(i);
+    }
+    hits.sort((a, b) => d.pop[b] - d.pop[a]);
+    const round2 = (v) => Math.round(v * 100) / 100;
+    return hits.slice(0, limit).map(i => ({ city: d.name[i], country: this.countryName(d.cc[i]), countryCode: d.cc[i], lat: round2(d.lat[i]), lng: round2(d.lng[i]) }));
+  },
+
   countryName(cc) {
     if (!this._countryNames) {
       const m = {};

@@ -662,7 +662,7 @@ button.rec-pcal__day { cursor: zoom-in; }
 .rec-route__pill svg circle { fill: #fff; }
 .rec-route__pill b { min-width: 0; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rec-route__pill em { flex: none; margin-left: auto; font-style: normal; color: var(--ink-600); }
-.rec-layer--photo.rec-recapview { overflow: hidden; /* 하늘 — 위는 조금 진하고 아래로 갈수록 옅어지다가, 맨 아래에 노을빛이 살짝 */ background: linear-gradient(180deg, #A8D5F7 0%, #CBE6FA 45%, #EEF5FB 78%, #FBEBE0 100%); color: var(--ink-900); }
+.rec-layer--photo.rec-recapview { overflow: hidden; /* 하늘 — 위는 조금 진하고 아래로 갈수록 옅어진다(맨 아래 노을빛은 2026-11-26에 뺐다) */ background: linear-gradient(180deg, #A8D5F7 0%, #CBE6FA 45%, #EEF7FE 100%); color: var(--ink-900); }
 /* 지구본은 바탕에서 살짝 떠 보이게 — 그림자는 땅·바다 캔버스에만 */
 .rec-route .rec-rmap__earth { filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.08)); }
 .rec-route__map { position: relative; flex: 1; min-height: 0; margin-top: 8px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -792,3 +792,17 @@ body[data-page="journal"] {
 .rec-hero__img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 /* 겹친 사진은 위로 쓸어 올려 넘긴다 — 그 위에서 시작한 세로 끌기는 화면 스크롤로 넘기지 않는다 */
 .rec-hero__slide.is-active .rec-hero__stack.is-stack { touch-action: none; }
+/* 위치 직접 입력 — 사진에 위치가 없을 때 도시를 골라 붙인다(diary-view.js wireLocPick) */
+.entry-v2__locpick { margin: 4px 0 0; }
+.entry-v2__locbtn { padding: 4px 0; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--v2-ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.entry-v2__locsearch { margin-top: 6px; }
+.entry-v2__locsearch[hidden] { display: none; }
+.entry-v2__locresults { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.entry-v2__locresults button { width: 100%; display: flex; align-items: baseline; gap: 8px; padding: 9px 10px; border: 0; border-radius: 10px; background: none; font: inherit; text-align: left; cursor: pointer; color: var(--v2-ink); }
+.entry-v2__locresults button:active, .entry-v2__locresults button:hover { background: rgba(30, 42, 58, 0.06); }
+.entry-v2__locresults b { font-size: 14px; font-weight: 700; }
+.entry-v2__locresults small { font-size: 12px; color: var(--v2-ink-soft); }
+/* 저장소 제목은 첫 화면 제목보다 한 단계 작게 */
+.rec-storage .v2-head__title { font-size: 32px; }
+/* 저장소 정렬 칩은 제목과 같은 왼쪽 선에서 시작, + 폴더만 오른쪽 끝 */
+.rec-storage .rec-chips { padding: 0; }

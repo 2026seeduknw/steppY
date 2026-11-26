@@ -1368,6 +1368,7 @@
     pendingWeather = null;
     photoPlaceKey = '';
     placeJobs = [];
+    manualPlace = null;
     pendingNowPlaying = edit ? (edit.nowPlaying || null) : null;
     editKeepTags = edit ? (edit.tags || []).filter(t => !EVERYDAY_MAP[t]) : [];
 
@@ -1392,6 +1393,13 @@
             </label>
           </div>
           <p class="entry-v2__place" id="locationNote" hidden></p>
+          <div class="entry-v2__locpick" id="locPick">
+            <button type="button" class="entry-v2__locbtn" id="locPickOpen">📍 위치 직접 입력</button>
+            <div class="entry-v2__locsearch" id="locPickPanel" hidden>
+              <input type="search" class="entry-v2__input" id="locPickInput" placeholder="도시 이름 (영어로, 예: Paris)" autocomplete="off" enterkeyhint="search">
+              <ul class="entry-v2__locresults" id="locPickResults"></ul>
+            </div>
+          </div>
           <p class="diary-form__hint" id="photoHint" hidden>⟳을 누르면 다음 사진이 앞으로 와요.<br>맨 앞 사진이 대표 사진이에요.</p>
 
           <div class="entry-v2__field">
@@ -1429,6 +1437,7 @@
       </div>`;
 
     wireModalDismiss(scrim);
+    wireLocPick(scrim);
     openModal(scrim);
     wireEntryForm(scrim);
     if (edit) {
@@ -1626,8 +1635,69 @@
   function setLocationNote(text) {
     const note = document.getElementById('locationNote');
     if (note) { note.textContent = text || ''; note.hidden = !text; }
+    const btn = document.getElementById('locPickOpen');
+    const shown = (editingEntry && editingEntry.location) || pendingLocation || manualPlace;
+    if (btn) btn.textContent = shown ? '위치 바꾸기' : '📍 위치 직접 입력';
+  }
+  /*
+   * 위치 직접 입력 — 사진에 위치가 없거나(스크린샷·메신저로 받은 사진) 찾은 도시가 틀렸을 때.
+   * 도시 목록(js/nearest-city.js)에서 이름으로 찾고, 없으면 적은 그대로 쓴다. 고른 뒤에는 사진 위치가 덮어쓰지 않는다.
+   */
+  let manualPlace = null;
+  function wireLocPick(scrim) {
+    const open = scrim.querySelector('#locPickOpen');
+    const panel = scrim.querySelector('#locPickPanel');
+    const input = scrim.querySelector('#locPickInput');
+    const list = scrim.querySelector('#locPickResults');
+    if (!open || !panel) return;
+    if (editingEntry && editingEntry.location) {
+      const l = editingEntry.location;
+      setLocationNote(`📍 ${[l.city, l.country].filter(Boolean).join(', ')}`);
+    } else setLocationNote(document.getElementById('locationNote').textContent);
+    let results = [], seq = 0;
+    const render = (q) => {
+      const typed = q.trim();
+      list.innerHTML = results.map((r, i) => `<li><button type="button" data-loc="${i}"><b>${esc(r.city)}</b><small>${esc(r.country)}</small></button></li>`).join('')
+        + (typed ? `<li><button type="button" data-loc-typed><b>“${esc(typed)}”</b><small>적은 그대로 쓰기</small></button></li>` : '');
+    };
+    open.addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) { input.value = ''; results = []; render(''); input.focus(); }
+    });
+    input.addEventListener('input', () => {
+      const q = input.value, my = ++seq;
+      if (q.trim().length < 2) { results = []; render(q); return; }
+      NearestCity.search(q).then(r => { if (my === seq) { results = r; render(q); } }).catch(() => { results = []; render(q); });
+    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+    list.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const r = b.hasAttribute('data-loc-typed') ? { city: input.value.trim(), country: '', countryCode: '' } : results[Number(b.dataset.loc)];
+      if (!r || !r.city) return;
+      pickPlace(r);
+      panel.hidden = true;
+    });
+  }
+  function pickPlace(r) {
+    manualPlace = { country: r.country || '', city: r.city, countryCode: r.countryCode || '' };
+    pendingLocation = manualPlace;
+    photoPlaceKey = '__manual';     // 진행 중인 사진 위치 찾기 결과가 덮어쓰지 않게
+    pendingWeather = null;
+    placeJobs = [];
+    // 사진 찍은 시각을 알면 그 도시의 그때 날씨를 붙인다(사진 위치일 때와 같은 규칙)
+    const front = pendingPhotos[0];
+    const when = front && front.takenAt;
+    if (!editingEntry && when && isFinite(r.lat) && typeof SongEngine !== 'undefined' && SongEngine.fetchWeatherAt) {
+      AppState.logLocationUse('journal_manual_place_weather', ['Open-Meteo']);
+      placeJob(SongEngine.fetchWeatherAt(r.lat, r.lng, when)
+        .then(w => { if (manualPlace && pendingLocation === manualPlace) { pendingWeather = w; showPlaceNote(true); } })
+        .catch(() => {}));
+    }
+    showPlaceNote(true);
   }
   function clearPhotoPlace() {
+    if (manualPlace) return;   // 직접 고른 위치는 사진을 바꿔도 그대로
     photoPlaceKey = '';
     pendingLocation = null;
     pendingWeather = null;
@@ -1647,6 +1717,7 @@
         if (eb) eb.textContent = `${d} · 사진 찍은 날`;
       }
     }
+    if (manualPlace) return;   // 직접 고른 위치가 우선
     const front = pendingPhotos[0] || null;
     if (!front || !front.gps) { clearPhotoPlace(); return; }
     if (photoPlaceKey === front.path) return;
@@ -1688,7 +1759,7 @@
       })
       .catch(() => { if (photoPlaceKey === key) setLocationNote('📍 사진 찍은 곳의 도시를 찾지 못했어요'); }));
   }
-  function showPlaceNote() {
+  function showPlaceNote(manual) {
     const place = pendingLocation ? [pendingLocation.city, pendingLocation.country].filter(Boolean).join(', ') : '';
     let w = '';
     if (pendingWeather && typeof SongEngine !== 'undefined') {
@@ -1697,7 +1768,7 @@
     }
     const front = pendingPhotos[0];
     const t = front && front.takenAt ? ` · ${String(front.takenAt.getHours()).padStart(2, '0')}:${String(front.takenAt.getMinutes()).padStart(2, '0')}` : '';
-    if (place || w) setLocationNote(`📍 ${place || '사진 찍은 곳'}${t}${w} — 사진 기준`);
+    if (place || w) setLocationNote(`📍 ${place || '사진 찍은 곳'}${t}${w} — ${manual || manualPlace ? '직접 입력' : '사진 기준'}`);
   }
 
   /*
@@ -1889,6 +1960,7 @@
         const nextNP = keepNP ? target.nowPlaying : songOf(pendingNowPlaying);
         AppState.updateJournalEntry(target.id, {
           title, body,
+          ...(manualPlace ? { location: manualPlace } : {}),
           photos: pendingPhotos.map(p => p.path),
           tags: [...tags, ...editKeepTags.filter(t => !tags.includes(t))],
           nowPlaying: nextNP,
