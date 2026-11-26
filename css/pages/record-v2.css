@@ -790,3 +790,5 @@ body[data-page="journal"] {
 .entry-v2__place { margin: 8px 0 0; font-size: 12px; font-weight: 600; line-height: 1.5; color: var(--v2-ink-soft); }
 .entry-v2__place[hidden] { display: none; }
 .rec-hero__img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+/* 겹친 사진은 위로 쓸어 올려 넘긴다 — 그 위에서 시작한 세로 끌기는 화면 스크롤로 넘기지 않는다 */
+.rec-hero__slide.is-active .rec-hero__stack.is-stack { touch-action: none; }

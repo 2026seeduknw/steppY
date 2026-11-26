@@ -2315,13 +2315,18 @@
       anim = requestAnimationFrame(step);
     };
     track._go = (slide) => go(slides.indexOf(slide));
-    let sx = 0, sy = 0, down = false;
-    track.addEventListener('pointerdown', (ev) => { down = true; swiped = false; sx = ev.clientX; sy = ev.clientY; });
+    let sx = 0, sy = 0, down = false, downStack = null;
+    track.addEventListener('pointerdown', (ev) => {
+      down = true; swiped = false; sx = ev.clientX; sy = ev.clientY;
+      downStack = ev.target.closest('.rec-hero__slide.is-active .rec-hero__stack.is-stack');
+    });
     const finish = (ev) => {
       if (!down) return;
       down = false;
       const dx = ev.clientX - sx, dy = ev.clientY - sy;
       if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy)) { swiped = true; go(cur + (dx < 0 ? 1 : -1)); }
+      // 여러 장 겹친 날은 위로 쓸어 올리면 맨 위 사진이 뒤로 가고 다음 장이 올라온다
+      else if (downStack && dy < -36 && -dy > Math.abs(dx)) { swiped = true; flipHeroStack(downStack); }
     };
     track.addEventListener('pointerup', finish);
     track.addEventListener('pointercancel', finish);
@@ -2455,23 +2460,8 @@
         if (track._go) track._go(slide);
         return;
       }
-      // 여러 장 겹친 날은 누르면 다음 사진이 앞으로 온다. 크게 보기는 길게 누르기(아래 pointerdown)
-      const stack = btn.closest('.rec-hero__stack.is-stack');
-      if (stack) { if (heroLongPressed) { heroLongPressed = false; return; } flipHeroStack(stack); return; }
+      // 누르면 크게 보기(제목·캡션·노래). 겹친 사진 넘기기는 위로 쓸어 올리기(renderHomeHero finish)
       openHeroLightbox(start);
-    });
-    // 겹친 사진을 길게 누르면 확대 화면
-    let heroLongPressed = false, heroPressTimer = 0;
-    root.querySelector('#recHero').addEventListener('pointerdown', (ev) => {
-      heroLongPressed = false;
-      const btn = ev.target.closest('.rec-hero__slide.is-active .is-stack [data-hero-open]');
-      clearTimeout(heroPressTimer);
-      if (!btn) return;
-      const x0 = ev.clientX, y0 = ev.clientY;
-      const cancel = (e) => { if (!e || e.type !== 'pointermove' || Math.hypot(e.clientX - x0, e.clientY - y0) > 10) { clearTimeout(heroPressTimer); off(); } };
-      const off = () => ['pointermove', 'pointerup', 'pointercancel'].forEach(t => window.removeEventListener(t, cancel));
-      ['pointermove', 'pointerup', 'pointercancel'].forEach(t => window.addEventListener(t, cancel));
-      heroPressTimer = setTimeout(() => { off(); heroLongPressed = true; openHeroLightbox(Number(btn.dataset.heroOpen) || 0); }, 480);
     });
     function openHeroLightbox(start) {
       // 확대 화면도 같은 줄(시간순 전체)로 — 양옆 사진이 비치고 넘겨 볼 수 있다
