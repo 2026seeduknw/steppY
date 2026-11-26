@@ -552,7 +552,7 @@
     const songRecommended = !e.nowPlaying && !!e.song;   // 직접 고른 게 아니면 '추천' 표시
     const t = e.createdAt ? new Date(e.createdAt) : null;
     const date = `${e.date.replace(/-/g, '.')}${t && !isNaN(t) ? ` · ${pad(t.getHours())}:${pad(t.getMinutes())}` : ''}`;
-    return { cap: e.title || e.body || '', date, place, weather, song, songRecommended, entryId: e.id };
+    return { cap: e.title || e.body || '', title: e.title || '', body: e.body || '', date, place, weather, song, songRecommended, entryId: e.id };
   }
 
   /*
@@ -699,13 +699,18 @@
     const place = info && info.place;
     q('.arc-lb__info--1').innerHTML = info
       ? `${info.who ? `<span class="arc-lb__who">🎓 ${esc(info.who)}${info.school ? ' · ' + esc(info.school) : ''}</span>` : ''}
-         <div class="arc-lb__place">${place ? esc(place[0]) : esc(info.cap || '')}<small>${place && place[1] ? esc(place[1]) + ' · ' : ''}${esc(info.date)}</small></div>` : '';
+         ${info.title
+           // 제목이 있으면 제목을 크게, 장소는 날짜와 함께 작은 줄로
+           ? `<div class="arc-lb__place">${esc(info.title)}<small>${place ? esc(place.filter(Boolean).join(', ')) + ' · ' : ''}${esc(info.date)}</small></div>`
+           : `<div class="arc-lb__place">${place ? esc(place[0]) : esc(info.cap || '')}<small>${place && place[1] ? esc(place[1]) + ' · ' : ''}${esc(info.date)}</small></div>`}` : '';
     q('.arc-lb__info--2').innerHTML = info && info.weather
       ? `<span class="arc-pill"><span>${info.weather.emoji}</span><b>${esc(info.weather.label)}</b>${info.weather.temp != null ? `<small>${info.weather.temp}°</small>` : ''}</span>` : '';
     const s = info && info.song;
-    q('.arc-lb__info--3').innerHTML = s
+    // 캡션(본문)은 노래 위에 — 제목이 없어서 위에 이미 본문을 썼으면 다시 쓰지 않는다
+    const capHtml = info && info.body && (info.title || place) ? `<p class="arc-lb__cap">${esc(info.body)}</p>` : '';
+    q('.arc-lb__info--3').innerHTML = capHtml + (s
       ? `<div class="arc-song">${s.art ? `<img class="arc-song__art" src="${esc(s.art)}" alt="">` : `<span class="arc-song__art arc-song__art--empty">🎵</span>`}
-         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small>${info.songRecommended ? '<em class="arc-song__rec">날씨·위치 기반 추천 노래</em>' : ''}</span></div>` : '';
+         <span class="arc-song__txt"><b>${esc(s.name)}</b><small>${esc(s.artist)}</small>${info.songRecommended ? '<em class="arc-song__rec">날씨·위치 기반 추천 노래</em>' : ''}</span></div>` : '');
   }
   function placeInfo(rect) {
     const els = [q('.arc-lb__info--1'), q('.arc-lb__info--2'), q('.arc-lb__info--3')];
