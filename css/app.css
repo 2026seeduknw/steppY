@@ -1128,6 +1128,21 @@ body[data-page="onboarding"] {
   background: var(--cloud-50);
 }
 .account-sheet { padding-bottom: var(--space-6); }
+/* 계정 시트는 촘촘하게 — 여백과 버튼·글자를 한 단계씩 줄였다 */
+.account-sheet { padding: 12px 20px 28px; }
+.account-sheet__profile { margin-bottom: 12px; padding: 14px; }
+.account-sheet__profile .section-title { margin-bottom: 8px; }
+.account-sheet__profile .section-title h2 { font-size: 15px; }
+.account-sheet .profile-stats--compact { gap: 6px; }
+.account-sheet .profile-stats--compact .profile-stat { padding: 8px 10px; }
+.account-sheet .profile-stats--compact .profile-stat__value { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.account-sheet > .btn--ghost.btn--block { min-height: 0; height: 40px; padding: 0 12px; font-size: 13px; border-radius: 12px; }
+.account-sheet .account-sheet__departure { margin-bottom: 6px; }
+.account-sheet__loc { margin-top: 10px; font-size: 12px; }
+.account-sheet__loc .btn--text { font-size: 13px; }
+.account-sheet .account-sheet__legal { margin-top: 12px; }
+.account-sheet .account-sheet__legal a { font-size: 12px; }
+.account-sheet .account-danger { margin-top: 14px; padding-top: 12px; }
 
 
 /* ---- 학교 카드: 순위 · 지원 가능 · 모집 인원을 한 줄로 ---- */

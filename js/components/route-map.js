@@ -10,11 +10,11 @@
  */
 const RouteMap = (function () {
   const D2R = Math.PI / 180;
-  // 지구본: 바다는 밝은 회색, 땅은 한 단계 진한 회색 — 빛은 왼쪽 위 앞에서 비춘다(가장자리로 갈수록 살짝 어둡다)
-  const OCEAN = 236, LAND = 198, COAST = 182;
+  // 지구본: 바다는 옅은 하늘색, 땅은 옅은 연두색 — 빛은 왼쪽 위 앞에서 비춘다(가장자리로 갈수록 살짝 어둡다)
+  const OCEAN = [222, 240, 252], LAND = [208, 234, 172], COAST = [184, 218, 150];
   const LIGHT = (() => { const v = [-0.45, 0.55, 0.7], n = Math.hypot(...v); return v.map(x => x / n); })();
-  // 평면 지도: 바다는 비워 화면 바탕(#F4F4F2)이 보이고, 땅만 회색으로 얹는다
-  const FLAT_LAND = 206;
+  // 평면 지도: 바다는 비워 화면 바탕(하늘색 그라데이션)이 보이고, 땅만 회색으로 얹는다
+  const FLAT_LAND = [196, 228, 160];
   const ROUTE = '#BCD020', DOT = '#E2F23C', GLOW = 'rgba(226, 242, 60, 0.42)';
   const ZOOMS = { globe: [1, 1.8, 3.2, 5.5], map: [1, 1.7, 2.8, 4.5] };
   const CARD = 48, CARD_H = 66;
@@ -172,18 +172,18 @@ const RouteMap = (function () {
           if (!globe) {
             if (t <= 0) continue;
             const a = Math.round(t * 255);
-            out[py * W + px] = (a << 24) | (FLAT_LAND << 16) | (FLAT_LAND << 8) | FLAT_LAND;
+            out[py * W + px] = (a << 24) | (FLAT_LAND[2] << 16) | (FLAT_LAND[1] << 8) | FLAT_LAND[0];
             continue;
           }
-          let c = OCEAN + (LAND - OCEAN) * t;
+          const c = [0, 1, 2].map(k => OCEAN[k] + (LAND[k] - OCEAN[k]) * t);
           const edge = Math.abs(m - 0.5);
-          if (edge < 0.05) c += (COAST - c) * (1 - edge / 0.05) * 0.8;
+          if (edge < 0.05) { const f = (1 - edge / 0.05) * 0.8; for (let k = 0; k < 3; k++) c[k] += (COAST[k] - c[k]) * f; }
           // 구 음영 — 빛 받는 쪽은 하얗게 날리고, 테두리는 은은하게 어두워진다
           const nx = X / R, ny = Y / R;
           const lit = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
           const spec = Math.pow(lit, 24) * 18;
-          const g = Math.max(0, Math.min(255, Math.round(c * (0.93 + 0.08 * lit) + spec - (1 - nz) * 8)));
-          out[py * W + px] = (255 << 24) | (g << 16) | (g << 8) | g;
+          const ch = (v) => Math.max(0, Math.min(255, Math.round(v * (0.93 + 0.08 * lit) + spec - (1 - nz) * 8)));
+          out[py * W + px] = (255 << 24) | (ch(c[2]) << 16) | (ch(c[1]) << 8) | ch(c[0]);
         }
       }
       ex.putImageData(img, 0, 0);

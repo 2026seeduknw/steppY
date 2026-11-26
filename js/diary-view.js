@@ -2333,6 +2333,31 @@
     setTimeout(toLatest, 120);
   }
 
+  /** 하루 사진 더미 — 누르면 맨 위 사진을 맨 뒤로 보내고 다음 사진을 올린다(끝까지 넘기면 처음으로) */
+  function flipHeroStack(st) {
+    if (!st || st._busy) return;
+    const cards = [...st.querySelectorAll('.rec-hero__card')].sort((a, b) => a.style.getPropertyValue('--pos') - b.style.getPropertyValue('--pos'));
+    const n = cards.length;
+    if (n < 2) return;
+    st._busy = true;
+    const top = cards[0];
+    top.classList.add('is-leaving');
+    setTimeout(() => {
+      top.classList.remove('is-leaving');
+      cards.forEach((c, k) => {
+        const pos = k === 0 ? n - 1 : k - 1;
+        c.style.setProperty('--pos', pos);
+        c.tabIndex = pos ? -1 : 0;
+        c.classList.toggle('is-top', !pos);
+      });
+      const topIdx = ((Number(st.dataset.top) || 0) + 1) % n;   // 지금 맨 위가 원래 몇 번째 사진인지
+      st.dataset.top = String(topIdx);
+      const count = st.querySelector('.rec-hero__count');
+      if (count) count.textContent = `${topIdx + 1} / ${n}`;
+      st._busy = false;
+    }, 260);
+  }
+
   /** 사진이 있는 기록의 사진 전부 — 날짜·찍은 시각 순(과거 → 최근) */
   let heroShots = [];
   function allShots() {
@@ -2430,12 +2455,31 @@
         if (track._go) track._go(slide);
         return;
       }
+      // 여러 장 겹친 날은 누르면 다음 사진이 앞으로 온다. 크게 보기는 길게 누르기(아래 pointerdown)
+      const stack = btn.closest('.rec-hero__stack.is-stack');
+      if (stack) { if (heroLongPressed) { heroLongPressed = false; return; } flipHeroStack(stack); return; }
+      openHeroLightbox(start);
+    });
+    // 겹친 사진을 길게 누르면 확대 화면
+    let heroLongPressed = false, heroPressTimer = 0;
+    root.querySelector('#recHero').addEventListener('pointerdown', (ev) => {
+      heroLongPressed = false;
+      const btn = ev.target.closest('.rec-hero__slide.is-active .is-stack [data-hero-open]');
+      clearTimeout(heroPressTimer);
+      if (!btn) return;
+      const x0 = ev.clientX, y0 = ev.clientY;
+      const cancel = (e) => { if (!e || e.type !== 'pointermove' || Math.hypot(e.clientX - x0, e.clientY - y0) > 10) { clearTimeout(heroPressTimer); off(); } };
+      const off = () => ['pointermove', 'pointerup', 'pointercancel'].forEach(t => window.removeEventListener(t, cancel));
+      ['pointermove', 'pointerup', 'pointercancel'].forEach(t => window.addEventListener(t, cancel));
+      heroPressTimer = setTimeout(() => { off(); heroLongPressed = true; openHeroLightbox(Number(btn.dataset.heroOpen) || 0); }, 480);
+    });
+    function openHeroLightbox(start) {
       // 확대 화면도 같은 줄(시간순 전체)로 — 양옆 사진이 비치고 넘겨 볼 수 있다
       const imgs = [...root.querySelectorAll('#recHeroTrack .rec-hero__img')];
       const shots = heroShots.map(x => ({ url: x.url, info: DiaryArchive.infoOf(x.entry) }));
       if (!shots.length || !imgs[start]) return;
       DiaryArchive.openPhotos(shots, start, imgs);
-    });
+    }
     if (!wireHome._doc) {
       wireHome._doc = true;
       document.addEventListener('archive:changed', () => { if (root) renderRecent(); });
