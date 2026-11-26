@@ -7,12 +7,13 @@
  *      - 앱이 있으면 → 앱이 열리고 js/invite.js 가 코드를 받아 바로 친구가 된다.
  *      - 앱이 없으면 → 잠시 뒤 App Store(APP_STORE_URL)로 넘어간다.
  *
- * 아래 두 값은 아직 자리표시자다. 배포 도메인이 정해지고 앱이 App Store에 올라가면 실제 값으로 바꾼다.
+ * INVITE_BASE는 실제 도메인이다(mysteppy.com은 www로 넘어가므로 www를 바로 쓴다).
+ * APP_STORE_URL은 아직 자리표시자다. 앱이 App Store에 올라가면 실제 값으로 바꾼다.
  * (도메인이 생기면 Universal Link를 붙이는 게 더 매끄럽다 — 확인 팝업 없이 앱이 바로 열린다.)
  */
 const AppLinks = {
   /** 초대 링크의 앞부분. 웹 버전이 배포된 주소 */
-  INVITE_BASE: 'https://steppy.vercel.app',
+  INVITE_BASE: 'https://www.mysteppy.com',
   /** 앱이 없는 사람이 가는 곳. App Store에 올린 뒤 실제 앱 주소(…/app/id숫자)로 바꾼다 */
   APP_STORE_URL: 'https://apps.apple.com/kr/app/steppy',
   /** 앱을 여는 주소 체계(ios/App/App/Info.plist의 URL Types와 같아야 한다) */
