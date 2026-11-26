@@ -59,7 +59,7 @@ function renderOiaTimeline(mount, { phases, title = '국제처 일정' } = {}) {
       <div class="oia-tl">
         <div class="oia-tl__head"><h2 class="oia-tl__title">${title}</h2></div>
         <p class="oia-tl__empty">${key
-          ? `${OIA.termLabel(key)} 국제처 안내가 아직 없어요.<br>보통은 ${OIA.roughSchedule(key)}이 있어요. 책자가 나오면 정확한 날짜를 채워요.`
+          ? `${OIA.termLabel(key)} 국제처 공지가 아직 올라오지 않았어요.<br>보통 ${OIA.roughSchedule(key)}에 진행돼요. 모집 요강이 나오면 정확한 날짜로 업데이트할게요.`
           : '교환 시기(봄·가을학기)를 정하면 국제처 공식 일정을 보여드려요.'}</p>
       </div>`;
     return;

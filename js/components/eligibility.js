@@ -15,7 +15,7 @@ function computeEligibility(profile, school) {
   // 가입 직후 계정은 GPA가 비어 있다. null >= 2.8 은 false라서 그대로 두면
   // "기준 미달"로 단정해버린다 — 아직 판정할 수 없다고 알려야 맞다.
   if (profile.gpa === null || profile.gpa === undefined || Number.isNaN(profile.gpa)) {
-    return { status: 'unknown', label: 'GPA 정보 필요', detail: 'GPA를 등록하면 지원 가능 여부를 판정할 수 있어요' };
+    return { status: 'unknown', label: 'GPA 정보 필요', detail: 'GPA를 등록하면 지원 가능 여부를 알려 드려요.' };
   }
   const track = (profile.exchangeTerm || {}).track || null;
   if (track && !OIA.schoolOffersTrack(school, track)) {
@@ -38,7 +38,7 @@ function computeEligibility(profile, school) {
   if (effTrack === 'english' && !exempt) {
     const test = OIA.testFor(profile, 'english');
     const cut = Math.max(OIA.minToefl(profile) || 0, typeof school.langTest.cut === 'number' ? school.langTest.cut : 0);
-    if (!test || test.score == null) langUnknown = 'TOEFL iBT 점수를 등록하면 판정할 수 있어요';
+    if (!test || test.score == null) langUnknown = 'TOEFL iBT 점수를 등록하면 지원 가능 여부를 알려 드려요.';
     else if (cut && test.score < cut && !common.some(c => c.key === 'lang')) needs.push(`TOEFL ${cut}`);
   } else if (effTrack && !exempt) {
     const test = OIA.testFor(profile, effTrack);
@@ -50,7 +50,7 @@ function computeEligibility(profile, school) {
       if (ok === false) needs.push(`${test.type} ${school.langTest.level}`);
     }
   } else if (!effTrack && !exempt) {
-    langUnknown = '지원할 전형(언어권)을 정하면 판정할 수 있어요';
+    langUnknown = '지원할 전형(언어권)을 선택하면 지원 가능 여부를 알려 드려요.';
   }
 
   if (needs.length) return { status: 'warn', label: '기준 미달', detail: `필요한 기준: ${needs.join(' · ')}` };

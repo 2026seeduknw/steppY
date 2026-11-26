@@ -2067,7 +2067,7 @@
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <div class="diary-modal-header">
           <h2>지금까지 쌓인 기록으로 미리 보기</h2>
-          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요.<br>적어둔 글을 항목별·날짜순으로 모아 보여줄 뿐이에요.</p>
+          <p class="diary-modal-header__note">문장을 새로 지어내지 않아요.<br>적어둔 글을 항목별·날짜순으로 모아 보여드려요.</p>
         </div>
         <nav class="report-nav">
           ${REPORT_CATEGORIES.map(c => {
@@ -2354,7 +2354,7 @@
     if (!list.length) {
       row.innerHTML = `<button type="button" class="rec-diary__empty" data-diary-new>
         <b>인상 깊었던 하루나 여행을 한 장의 다이어리로</b>
-        <span>사진·글·스티커를 붙이고 노래도 넣어요.<br>열면 그 노래가 흘러나와요.</span>
+        <span>사진·글·스티커를 붙이고 노래도 넣어요.<br>다이어리를 열면 노래와 함께 다시 볼 수 있어요.</span>
       </button>`;
       return;
     }
@@ -2453,11 +2453,6 @@
     wireHome();
     renderAll();
     refreshPhotoUrls();
-    // 퀘스트 완료 뒤 "사진 찍기"로 넘어오면(journal.html?add=1) 바로 기록 쓰기 창을 연다
-    if (new URLSearchParams(location.search).get('add') === '1') {
-      history.replaceState(null, '', location.pathname);
-      setTimeout(() => { if (!needLogin()) openEntryModal(); }, 500);
-    }
   }
 
   function unmountDiaryView() {

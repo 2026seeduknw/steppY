@@ -237,7 +237,7 @@
         <span class="v2-country__count">${list.length}곳</span>
       </header>
       <div class="v2-country__body school-grid">
-        ${list.length ? list.map(schoolCardTemplate).join('') : '<div class="empty-state">지금 필터에 맞는 학교가 없어요.</div>'}
+        ${list.length ? list.map(schoolCardTemplate).join('') : '<div class="empty-state">현재 필터에 맞는 학교가 없어요.</div>'}
       </div>`;
     view.querySelector('[data-country-close]').addEventListener('click', () => closeCountryView(false));
     view.setAttribute('aria-label', `${openCountry} 학교 목록`);
@@ -486,7 +486,7 @@
     banner.classList.add('sim-banner--guest');
     banner.innerHTML = `
       <div class="score-prompt__head">
-        <p class="score-prompt__title">${filled ? '입력한 점수로 판정하고 있어요' : '학점과 어학 점수를 입력해보세요'}</p>
+        <p class="score-prompt__title">${filled ? '지원 가능 여부를 확인하고 있어요…' : '학점과 어학 점수를 입력해보세요'}</p>
         <p class="score-prompt__sub">${filled ? '언제든 고칠 수 있어요.<br>로그인하면 계정에 저장돼요.' : '지원 가능 여부를 알려드려요'}</p>
       </div>
       <form class="score-prompt__form" id="guestScoreForm">

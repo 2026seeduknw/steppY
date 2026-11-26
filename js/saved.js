@@ -57,7 +57,7 @@
         <div class="saved__head"><h2>관심 학교 1:1 비교</h2></div>
         <div class="saved-empty">
           <p class="saved-empty__title">아직 찜한 학교가 없어요</p>
-          <p class="saved-empty__sub">학교 찾기에서 하트를 누르거나 희망대학표에 담으면<br>여기서 나란히 견줄 수 있어요.</p>
+          <p class="saved-empty__sub">학교 찾기에서 하트를 누르거나 희망대학표에 담으면<br>여기서 나란히 비교할 수 있어요.</p>
           <a class="btn btn--accent saved-empty__btn" href="search.html">학교 찾기</a>
         </div>`;
       return;
@@ -117,7 +117,7 @@
         </div>
         ${body}
       </div>
-      ${schools.length < 2 ? '<p class="saved__note">한 곳 더 찜하면 나란히 견줄 수 있어요 · <a href="search.html">학교 찾기</a></p>' : ''}`;
+      ${schools.length < 2 ? '<p class="saved__note">한 곳만 더 찜하면 나란히 비교할 수 있어요 · <a href="search.html">학교 찾기</a></p>' : ''}`;
 
     fitLogosIn(compareMount, '.compare__logo img', { maxW: 100, maxH: 100, area: 70 * 70, unit: '%' });
     compareMount.querySelectorAll('[data-open-school]').forEach((el) => {

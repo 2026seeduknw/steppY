@@ -789,7 +789,7 @@
           <button type="button" role="tab" data-stab="mine" aria-selected="${tab === 'mine'}">내 스티커</button>
         </div>
         <div class="rec-opts rec-opts--scroll rec-opts--art">${grid}</div>
-        ${tab === 'mine' ? '<p class="rec-songpick__hint">핀터레스트 등에서 받은 SVG·PNG(배경 투명)를 올리면<br>내 스티커가 되고 다른 다이어리에서도 쓸 수 있어요.</p>' : ''}`;
+        ${tab === 'mine' ? '<p class="rec-songpick__hint">외부 사이트에서 받은 SVG·PNG를 업로드 해<br>다이어리를 꾸며보세요.</p>' : ''}`;
     } else if (ed.tool === 'song') {
       const sg = ed.page.song;
       const shown = ed.page.items.some(i => i.type === 'song');
@@ -1108,7 +1108,7 @@
         const src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(String(rd.result))));
         const img = new Image();
         img.onload = () => done(src, img.naturalWidth && img.naturalHeight ? img.naturalHeight / img.naturalWidth : 1);
-        img.onerror = () => toast('SVG를 읽지 못했어요. 다른 파일로 해 볼까요?');
+        img.onerror = () => toast('SVG를 읽지 못했어요. 다른 파일로 시도해 주세요.');
         img.src = src;
       };
       rd.readAsText(file);
@@ -1124,7 +1124,7 @@
       URL.revokeObjectURL(url);
       done(c.toDataURL('image/png'), c.height / c.width);
     };
-    img.onerror = () => { URL.revokeObjectURL(url); toast('그림을 읽지 못했어요. 다른 파일로 해 볼까요?'); };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('그림을 읽지 못했어요. 다른 파일로 시도해 주세요.'); };
     img.src = url;
   }
   async function onFile(ev) {
@@ -1142,7 +1142,7 @@
       if (target === 'bg') { ed.page.bg = 'upload'; ed.page.bgImg = data; pushHist(); drawEditor(); drawPanel(); return; }
       const w = 0.46, h = Math.min(0.9, w * ratio);
       addItem({ type: 'photo', src: data, x: 0.27, y: centerY(h), w, h, rot: 0 });
-    } catch (e) { toast('사진을 읽지 못했어요. 다른 사진으로 해 볼까요?'); }
+    } catch (e) { toast('사진을 읽지 못했어요. 다른 사진으로 시도해 주세요.'); }
   }
 
   /** 템플릿 — 사진·메모 자리를 정해진 배치로 다시 놓는다(스티커·글자는 그대로) */
@@ -1325,7 +1325,7 @@
               <input type="date" name="end" value="${today}" max="${today}" aria-label="끝 날짜" hidden>
             </div>
           </div>
-          <p class="rec-dnew__hint">그 날짜에 남긴 사진과 글로 첫 장을 만들어 드려요.<br>사진·글·스티커·노래는 꾸미기에서 더할 수 있어요.</p>
+          <p class="rec-dnew__hint">그 날짜에 남긴 사진과 글로 첫 장을 만들어 드려요.<br>사진·글·스티커·노래는 꾸미기에서 추가할 수 있어요.</p>
           <button type="submit" class="rec-dnew__go">만들고 꾸미기</button>
         </form>
       </div>`;

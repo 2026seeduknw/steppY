@@ -37,31 +37,19 @@
    * supabase/mentor_lock_guests.sql — 화면만 가리면 API로는 여전히 읽힌다.)
    */
   function showGuestLock() {
-    ledeEl.textContent = '교환 준비하며 궁금한 걸 남기면 다녀온 선배가 답해줘요.';
     // 블러 뒤에 깔리는 건 진짜 글이 아니라 모양만 같은 예시다 — 서버를 잠가도 같은 화면이 나온다.
-    const pin = (kind, title) => pinCardHtml({ kind, title, meta: '운영진' });
     const row = (flag, country, title, count, meta) => questionCardHtml({ flag, country, title, count, meta });
     panelEl.innerHTML = `
       <div class="mentor-preview">
         <div class="mentor-preview__blur" aria-hidden="true" inert>
-          <div class="m2-ask"><span class="m2-ask__in">선배에게 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
-          <div class="m2-sec"><h2>선배의 기록</h2></div>
-          <div class="m2-cols">
-            ${pin('report', '2026-1 선배 기록 모음')}
-            ${pin('column', '교환 가기 전 챙길 서류 TOP 5')}
-            ${pin('notice', 'Talky 이용 규칙')}
-          </div>
+          <div class="m2-ask"><span class="m2-ask__in">궁금한 걸 물어보세요</span><span class="m2-ask__btn">✎ 질문</span></div>
           <div class="m2-sec"><h2>질문 · 답변</h2><span>최신순</span></div>
           <div class="mentor-list">
-            ${row('🇫🇷', '프랑스', '리옹 기숙사 신청은 언제까지 해야 하나요?', 4, '2시간 전')}
-            ${row('🇺🇸', '미국', '비자 인터뷰 때 가져가야 할 서류 알려주세요', 7, '5시간 전')}
-            ${row('🇯🇵', '일본', '학점 인정 과목은 출국 전에 확정되나요?', 0, '1일 전')}
           </div>
         </div>
         <section class="mentor-preview__lock card card-pad">
           <div class="mentor-locked__icon" aria-hidden="true">🔒</div>
           <h2 class="mentor-locked__title">로그인하면 볼 수 있어요</h2>
-          <p class="mentor-locked__desc">다녀온 선배의 질문·답변과 칼럼을 읽고 직접 질문도 할 수 있어요.</p>
           <a class="btn btn--primary btn--block" href="auth.html">로그인 · 회원가입</a>
         </section>
       </div>`;
@@ -339,8 +327,8 @@
   }
 
   function renderPins() {
-    // 즐겨찾기만 모아 볼 때는 고정 글을 접어 둔다 — 내가 찜한 글만 보이는 화면이라서
-    if (!pins.length || state.onlyFavorite) { pinsEl.hidden = true; pinsEl.innerHTML = ''; return; }
+    // 선배의 기록(FAQ·칼럼 고정 글)은 화면에서 뺐다 — 선배 기능이 없어져서. 글 데이터·코드는 남겨 둔다
+    if (!SHOW_PINS || !pins.length || state.onlyFavorite) { pinsEl.hidden = true; pinsEl.innerHTML = ''; return; }
     pinsEl.hidden = false;
     // 예시 글이면 실제 선배 글로 오해하지 않게 질문·답변과 같은 자리에 '예시 글'을 붙인다
     const sampleNote = pins.every(p => p.sample) ? '<span>예시 글</span>' : '';
@@ -406,7 +394,10 @@
     });
   }
 
+  const SHOW_PINS = false;
+
   async function loadPins() {
+    if (!SHOW_PINS) { pins = []; renderPins(); return; }
     // mentor_pins.sql을 안 돌린 서버면 테이블이 없다(PGRST205) — 하루 동안은 다시 묻지 않는다
     const MISSING_KEY = 'steppy_mentor_pins_missing';
     let missing = false;
@@ -724,7 +715,7 @@
       ${q.sample ? `
       <div class="m2d-bar"><span class="m2d-bar__in">예시 질문에는 답변할 수 없어요</span></div>` : isOwn ? '' : `
       <form class="m2d-bar" id="answerForm">
-        <textarea class="m2d-bar__in" name="body" rows="1" required placeholder="아는 만큼 답해 주세요"></textarea>
+        <textarea class="m2d-bar__in" name="body" rows="1" required placeholder="알고 계신 범위에서 답변해 주세요."></textarea>
         <button type="submit" class="m2d-bar__btn" id="answerSubmitBtn">등록</button>
       </form>`}`;
     document.body.appendChild(page);
