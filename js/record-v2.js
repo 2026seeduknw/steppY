@@ -455,14 +455,23 @@
     sydney: [-33.87, 151.21], taipei: [25.03, 121.57], tokyo: [35.68, 139.69], toronto: [43.65, -79.38], valencia: [39.47, -0.38],
     vancouver: [49.28, -123.12], venice: [45.44, 12.32], vienna: [48.21, 16.37], warsaw: [52.23, 21.01], zurich: [47.38, 8.54]
   };
-  function cityCoord(key) {
+  // 위 표와 파견 학교 도시에 없으면(Page·Pudong 같은 작은 도시) 기기 안 도시 목록(js/nearest-city.js)에서 찾는다
+  const coordCache = {};
+  function cityCoord(key, country) {
     if (CITY_COORDS[key]) return CITY_COORDS[key];
     const sc = typeof MOCK !== 'undefined' ? (MOCK.schools || []).find(s => s.lat != null && s.lng != null
       && [s.city, s.campusCity].some(v => String(v || '').trim().toLowerCase() === key)) : null;
-    return sc ? [Number(sc.lat), Number(sc.lng)] : null;
+    if (sc) return [Number(sc.lat), Number(sc.lng)];
+    const ck = `${key}|${country || ''}`;
+    if (!(ck in coordCache) && typeof NearestCity !== 'undefined' && NearestCity._data) coordCache[ck] = NearestCity.coordOf(key, country);
+    return coordCache[ck] || null;
   }
-  function distanceKm(a, b) {
-    const pa = cityCoord(a), pb = cityCoord(b);
+  /** 좌표를 모르는 도시가 있으면 도시 목록을 불러온 뒤 다시 그린다 */
+  function needCityList(stops) {
+    return typeof NearestCity !== 'undefined' && !NearestCity._data && stops.some(s => !cityCoord(s.key, s.country));
+  }
+  function distanceKm(a, b, ca, cb) {
+    const pa = cityCoord(a, ca), pb = cityCoord(b, cb);
     if (!pa || !pb) return null;
     const rad = (v) => v * Math.PI / 180;
     const dLat = rad(pb[0] - pa[0]), dLng = rad(pb[1] - pa[1]);
@@ -488,7 +497,7 @@
   }
   function routeSummary(stops) {
     const cities = new Set(stops.map(s => s.key)).size;
-    const legs = stops.slice(1).map((s, i) => distanceKm(stops[i].key, s.key));
+    const legs = stops.slice(1).map((s, i) => distanceKm(stops[i].key, s.key, stops[i].country, s.country));
     const km = legs.length && legs.every(v => v != null) ? legs.reduce((sum, v) => sum + v, 0) : null;
     const label = `${cities} ${cities === 1 ? 'city' : 'cities'}`;
     return { label, km, legs, text: km != null ? `${label} · ${km.toLocaleString('en-US')}km` : label };
@@ -561,8 +570,9 @@
       return;
     }
     body.innerHTML = routeHtml(stops);
-    recapView._map = RouteMap.create(body.querySelector('.rec-route__map'), stops.map(s => ({ name: s.name, cover: s.cover, coord: cityCoord(s.key) })), { mode: savedRouteMode() });
+    recapView._map = RouteMap.create(body.querySelector('.rec-route__map'), stops.map(s => ({ name: s.name, cover: s.cover, coord: cityCoord(s.key, s.country) })), { mode: savedRouteMode() });
     pickStop(stops.length - 1);
+    if (needCityList(stops)) NearestCity.load().then(() => { if (recapView) renderRecap(); }).catch(() => {});
   }
   function openRecap(c) {
     ctx = c;
@@ -594,7 +604,7 @@
     return `
       <button type="button" class="rec-recapcard" data-recap="route" aria-label="여행 경로 열기">
         <span class="rec-recapcard__text">
-          <b class="rec-recapcard__title">My Steps !</b>
+          <b class="rec-recapcard__title">my steps !</b>
           <small>${stops.length ? esc(routeSummary(stops).text) : '사진에 위치를 남기면 경로가 그려져요.'}</small>
         </span>
         <span class="rec-recapcard__thumbs" aria-hidden="true">${thumbs.map((u, i) => `<img src="${esc(u)}" alt="" style="--i:${i}" draggable="false">`).join('')}</span>

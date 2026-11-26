@@ -104,6 +104,25 @@ const NearestCity = {
     return hits.slice(0, limit).map(i => ({ city: d.name[i], country: this.countryName(d.cc[i]), countryCode: d.cc[i], lat: round2(d.lat[i]), lng: round2(d.lng[i]) }));
   },
 
+  /** 이름(+나라)으로 도시 중심 좌표 — 목록을 이미 불러온 뒤에만(동기). 같은 이름이면 인구 많은 곳. → [lat, lng] 또는 null */
+  coordOf(name, country) {
+    const d = this._data;
+    if (!d || !name) return null;
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    if (!d.key) d.key = d.name.map(norm);
+    const key = norm(name);
+    const cc = country && typeof COUNTRY_ISO2 !== 'undefined' ? (COUNTRY_ISO2[country] || COUNTRY_ISO2[String(country).trim()] || '') : '';
+    let best = -1, bestAny = -1;
+    for (let i = 0; i < d.n; i++) {
+      if (d.key[i] !== key) continue;
+      if (bestAny < 0 || d.pop[i] > d.pop[bestAny]) bestAny = i;
+      if (cc && d.cc[i] === cc && (best < 0 || d.pop[i] > d.pop[best])) best = i;
+    }
+    const i = best >= 0 ? best : (cc ? -1 : bestAny);
+    if (i < 0) return null;
+    return [Math.round(d.lat[i] * 100) / 100, Math.round(d.lng[i] * 100) / 100];
+  },
+
   countryName(cc) {
     if (!this._countryNames) {
       const m = {};
