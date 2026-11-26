@@ -45,7 +45,7 @@ const Ads = {
     '.step-item[data-id="flight"].is-expanded .step-item__detail'
   ].join(', '),
   /** 시트·모달은 화면을 덮는데 네이티브 배너는 그 위에 뜬다 — 열려 있는 동안은 숨긴다 */
-  OVERLAYS: '.modal-scrim.is-open, .app-sheet.is-open, body.is-sheet-open',
+  OVERLAYS: '.modal-scrim.is-open, .app-sheet.is-open, body.is-sheet-open, .app-update',
 
   _slot: null,
   _sent: '',

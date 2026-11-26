@@ -260,8 +260,22 @@ function oiaNoticeItems(raw) {
   return [...items.filter(hasKo), ...items.filter((t) => !hasKo(t))];
 }
 
-function oiaNoticeHtml(raw) {
-  const items = oiaNoticeItems(raw);
+/* 원문 요약이 너무 짧은 학교는 같은 데이터의 수강 가능·제한 분야(available_areas, restricted_areas)로 풀어 쓴다 */
+const OIA_NOTICE_DETAIL = {
+  'aalto-university-school-of-science-and-engineering': [
+    '공학 계열 4개 school(Chemical Engineering, Electrical Engineering, Engineering, Science)의 과목을 들을 수 있어요',
+    'School of Arts, Design and Architecture와 School of Business 과목은 교환학생이 들을 수 없어요',
+    '듣는 과목의 2/3 이상은 한 school에서 골라야 해요',
+    '나머지 1/3은 선수 과목 요건을 채우면 다른 공학 계열 school에서 들을 수 있어요',
+    'School of Chemical Engineering: Bioproducts Engineering, Biotechnology, Chemistry and Materials Science, Chemical and Process Engineering, Sustainable Metallurgical Engineering',
+    'School of Electrical Engineering: Automation and Systems Technology, Communications Engineering, Electronics and Electrical Engineering, Bioinformation Technology',
+    'School of Engineering: Advanced Energy Solutions, Building Technology, Geoengineering, Geoinformatics, Mechanical Engineering, Real Estate Economics, Spatial Planning and Transportation Engineering, Water and Environmental Engineering',
+    'School of Science: Computer Science, Industrial Engineering and Management, Engineering Physics, Mathematics and Operations Research, Biomedical Engineering and Neuroscience'
+  ]
+};
+
+function oiaNoticeHtml(raw, schoolId) {
+  const items = OIA_NOTICE_DETAIL[schoolId] || oiaNoticeItems(raw);
   if (!items.length) return '';
   // 주소는 눌러서 열 수 있게 — 글자는 도메인만 보여 줄바꿈이 깨지지 않게 한다
   const li = (t) => `<li>${prepEsc(t).replace(/https?:\/\/[^\s)]+/g, (url) => {
@@ -294,7 +308,7 @@ function applicationDocsHtml() {
       <p class="app-docs__desc">대부분의 파견교가 공통으로 요구하는 서류예요.</p>
       <ul class="living-docs"><li>성적증명서</li><li>어학 성적표</li><li>여권 사본</li></ul>
       <p class="app-docs__desc">학교마다 추가 서류가 있을 수 있어요.<br>지원 전에 아래 공식 안내에서 꼭 확인하세요.</p>
-      ${oiaNoticeHtml(school.oiaNotice)}
+      ${oiaNoticeHtml(school.oiaNotice, school.id)}
       ${links.length ? `<div class="app-docs__links">${links.map(([label, url]) =>
         `<a href="${prepEsc(url)}" target="_blank" rel="noopener">${label} ↗</a>`).join('')}</div>` : ''}
     </div>`;

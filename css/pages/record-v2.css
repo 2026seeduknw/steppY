@@ -662,7 +662,7 @@ button.rec-pcal__day { cursor: zoom-in; }
 .rec-route__pill svg circle { fill: #fff; }
 .rec-route__pill b { min-width: 0; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rec-route__pill em { flex: none; margin-left: auto; font-style: normal; color: var(--ink-600); }
-.rec-layer--photo.rec-recapview { overflow: hidden; /* 하늘 — 위는 조금 진하고 아래로 갈수록 옅어진다 */ background: linear-gradient(180deg, #A8D5F7 0%, #CBE6FA 45%, #EEF7FE 100%); color: var(--ink-900); }
+.rec-layer--photo.rec-recapview { overflow: hidden; /* 하늘 — 위는 조금 진하고 아래로 갈수록 옅어지다가, 맨 아래에 노을빛이 살짝 */ background: linear-gradient(180deg, #A8D5F7 0%, #CBE6FA 45%, #EEF5FB 78%, #FBEBE0 100%); color: var(--ink-900); }
 /* 지구본은 바탕에서 살짝 떠 보이게 — 그림자는 땅·바다 캔버스에만 */
 .rec-route .rec-rmap__earth { filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.08)); }
 .rec-route__map { position: relative; flex: 1; min-height: 0; margin-top: 8px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }

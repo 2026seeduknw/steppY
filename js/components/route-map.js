@@ -10,11 +10,11 @@
  */
 const RouteMap = (function () {
   const D2R = Math.PI / 180;
-  // 지구본: 바다는 옅은 하늘색, 땅은 옅은 연두색 — 빛은 왼쪽 위 앞에서 비춘다(가장자리로 갈수록 살짝 어둡다)
-  const OCEAN = [222, 240, 252], LAND = [208, 234, 172], COAST = [184, 218, 150];
+  // 지구본: 바다는 옅은 하늘색, 땅은 따뜻한 기운이 한 방울 든 크림색 — 빛은 왼쪽 위 앞에서 비춘다(가장자리로 갈수록 살짝 어둡다)
+  const OCEAN = [222, 240, 252], LAND = [255, 251, 242], COAST = [196, 222, 240];
   const LIGHT = (() => { const v = [-0.45, 0.55, 0.7], n = Math.hypot(...v); return v.map(x => x / n); })();
-  // 평면 지도: 바다는 비워 화면 바탕(하늘색 그라데이션)이 보이고, 땅만 회색으로 얹는다
-  const FLAT_LAND = [196, 228, 160];
+  // 평면 지도: 바다는 비워 화면 바탕(하늘색 그라데이션)이 보이고, 땅만 크림색으로 얹는다
+  const FLAT_LAND = [255, 251, 242];
   const ROUTE = '#BCD020', DOT = '#E2F23C', GLOW = 'rgba(226, 242, 60, 0.42)';
   const ZOOMS = { globe: [1, 1.8, 3.2, 5.5], map: [1, 1.7, 2.8, 4.5] };
   const CARD = 48, CARD_H = 66;
@@ -199,7 +199,7 @@ const RouteMap = (function () {
             last = q;
           }
         }
-        ex.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ex.lineWidth = 0.6; ex.stroke(); ex.restore();
+        ex.strokeStyle = 'rgba(150, 190, 220, 0.45)'; ex.lineWidth = 0.6; ex.stroke(); ex.restore();
       }
     }
 
