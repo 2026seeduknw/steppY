@@ -73,7 +73,7 @@ const Friends = (function () {
             <li>친구에게는 내 <b>이름과 파견 학교(국가·도시)</b>가 보여요.</li>
             <li>욕설·혐오·성적인 내용, 타인을 괴롭히거나 사칭하는 글은 올릴 수 없어요</li>
             <li>불쾌한 글이나 댓글은 <b>신고</b>하고, 사용자는 <b>차단</b>할 수 있어요.<br>차단하면 서로의 기록이 보이지 않아요.</li>
-            <li>신고된 내용은 운영자가 확인해 위반이 맞으면 삭제하고 이용을 제한해요</li>
+            <li>신고된 내용은 운영자가 확인 후 이용을 제한할 예정입니다.</li>
             <li>문의 <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></li>
           </ul>
           <div class="ft-actions">
@@ -97,7 +97,7 @@ const Friends = (function () {
    * 없는 사람은 App Store로 간다. 코드만 알려 주는 것보다 한 번 눌러서 끝나서 훨씬 덜 번거롭다.
    */
   function inviteMessage(code) {
-    return `같이 교환학생 준비하고, 서로의 교환 생활도 나눠요! steppY에서 친구가 되어요 👉 ${AppLinks.inviteUrl(code)}`;
+    return `함께 교환학생을 준비하고, 서로의 교환 생활도 나눠요! steppY에서 친구가 되어요 👉 ${AppLinks.inviteUrl(code)}`;
   }
   /** 홈의 "친구 초대하기" — 공유 시트(없으면 복사)로 초대 링크를 건넨다 */
   async function shareInvite() {
@@ -311,7 +311,7 @@ const Friends = (function () {
       <div class="modal-panel modal-panel--sm ft-panel">
         <button class="modal-close" data-modal-close aria-label="닫기">✕</button>
         <h2 class="ft-title">${kind === 'comment' ? '댓글' : '기록'} 신고</h2>
-        <p class="ft-lead">어떤 문제인가요? 운영자가 확인하고 조치해요.</p>
+        <p class="ft-lead">어떤 문제인가요? 운영자가 확인하고 조치해 드려요.</p>
         <div class="ft-reasons" role="radiogroup">
           ${REPORT_REASONS.map(([k, label], i) => `
             <label class="ft-reason"><input type="radio" name="ftReason" value="${k}"${i === 0 ? ' checked' : ''}><span>${label}</span></label>`).join('')}

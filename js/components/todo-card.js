@@ -132,7 +132,7 @@ function todoCardTemplate(adding, expanded) {
       </ul>
       ${view.weekly ? `
       <p class="todo-panel__foot">
-        ${total ? '' : '이번 주에 마감되는 일은 없어요.<br>'}${view.next ? `다음: ${view.next.title} <b>${todoDday(view.next.date)}</b><br>` : ''}<a href="prepare.html#checklistSection">전체 목록은 비자 및 서류 체크리스트에서 →</a>
+        ${total ? '' : '이번 주 마감 일정은 없어요.<br>'}${view.next ? `다음: ${view.next.title} <b>${todoDday(view.next.date)}</b><br>` : ''}<a href="prepare.html#checklistSection">전체 목록은 비자 및 서류 체크리스트에서 →</a>
       </p>` : ''}
     </div>` : ''}
   `;

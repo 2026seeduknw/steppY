@@ -50,7 +50,7 @@
     const term = p.exchangeTerm || {};
     greeting.textContent = term.year
       ? `${p.name || '회원'}님, ${term.year} ${term.season} 파견 준비 중`
-      : `${p.name || '회원'}님, 교환 시기를 등록하면 일정을 정리해드려요`;
+      : `${p.name || '회원'}님, 교환 시기를 알려 주시면 일정을 정리해 드려요.`;
   }
 
 

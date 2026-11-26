@@ -199,11 +199,10 @@
       return `
         <p class="credit-criteria__title">관련도 상 · 중 · 하는 이렇게 나눠요</p>
         <ul class="credit-criteria__list">
-          <li><b class="match-card__relevance match-card__relevance--high">상</b><span>유사도 80점 이상 — 전공 이름과 배우는 내용이 거의 같아요</span></li>
-          <li><b class="match-card__relevance match-card__relevance--mid">중</b><span>유사도 75~79점 — 겹치는 분야가 많지만 초점이 조금 달라요</span></li>
-          <li><b class="match-card__relevance match-card__relevance--low">하</b><span>유사도 75점 미만 — 일부 과목만 겹쳐요</span></li>
-        </ul>
-        <p class="credit-criteria__note">유사도는 두 전공의 이름·소개글이 뜻으로 얼마나 가까운지와 같은 학문 분야인지를 합쳐 매긴 100점 만점 점수예요.</p>`;
+          <li><b class="match-card__relevance match-card__relevance--high">상</b><span>전공 이름과 배우는 내용이 거의 같아요</span></li>
+          <li><b class="match-card__relevance match-card__relevance--mid">중</b><span>겹치는 분야가 많지만 초점이 조금 달라요</span></li>
+          <li><b class="match-card__relevance match-card__relevance--low">하</b><span>일부 과목만 겹쳐요</span></li>
+        </ul>`;
     }
     return `
       <p class="credit-criteria__title">인정 가능성은 이렇게 나눠요</p>

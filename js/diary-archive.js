@@ -220,7 +220,7 @@
   }
   const friendsEmpty = () => `
     <div class="arc-friends-empty">
-      <p><b>함께 교환학생 간 친구를 초대해 보세요</b><br>링크를 누르면 바로 친구가 되고, 서로의 기록을 나눌 수 있어요.</p>
+      <p><b>함께 교환학생 간 친구를 초대해 보세요</b><br>친구와 함께 서로의 기록을 나눌 수 있어요.</p>
       <div class="arc-friends-empty__actions">
         <button type="button" class="arc-btn arc-btn--sm" data-invite-share>친구 초대하기</button>
         <button type="button" class="arc-link" data-open-friends>코드로 추가하기</button>

@@ -50,8 +50,7 @@ const AXIS_HELP = {
       'Numbeo 범죄 지수: 체감 범죄가 적을수록 높은 점수',
       '세계평화지수(GPI): 국가가 평화로울수록 높은 점수'
     ],
-    source: '외교부 · Numbeo · GPI',
-    caveat: '세 자료를 어떤 비중으로 합쳤는지는 원본 데이터에 기록돼 있지 않아요.'
+    source: '외교부 · Numbeo · GPI'
   },
   costOfLiving: {
     what: '이 도시가 전 세계 도시 중 저렴한 편인지 보는 점수예요.',
@@ -61,15 +60,14 @@ const AXIS_HELP = {
     source: 'LivingCost.org'
   },
   commerce: {
-    what: '학교 주변에서 먹고 사고 노는 게 얼마나 편한지 보는 점수예요.',
+    what: '학교 주변에서 먹고, 쇼핑하고, 즐기기 얼마나 편한지 보여 주는 점수예요.',
     factors: [
       '학교에서 가까운 생활권일수록 크게 반영: 1km 안이 3km 안보다 중요',
       '장소가 많을수록, 종류가 다양할수록 높은 점수',
       '종류별 중요도는 생활필수 > 음식·카페 > 쇼핑·서비스 > 여가시설 순',
-      '점수는 전체 학교와 견줘 매겨요'
+      '전체 파견교와 비교해 매긴 상대 점수예요.'
     ],
-    source: 'Foursquare Places API',
-    caveat: '검색 결과가 50개로 제한돼서, 아주 번화한 지역은 실제보다 낮게 나올 수 있어요.'
+    source: 'Foursquare Places API'
   },
   transitMobility: {
     what: '학교에서 일상적으로 이동하기 얼마나 편한지 보는 점수예요.',

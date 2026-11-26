@@ -288,8 +288,12 @@ function mentalRateTipHtml(local, currency) {
   const rate = typeof MENTAL_FX_RATES !== 'undefined' ? MENTAL_FX_RATES[currency] : null;
   if (!rate || local == null) return '';
   const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
-  const approx = mentalToKrw(local, currency);
-  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁: ${rate.mentalUnit} ${currency} ≈ 대략 ${fmt(rate.mentalKrw)}원이니, ${fmt(local)} ${currency} × ${fmt(rate.mentalKrw)}/${rate.mentalUnit} ≈ 약 ${fmt(approx)}원으로 어림잡을 수 있어요.</p>`;
+  // 1 단위에 몇 원인지 — 베트남 동(0.05원)처럼 1원이 안 되는 통화는 소수로 적는다
+  const per = rate.mentalKrw / rate.mentalUnit;
+  const perStr = per >= 1 ? fmt(per) : String(+per.toFixed(2));
+  // "1,600만"은 천육백만으로 읽혀서 '만' 대신 숫자 읽는 소리에 맞춰 을/를을 붙인다(0으로 끝나면 십·백·천 → 을)
+  const josa = '2459'.includes(perStr.slice(-1)) ? '를' : '을';
+  return `<p class="info-panel__text" style="color:var(--ink-500);font-size:var(--fs-micro);">💡 환산 팁: 1 ${currency} ≈ ${perStr}원이에요. 금액에 ${perStr}${josa} 곱하면 돼요.</p>`;
 }
 
 function livingCostPanelHtml(school) {

@@ -18,7 +18,6 @@ const TAB_ICONS = {
   credits: '<path d="M6.2 2.8h8l4 4v14.4h-12z"/><path d="m9.3 13.2 1.9 1.9 3.8-3.8"/>',
   saved: '<path d="M6.6 3.6h10.8a1 1 0 0 1 1 1v16l-6.4-4.2-6.400 4.200v-16a1 1 0 0 1 1-1z"/>',
   journal: '<path d="M5.4 3.4h9.2l4 4v13.2H5.4z"/><path d="M8.7 11.4h6.6M8.7 15.1h4.4"/>',
-  quest: '<path d="M6.4 21V4.2"/><path d="M6.4 4.6h11.2l-2.4 3.9 2.4 3.9H6.4"/>',
   report: '<rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.4"/><path d="M8.2 10.4V7.7a3.8 3.8 0 0 1 7.6 0v2.7"/>',
   consult: '<path d="M4 5.2h16v10.4H9.4L4 19.8z"/>'
 };
@@ -32,7 +31,6 @@ const APP_TABS = [
   // 내 저장 — 찜한 학교 비교표와 D-Day 체크리스트. 학교를 고르는 동안에도, 확정한 뒤에도 쓴다.
   { key: 'saved', label: '내 저장', href: 'saved.html' },
   { key: 'journal', label: '기록하기', href: 'journal.html' },
-  { key: 'quest', label: '퀘스트', href: 'quest.html' },
   { key: 'report', label: '교환보고서', href: 'report.html' },
   { key: 'consult', label: '멘토', href: 'consult.html' }
 ];
@@ -45,7 +43,6 @@ const PAGE_TITLES = {
   saved: '내 저장',
   'major-matching': '전공 매칭',
   journal: '기록하기',
-  quest: '퀘스트',
   report: '교환보고서',
   consult: 'Talky',
   reviews: '국가별 후기'
@@ -68,8 +65,8 @@ const TABS_BY_STAGE = {
   exploring: ['home', 'search', 'credits', 'saved', 'consult'],
   // 학교를 확정한 뒤에는 지망 비교(PICKS)가 필요 없어서 그 자리에 기록하기를 둔다
   confirmed: ['home', 'credits', 'journal', 'consult'],
-  abroad: ['journal', 'quest', 'consult', 'credits'],
-  returned: ['credits', 'journal', 'consult', 'quest']
+  abroad: ['journal', 'saved', 'consult', 'credits'],
+  returned: ['credits', 'journal', 'saved', 'consult']
 };
 
 function journeyStage() {
@@ -251,7 +248,7 @@ function openAccountSheet() {
                 <li>준비 체크리스트에서 직접 추가한 할 일</li>
               </ul>
               <p class="account-danger__note"><strong>Talky에 쓴 질문·답변은 지워지지 않고 이름 없이 남아요.</strong><br>지우고 싶으면 탈퇴 전에 각 글에서 직접 삭제해 주세요.</p>
-              <p class="account-danger__note">같은 메일로 다시 가입할 수는 있지만, 지운 내용은 돌아오지 않아요.</p>
+              <p class="account-danger__note">같은 메일로 다시 가입할 수는 있지만, 기록은 다시 복구할 수 없어요.</p>
               <div class="account-danger__actions">
                 <button type="button" class="btn btn--ghost btn--sm" id="deleteAccountCancel">그만두기</button>
                 <button type="button" class="btn btn--danger btn--sm" id="deleteAccountConfirm">네, 계정을 지울게요</button>

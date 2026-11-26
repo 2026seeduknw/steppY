@@ -47,7 +47,7 @@ const OIA = (function () {
         { id: 'review', phase: 'apply', from: '2027-01-11', to: '2027-01-15', title: '1차 서류 심사', info: true },
         { id: 'result', phase: 'apply', date: '2027-01-20T10:00', title: '배정 결과 발표', detail: '연세포탈. 배정된 학교는 어떤 이유로도 바꿀 수 없어요.', info: true },
         { id: 'host-deadline', phase: 'placed', title: '파견교 지원 마감일을 캘린더에 저장', detail: '배정되면 바로. 학교별 마감일은 UnivFinder(oia.yonsei.ac.kr/univfinder)에서 확인해요.' },
-        { id: 'nomination', phase: 'placed', title: '노미네이션은 입학허가가 아니에요', detail: '국제처가 파견교에 추천(노미네이션)한 뒤 파견교가 입학을 결정해요. 파견교 메일은 스팸함까지 확인하세요.', info: true },
+        { id: 'nomination', phase: 'placed', title: '노미네이션은 입학허가가 아니에요', detail: '국제처가 파견교에 학생을 추천(노미네이션)하면, 파견교가 최종 입학 여부를 결정해요. 파견교에서 오는 메일이 스팸함에 들어갈 수 있으니 꼭 확인하세요.', info: true },
         { id: 'doc2', phase: 'placed', title: '파견교 2차 서류 제출', detail: '학업계획서·추천서·수강 희망 과목 등. 마감은 학교마다 달라요. 입학허가서(LoA)는 보통 2~3개월 뒤에 와요.' },
         { id: 'acceptance', phase: 'placed', title: '입학허가서 사본을 국제처에 제출', detail: '입학허가서를 직접 받은 경우에만. 국제처로 오면 따로 안내해줘요.' },
         { id: 'visa', phase: 'placed', title: '비자·체류허가 신청', detail: '입학허가서를 받은 뒤 주한 대사관·영사관에 직접 신청해요. 국제처는 대행하지 않아요.' },
@@ -62,7 +62,7 @@ const OIA = (function () {
         { id: 'summer-credit', phase: 'abroad', title: '해외 계절학기로 학점을 받으려면 2개월 전 승인', detail: '교무처 학사지원팀에 유학생 자격으로 미리 승인받아야 해요(yshaksa@yonsei.ac.kr). 다른 대학 계절학기는 승인 없으면 인정되지 않아요.', info: true },
         { id: 'return-report', phase: 'return', title: '귀국신고 등록', detail: '연세포탈 → 국제학생교류 → (국제처)귀국신고등록.' },
         { id: 'experience', phase: 'return', title: '귀국 후 서류 등록', detail: '연세포탈 → 국제학생교류 → (국제처) 메뉴에서 등록해요. 귀국신고와 이 서류 등록을 마쳐야 학점인정을 신청할 수 있어요.' },
-        { id: 'transcript', phase: 'return', title: '파견교 공식 성적표 제출', detail: '파견교가 국제처(exch@yonsei.ac.kr)로 보내요. 성적표가 와야 국제처가 인정 학점을 환산해 입력해요.' },
+        { id: 'transcript', phase: 'return', title: '파견교 공식 성적표 제출', detail: '파견교가 성적표를 국제처(exch@yonsei.ac.kr)로 직접 보내요. 성적표가 도착해야 국제처가 학점을 환산해 인정 학점으로 입력할 수 있어요.' },
         { id: 'credit-transfer', phase: 'return', title: '학점인정 신청', detail: '학사정보시스템 → 성적 → 인정학점 → 교류학생학점인정(국제처). 이수 학점이 없어도 꼭 신청해야 해요 — 안 하면 졸업·수료에 불이익이 있어요.' },
         { id: 'next-stern', phase: 'return', title: '다음 길: Global STERN (학기 인턴십)', detail: '바르셀로나·밀라노·런던·더블린 인턴십 + 수업. 교환 다녀온 4~7학기 학부생, GPA 3.2·TOEFL 80 이상. 참가비 50%(저소득층 100%) 지원, 일반선택 3학점. 가을 파견은 1월, 봄 파견은 7월 선발. 문의 studyabroad@yonsei.ac.kr', info: true },
         { id: 'next-summer', phase: 'return', title: '다음 길: 여름·겨울방학 해외파견', detail: '약 18개국 60명, 정착지원금, 최대 7학점 인정. 다른 국제처 프로그램과 합쳐 해외 수학 1년 이내. 매년 2~3월·9월 모집.', info: true }
@@ -317,7 +317,7 @@ const OIA = (function () {
 
     const need = minSemesters(p);
     out.push(a.semesters == null
-      ? { key: 'semesters', label: `본교 ${need}학기 이상 이수`, status: 'unknown', detail: '지원서 낼 때까지 마친 학기 수를 입력해 주세요' }
+      ? { key: 'semesters', label: `본교 ${need}학기 이상 이수`, status: 'unknown', detail: '지원 시점까지 이수한 학기 수를 입력해 주세요.' }
       : { key: 'semesters', label: `본교 ${need}학기 이상 이수`, status: a.semesters >= need ? 'ok' : 'fail', detail: `지원 시점 ${a.semesters}학기` });
 
     if (!track) {
