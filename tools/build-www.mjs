@@ -19,6 +19,10 @@ const OUT = join(ROOT, 'www');
 
 /* 디렉터리는 통째로, HTML은 루트에 있는 것만 자동으로 집는다. */
 const DIRS = ['css', 'js', 'assets', 'vendor'];
+/* 루트에 그대로 서빙돼야 하는 파일
+   app-ads.txt      — AdMob이 https://mysteppy.com/app-ads.txt 로 확인한다
+   app-version.json — 앱이 최소·최신 버전을 읽어 업데이트를 안내한다(js/app-update.js) */
+const ROOT_FILES = ['app-ads.txt', 'app-version.json'];
 
 /* www/ 자체는 지우지 않고 안의 내용만 비운다.
    개발 서버(tools/no-cache-server.py 8124 www)가 이 폴더를 작업 디렉터리로 잡고
@@ -31,6 +35,7 @@ for (const entry of await readdir(OUT)) {
 
 const htmls = (await readdir(ROOT)).filter(f => f.endsWith('.html'));
 for (const f of htmls) await cp(join(ROOT, f), join(OUT, f));
+for (const f of ROOT_FILES) await cp(join(ROOT, f), join(OUT, f));
 for (const d of DIRS) await cp(join(ROOT, d), join(OUT, d), { recursive: true });
 
 console.log(`www/ 생성 — html ${htmls.length}개, 디렉터리 ${DIRS.join(' ')}`);

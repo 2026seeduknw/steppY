@@ -21,6 +21,15 @@
       ],
       "port": 8124,
       "autoPort": true
+    },
+    {
+      "name": "steppY-static-2",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "tools/no-cache-server.py",
+        "8127"
+      ],
+      "port": 8127
     }
   ]
 }

@@ -91,8 +91,10 @@ xcrun simctl io "iPhone 17 Pro Max" screenshot --type=png 01-intro.png
 ## 3. App Privacy (데이터 수집 신고)
 
 `js/analytics.js`가 `click_events`에, 나머지는 로그인한 계정 아래 쌓인다.
-아래 표 그대로 App Store Connect의 App Privacy에 답하면 된다.
-근거는 [privacy.html](../privacy.html)과 같다.
+여기에 **Google AdMob 배너(2026-11-19 실제 ID)**가 모으는 데이터가 더해진다.
+아래 두 표를 합쳐 App Store Connect의 App Privacy에 답한다. 근거는 [privacy.html](../privacy.html)과 같다.
+
+**steppY가 직접 모으는 것**
 
 | 항목 | 수집 | 용도 | 신원 연결 | 추적 |
 | --- | --- | --- | --- | --- |
@@ -103,11 +105,24 @@ xcrun simctl io "iPhone 17 Pro Max" screenshot --type=png 01-intro.png
 | 기타 사용자 콘텐츠 | 예 | 앱 기능(기록 본문·태그·댓글·좋아요·친구 관계) | 예 | 아니오 |
 | 기타 데이터(학점·어학 성적·전공) | 예 | 앱 기능(지원 가능 판정) | 예 | 아니오 |
 | 제품 상호 작용 | 예 | 분석 | **아니오** | 아니오 |
-| 진단(충돌·성능) | 아니오 | — | — | — |
 
-- **추적(Tracking)은 전 항목 "아니오"** — 광고 네트워크에 넘기거나 다른 회사의
-  데이터와 합치지 않는다. 그래서 ATT 권한 요청도 없다.
-- 제품 상호 작용만 신원과 연결되지 않는다. `click_events`에는 이벤트 이름과
+**Google AdMob SDK가 모으는 것** (제3자 SDK도 앱이 신고해야 한다)
+
+| 항목 | 수집 | 용도 | 신원 연결 | 추적 |
+| --- | --- | --- | --- | --- |
+| 대략적 위치(IP 기반) | 예 | 제3자 광고 | 아니오 | 아니오 |
+| 기기 ID | 예 | 제3자 광고, 분석 | 아니오 | 아니오 |
+| 제품 상호 작용 | 예 | 제3자 광고, 분석 | 아니오 | 아니오 |
+| 광고 데이터 | 예 | 제3자 광고, 분석 | 아니오 | 아니오 |
+| 충돌 데이터 · 성능 데이터 · 기타 진단 데이터 | 예 | 분석 | 아니오 | 아니오 |
+
+- **추적(Tracking)은 전 항목 "아니오"** — 광고 요청에 `npa=1`(개인 맞춤 광고 끔,
+  `ios/App/App/InlineAdPlugin.swift`)을 붙이고 ATT 권한을 묻지 않아 IDFA를 쓰지 않는다.
+  나중에 맞춤 광고를 켜려면 ATT 팝업(`NSUserTrackingUsageDescription`)을 넣고 위 표의
+  추적을 "예"로 바꿔야 한다.
+- AdMob 항목은 Google 공식 안내("Google Mobile Ads SDK — Apple App Privacy 데이터 공개")를
+  기준으로 했다. 제출 직전에 그 페이지와 한 번 더 맞춰 볼 것 — SDK 버전에 따라 바뀐다.
+- 제품 상호 작용(steppY 분석)은 신원과 연결되지 않는다. `click_events`에는 이벤트 이름과
   시각만 들어가고 사용자 id 컬럼이 아예 없다.
 
 ---
@@ -186,8 +201,11 @@ MCP로는 인증 설정을 못 바꾼다. 웹에서 직접 눌러야 한다.
 ### Apple (사용자 요청으로 이번 작업에서 제외)
 
 - Apple Developer Program 가입(연 $99) → `DEVELOPMENT_TEAM` 설정
-- 지원 URL / 개인정보처리방침 URL — `privacy.html`은 만들어 뒀다. 배포 주소가
-  정해지면 `https://<도메인>/privacy.html` 을 App Store Connect에 넣으면 된다.
+- 개인정보처리방침 URL — `https://mysteppy.com/privacy.html`
+- 지원 URL — `https://mysteppy.com` (문의 메일이 보이는 페이지면 된다)
+- 마케팅 URL — `https://mysteppy.com`. **AdMob은 여기 적힌 도메인에서 `app-ads.txt`를 찾는다**
+  (저장소 루트 `app-ads.txt` → 빌드 때 `www/`로 복사 → `https://mysteppy.com/app-ads.txt`).
+  앱이 공개된 뒤 AdMob → 앱 → app-ads.txt 탭에서 확인됐는지 본다.
 - TestFlight 내부 테스트
 
 ### 빌드 번호
@@ -195,6 +213,26 @@ MCP로는 인증 설정을 못 바꾼다. 웹에서 직접 눌러야 한다.
 지금 `1.0 (1)`. 첫 제출이라 그대로 올리면 된다. 같은 버전으로 두 번째 빌드를
 올릴 때부터 `CURRENT_PROJECT_VERSION`을 2, 3으로 올린다
 (`ios/App/App.xcodeproj/project.pbxproj`, Debug/Release 두 군데).
+
+### 업데이트 안내 (app-version.json)
+
+앱은 열릴 때(한 시간에 한 번) `https://mysteppy.com/app-version.json`을 읽는다(`js/app-update.js`).
+이 파일은 저장소 루트에 있고 **Vercel 배포만으로 바뀐다 — 앱 심사가 필요 없다.**
+
+```json
+{ "minimum": "1.0", "latest": "1.0", "store_url": "" }
+```
+
+| 값 | 앱 버전이 이보다 낮으면 | 언제 올리나 |
+| --- | --- | --- |
+| `latest` | "새 버전이 나왔어요" — 나중에를 누르면 그 버전은 다시 안 묻는다 | 새 버전이 **App Store에 공개된 뒤** |
+| `minimum` | "업데이트가 필요해요" — 닫을 수 없다 | 서버 변경으로 옛 앱이 깨질 때만 |
+| `store_url` | 업데이트 버튼이 가는 곳. 비우면 `js/app-links.js`의 `APP_STORE_URL` | 이미 깔린 앱의 주소를 고쳐야 할 때 |
+
+- 버전은 Xcode의 `MARKETING_VERSION`과 같은 형식(1.0 → 1.0.1 → 1.1)으로 쓴다.
+- **심사 중일 때 올리면 안 된다** — 새 버전이 아직 스토어에 없는데 업데이트하라고 뜬다.
+- 미리 보기: `mysteppy.com/home.html?appupdate=force` 또는 `?appupdate=soft`
+- 첫 제출 전에 `APP_STORE_URL`이 아직 자리표시자면, 공개 후 `store_url`에 실제 주소(`…/id숫자`)를 적어 둔다.
 
 ### 수출 규정
 
