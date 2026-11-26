@@ -969,6 +969,8 @@ const AppState = {
         visibility: entry.visibility === 'friends' ? 'friends' : 'private',
         updated_at: new Date().toISOString()
       };
+      // 위치는 직접 입력으로 바꿀 때만 보낸다(도시·나라만 — 좌표 없음)
+      if ('location' in patch) row.location = entry.location || null;
       const update = (r) => supabaseClient.from('user_journal').update(r).eq('id', entry.id).eq('user_id', Auth.userId);
       if (journalVisibilityMissing()) delete row.visibility;
       let res = await update(row);
