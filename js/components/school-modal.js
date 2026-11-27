@@ -21,6 +21,7 @@ function ensureSchoolModalScrim() {
     document.body.appendChild(scrim);
     scrim.addEventListener('click', (e) => { if (e.target === scrim) closeModal(scrim); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && scrim.classList.contains('is-open')) closeModal(scrim); });
+    wireSheetDrag(scrim);   // 위쪽을 잡고 끌어내려 닫기(modal.js)
   }
   return scrim;
 }
