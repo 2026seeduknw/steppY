@@ -318,7 +318,7 @@
   function bindSchoolCards(root) {
     root.querySelectorAll('[data-open-school]').forEach(el => {
       el.addEventListener('click', (e) => {
-        if (e.target.closest('[data-fav-toggle-card]')) return;
+        if (e.target.closest('[data-fav-toggle-card], [data-wish-toggle-card]')) return;
         // 큰 카드 아래 띠(인정 예상 과목)는 학점 인정 탭으로 보낸다
         if (e.target.closest('[data-credit-link]')) { location.href = 'credits.html'; return; }
         const schoolId = el.dataset.openSchool;
@@ -326,6 +326,35 @@
         // (여러 학과를 동시에 선택했으면 이 학교가 실제로 매칭되는 학과를 고른다).
         const contextMajor = [...state.majors].find(m => schoolHasMajorMatch({ id: schoolId }, m));
         openSchoolModal(schoolId, { onChange: renderGrid, contextMajor });
+      });
+    });
+    root.querySelectorAll('[data-wish-toggle-card]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!AppState.isAuthed) { showToast('로그인하면 희망대학표에 담을 수 있어요'); return; }
+        const id = btn.dataset.wishToggleCard;
+        if (AppState.wishlistRankOf(id)) {
+          AppState.removeFromWishlist(id);
+          showToast('희망대학표에서 뺐어요');
+        } else {
+          const res = AppState.addToWishlist(id);
+          if (!res.ok) {
+            const track = (AppState.profile.exchangeTerm || {}).track;
+            showToast(res.reason === 'full' ? `희망대학표는 ${OIA.WISHLIST_MAX}개까지 쓸 수 있어요`
+              : res.reason === 'track' ? `${OIA.trackLabel(track)} 전형이라 이 학교는 담을 수 없어요` : '이미 담은 학교예요');
+            return;
+          }
+          showToast(`희망대학표에 담았어요 ${res.rank}/${OIA.WISHLIST_MAX}\n순서는 Picks에서 정해요`);
+          trackEvent('wishlist_rank_select', { schoolId: id, rank: res.rank, from: 'shelf' });
+        }
+        // 같은 학교 카드가 나라 화면에도 있을 수 있어 그 버튼들도 함께 바꾼다
+        const rank = AppState.wishlistRankOf(id);
+        document.querySelectorAll(`[data-wish-toggle-card="${id}"]`).forEach(b => {
+          b.classList.toggle('is-on', !!rank);
+          b.setAttribute('aria-pressed', String(!!rank));
+          b.setAttribute('aria-label', rank ? '희망대학표에서 빼기' : '희망대학표에 담기');
+          b.innerHTML = cartSvg(rank);
+        });
       });
     });
     root.querySelectorAll('[data-fav-toggle-card]').forEach(btn => {
@@ -362,6 +391,20 @@
     return `${shared ? '공동' : '모집'} ${school.slot}명 · `;
   }
 
+  // 희망대학표 담기 — 학교 상세 아래 장바구니와 같은 아이콘·같은 규칙(school-modal.js). 순서는 Picks에서 정한다
+  function cartSvg(rank) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.3a1.6 1.6 0 0 0 1.6-1.2L20.5 8H6.3"/>
+        <circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>
+        ${rank ? '<path d="M10.5 10.8l2 2 3.6-3.8"/>' : '<path d="M13.3 9.3v4.4M11.1 11.5h4.4"/>'}
+      </svg>`;
+  }
+  function wishCartBtn(school) {
+    const rank = AppState.isAuthed ? AppState.wishlistRankOf(school.id) : null;
+    return `<button type="button" class="v2-book__cart ${rank ? 'is-on' : ''}" data-wish-toggle-card="${school.id}"
+              aria-label="${rank ? '희망대학표에서 빼기' : '희망대학표에 담기'}" aria-pressed="${!!rank}">${cartSvg(rank)}</button>`;
+  }
+
   function shelfCardTemplate(school) {
     const elig = computeEligibility(AppState.profile, school);
     const isFav = AppState.isFavorite(school.id);
@@ -376,8 +419,11 @@
             ? `<img src="assets/school-logos/${logo}" alt="" loading="lazy" data-abbr="${abbrOf(school.name)}">`
             : `<span class="v2-book__abbr">${schoolInitials(school.name)}</span>`}</span>
           ${school.qsRank ? `<span class="v2-book__qs" aria-label="QS 세계 순위 ${school.qsRank}위">QS ${school.qsRank}</span>` : ''}
-          <button type="button" class="v2-book__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}"
-                  aria-label="찜하기" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
+          <span class="v2-book__acts">
+            <button type="button" class="v2-book__fav ${isFav ? 'is-active' : ''}" data-fav-toggle-card="${school.id}"
+                    aria-label="찜하기" aria-pressed="${isFav}">${isFav ? '♥' : '♡'}</button>
+            ${wishCartBtn(school)}
+          </span>
         </div>
         <p class="v2-book__name"><span>${nameWithAbbr(school)}</span></p>
         <p class="v2-book__line">GPA ${gpa} · ${lang} <span class="v2-book__elig v2-book__elig--${elig.status}">${elig.status === 'go' ? '✓ ' : ''}${elig.label}</span></p>
