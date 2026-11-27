@@ -57,12 +57,12 @@
       <h2 class="ob__label">학점 <span class="ob__req">필수</span></h2>
       <div class="ob__row ob__row--pair">
         <div class="ob__row">
-          <input type="number" inputmode="decimal" step="0.01" min="0" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
+          <input type="number" inputmode="decimal" step="0.01" min="0" max="4.3" data-decimals="2" id="obGpa" placeholder="예: 3.62" aria-label="학점">
           <!-- 연세대는 4.3 만점 하나뿐이라 고르게 하지 않는다 -->
           <span class="ob__suffix" aria-label="4.3 만점">/ 4.3</span>
         </div>
         <div class="ob__row">
-          <input type="number" inputmode="decimal" step="0.01" min="0" max="100" data-decimals="2" id="obPercentile" placeholder="백분위" aria-label="성적표 백분위">
+          <input type="number" inputmode="decimal" step="0.1" min="0" max="100" data-decimals="1" id="obPercentile" placeholder="백분위" aria-label="성적표 백분위">
         </div>
       </div>
       <p class="ob__hint">백분위는 성적표에 적힌 값이에요.<br>넣으면 배정 총점을 계산해요.</p>

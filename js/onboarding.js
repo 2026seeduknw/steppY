@@ -277,7 +277,7 @@
     clearError();
   });
   el.percentile.addEventListener('input', () => {
-    draft.academic.percentile = el.percentile.value === '' ? null : roundDecimals(el.percentile.value, 2);
+    draft.academic.percentile = el.percentile.value === '' ? null : roundDecimals(el.percentile.value, 1);
     clearError();
   });
   el.semesters.addEventListener('input', () => {

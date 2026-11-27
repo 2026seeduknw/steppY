@@ -1,5 +1,5 @@
 /**
- * 다이어리 기본 스티커 — steppY가 직접 그린 SVG라 저작권 걱정 없이 무료로 쓴다.
+ * 다이어리 기본 스티커 — steppY가 직접 그린 SVG·PNG라 저작권 걱정 없이 무료로 쓴다.
  * 손으로 그린 느낌(굵은 잉크선 + 크림·주황·하늘 포인트)으로 맞췄다.
  *
  * 페이지에는 { type: 'art', art: 'b:<key>' } 로 저장하고, 그릴 때 url()로 data URL을 만든다.
@@ -11,7 +11,27 @@
   const svg = (vb, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`;
   const ink = `fill="none" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"`;
 
+  // 천·자수·단추 스티커 — steppY가 코드로 직접 그린 PNG(assets/stickers/)
+  const PNG = (key, label) => ({ key, label, r: 1, file: `assets/stickers/${key}.png` });
+  const PNG_R = (key, label, r) => ({ key, label, r, file: `assets/stickers/${key}.png` });
   const LIST = [
+    PNG('star-linen-brown', '갈색 천 별'),
+    PNG('star-linen-cream', '크림 천 별'),
+    PNG('heart-linen-rose', '분홍 천 하트'),
+    PNG('star-patch-cream', '자수 별'),
+    PNG('heart-patch-navy', '자수 하트'),
+    PNG('button-wood', '나무 단추'),
+    PNG('button-leather', '가죽 단추'),
+    PNG_R('doodle-sparkle', '반짝 낙서', 1.55),
+    PNG_R('doodle-star', '별 낙서', 0.95),
+    PNG_R('doodle-burst', '펑 낙서', 1.05),
+    PNG_R('doodle-arrow', '화살표 낙서', 0.91),
+    PNG_R('bang-halftone', '느낌표', 1.3),
+    PNG_R('footprints', '발자국', 4.8)
+  ];
+
+  // 예전 기본 스티커(SVG) — 탭에서는 뺐지만, 이미 붙인 다이어리가 깨지지 않게 그림은 남겨 둔다
+  const LEGACY = [
     { key: 'star', label: '별', r: 1, svg: svg('0 0 120 120',
       `<path d="M60 8 72 44 110 46 80 70 92 108 60 86 28 108 40 70 10 46 48 44Z" fill="#fff" ${ink.replace('fill="none" ', '')}/>`) },
     { key: 'badge', label: '도장', r: 1, svg: svg('0 0 140 140',
@@ -70,11 +90,13 @@
       `<circle cx="32" cy="26" r="6" fill="#fff" opacity=".7"/>`) }
   ];
 
+  const ALL = LIST.concat(LEGACY);
   const cache = {};
   function builtinUrl(key) {
     if (cache[key]) return cache[key];
-    const s = LIST.find(x => x.key === key);
+    const s = ALL.find(x => x.key === key);
     if (!s) return '';
+    if (s.file) return (cache[key] = s.file);
     cache[key] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s.svg);
     return cache[key];
   }
@@ -102,7 +124,7 @@
     return '';
   }
   function ratioOf(art) {
-    if (art.startsWith('b:')) { const s = LIST.find(x => x.key === art.slice(2)); return s ? s.r : 1; }
+    if (art.startsWith('b:')) { const s = ALL.find(x => x.key === art.slice(2)); return s ? s.r : 1; }
     const s = mine().find(x => x.id === art.slice(2)); return s ? s.r : 1;
   }
 

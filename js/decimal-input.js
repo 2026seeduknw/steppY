@@ -27,11 +27,24 @@
     el.value = raw.slice(0, dot + 1 + max);
   }
 
+  // min·max 도 같은 이유(네이티브 검증을 안 탐)로 입력 시점에 막는다 — 백분위에 300이 들어가지 않게.
+  // 넘치면 끝값으로 바꾼다(지우면 사용자가 뭘 잘못 적었는지 모른다).
+  function range(el) {
+    const raw = el.value;
+    if (raw === '') return;
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) return;
+    const lo = el.min === '' ? -Infinity : parseFloat(el.min);
+    const hi = el.max === '' ? Infinity : parseFloat(el.max);
+    if (n > hi) el.value = String(hi);
+    else if (n < lo) el.value = String(lo);
+  }
+
   // 입력칸이 나중에 그려지는 화면(계정 시트, 학교 찾기 성적 폼)이 있어서
   // 각자 연결하지 않고 문서 하나에 위임한다.
   document.addEventListener('input', (e) => {
     const el = e.target;
-    if (el && el.dataset && el.dataset.decimals) clamp(el);
+    if (el && el.dataset && el.dataset.decimals) { clamp(el); range(el); }
   });
 })();
 
