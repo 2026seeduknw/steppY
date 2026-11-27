@@ -157,14 +157,18 @@
     return { info, level, verdict: VERDICTS.find(v => v.key === key) };
   }
 
-  function evidenceBadges(a) {
+  // 비교 대상은 연세대 '과목'이 아니라 '전공'이다 — 본교 쪽 자료가 전공 단위라서(home_course = 연세 전공명).
+  // 무엇과 견줬는지 문장에 그대로 적는다(예전 '전공 핵심 키워드와 일치'는 무엇과 비교했는지 안 보였다).
+  function evidenceBadges(a, m) {
+    const home = m && m.homeMajor ? `연세대 ${m.homeMajor}` : '내 전공';
+    const dept = m && (m.matchedTopics || [])[0];
     const out = [];
     if (a.level.tier === 'major') out.push(['go', 'Level Match', `${a.level.label} · 학부 전공 수준`]);
     else if (a.level.tier === 'intro') out.push(['warn', 'Level Mismatch', `${a.level.label} · 기초/교양 수준이라 전공 인정이 거절될 수 있어요`]);
     else if (a.level.tier === 'grad') out.push(['warn', 'Level 확인', `${a.level.label} · 대학원 수준일 수 있어요`]);
     else out.push(['neutral', 'Level 확인 필요', '과목코드로 위계를 알 수 없어요 · 강의계획서로 확인하세요']);
-    if (a.info.keyword) out.push(['go', 'Keyword Match', '과목명이 전공 핵심 키워드와 일치']);
-    else out.push(['neutral', 'Keyword 약함', '과목명 일치는 없고 개설 학과 기준으로 포함']);
+    if (a.info.keyword) out.push(['go', 'Keyword Match', `과목 이름에 ${home}의 핵심 단어가 들어 있어요`]);
+    else out.push(['neutral', 'Keyword 약함', `과목 이름엔 ${home} 단어가 없어요 · 파견교 ${dept ? `'${dept}' ` : ''}학과 과목이라 넣었어요`]);
     if (a.info.exchangeOk) out.push(['go', '교환학생 수강 가능', '파견교 공식 목록에서 확인']);
     if (a.info.spring === 'closed') out.push(['warn', '봄 미개설', '봄학기에 열리지 않는 과목이에요(가을 전용·1년 과목) · 봄 파견이면 들을 수 없어요']);
     else if (a.info.spring === 'unknown') out.push(['neutral', '봄 개설 미확인', '가을학기 시간표 자료라 봄에 열리는지 아직 확인 안 됐어요']);
@@ -699,7 +703,7 @@
           <span class="v2-xmatch__home-school">${esc(schoolRow ? shortSchoolName(schoolRow.name) : school.name)}의 전공</span>
           ${m.matchedTopics.map(t => `<button type="button" class="v2-xmatch__topic" data-topic-jump>${esc(t)}</button>`).join('<span aria-hidden="true">, </span>')}
         </p>` : ''}
-        <ul class="xmatch__evidence v2-xmatch__evidence">${evidenceBadges(a)}</ul>
+        <ul class="xmatch__evidence v2-xmatch__evidence">${evidenceBadges(a, m)}</ul>
         <button type="button" class="btn btn--ghost btn--sm xmatch__interview" data-interview="${esc(m.id)}">자세히 보기</button>
       </div>
     `;

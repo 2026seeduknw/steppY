@@ -212,7 +212,10 @@ body[data-page="search"] .app-sheet__head #resetFilters { margin: 0 auto 0 10px;
   padding: 6px 0 4px;
 }
 /* 넘기는 내용 전체 폭(줄) — 선반은 이 줄에 붙어 학교 카드와 함께 움직인다 */
-.v2-shelf__row { position: relative; display: flex; gap: 16px; width: max-content; padding: 0 24px; }
+/* 아이폰(WebKit)은 width:max-content 줄 폭을 화면 폭으로 잡거나, 마지막 카드를 '왼쪽 맞춤' 스냅 자리로
+   끝을 넘겨 끌어와 오른쪽에 빈 공간이 남았다 — 줄은 inline-flex 로 내용만큼 넓히고, 마지막 카드는 오른쪽 끝에 맞춰 멈춘다 */
+.v2-shelf__row { position: relative; display: inline-flex; vertical-align: top; gap: 16px; padding: 0 24px; }
+.v2-shelf__row > .v2-book:last-child { scroll-snap-align: end; }
 /* 칸막이 책꽂이 — 위·옆·아래가 막힌 올리브 녹색 틀 안에 학교마다 한 칸씩. 로고 카드는 칸 바닥에 선다.
    칸은 카드마다 따로 그린다(.v2-book__cover::before/::after). 줄 전체에 한 번 그렸더니
    아이폰에서 줄 폭(max-content)이 화면 폭으로 잡혀, 옆으로 넘기면 틀이 중간에서 끊겼다.
